@@ -1,0 +1,30 @@
+import numpy as np
+import matplotlib.pyplot as plt
+from astropy.io import ascii, fits
+import sys, os, string
+import pandas as pd
+
+
+fitsfile = sys.argv[1]
+
+data = fits.open(fitsfile)[0].data
+head = fits.open(fitsfile)[0].header
+
+d0 = data[0]
+d1 = data[1]
+d2 = data[2]
+d3 = data[3]
+d4 = data[4]
+#d5 = data[5]
+#d6 = data[6]
+#d7 = data[7]
+#d8 = data[8]
+
+
+crval1 = head["crval1"]
+crpix1 = head["crpix1"]
+cdelt1 = head["cdelt1"]
+naxis1 = head["naxis1"]
+dcflag = head["dc-flag"]
+exptime = head['exptime']
+wavelength = (1.0+np.arange(naxis1)-crpix1)*cdelt1 + crval1
