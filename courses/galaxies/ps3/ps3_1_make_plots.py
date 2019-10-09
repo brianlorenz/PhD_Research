@@ -16,6 +16,12 @@ metallicity can be 'low', 'mid', or 'high' (-0.5, 0, 0.5 Zsun)
 age can be 1Gyr, 2, 5, or 14
 '''
 
+ew_df = pd.read_csv(loc+'ew.df')
+'''Reads in a dataframe with columns:
+'z' + metallicity + '_t' + age + '_' + line + '_ew'
+where line is either 'Hb' or "Mgb"
+'''
+
 
 def plot_save(fig, ax, labels, name, xlim=None, ylim=None, logs=(0, 0)):
     '''
@@ -58,7 +64,7 @@ ages = ('1', '2', '5', '14')
 colors = ('black', 'orange', 'blue', 'green')
 age_labels = [f'{i} Gyr' for i in ages]
 
-axis_labels = ('Wavelength (\AA)', 'Flux')
+axis_labels = ('Wavelength ($\AA$)', 'Flux')
 
 # Plots a range of ages at solar metallicity
 fig, ax = plt.subplots(figsize=(8, 7))
@@ -87,3 +93,42 @@ make_z_plot('1_a_zs')
 # Zoomed in version of the above plot
 make_z_plot('1_a_zs_zoom', xlim=(5000, 5400),
             ylim=(3*10**-17, 8*10**-16), logs=(0, 1))
+
+
+axis_labels_ew_age = ('Age (Gyr)', 'Equivalent Width of Mgb')
+
+fig, ax = plt.subplots(figsize=(8, 7))
+for z, color, label in zip(z_keys, colors, z_labels):
+
+    z_ages = [ew_df['z'+z+'_t'+age+'_Mgb'] for age in ages]
+
+    plt.plot([1, 2, 5, 14], z_ages,
+             color=color, marker=None, ls='-', label=label)
+plot_save(fig, ax, axis_labels_ew_age, '1_b')
+
+
+axis_labels_ews = ('Equivalent Width of Mgb', 'Equivalent Width of Hb')
+
+keys = ['z'+z+'_t'+age for z in z_keys for age in ages]
+
+Mgb_measurements = [ew_df[key+'_Mgb'] for key in keys]
+Hb_measurements = [ew_df[key+'_Hb'] for key in keys]
+
+fig, ax = plt.subplots(figsize=(8, 7))
+plt.plot(Hb_measurements[:4], Mgb_measurements[:4],
+         color='black', marker='o', ls='-')
+plt.plot(Hb_measurements[4:8], Mgb_measurements[4:8],
+         color='black', marker='o', ls='-')
+plt.plot(Hb_measurements[8:], Mgb_measurements[8:],
+         color='black', marker='o', ls='-')
+
+plt.plot(Hb_measurements[::4], Mgb_measurements[::4],
+         color='black', marker='o', ls='-')
+plt.plot(Hb_measurements[1::4], Mgb_measurements[1::4],
+         color='black', marker='o', ls='-')
+plt.plot(Hb_measurements[2::4], Mgb_measurements[2::4],
+         color='black', marker='o', ls='-')
+plt.plot(Hb_measurements[3::4], Mgb_measurements[3::4],
+         color='black', marker='o', ls='-')
+
+plot_save(fig, ax, axis_labels_ews, '1_c')

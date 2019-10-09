@@ -24,14 +24,14 @@ spectra_df['zmid_t2'] = spectra2[1][1]
 spectra_df['zhigh_t2'] = spectra2[2][1]
 
 spectra5 = [stellar_populations[i].get_spectrum(tage=5) for i in range(3)]
-spectra_df['zlow_t5'] = spectra2[0][1]
-spectra_df['zmid_t5'] = spectra2[1][1]
-spectra_df['zhigh_t5'] = spectra2[2][1]
+spectra_df['zlow_t5'] = spectra5[0][1]
+spectra_df['zmid_t5'] = spectra5[1][1]
+spectra_df['zhigh_t5'] = spectra5[2][1]
 
 spectra14 = [stellar_populations[i].get_spectrum(tage=14) for i in range(3)]
-spectra_df['zlow_t14'] = spectra2[0][1]
-spectra_df['zmid_t14'] = spectra2[1][1]
-spectra_df['zhigh_t14'] = spectra2[2][1]
+spectra_df['zlow_t14'] = spectra14[0][1]
+spectra_df['zmid_t14'] = spectra14[1][1]
+spectra_df['zhigh_t14'] = spectra14[2][1]
 
 spectra_df.to_csv(loc+'ssp_spectra.df')
 '''Outputs a dataframe with columns:
