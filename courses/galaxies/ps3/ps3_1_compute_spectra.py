@@ -34,3 +34,9 @@ spectra_df['zmid_t14'] = spectra2[1][1]
 spectra_df['zhigh_t14'] = spectra2[2][1]
 
 spectra_df.to_csv(loc+'ssp_spectra.df')
+'''Outputs a dataframe with columns:
+wavelength - ranges from 91 to 10^8 Angstrom
+'z' + metallicity + '_t' + age - spectrum of ssp with that metallicity and age
+metallicity can be 'low', 'mid', or 'high' (-0.5, 0, 0.5 Zsun)
+age can be 1Gyr, 2, 5, or 14
+'''

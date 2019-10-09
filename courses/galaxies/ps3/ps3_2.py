@@ -100,7 +100,7 @@ def z_evo_c(t):
 # Compute teh metallicities
 zs2 = [z_evo_c(i) for i in times]
 
-# Plot for part a
+# Plot for part c
 plot_func('c', times, zs2, 'Time (Gyr)',
           'Z (Z$_\odot$)', xlim=(-0.05, 20.05), line='-', mark='.')
 
