@@ -53,7 +53,7 @@ def plot_func(part, xdat, ydat, xlab, ylab, xlim=None, ylim=None, line='None', m
 
     # Set the tick size
     ax.tick_params(labelsize=ticksize, size=ticks)
-    ax.legend(fontsize=axisfont-4)
+    ax.legend(fontsize=axisfont)
 
     # Save the figure
     fig.savefig(figout+'3_'+part)
@@ -133,7 +133,7 @@ def plot_func_b(part, xdat, ydat, xlab, ylab, xlim=None, ylim=None, line='None',
 
     # Set the tick size
     ax.tick_params(labelsize=ticksize, size=ticks)
-    ax.legend(fontsize=axisfont-4)
+    ax.legend(fontsize=axisfont)
 
     # Save the figure
     fig.savefig(figout+'3_'+part)

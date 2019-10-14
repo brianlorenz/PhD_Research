@@ -22,6 +22,8 @@ ew_df = pd.read_csv(loc+'ew.df')
 where line is either 'Hb' or "Mgb"
 '''
 
+ew_df_partc = pd.read_csv(loc+'ew_partc.df')
+
 
 def plot_save(fig, ax, labels, name, xlim=None, ylim=None, logs=(0, 0)):
     '''
@@ -52,7 +54,7 @@ def plot_save(fig, ax, labels, name, xlim=None, ylim=None, logs=(0, 0)):
     ax.set_ylim(ylim)
 
     ax.tick_params(labelsize=ticksize, size=ticks)
-    ax.legend(fontsize=axisfont-4)
+    ax.legend(fontsize=axisfont)
 
     fig.savefig(loc+name+'.pdf')
     plt.close('all')
@@ -64,7 +66,7 @@ ages = ('1', '2', '5', '14')
 colors = ('black', 'orange', 'blue', 'green')
 age_labels = [f'{i} Gyr' for i in ages]
 
-axis_labels = ('Wavelength ($\AA$)', 'Flux')
+axis_labels = ('Wavelength ($\\AA$)', 'Flux')
 
 # Plots a range of ages at solar metallicity
 fig, ax = plt.subplots(figsize=(8, 7))
@@ -107,7 +109,7 @@ for z, color, label in zip(z_keys, colors, z_labels):
 plot_save(fig, ax, axis_labels_ew_age, '1_b')
 
 
-axis_labels_ews = ('Equivalent Width of Mgb', 'Equivalent Width of Hb')
+axis_labels_ews = ('Equivalent Width of Mgb', 'Equivalent Width of H$\\beta$')
 
 keys = ['z'+z+'_t'+age for z in z_keys for age in ages]
 
@@ -115,20 +117,61 @@ Mgb_measurements = [ew_df[key+'_Mgb'] for key in keys]
 Hb_measurements = [ew_df[key+'_Hb'] for key in keys]
 
 fig, ax = plt.subplots(figsize=(8, 7))
-plt.plot(Hb_measurements[:4], Mgb_measurements[:4],
-         color='black', marker='o', ls='-')
-plt.plot(Hb_measurements[4:8], Mgb_measurements[4:8],
-         color='black', marker='o', ls='-')
-plt.plot(Hb_measurements[8:], Mgb_measurements[8:],
-         color='black', marker='o', ls='-')
 
-plt.plot(Hb_measurements[::4], Mgb_measurements[::4],
+agecolor = 'red'
+plt.plot(Mgb_measurements[::4], Hb_measurements[::4],
+         color=agecolor, marker='o', ls='-')
+plt.plot(Mgb_measurements[1::4], Hb_measurements[1::4],
+         color=agecolor, marker='o', ls='-')
+plt.plot(Mgb_measurements[2::4], Hb_measurements[2::4],
+         color=agecolor, marker='o', ls='-')
+plt.plot(Mgb_measurements[3::4], Hb_measurements[3::4],
+         color=agecolor, marker=None, ls='-', label='Constant Age')
+
+# low
+plt.plot(Mgb_measurements[:4], Hb_measurements[:4],
          color='black', marker='o', ls='-')
-plt.plot(Hb_measurements[1::4], Mgb_measurements[1::4],
+# mid
+plt.plot(Mgb_measurements[4:8], Hb_measurements[4:8],
          color='black', marker='o', ls='-')
-plt.plot(Hb_measurements[2::4], Mgb_measurements[2::4],
+# high
+plt.plot(Mgb_measurements[8:], Hb_measurements[8:],
          color='black', marker='o', ls='-')
-plt.plot(Hb_measurements[3::4], Mgb_measurements[3::4],
-         color='black', marker='o', ls='-')
+# dummy for legened
+plt.plot(Mgb_measurements[8:], Hb_measurements[8:],
+         color='black', marker=None, ls='-', label='Constant Z')
+
+ax.text(0.78, 0.02, '14 Gyr', transform=ax.transAxes,
+        fontsize=14, color=agecolor)
+ax.text(0.75, 0.23, '5 Gyr', transform=ax.transAxes,
+        fontsize=14, color=agecolor)
+ax.text(0.47, 0.4, '2 Gyr', transform=ax.transAxes,
+        fontsize=14, color=agecolor)
+ax.text(0.15, 0.74, '1 Gyr', transform=ax.transAxes,
+        fontsize=14, color=agecolor)
+
+ax.text(0.33, 0.12, '-0.5 Z$_{\odot}$', transform=ax.transAxes,
+        fontsize=14, color='black')
+ax.text(0.66, 0.12, 'Z$_{\odot}$', transform=ax.transAxes,
+        fontsize=14, color='black')
+ax.text(0.885, 0.12, '0.5 Z$_{\odot}$', transform=ax.transAxes,
+        fontsize=14, color='black')
+
 
 plot_save(fig, ax, axis_labels_ews, '1_c')
+
+
+fig, ax = plt.subplots(figsize=(8, 7))
+
+Mgb_solar = [ew_df_partc['z0_t'+str(i)+'_Mgb'] for i in np.arange(0, 15)]
+Mgb_3burst = [ew_df_partc['ssp_3burst_t' +
+                          str(i)+'_Mgb'] for i in np.arange(0, 15)]
+ages = np.arange(0, 15)
+
+axis_labels_ages = ('Age (Gyr)', 'Equivalent Width of Mgb')
+
+ax.plot(ages, Mgb_solar, marker='o', ls='-',
+        label='Z$_{\odot}$', color='black')
+ax.plot(ages, Mgb_3burst, marker='o', ls='-',
+        label='Three-burst', color='orange')
+plot_save(fig, ax, axis_labels_ages, '1_d')
