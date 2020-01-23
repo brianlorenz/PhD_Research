@@ -73,7 +73,8 @@ fig, ax = plt.subplots(figsize=(8, 7))
 for age, color, label in zip(ages, colors, age_labels):
     plt.plot(wavelength, spectra_df['zmid_t'+age],
              color=color, marker=None, ls='-', label=label)
-plot_save(fig, ax, axis_labels, '1_a_ages', logs=(1, 0))
+plot_save(fig, ax, axis_labels, '1_a_ages_zoom2', logs=(
+    1, 0), xlim=(5000, 5400), ylim=(3*10**-17, 1.5*10**-15))
 
 # Keys to retrieve which metallicity to plot
 z_keys = ('low', 'mid', 'high')
