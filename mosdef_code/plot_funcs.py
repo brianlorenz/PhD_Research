@@ -28,9 +28,13 @@ def plot_sed(sed):
     textfont = 16
 
     fig, ax = plt.subplots(figsize=(8, 7))
-    ax.errorbar(sed['wavelength'], sed['magnitude'], yerr=[
+
+    ax.errorbar(sed['peak_wavelength'], sed['magnitude'], yerr=[
         sed['magnitude_err_lower'], sed['magnitude_err_upper']], ls='None', color='black', marker='o')
-    # plt.xscale('log')
+    # ax.errorbar(sed['peak_wavelength'], sed['flux'], yerr=[sed['flux'] - sed['flux_error'],
+    #                                                       sed['flux'] + sed['flux_error']], ls='None', color='black', marker='o')
+    # plt.yscale('log')
+    #ax.set_ylim(-10, 10)
     ax.invert_yaxis()
     ax.set_xlabel('Wavelength ($\AA$)', fontsize=axisfont)
     ax.set_ylabel('Magnitude', fontsize=axisfont)
