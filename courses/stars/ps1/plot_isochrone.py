@@ -1,4 +1,5 @@
-# Reads mesa's History file into a pandas table
+# plot_isochrone.py
+# Plots the output from pypopstar_ps1.py
 
 import sys
 import os
@@ -7,7 +8,6 @@ import numpy as np
 import pandas as pd
 from astropy.io import ascii
 from astropy.io import fits
-from astropy.table import Table
 import matplotlib.pyplot as plt
 from read_mesa import read_history
 

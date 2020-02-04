@@ -1,3 +1,4 @@
+# read_mesa.py
 # Reads mesa's History file into a pandas table
 
 import sys
@@ -7,8 +8,6 @@ import numpy as np
 import pandas as pd
 from astropy.io import ascii
 from astropy.io import fits
-from astropy.table import Table
-import matplotlib.pyplot as plt
 
 
 def read_history(file_loc):

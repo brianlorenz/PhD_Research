@@ -1,3 +1,6 @@
+# pypopstar_ps1.py
+# Creates an isochrone using the pypopstar package
+
 import sys
 import os
 import string
@@ -5,7 +8,6 @@ import numpy as np
 import pandas as pd
 from astropy.io import ascii
 from astropy.io import fits
-from astropy.table import Table
 import matplotlib.pyplot as plt
 from popstar import synthetic, evolution, atmospheres, reddening, ifmr
 from popstar.imf import imf, multiplicity
