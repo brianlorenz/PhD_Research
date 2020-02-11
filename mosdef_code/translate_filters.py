@@ -25,6 +25,7 @@ translate_dict = {
 Ran this in unix to create the overview file
 > more FILTER.RES.latest | grep lambda_c. > overview
 > more overview
+A few lines (308-313) gave issues with units of um. Manually changed these to e+04.
 '''
 
 # Location f the overview file
@@ -84,7 +85,6 @@ def make_filter_csv(cat):
     peak_waves = [filter_df[filter_df.index ==
                             (int(translate_df['filter_num'].iloc[i])-1)] for i in range(len(translate_df))]
     # Change data type to float
-    print(peak_waves)
     peak_waves = [float(i) for i in peak_waves]
     peak_waves_df = pd.DataFrame(peak_waves, columns=['peak_wavelength'])
     filter_csv_df = translate_df.merge(

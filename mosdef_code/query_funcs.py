@@ -38,6 +38,22 @@ def get_zobjs(df=mosdef_df):
     return zobjs
 
 
+def setup_transfer_script(mosdef_df=mosdef_df):
+    """Sets up a script that transfers postage stamps of objects from pepper to local
+
+    Parameters:
+    mosdef_df (pd.Dataframe): See above, dataframe from read_data.py
+
+
+    Returns:
+    Nothing, but populates the script file
+    """
+    f = open('/Users/galaxies-air/mosdef/HST_Images/transfer_images.sh', 'w')
+    for obj_num in range(len(mosdef_df)):
+        f.write(f'scp blorenz@pepper.astro.berkeley.edu:/Users/mosdef/HST_Images/postage_stamps/{mosdef_df.iloc[obj_num]["FIELD_STR"]}_f160w_{mosdef_df.iloc[obj_num]["ID"]}.fits .\n')
+    f.close()
+
+
 def read_cat(field):
     """Read the catalog for the given read and put it into a dataframe
 
@@ -61,13 +77,13 @@ def read_cat(field):
     return df
 
 
-def get_sed(field, v4id):
+def get_sed(field, v4id, full_cats_dict=False):
     """Given a field and id, gets the photometry for a galaxy, including corrections. Queries 3DHST if in GOODS-N or AEGIS, otherwise matches ra/dec with ZFOURGE
 
     Parameters:
     field (string): name of the field of the object
     id (int): HST V4.1 id of the object
-
+    full_cats_dict (set to list, optional): Set to the list of all read catalogs if they havebeen read elsewhere (e.g. looping over multiple objects)
 
     Returns:
     """
@@ -75,11 +91,16 @@ def get_sed(field, v4id):
     filters_df = ascii.read('catalog_filters/'+field +
                             '_filterlist.csv').to_pandas()
 
+    print(f'Getting SED for {field}, id={v4id}')
+
+    # Reads in the catalog matching the field provided
+    if full_cats_dict:
+        cat = full_cats_dict[field]
+    else:
+        cat = read_cat(field)
     # Here we split to create the obj - different based on if we need to match ra/dec or just look it up
     if field == 'GOODS-N' or field == 'AEGIS':
         print('Calling 3DHST Catalog')
-        # Reads in the catalog matching the field provided
-        cat = read_cat(field)
         obj = cat.loc[cat['id'] == v4id]
     else:
         print('Matching with ZFOURGE')
@@ -90,9 +111,13 @@ def get_sed(field, v4id):
         if len(mosdef_obj) < 1:
             sys.exit('No match found on FIELD_STR and V4ID')
         if len(mosdef_obj) > 1:
-            sys.exit('Could not find unique match on FIELD_STR and V4ID')
-
-        cat = read_cat(field)
+            f = open(
+                '/Users/galaxies-air/mosdef/sed_csvs/sed_errors/duplicate_objs.txt', 'a')
+            f.write(f'{field}, {v4id}\n')
+            f.close()
+            # WHAT TO DO HERE WHEN YOU FIND A REPEAT? NEED TO STORE AND MOVE ONE
+            print('Could not find unique match on FIELD_STR and V4ID, skipping object')
+            return None
         # Coordinates for the object
         mosdef_obj_coords = SkyCoord(
             mosdef_obj['RA']*u.deg, mosdef_obj['DEC']*u.deg)
@@ -103,42 +128,73 @@ def get_sed(field, v4id):
             cat_coords)
         if d2d_match > 2.78*10**-4*u.deg:
             print(f'Match is larger than one arcsec! Distance: {d2d_match}')
-            sys.exit()
+            f = open(
+                '/Users/galaxies-air/mosdef/sed_csvs/sed_errors/zfourge_no_match.txt', 'a')
+            f.write(f'{field}, {v4id}, {d2d_match}\n')
+            f.close()
+            return None
         obj = cat.iloc[idx_match]
+    if v4id == -9999:
+        print(f'Error: ID of -9999')
+        f = open(
+            '/Users/galaxies-air/mosdef/sed_csvs/sed_errors/other_errors.txt', 'a')
+        f.write(f'{field}, {v4id}\n')
+        f.close()
+        return None
     # Read off the fluxes from the catalog
     fluxes = [float(obj[filtname])
               for filtname in filters_df['filter_name']]
-    print(fluxes)
     errorfluxes = [float(obj[filtname.replace('f_', 'e_')])
                    for filtname in filters_df['filter_name']]
-    flux_tuple = [(fluxes[i], fluxes[i]-errorfluxes[i],
-                   fluxes[i]+errorfluxes[i]) for i in range(len(fluxes))]
+    flux_tuple = [(fluxes[i], errorfluxes[i]) for i in range(len(fluxes))]
     # Magnitude zeropoint conversion from: http://monoceros.astro.yale.edu/RELEASE_V4.0/Photometry/AEGIS/aegis_3dhst.v4.1.cats/aegis_readme.v4.1.txt
-    magnitude_tuples = [25.0-2.5*np.log10(flux) for flux in flux_tuple]
-    sed = pd.DataFrame(magnitude_tuples, columns=[
-                       'magnitude', 'magnitude_upper', 'magnitude_lower'])
+    convert_factor = 3.7325*10**(-30)
+    # Convert from f_nu to f_lambda
+    convert_lambda = 3*10**18
+    f_lambda_tuple = [(convert_factor*convert_lambda*flux_tuple[i][0]/(filters_df.iloc[i]['peak_wavelength'])**2, convert_factor *
+                       convert_lambda*flux_tuple[i][1]/(filters_df.iloc[i]['peak_wavelength'])**2) for i in range(len(flux_tuple))]
+    sed = pd.DataFrame(f_lambda_tuple, columns=[
+        'f_lambda', 'err_f_lambda'])
     # Concatenate with wavelength
     sed = sed.merge(filters_df,
                     left_index=True, right_index=True)
     flux_df = pd.DataFrame(zip(fluxes, errorfluxes), columns=[
-        'flux', 'flux_error'])
+        'flux_ab25', 'flux_error_ab25'])
     sed = sed.merge(flux_df,
                     left_index=True, right_index=True)
-    for tag in ['upper', 'lower']:
-        sed['magnitude_err_' +
-            tag] = abs(sed['magnitude_'+tag] - sed['magnitude'])
+    # Continue to set the -99 to -99
+    sed.loc[sed['flux_ab25'] == -99, 'f_lambda'] = -99
+    sed.loc[sed['flux_ab25'] == -99, 'err_f_lambda'] = -99
+    # Save with field nad id in the filename:
+    sed.to_csv(f'/Users/galaxies-air/mosdef/sed_csvs/{field}_{v4id}_sed.csv', index=False)
     return sed
 
-    # Convert AB Mags to f_lambda
-    # How do we deal with negative fluxes if we're supposed to immediately take the log?
-    # UDS and GOODS-S Filter lists are breaking in the translate_filters code. They are looking for the 266th and 291st filters in the list, which don't exist
-    # What to do with the few nan values? how to better display them on plot?
+
+def get_all_seds(zobjs):
+    """Given a field and id, gets the photometry for a galaxy, including corrections. Queries 3DHST if in GOODS-N or AEGIS, otherwise matches ra/dec with ZFOURGE
+
+    Parameters:
+    zobjs (list): Pass a list of tuples of the form (field, v4id)
+
+
+    Returns:
+    """
+
+    # We prime the cats since we are looping over multiple objects
+
+    full_cats_dict = {}
+    print('Reading Catalogs')
+    full_cats_dict['AEGIS'] = read_cat('AEGIS')
+    full_cats_dict['GOODS-S'] = read_cat('GOODS-S')
+    full_cats_dict['COSMOS'] = read_cat('COSMOS')
+    full_cats_dict['GOODS-N'] = read_cat('GOODS-N')
+    full_cats_dict['UDS'] = read_cat('UDS')
+    for obj in zobjs:
+        field = obj[0]
+        v4id = obj[1]
+        get_sed(field, v4id, full_cats_dict)
 
     # Check the best FAST fit to the SED, check the fit
-    # Put the sed and two images next to each other from F160
     # Plot the spectrum in there as well
     # So one window that has SED, spectrum, F160 image - nice overview of each galaxy. Maybe plot half-light radius?
-    # Images are under v4.0 of 3DHST, use the _orig_sci image
-    # Need to add the x y position for the galaxies
-
-    # Way down the road, scale to running multiple at once
+    # What is unit of half-light radius?
