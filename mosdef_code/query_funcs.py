@@ -69,26 +69,34 @@ def read_cat(field):
         'GOODS-S': 'cdfs.v1.6.9.cat',
         'COSMOS': 'cosmos.v1.3.6.cat',
         'GOODS-N': 'goodsn_3dhst.v4.1.cat',
-        'UDS': 'uds.v1.5.8.cat'
+        'UDS': 'uds.v1.5.8.cat',
+        'GOODS-S_3DHST': 'goodss_3dhst.v4.1.cat',
+        'COSMOS_3DHST': 'cosmos_3dhst.v4.1.cat',
+        'UDS_3DHST': 'uds_3dhst.v4.1.cat'
     }
     # Read the data
-    cat_location = '/Users/galaxies-air/mosdef/'+cat_dict[field]
+    cat_location = '/Users/galaxies-air/mosdef/Catalogs/'+cat_dict[field]
     df = ascii.read(cat_location).to_pandas()
     return df
 
 
-def get_sed(field, v4id, full_cats_dict=False):
+def get_sed(field, v4id, full_cats_dict=False, use_3dhst=False):
     """Given a field and id, gets the photometry for a galaxy, including corrections. Queries 3DHST if in GOODS-N or AEGIS, otherwise matches ra/dec with ZFOURGE
 
     Parameters:
     field (string): name of the field of the object
     id (int): HST V4.1 id of the object
     full_cats_dict (set to list, optional): Set to the list of all read catalogs if they havebeen read elsewhere (e.g. looping over multiple objects)
+    use_3dhst (boolean): set to True if looping back through the duplicates and ignoring the zfourge catalogs
 
     Returns:
     """
     # Read the appropriate set of filters
-    filters_df = ascii.read('catalog_filters/'+field +
+    if use_3dhst:
+        str_3dhst = '_3DHST'
+    else:
+        str_3dhst = ''
+    filters_df = ascii.read('catalog_filters/' + field + str_3dhst +
                             '_filterlist.csv').to_pandas()
 
     print(f'Getting SED for {field}, id={v4id}')
@@ -99,7 +107,7 @@ def get_sed(field, v4id, full_cats_dict=False):
     else:
         cat = read_cat(field)
     # Here we split to create the obj - different based on if we need to match ra/dec or just look it up
-    if field == 'GOODS-N' or field == 'AEGIS':
+    if field == 'GOODS-N' or field == 'AEGIS' or use_3dhst == True:
         print('Calling 3DHST Catalog')
         obj = cat.loc[cat['id'] == v4id]
     else:
@@ -115,7 +123,6 @@ def get_sed(field, v4id, full_cats_dict=False):
                 '/Users/galaxies-air/mosdef/sed_csvs/sed_errors/duplicate_objs.txt', 'a')
             f.write(f'{field}, {v4id}\n')
             f.close()
-            # WHAT TO DO HERE WHEN YOU FIND A REPEAT? NEED TO STORE AND MOVE ONE
             print('Could not find unique match on FIELD_STR and V4ID, skipping object')
             return None
         # Coordinates for the object
@@ -126,8 +133,8 @@ def get_sed(field, v4id, full_cats_dict=False):
         # Performs the matching here
         idx_match, d2d_match, d3d_match = mosdef_obj_coords.match_to_catalog_sky(
             cat_coords)
-        if d2d_match > 2.78*10**-4*u.deg:
-            print(f'Match is larger than one arcsec! Distance: {d2d_match}')
+        if d2d_match > 8.33*10**-5*u.deg:
+            print(f'Match is larger than 0.3 arcsec! Distance: {d2d_match}')
             f = open(
                 '/Users/galaxies-air/mosdef/sed_csvs/sed_errors/zfourge_no_match.txt', 'a')
             f.write(f'{field}, {v4id}, {d2d_match}\n')
@@ -166,7 +173,7 @@ def get_sed(field, v4id, full_cats_dict=False):
     sed.loc[sed['flux_ab25'] == -99, 'f_lambda'] = -99
     sed.loc[sed['flux_ab25'] == -99, 'err_f_lambda'] = -99
     # Save with field nad id in the filename:
-    sed.to_csv(f'/Users/galaxies-air/mosdef/sed_csvs/{field}_{v4id}_sed.csv', index=False)
+    sed.to_csv(f'/Users/galaxies-air/mosdef/sed_csvs/{field}_{v4id}{str_3dhst}_sed.csv', index=False)
     return sed
 
 
@@ -194,7 +201,32 @@ def get_all_seds(zobjs):
         v4id = obj[1]
         get_sed(field, v4id, full_cats_dict)
 
+
+def get_nomatch_seds():
+    """ Uses 3DHST for the objects that weren't in zfourge
+
+    Parameters:
+
+
+    Returns:
+    """
+    # Read the set of non-matches from the file:
+    nomatch_objs_file = '/Users/galaxies-air/mosdef/sed_csvs/sed_errors/zfourge_no_match.txt'
+    nomatch_df = ascii.read(nomatch_objs_file).to_pandas()
+
+    # We prime the cats since we are looping over multiple objects
+    full_cats_dict = {}
+    print('Reading 3DHST Catalogs')
+    full_cats_dict['GOODS-S'] = read_cat('GOODS-S_3DHST')
+    full_cats_dict['COSMOS'] = read_cat('COSMOS_3DHST')
+    full_cats_dict['UDS'] = read_cat('UDS_3DHST')
+    for i in range(len(nomatch_df)):
+        field = nomatch_df.iloc[i]['field']
+        v4id = nomatch_df.iloc[i]['v4id']
+        get_sed(field, v4id, full_cats_dict, use_3dhst=True)
+
     # Check the best FAST fit to the SED, check the fit
     # Plot the spectrum in there as well
     # So one window that has SED, spectrum, F160 image - nice overview of each galaxy. Maybe plot half-light radius?
     # What is unit of half-light radius?
+    # Need to clean the error logs ech time before running the code

@@ -18,7 +18,10 @@ translate_dict = {
     'GOODS-S': loc_ZFOURGE+'cdfs/cdfs.v1.6.9.translate',
     'COSMOS': loc_ZFOURGE+'cosmos/cosmos.v1.3.6.translate',
     'GOODS-N': loc_3DHST+'GOODS-N/GOODS-N_3dhst.v4.1.translate',
-    'UDS': loc_ZFOURGE+'uds/uds.v1.5.8.translate'
+    'UDS': loc_ZFOURGE+'uds/uds.v1.5.8.translate',
+    'GOODS-S_3DHST': loc_3DHST+'GOODS-S/goodss_3dhst.v4.1.translate',
+    'COSMOS_3DHST': loc_3DHST+'COSMOS/cosmos_3dhst.v4.1.translate',
+    'UDS_3DHST': loc_3DHST+'UDS/uds_3dhst.v4.1.translate'
 }
 
 '''
@@ -93,5 +96,6 @@ def make_filter_csv(cat):
     filter_csv_df.to_csv('catalog_filters/'+cat+'_filterlist.csv', index=False)
 
 
-catalogs = ['AEGIS', 'COSMOS', 'GOODS-N', 'GOODS-S', 'UDS']
+catalogs = ['AEGIS', 'COSMOS', 'GOODS-N', 'GOODS-S',
+            'UDS', 'GOODS-S_3DHST', 'UDS_3DHST', 'COSMOS_3DHST']
 [make_filter_csv(cat) for cat in catalogs]

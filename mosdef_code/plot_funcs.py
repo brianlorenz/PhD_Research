@@ -31,6 +31,8 @@ def plot_sed(field, v4id):
 
     Returns:
     """
+    print(f'Plotting from {field}, id={v4id}')
+
     sed_location = f'/Users/galaxies-air/mosdef/sed_csvs/{field}_{v4id}_sed.csv'
     sed = ascii.read(sed_location).to_pandas()
 
@@ -60,7 +62,7 @@ def plot_sed(field, v4id):
     ax_zoom.set_ylim(min(0, min(sed[good_idxs][sed[good_idxs]['peak_wavelength'] < 20000]['f_lambda']))*1.2,
                      max(sed[good_idxs][sed[good_idxs]['peak_wavelength'] < 20000]['f_lambda']*1.2))
 
-    rounded_z = np.round(mosdef_obj.iloc[0]["Z_MOSFIRE_USE"], 3)
+    rounded_z = np.round(mosdef_obj["Z_MOSFIRE_USE"], 3)
     ax_main.text(0.02, 0.95, f'{field} {v4id}', fontsize=axisfont, transform=ax_main.transAxes)
     ax_main.text(0.02, 0.89, f'z = ' + str(rounded_z), fontsize=axisfont, transform=ax_main.transAxes)
 
@@ -88,7 +90,7 @@ def plot_sed(field, v4id):
     # IMAGE PLOTTING:
     plot_image(ax_image, field, v4id, mosdef_obj)
 
-    fig.savefig('/Users/galaxies-air/Desktop/test.pdf')
+    fig.savefig(f'/Users/galaxies-air/mosdef/SED_Images/{field}_{v4id}.pdf')
     plt.close('all')
 
 
@@ -104,11 +106,11 @@ def plot_image(ax, field, v4id, mosdef_obj):
 
     Returns:
     """
-    image_loc = '/Users/galaxies-air/mosdef/HST_Images/'+f'{mosdef_obj.iloc[0]["FIELD_STR"]}_f160w_{mosdef_obj.iloc[0]["ID"]}.fits'
+    image_loc = '/Users/galaxies-air/mosdef/HST_Images/'+f'{mosdef_obj["FIELD_STR"]}_f160w_{mosdef_obj["ID"]}.fits'
     hdu = fits.open(image_loc)[0]
     image_data = hdu.data
     # Center of array is 83.5,83.5
-    ax.imshow(image_data[70:97, 70:97], cmap='gray', aspect='auto')
+    ax.imshow(image_data[67:100, 67:100], cmap='gray', aspect='auto')
     ax.get_xaxis().set_visible(False)
     ax.get_yaxis().set_visible(False)
 
@@ -126,7 +128,7 @@ def plot_spectrum(ax, field, v4id, mosdef_obj):
 
     Returns:
     """
-    spec_loc = '/Users/galaxies-air/mosdef/Spectra/'+f'{mosdef_obj.iloc[0]["FIELD_STR"]}_f160w_{mosdef_obj.iloc[0]["ID"]}.fits'
+    spec_loc = '/Users/galaxies-air/mosdef/Spectra/'+f'{mosdef_obj["FIELD_STR"]}_f160w_{mosdef_obj["ID"]}.fits'
     hdu = fits.open(image_loc)[0]
     spec_data = hdu.data
     # Center of array is 83.5,83.5
@@ -153,4 +155,20 @@ def get_mosdef_obj(field, v4id):
         mosdef_obj = mosdef_obj.iloc[0]
         # WHAT TO DO HERE WHEN YOU FIND A REPEAT? NEED TO STORE AND MOVE ONE
         print('Duplicate obj, taking the first instance')
-    return mosdef_obj
+        return mosdef_obj
+    return mosdef_obj.iloc[0]
+
+
+def plot_all_seds(zobjs):
+    """Given a field and id, plots the SED of a galaxy from its {field}_{v4id}_sed.csv
+
+    Parameters:
+    zobjs (list): Pass a list of tuples of the form (field, v4id)
+
+
+    Returns:
+    """
+    for obj in zobjs:
+        field = obj[0]
+        v4id = obj[1]
+        plot_sed(field, v4id)
