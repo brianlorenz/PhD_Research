@@ -8,7 +8,10 @@ from astropy.io import fits
 from tabulate import tabulate
 from astropy.table import Table
 from read_data import mosdef_df
+from mosdef_obj_data_funcs import get_mosdef_obj, read_sed
+from polynomial_fit import poly_fit
 import matplotlib.pyplot as plt
+import fnmatch
 
 
 def populate_main_axis(ax, sed, good_idxs, axisfont, ticksize, ticks):
@@ -26,15 +29,14 @@ def plot_sed(field, v4id):
 
     Parameters:
     field (string): name of the field of the object
-    id (int): HST V4.1 id of the object
+    v4id (int): HST V4.1 id of the object
 
 
     Returns:
     """
     print(f'Plotting from {field}, id={v4id}')
 
-    sed_location = f'/Users/galaxies-air/mosdef/sed_csvs/{field}_{v4id}_sed.csv'
-    sed = ascii.read(sed_location).to_pandas()
+    sed = read_sed(field, v4id)
 
     mosdef_obj = get_mosdef_obj(field, v4id)
 
@@ -90,8 +92,23 @@ def plot_sed(field, v4id):
     # IMAGE PLOTTING:
     plot_image(ax_image, field, v4id, mosdef_obj)
 
+    # SPECTRUM PLOTTING:
+    #plot_spectrum(ax_main, field, v4id, mosdef_obj)
+    #plot_spectrum(ax_zoom, field, v4id, mosdef_obj)
+
+    # SED FIT PLOTTING:
+    plot_sed_fit(ax_main, field, v4id)
+    plot_sed_fit(ax_zoom, field, v4id)
+
     fig.savefig(f'/Users/galaxies-air/mosdef/SED_Images/{field}_{v4id}.pdf')
     plt.close('all')
+
+
+def plot_sed_fit(ax, field, v4id):
+    fit_func = poly_fit(field, v4id)
+    fit_wavelengths = np.arange(2, 6, 0.02)
+    ax.plot(10**fit_wavelengths, fit_func(
+        fit_wavelengths), color='mediumseagreen')
 
 
 def plot_image(ax, field, v4id, mosdef_obj):
@@ -128,35 +145,18 @@ def plot_spectrum(ax, field, v4id, mosdef_obj):
 
     Returns:
     """
-    spec_loc = '/Users/galaxies-air/mosdef/Spectra/'+f'{mosdef_obj["FIELD_STR"]}_f160w_{mosdef_obj["ID"]}.fits'
-    hdu = fits.open(image_loc)[0]
-    spec_data = hdu.data
-    # Center of array is 83.5,83.5
-    ax.plot()
-
-
-def get_mosdef_obj(field, v4id):
-    """Given a field and id, find the object in the mosdef_df dataframe
-
-    Parameters:
-    field (string): name of the field of the object
-    id (int): HST V4.1 id of the object
-
-    Returns:
-    mosdef_obj (pd.DataFrame): Datatframe with one entry corresponding to the current object
-    """
-    mosdef_obj = mosdef_df[np.logical_and(
-        mosdef_df['FIELD_STR'] == field, mosdef_df['V4ID'] == v4id)]
-    # There should be a unique match - exit with an error if not
-    if len(mosdef_obj) < 1:
-        sys.exit('No match found on FIELD_STR and V4ID')
-    # If there's a duplicate, take the first one
-    if len(mosdef_obj) > 1:
-        mosdef_obj = mosdef_obj.iloc[0]
-        # WHAT TO DO HERE WHEN YOU FIND A REPEAT? NEED TO STORE AND MOVE ONE
-        print('Duplicate obj, taking the first instance')
-        return mosdef_obj
-    return mosdef_obj.iloc[0]
+    # First get a list of all things in the Spectra directory
+    spectra_dir = '/Users/galaxies-air/mosdef/Spectra/'
+    all_spectra_files = os.listdir(spectra_dir)
+    obj_files = [filename for filename in all_spectra_files if f'.{mosdef_obj["ID"]}.ell' in filename]
+    for file in obj_files:
+        print(f'Plotting {file}')
+        spec_loc = spectra_dir+file
+        hdu = fits.open(spec_loc)[1]
+        spec_data = hdu.data
+        wavelength = (
+            1.+np.arange(hdu.header["naxis1"])-hdu.header["crpix1"])*hdu.header["cdelt1"] + hdu.header["crval1"]
+        ax.plot(wavelength, spec_data, color='blue')
 
 
 def plot_all_seds(zobjs):
@@ -171,4 +171,7 @@ def plot_all_seds(zobjs):
     for obj in zobjs:
         field = obj[0]
         v4id = obj[1]
-        plot_sed(field, v4id)
+        try:
+            plot_sed(field, v4id)
+        except:
+            plt.close('all')

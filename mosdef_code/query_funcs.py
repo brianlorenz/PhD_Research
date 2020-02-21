@@ -1,7 +1,10 @@
-# Contains a variety offuncitons for querying the mosdef catalogs
+# Contains a variety of funcitons for querying the mosdef catalogs
 """ Includes:
 get_zobjs() - gets the field and id for all objects with measured redshifts in mosdef
 get_sed() - given a  field and id, gets the SED for an object
+get_all_seds() - run this to generate seds, then run the next two functions to pick up the ones left out
+get_nomatch_seds() - run this to get seds for objects that are not in the ZFOURGE catalog but are in COSMOS
+get_duplicate_seds() - run this to pick up the objects that have multiple observations. Averages the spectra
 """
 
 import sys
@@ -39,7 +42,7 @@ def get_zobjs(df=mosdef_df):
 
 
 def setup_transfer_script(mosdef_df=mosdef_df):
-    """Sets up a script that transfers postage stamps of objects from pepper to local
+    """Sets up a script that transfers postage stamps and spectra of objects from pepper to local
 
     Parameters:
     mosdef_df (pd.Dataframe): See above, dataframe from read_data.py
@@ -48,10 +51,22 @@ def setup_transfer_script(mosdef_df=mosdef_df):
     Returns:
     Nothing, but populates the script file
     """
-    f = open('/Users/galaxies-air/mosdef/HST_Images/transfer_images.sh', 'w')
+    shorten_dict = {
+        'AEGIS': 'ae',
+        'GOODS-S': 'gs',
+        'COSMOS': 'co',
+        'GOODS-N': 'gn',
+        'UDS': 'ud',
+    }
+    image_f = open(
+        '/Users/galaxies-air/mosdef/HST_Images/transfer_images.sh', 'w')
+    spec_f = open(
+        '/Users/galaxies-air/mosdef/HST_Images/transfer_spectra.sh', 'w')
     for obj_num in range(len(mosdef_df)):
-        f.write(f'scp blorenz@pepper.astro.berkeley.edu:/Users/mosdef/HST_Images/postage_stamps/{mosdef_df.iloc[obj_num]["FIELD_STR"]}_f160w_{mosdef_df.iloc[obj_num]["ID"]}.fits .\n')
-    f.close()
+        image_f.write(f'scp blorenz@pepper.astro.berkeley.edu:/Users/mosdef/HST_Images/postage_stamps/{mosdef_df.iloc[obj_num]["FIELD_STR"]}_f160w_{mosdef_df.iloc[obj_num]["ID"]}.fits .\n')
+        spec_f.write(f'scp blorenz@pepper.astro.berkeley.edu:/Users/mosdef/Data/Reduced/v0.5/{shorten_dict[mosdef_df.iloc[obj_num]["FIELD_STR"]]}######_f160w_{mosdef_df.iloc[obj_num]["ID"]}.fits .\n')
+    image_f.close()
+    spec_f.close()
 
 
 def read_cat(field):
@@ -80,7 +95,7 @@ def read_cat(field):
     return df
 
 
-def get_sed(field, v4id, full_cats_dict=False, use_3dhst=False):
+def get_sed(field, v4id, full_cats_dict=False, use_3dhst=False, dup=-99):
     """Given a field and id, gets the photometry for a galaxy, including corrections. Queries 3DHST if in GOODS-N or AEGIS, otherwise matches ra/dec with ZFOURGE
 
     Parameters:
@@ -88,6 +103,7 @@ def get_sed(field, v4id, full_cats_dict=False, use_3dhst=False):
     id (int): HST V4.1 id of the object
     full_cats_dict (set to list, optional): Set to the list of all read catalogs if they havebeen read elsewhere (e.g. looping over multiple objects)
     use_3dhst (boolean): set to True if looping back through the duplicates and ignoring the zfourge catalogs
+    dup (int): set to the index of the object that you want to read if there are multiple
 
     Returns:
     """
@@ -114,17 +130,17 @@ def get_sed(field, v4id, full_cats_dict=False, use_3dhst=False):
         print('Matching with ZFOURGE')
         # Match the mosdef catalog on field and V4ID to get the correct row
         mosdef_obj = mosdef_df[np.logical_and(
-            mosdef_df['FIELD_STR'] == field, mosdef_df['V4ID'] == v4id)]
+            mosdef_df['FIELD_STR'] == field, mosdef_df['V4ID'] == v4id)].iloc[0]
         # There should be a unique match - exit with an error if not
-        if len(mosdef_obj) < 1:
-            sys.exit('No match found on FIELD_STR and V4ID')
-        if len(mosdef_obj) > 1:
-            f = open(
-                '/Users/galaxies-air/mosdef/sed_csvs/sed_errors/duplicate_objs.txt', 'a')
-            f.write(f'{field}, {v4id}\n')
-            f.close()
-            print('Could not find unique match on FIELD_STR and V4ID, skipping object')
-            return None
+        # if len(mosdef_obj) < 1:
+        #     sys.exit('No match found on FIELD_STR and V4ID')
+        # if len(mosdef_obj) > 1:
+        #     f = open(
+        #         '/Users/galaxies-air/mosdef/sed_csvs/sed_errors/duplicate_objs.txt', 'a')
+        #     f.write(f'{field}, {v4id}\n')
+        #     f.close()
+        #     print('Could not find unique match on FIELD_STR and V4ID, skipping object')
+        #     return None
         # Coordinates for the object
         mosdef_obj_coords = SkyCoord(
             mosdef_obj['RA']*u.deg, mosdef_obj['DEC']*u.deg)
@@ -140,7 +156,7 @@ def get_sed(field, v4id, full_cats_dict=False, use_3dhst=False):
             f.write(f'{field}, {v4id}, {d2d_match}\n')
             f.close()
             return None
-        obj = cat.iloc[idx_match]
+        obj = cat.iloc[int(idx_match)]
     if v4id == -9999:
         print(f'Error: ID of -9999')
         f = open(
@@ -224,6 +240,29 @@ def get_nomatch_seds():
         field = nomatch_df.iloc[i]['field']
         v4id = nomatch_df.iloc[i]['v4id']
         get_sed(field, v4id, full_cats_dict, use_3dhst=True)
+
+
+def get_duplicate_seds():
+    """ Gets the SEDs for the duplicates
+
+    Parameters:
+
+    Returns:
+    """
+    duplicate_objs_file = '/Users/galaxies-air/mosdef/sed_csvs/sed_errors/duplicate_objs.txt'
+    duplicate_df = ascii.read(duplicate_objs_file).to_pandas()
+
+    # We prime the cats since we are looping over multiple objects
+    full_cats_dict = {}
+    print('Reading 3DHST Catalogs')
+    full_cats_dict['GOODS-S'] = read_cat('GOODS-S_3DHST')
+    full_cats_dict['COSMOS'] = read_cat('COSMOS_3DHST')
+    full_cats_dict['UDS'] = read_cat('UDS_3DHST')
+    for i in range(len(nomatch_df)):
+        field = duplicate_df.iloc[i]['field']
+        v4id = duplicate_df.iloc[i]['v4id']
+        sed0 = get_sed(field, v4id, full_cats_dict, use_3dhst=True, dup=1)
+        sed1 = get_sed(field, v4id, full_cats_dict, use_3dhst=True, dup=2)
 
     # Check the best FAST fit to the SED, check the fit
     # Plot the spectrum in there as well
