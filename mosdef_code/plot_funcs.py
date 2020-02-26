@@ -71,20 +71,15 @@ def plot_sed(field, v4id):
     ax_main.set_xscale('log')
     ax_main.set_xlim(3*10**3, 10**5)
     ax_zoom.set_xlim(3*10**3, 2.5*10**4)
+    ax_zoom.set_xlim(10**4, 2*10**4)
     ax_zoom.set_xscale('log')
 
-    labels_x = ['']*len(ax_zoom.get_xticks(minor=True))
-    labels_x[9] = '$3 \\times 10^3$'
-    labels_x[16] = '$2 \\times 10^4$'
-    ax_zoom.set_xticklabels(labels_x, minor=True)
+    # labels_x = ['']*len(ax_zoom.get_xticks(minor=True))
+    # labels_x[9] = '$3 \\times 10^3$'
+    # labels_x[16] = '$2 \\times 10^4$'
+    # ax_zoom.set_xticklabels(labels_x, minor=True)
 
     labels_y = ax_zoom.get_yticks()
-
-    # plt.xticks([4*10**3, 10**4, 2*10**4],
-    #           ['$4\\times 10^3$', '$10^4$', '$2\\times 10^4$'])
-    # ax_zoom.set_xticks([3000, 10000, 20000])
-    # ax_zoom.set_xticklabels(
-    #    ['', '$4\\times 10^3$', '', '$10^4$', '$2\\times 10^4$'])
 
     ax_main.tick_params(labelsize=ticksize, size=ticks)
     ax_zoom.tick_params(labelsize=ticksize, size=ticks)
@@ -93,8 +88,8 @@ def plot_sed(field, v4id):
     plot_image(ax_image, field, v4id, mosdef_obj)
 
     # SPECTRUM PLOTTING:
-    #plot_spectrum(ax_main, field, v4id, mosdef_obj)
-    #plot_spectrum(ax_zoom, field, v4id, mosdef_obj)
+    plot_spectrum(ax_main, field, v4id, mosdef_obj)
+    plot_spectrum(ax_zoom, field, v4id, mosdef_obj)
 
     # SED FIT PLOTTING:
     plot_sed_fit(ax_main, field, v4id)
@@ -132,7 +127,6 @@ def plot_image(ax, field, v4id, mosdef_obj):
     ax.get_yaxis().set_visible(False)
 
 
-# STILL NEED TO TRANSFER THE SPECTRA FILES
 def plot_spectrum(ax, field, v4id, mosdef_obj):
     """Given a field, id, and axis, plot the mosdef spectrum of an object
 
@@ -146,7 +140,7 @@ def plot_spectrum(ax, field, v4id, mosdef_obj):
     Returns:
     """
     # First get a list of all things in the Spectra directory
-    spectra_dir = '/Users/galaxies-air/mosdef/Spectra/'
+    spectra_dir = '/Users/galaxies-air/mosdef/Spectra/1D/'
     all_spectra_files = os.listdir(spectra_dir)
     obj_files = [filename for filename in all_spectra_files if f'.{mosdef_obj["ID"]}.ell' in filename]
     for file in obj_files:
@@ -156,7 +150,7 @@ def plot_spectrum(ax, field, v4id, mosdef_obj):
         spec_data = hdu.data
         wavelength = (
             1.+np.arange(hdu.header["naxis1"])-hdu.header["crpix1"])*hdu.header["cdelt1"] + hdu.header["crval1"]
-        ax.plot(wavelength, spec_data, color='blue')
+        ax.plot(wavelength, spec_data, color='blue', lw=1)
 
 
 def plot_all_seds(zobjs):
