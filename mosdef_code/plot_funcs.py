@@ -24,7 +24,7 @@ def populate_main_axis(ax, sed, good_idxs, axisfont, ticksize, ticks):
     ax.set_ylabel('f$_{\lambda}$', fontsize=axisfont)
 
 
-def plot_sed(field, v4id):
+def plot_sed(field, v4id, plot_spec=False):
     """Given a field and id, read in the sed and create a plot of it
 
     Parameters:
@@ -34,8 +34,6 @@ def plot_sed(field, v4id):
 
     Returns:
     """
-    print(f'Plotting from {field}, id={v4id}')
-
     sed = read_sed(field, v4id)
 
     mosdef_obj = get_mosdef_obj(field, v4id)
@@ -88,8 +86,9 @@ def plot_sed(field, v4id):
     plot_image(ax_image, field, v4id, mosdef_obj)
 
     # SPECTRUM PLOTTING:
-    plot_spectrum(ax_main, field, v4id, mosdef_obj)
-    plot_spectrum(ax_zoom, field, v4id, mosdef_obj)
+    if plot_spec:
+        plot_spectrum(ax_main, field, v4id, mosdef_obj)
+        plot_spectrum(ax_zoom, field, v4id, mosdef_obj)
 
     # SED FIT PLOTTING:
     plot_sed_fit(ax_main, field, v4id)
@@ -162,10 +161,14 @@ def plot_all_seds(zobjs):
 
     Returns:
     """
+    counter = 0
     for obj in zobjs:
         field = obj[0]
         v4id = obj[1]
+        print(f'Creating SED for {field}_{v4id}, {counter}/{len(zobjs)}')
         try:
             plot_sed(field, v4id)
         except:
+            print(f'Couldnt create plot for {field}_{v4id}')
             plt.close('all')
+        counter = counter+1

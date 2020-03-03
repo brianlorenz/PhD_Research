@@ -47,5 +47,7 @@ def read_sed(field, v4id):
     Returns:
     """
     sed_location = f'/Users/galaxies-air/mosdef/sed_csvs/{field}_{v4id}_sed.csv'
+    if not os.path.exists(sed_location):
+        sed_location = f'/Users/galaxies-air/mosdef/sed_csvs/{field}_{v4id}_3DHST_sed.csv'
     sed = ascii.read(sed_location).to_pandas()
     return sed

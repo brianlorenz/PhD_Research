@@ -1,5 +1,4 @@
-# pypopstar_ps1.py
-# Creates an isochrone using the pypopstar package
+# pypopstar_ps3.py
 
 import sys
 import os
@@ -20,8 +19,7 @@ dist = 1000  # distance in parsec
 metallicity = 0  # Metallicity in [M/H]
 
 # Define evolution/atmosphere models and extinction law
-evo_models = [evolution.MISTv1(), evolution.MergedSiessGenevaPadova()]
-evo_model = evolution.MergedSiessGenevaPadova()
+evo_model = evolution.Baraffe15()
 evo_model_name = ['MIST', 'Padova']
 atm_func = atmospheres.get_merged_atmosphere
 red_law = reddening.RedLawHosek18b()

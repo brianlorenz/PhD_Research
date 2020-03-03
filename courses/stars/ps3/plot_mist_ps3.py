@@ -1,5 +1,4 @@
-# plot_isochrone.py
-# Plots the output from pypopstar_ps1.py
+# plot_mist_ps3.py
 
 import sys
 import os
@@ -61,15 +60,20 @@ def make_figure(key, slope):
         plot_track(ax, np.log10(track['star_age']),
                    track['log_'+key], sun=sun)
     # Plot the scaling relations
-    ages = np.arange(5, 6, 0.1)
+    ages = np.arange(5.25, 6, 0.1)
     if key == 'R':
-        ages = np.arange(3.75, 4.75, 0.1)
+        ages = np.arange(3.5, 4.75, 0.1)
+    if key == 'L':
+        ages = np.arange(7, 9, 0.1)
     ax.plot(ages, ages*slope[0]+slope[1],
             color='red', label='Scaling Relation')
 
+    endkey = f' {key}$_\odot$'
+    if key == 'Teff':
+        endkey = ' K'
     # Axis settings
     ax.set_xlabel('log(Age) (Years)', fontsize=axisfont)
-    ax.set_ylabel(f'log({key})', fontsize=axisfont)
+    ax.set_ylabel(f'log({key}){endkey}', fontsize=axisfont)
     ax.legend(fontsize=axisfont)
     #ax.set_xlim(10000, 2000)
     #ax.set_ylim(0.1, 1000)
@@ -80,9 +84,9 @@ def make_figure(key, slope):
 
 keys = ['L', 'R', 'Teff']
 slope_dict = {
-    keys[0]: (1, -3),  # (slope, yint)
+    keys[0]: (1, -8),  # (slope, yint)
     keys[1]: (-2, 9.5),
-    keys[2]: (2, -6.5),
+    keys[2]: (5/4, -3),
 }
 for key in keys:
     make_figure(key=key, slope=slope_dict[key])
