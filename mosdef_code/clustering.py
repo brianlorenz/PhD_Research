@@ -61,7 +61,8 @@ def cluster_seds(n_clusters):
     zobjs_df = zobjs_df.merge(
         cluster_num_df, left_index=True, right_index=True)
 
-    zobjs_df.to_csv('/Users/galaxies-air/mosdef/Clustering/zobjs_clustered')
+    zobjs_df.to_csv(
+        '/Users/galaxies-air/mosdef/Clustering/zobjs_clustered.csv', index=False)
 
     for i in range(n_clusters):
         os.mkdir(cluster_dir+str(i))
@@ -69,9 +70,11 @@ def cluster_seds(n_clusters):
     for i in range(len(zobjs_df)):
         obj = zobjs_df.iloc[i]
         filename = f'{obj["field"]}_{obj["v4id"]}_mocktest.pdf'
+        print(filename)
+        print(cluster_dir+f'{obj["cluster_num"]}/'+filename)
         shutil.copy(f'/Users/galaxies-air/mosdef/SED_Images/mock_sed_images/'+filename, cluster_dir+f'{obj["cluster_num"]}/'+filename)
 
-        return
+    return
 
 
 #eigenvals, eignvectors = np.linalg.eig(affinity_matrix)

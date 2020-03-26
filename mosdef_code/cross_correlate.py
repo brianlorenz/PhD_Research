@@ -68,11 +68,11 @@ def correlate_all_seds(zobjs):
     for i in range(dimension):
         sed_i = read_mock_sed(
             zobjs_df.iloc[i]['field'], zobjs_df.iloc[i]['v4id'])
-        for j in range(dimension):
+        for j in range(dimension-i):
             sed_j = read_mock_sed(
-                zobjs_df.iloc[j]['field'], zobjs_df.iloc[j]['v4id'])
-            similarity_matrix[i, j] = 1 - get_cross_cor(sed_i, sed_j)
-            similarity_matrix[j, i] = similarity_matrix[i, j]
+                zobjs_df.iloc[i+j]['field'], zobjs_df.iloc[i+j]['v4id'])
+            similarity_matrix[i, i+j] = 1 - get_cross_cor(sed_i, sed_j)
+            similarity_matrix[i+j, i] = similarity_matrix[i, i+j]
     zobjs_df.to_csv('/Users/galaxies-air/mosdef/Clustering/zobjs_order.csv')
     np.savetxt('/Users/galaxies-air/mosdef/Clustering/similarity_matrix.csv',
                similarity_matrix, delimiter=',')

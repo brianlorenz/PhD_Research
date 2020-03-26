@@ -34,7 +34,7 @@ def get_zobjs(df=mosdef_df):
         id (int): HST V4.1 id of the object
     """
     # Non-detections are set to -999
-    df_filt = df[df['Z_MOSFIRE'] > 0]
+    df_filt = df[np.logical_and(df['Z_MOSFIRE'] > 0, df['Z_MOSFIRE'] < 2.8)]
     # Uses V4ID for the 3DHST catalogs
     zobjs = [(df_filt.iloc[i]['FIELD_STR'], df_filt.iloc[i]['V4ID'])
              for i in range(len(df_filt))]
@@ -110,12 +110,13 @@ def get_sed(field, v4id, full_cats_dict=False):
 
     print(f'Getting SED for {field}, id={v4id}')
 
+    # Match the mosdef catalog on field and V4ID to get the correct row
+    mosdef_obj = mosdef_df[np.logical_and(
+        mosdef_df['FIELD_STR'] == field, mosdef_df['V4ID'] == v4id)].iloc[0]
+
     # Here we split to create the obj - different based on if we need to match ra/dec or just look it up
     if field == 'GOODS-S' or field == 'UDS' or field == 'COSMOS':
         print('Matching with ZFOURGE')
-        # Match the mosdef catalog on field and V4ID to get the correct row
-        mosdef_obj = mosdef_df[np.logical_and(
-            mosdef_df['FIELD_STR'] == field, mosdef_df['V4ID'] == v4id)].iloc[0]
         # There should be a unique match - exit with an error if not
         # if len(mosdef_obj) < 1:
         #     sys.exit('No match found on FIELD_STR and V4ID')
@@ -197,6 +198,13 @@ def get_sed(field, v4id, full_cats_dict=False):
     # Continue to set the -99 to -99
     sed.loc[sed['flux_ab25'] == -99, 'f_lambda'] = -99
     sed.loc[sed['flux_ab25'] == -99, 'err_f_lambda'] = -99
+    # Merge with redshift, field, and v4id, as these will be useful to have in each line for constructing composite seds
+    redshifts = mosdef_obj['Z_MOSFIRE']*np.ones(len(sed))
+    fields = [field for i in range(len(sed))]
+    v4ids = v4id*np.ones(len(sed), dtype=int)
+    obj_info_df = pd.DataFrame(zip(redshifts, fields, v4ids), columns=[
+                               'Z_MOSFIRE', 'field', 'v4id'])
+    sed = sed.merge(obj_info_df, left_index=True, right_index=True)
     # Save with field nad id in the filename:
     sed.to_csv(f'/Users/galaxies-air/mosdef/sed_csvs/{field}_{v4id}{str_3dhst}_sed.csv', index=False)
     return sed

@@ -31,25 +31,13 @@ Ran this in unix to create the overview file
 A few lines (308-313) gave issues with units of um. Manually changed these to e+04.
 '''
 
-# Location f the overview file
+# Location of the overview file
 loc_overview = 'catalog_filters/overview'
 
 df = pd.read_csv(loc_overview, header=None, sep='\n')
 df2 = df
 
 
-def split_on_letter(string):
-    # Taken from here https://stackoverflow.com/questions/35609922/how-can-i-split-a-string-at-the-first-occurrence-of-a-letter-in-python
-    # Splits a string just before the first occurance of a letter
-    match = re.compile("[^\W\d]").search(string)
-    return [string[:match.start()], string[match.start():]]
-
-
-'''
-# This line get the first number in FILTER.RES.latest, which I'm not sure what it does...
-filter_list = [split_on_letter(df2.iloc[i][0])[
-    0].strip() for i in range(len(df2))]
-    '''
 df = df[0].str.split('_c=', expand=True)
 df = df[1].str.split(' AB', expand=True)
 

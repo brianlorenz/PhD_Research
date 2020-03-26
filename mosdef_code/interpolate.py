@@ -196,7 +196,7 @@ def vis_fit(field, v4id, sed, points, mock_wave_centers, width, fit_wavelengths,
     ax.set_xlim(3*10**3, 10**5)
     ax.tick_params(labelsize=ticksize, size=ticks)
     ax.legend(fontsize=legendfont, loc=0)
-    fig.savefig(f'/Users/galaxies-air/mosdef/SED_Images/mock_sed_images/{field}_{v4id}_mocktest.pdf')
+    fig.savefig(f'/Users/galaxies-air/mosdef/SED_Images/mock_sed_images/{field}_{v4id}_mock.pdf')
     plt.close('all')
     return None
 
