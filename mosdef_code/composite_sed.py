@@ -8,7 +8,7 @@ import pandas as pd
 from astropy.io import ascii
 from astropy.io import fits
 from read_data import mosdef_df
-from mosdef_obj_data_funcs import read_sed
+from mosdef_obj_data_funcs import read_sed, read_mock_sed
 from clustering import cluster_dir
 import matplotlib.pyplot as plt
 from filter_response import lines, overview, get_index, get_filter_response
@@ -24,7 +24,53 @@ def get_all_composite_seds(num_clusters):
     Returns:
     """
     for i in range(num_clusters):
+        print(f'Getting composite sed for group {i}')
         get_composite_sed(i)
+
+
+def get_normalized_sed(target_field, target_v4id, field, v4id):
+    """Normalize an SED (changes) to a target SED (unchanged)
+
+    Parameters:
+    target_field: field of the target (unchanged) galaxy
+    target_v4id:  v4id of the target (unchanged) galaxy
+    target_field: field of the other (changing) galaxy
+    target_v4id:  v4id of the other (changing) galaxy
+
+    Returns:
+    sed (pd.DataFrame): the sed now modified with new columns with normalized info
+    """
+    sed = read_sed(field, v4id)
+    target_sed = read_sed(target_field, target_v4id)
+
+    # Read the mock seds to be used for normalization
+    mock_sed = read_mock_sed(field, v4id)
+    mock_target_sed = read_mock_sed(target_field, target_v4id)
+
+    target_good_idx = get_good_idx(target_sed)
+    sed_good_idx = get_good_idx(sed)
+
+    # Old code, works but does not account for uncertainties
+    # norm_factor = np.sum(
+    #     mock_target_sed['f_lambda']*mock_sed['f_lambda']) / np.sum(mock_sed['f_lambda']**2)
+
+    # adding uncertainties, ask about this
+    norm_factor = np.sum(
+        (mock_target_sed['f_lambda']/mock_target_sed['err_f_lambda_u'])*(mock_sed['f_lambda']/mock_sed['err_f_lambda_u'])) / np.sum(((mock_sed['f_lambda'])**2)/(mock_target_sed['err_f_lambda_u']*mock_sed['err_f_lambda_u']))
+
+    print(f'Normalizing by multiplying {norm_factor}')
+    if norm_factor < 0:
+        breakpoint()
+
+    sed['norm_factor'] = np.ones(len(sed))*norm_factor
+    sed['norm_field'] = [f'{target_field}']*len(sed)
+    sed['norm_v4id'] = [f'{target_v4id}']*len(sed)
+    sed['f_lambda_norm'] = sed['f_lambda']*norm_factor
+    sed['err_f_lambda_norm'] = sed['err_f_lambda']*norm_factor
+    # Add a column to compute the rest_frame wavelength using the redshift
+    sed['rest_wavelength'] = sed['peak_wavelength'] / \
+        (1+sed['Z_MOSFIRE'])
+    return sed
 
 
 def get_composite_sed(groupID):
@@ -35,30 +81,51 @@ def get_composite_sed(groupID):
 
     Returns:
     """
-
     cluster_names = os.listdir(cluster_dir+'/'+str(groupID))
     # Splits into list of tuples: [(field, v4id), (field, v4id), (field, v4id), ...]
     fields_ids = [(line.split('_')[0], line.split('_')[1])
                   for line in cluster_names]
 
     count = 0
+    # Choose an object to scale to - for now, just taking the first, but we should probably take the one with the highest correlations
+    target_obj = fields_ids[0]
+    target_field = target_obj[0]
+    target_v4id = int(target_obj[1])
+    #target_sed = read_sed(target_field, target_v4id)
+    #target_scale_good_idx = get_good_idx(target_scale_sed)
     for obj in fields_ids:
         field = obj[0]
         v4id = int(obj[1])
-        sed = read_sed(field, v4id)
+        #sed = read_sed(field, v4id)
+        #sed_good_idx = get_good_idx(sed)
+
         # Add column to normalize or scale the SED - WHAT'S THE BEST WAY TO DO THIS?
-        norm_factor = np.median(sed['f_lambda'])
-        sed['f_lambda_norm'] = sed['f_lambda']/norm_factor
-        sed['err_f_lambda_norm'] = sed['err_f_lambda']/norm_factor
+        #norm_factor = np.median(sed['f_lambda'])
+        # This normalizationf actor is a12 in Kriek+2011
+        # norm_factor = np.sum(
+        #    target_scale_sed[target_scale_good_idx]['f_lambda']*sed[sed_good_idx]['f_lambda']) / np.sum(sed[sed_good_idx]['f_lambda']**2)
+
+        '''
+        norm_factor = np.sum(
+            target_scale_sed[target_scale_good_idx]['f_lambda']*sed[sed_good_idx]['f_lambda']) / np.sum(sed[sed_good_idx]['f_lambda']**2)
+        print(f'Normalizing by multiplying {norm_factor}')
+        sed['norm_factor'] = np.ones(len(sed))*norm_factor
+        sed['norm_field'] = [f'{target_scale_field}']*len(sed)
+        sed['norm_v4id'] = [f'{target_scale_v4id}']*len(sed)
+        sed['f_lambda_norm'] = sed['f_lambda']*norm_factor
+        sed['err_f_lambda_norm'] = sed['err_f_lambda']*norm_factor
         # Add a column to compute the rest_frame wavelength using the redshift
         sed['rest_wavelength'] = sed['peak_wavelength'] / \
             (1+sed['Z_MOSFIRE'])
+        '''
+        sed = get_normalized_sed(target_field, target_v4id, field, v4id)
         # If it's the first one, start the total_sed, otherwise append to it
         if count == 0:
             total_sed = sed
             count = 1
         else:
             total_sed = pd.concat([total_sed, sed])
+        sed.to_csv(f'/Users/galaxies-air/mosdef/sed_csvs/norm_sed_csvs/{field}_{v4id}_norm.csv')
 
     # Now we have total_seds, which is a huge dataframe that combines the seds of all of the individual objects
 
@@ -66,9 +133,7 @@ def get_composite_sed(groupID):
     number_galaxies = len(cluster_names)
 
     total_sed = total_sed.sort_values('rest_wavelength')
-    good_idx = np.logical_and(
-        total_sed['f_lambda'] > -98, total_sed['err_f_lambda'] > 0)
-
+    good_idx = get_good_idx(total_sed)
     composite_sed_points = []
     composite_sed_err_ds = []
     composite_sed_err_us = []
@@ -114,7 +179,7 @@ def get_composite_sed(groupID):
         composite_filters.append(composite_filter)
 
         # End of while loop
-        i = i + number_galaxies
+        i = i + int(number_galaxies/3)
 
     composite_sed = pd.DataFrame(
         zip(composite_sed_wavelengths, composite_sed_points, composite_sed_err_ds, composite_sed_err_us), columns=['rest_wavelength', 'f_lambda', 'err_f_lambda_d', 'err_f_lambda_u'])
@@ -126,7 +191,7 @@ def get_composite_sed(groupID):
         f'/Users/galaxies-air/mosdef/composite_sed_csvs/{groupID}_sed.csv', index=False)
 
     # Copmosite filters already saved elsewhere
-    return composite_sed, composite_filters
+    return
 
 # dataframe format: wavelength, flux, errorflux, redshift, filter_num
 # 1. Collect particular number of points based on number of stacked galaxies
@@ -176,10 +241,13 @@ def get_composite_filter(selected_points, wavelength_min, wavelength_max, compos
     Returns:
     filt_response_df (pd.DataFrame): dataframe containing 'rest_wavelength' and 'transmission' of the composite filter
     """
-    filt_resolution = 0.2  # Angstrom
+    filt_resolution = 0.5  # Angstrom
 
     # Number of points/filters that go into composite SED
     num_points = len(selected_points)
+
+    wavelength_min = 800
+    wavelength_max = 40000
 
     # 3. Define a filter from the start of the range to the end
     filt_wavelength = np.arange(
@@ -234,16 +302,16 @@ def vis_composite_sed(total_sed, composite_sed=0, composite_filters=0, groupID=-
     legendfont = 14
     textfont = 16
 
-    good_idx = np.logical_and(
-        total_sed['f_lambda'] > -98, total_sed['err_f_lambda'] > 0)
+    good_idx = get_good_idx(total_sed)
 
     fig, axarr = plt.subplots(2, 1, figsize=(
         8, 9), gridspec_kw={'height_ratios': [6, 1]})
     ax_sed = axarr[0]
     ax_filt = axarr[1]
 
-    ax_sed.errorbar(total_sed[good_idx]['rest_wavelength'], total_sed[good_idx]
-                    ['f_lambda_norm'], yerr=total_sed[good_idx]['err_f_lambda_norm'], ls='', marker='o', markersize=2, color='grey', zorder=1)
+    plt.set_cmap('coolwarm')
+    ax_sed.scatter(total_sed[good_idx]['rest_wavelength'], total_sed[good_idx]
+                   ['f_lambda_norm'], s=2, c=total_sed[good_idx]['v4id'], zorder=1)
 
     ax_sed.errorbar(composite_sed['rest_wavelength'], composite_sed['f_lambda'],
                     yerr=[composite_sed['err_f_lambda_d'], composite_sed['err_f_lambda_u']], ls='', marker='o', markersize=4, color='black', zorder=2)
@@ -255,8 +323,9 @@ def vis_composite_sed(total_sed, composite_sed=0, composite_filters=0, groupID=-
         ax.set_xlabel('Rest Wavelength ($\AA$)', fontsize=axisfont)
         ax.set_ylabel('Normalized Flux', fontsize=axisfont)
         ax.set_xscale('log')
-    ax_sed.set_ylim(-0.2, 5)
-    ax_filt.set_ylim(-0.05, 1.05)
+    ax_sed.set_ylim(0, 1.2*np.max(composite_sed['f_lambda']))
+    #ax_filt.set_ylim(-0.05, 1.05)
+    ax_filt.set_xlim(ax_sed.get_xlim())
     plt.tight_layout()
     fig.savefig(f'/Users/galaxies-air/mosdef/Clustering/composite_seds/{groupID}_sed.pdf')
     plt.close()
@@ -298,11 +367,25 @@ def vis_composite_filt(selected_points, filt_wavelength, filt_values, interp_fil
         ax.set_ylabel('Normalized Flux', fontsize=axisfont)
         ax.set_xscale('log')
     ax_sed.legend()
-    ax_sed.set_ylim(-0.2, 5)
-    ax_filt.set_ylim(-0.05, 1.05)
+    ax_filt.set_xlim(ax_sed.get_xlim())
+    #ax_sed.set_ylim(-0.2, 5)
+    #ax_filt.set_ylim(-0.05, 1.05)
     plt.tight_layout()
     save_dir = f'/Users/galaxies-air/mosdef/Clustering/composite_filter/{groupID}_filters/'
     if not os.path.exists(save_dir):
         os.mkdir(save_dir)
     fig.savefig(save_dir+f'{int(composite_sed_wave)}.pdf')
     plt.close()
+
+
+def get_good_idx(sed):
+    """Given an SED, get the values that are logical data (flux not -99, nonzero error)
+
+    Parameters:
+    sed (pd.DataFrame): the sed to get the good indexies for
+
+    Returns:
+    good_idx (list): dataframe containing True/False for each element, used to find data points that are usable
+    """
+    good_idx = np.logical_and(sed['f_lambda'] > -98, sed['err_f_lambda'] > 0)
+    return good_idx

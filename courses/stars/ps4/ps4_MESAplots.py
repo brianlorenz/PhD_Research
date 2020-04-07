@@ -48,3 +48,5 @@ plot_mesa(profile_solar.R, profile_solar.P, profile_lowz.R,
           profile_lowz.P, 'Radius (R$_\odot$)', 'Pressure (Ba)', 'ps4_mesa_P_R')
 plot_mesa(profile_solar.R, profile_solar.T, profile_lowz.R,
           profile_lowz.T, 'Radius (R$_\odot$)', 'Temperature (K)', 'ps4_mesa_T_R')
+plot_mesa(profile_solar.R, profile_solar.Rho, profile_lowz.R,
+          profile_lowz.Rho, 'Radius (R$_\odot$)', 'Density (g/cm^3)', 'ps4_mesa_rho_R')

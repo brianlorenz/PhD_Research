@@ -51,3 +51,34 @@ def read_sed(field, v4id):
         sed_location = f'/Users/galaxies-air/mosdef/sed_csvs/{field}_{v4id}_3DHST_sed.csv'
     sed = ascii.read(sed_location).to_pandas()
     return sed
+
+
+def read_mock_sed(field, v4id):
+    """Given a field and id, read in the sed
+
+    Parameters:
+    field (string): name of the field of the object
+    v4id (int): HST V4.1 id of the object
+
+
+    Returns:
+    """
+    sed_location = f'/Users/galaxies-air/mosdef/mock_sed_csvs/{field}_{v4id}_sed.csv'
+    if not os.path.exists(sed_location):
+        sed_location = f'/Users/galaxies-air/mosdef/mock_sed_csvs/{field}_{v4id}_3DHST_sed.csv'
+    sed = ascii.read(sed_location).to_pandas()
+    return sed
+
+
+def read_composite_sed(groupID):
+    """Given a groupID, read in the composite sed
+
+    Parameters:
+    groupID (int): id of the cluster to read
+
+
+    Returns:
+    """
+    sed_location = f'/Users/galaxies-air/mosdef/composite_sed_csvs/{groupID}_sed.csv'
+    sed = ascii.read(sed_location).to_pandas()
+    return sed

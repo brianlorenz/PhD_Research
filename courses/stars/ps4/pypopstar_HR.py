@@ -1,5 +1,5 @@
-# plot_isochrone.py
-# Plots the output from pypopstar_ps1.py
+# pypopstar_HR.py
+# makes an HR diagram with pypopstar isochrones
 
 import sys
 import os
@@ -24,10 +24,22 @@ textfont = 16
 def plot_diagram(iso_df1=zsun, iso_df2=zlow, zoom=0):
     fig, ax = plt.subplots(figsize=(8, 7))
 
+    df1_sun_idx = np.argmin(abs(iso_df1['Mass']-1.1))
+    df1_sun = iso_df1[df1_sun_idx]
+
+    df2_sun_idx = np.argmin(abs(iso_df2['Mass']-1.1))
+    df2_sun = iso_df2[df2_sun_idx]
+
     ax.plot(iso_df1['Teff'],
             iso_df1['L']/(3.827*10**26), color='blue', label='Solar Metallicity')
     ax.plot(iso_df2['Teff'],
             iso_df2['L']/(3.827*10**26), color='orange', label='Z=0.1Z$_\odot$')
+
+    ax.scatter(df1_sun['Teff'],
+               df1_sun['L']/(3.827*10**26), color='black', label='1.1 M$_\odot$')
+
+    ax.scatter(df2_sun['Teff'],
+               df2_sun['L']/(3.827*10**26), color='black')
 
     ax.legend(fontsize=axisfont, loc=1)
     ax.tick_params(labelsize=ticksize, size=ticks)
