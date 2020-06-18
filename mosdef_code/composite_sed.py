@@ -143,6 +143,7 @@ def get_composite_sed(groupID):
     # Repeat the next few steps for every n points, where n is the number of galaxies.
     # i represents the current point
     i = 0
+    # DOUBLE COUNTING SOME POINTS, i is NOT INCREMENTING THE SAME WAY AS SELECTED POINTS
     while i < len(total_sed[good_idx]):
         # Check if there's space for 2 more sets of points
         if (i+2*number_galaxies) < len(total_sed[good_idx]):

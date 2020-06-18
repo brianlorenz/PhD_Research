@@ -1,4 +1,4 @@
-# Deals with the UVJ of the seds and composites
+# Deals with the UVJ of the seds and composites. Make sure to run observe_all_uvj to save a dataframe of all uvj values
 
 import sys
 import os
@@ -14,6 +14,7 @@ from clustering import cluster_dir
 import matplotlib.pyplot as plt
 from scipy import interpolate
 import scipy.integrate as integrate
+from query_funcs import get_zobjs
 
 
 def get_uvj(field, v4id):
@@ -39,26 +40,35 @@ def get_uvj(field, v4id):
         uvj_df['field'] == field, uvj_df['id'] == mosdef_obj['ID'])]
 
     # Get the U-V and V-J for that object
-    u_v = obj['u_v'].iloc[0]
-    v_j = obj['v_j'].iloc[0]
-    uvj_tuple = (u_v, v_j)
+    try:
+        u_v = obj['u_v'].iloc[0]
+        v_j = obj['v_j'].iloc[0]
+        uvj_tuple = (u_v, v_j)
+    except IndexError:
+        sys.exit(f'Could not find object ({field}, {v4id}) in uvj_df')
     return uvj_tuple
 
 
-def observe_composite_uvj(groupID):
+def observe_uvj(sed, composite=True):
     """Measure the U-V and V-J flux of a composite SED
 
     Parameters:
-    groupID (int): groupid of the cluster that you want to measure the U-V and V-J for
+    sed (pd.DataFrame): sed to observe, needs columns 'rest_wavelength' and 'f_lambda'
+    composite (boolean): set to True if using composite SED, False if using one of the other seds. Need to compute rest wavelength in that case
 
     Returns:
     uvj_tuple (tuple): tuple of the form (U-V, V-J) for the input composite SED
     """
 
-    sed = read_composite_sed(groupID)
+    if composite == False:
+        sed['rest_wavelength'] = sed['peak_wavelength']/(1+sed['Z_MOSFIRE'])
+        good_idx = np.logical_and(
+            sed['f_lambda'] > -98, sed['err_f_lambda'] > 0)
+        sed = sed[good_idx]
 
     # Create an interpolation object. Use this with interp_sed(wavelength) to get f_lambda at that wavelength
     interp_sed = interpolate.interp1d(sed['rest_wavelength'], sed['f_lambda'])
+    max_interp = np.max(sed['rest_wavelength'])
 
     # Filters are U=153, V=155, J=161
     U_filt_num = 153
@@ -66,24 +76,77 @@ def observe_composite_uvj(groupID):
     J_filt_num = 161
 
     # Fluxes are in f_nu NOT f_lambda
-    U_flux_nu = observe_filt(interp_sed, U_filt_num)
-    V_flux_nu = observe_filt(interp_sed, V_filt_num)
-    J_flux_nu = observe_filt(interp_sed, J_filt_num)
+    U_flux_nu = observe_filt(interp_sed, U_filt_num, max_interp)
+    V_flux_nu = observe_filt(interp_sed, V_filt_num, max_interp)
+    J_flux_nu = observe_filt(interp_sed, J_filt_num, max_interp)
     print(U_flux_nu, V_flux_nu, J_flux_nu)
 
     U_V = -2.5*np.log10(U_flux_nu/V_flux_nu)
+    if U_flux_nu == -99 or V_flux_nu == -99:
+        U_V = -99
     V_J = -2.5*np.log10(V_flux_nu/J_flux_nu)
+    if V_flux_nu == -99 or J_flux_nu == -99:
+        V_J = -99
 
     uvj_tuple = (U_V, V_J)
     return uvj_tuple
 
 
-def observe_filt(interp_sed, filter_num):
+def observe_all_uvj(n_clusters, individual_gals=False, composite_uvjs=True):
+    '''Observes the UVJ flux for each galaxy SED and for all cluster SEDs, then saves them to a dataframe
+
+    Parameters:
+    n_groups (int): number of clusters
+    individual_gals (boolean): set to True if you want to recalculate UVJ for all galaxies
+    composite_uvjs (boolean): set to True if you want to recalcualte UVJ for all composite SEDs
+
+    Returns:
+    '''
+    if individual_gals:
+        zobjs = get_zobjs()
+        uvs = []
+        vjs = []
+        fields = [field for field, v4id in zobjs]
+        v4ids = [v4id for field, v4id in zobjs]
+        for obj in zobjs:
+            print(f'Measuring UVJ for {obj[0]}, {obj[1]}')
+            # catches objects with v4id = -9999
+            if obj[1] < 0:
+                uvs.append(-99)
+                vjs.append(-99)
+                continue
+            sed = read_sed(obj[0], obj[1])
+            uvj = observe_uvj(sed, composite=False)
+            uvs.append(uvj[0])
+            vjs.append(uvj[1])
+        galaxy_uvj_df = pd.DataFrame(zip(fields, v4ids, uvs, vjs), columns=[
+                                     'field', 'v4id', 'U_V', 'V_J'])
+        galaxy_uvj_df.to_csv(
+            '/Users/galaxies-air/mosdef/UVJ_Colors/galaxy_uvjs.csv', index=False)
+
+    if composite_uvjs:
+        uvs = []
+        vjs = []
+        groupIDs = []
+        for groupID in range(0, n_clusters):
+            composite_sed = read_composite_sed(groupID)
+            uvj = observe_uvj(composite_sed)
+            uvs.append(uvj[0])
+            vjs.append(uvj[1])
+            groupIDs.append(groupID)
+        composite_uvj_df = pd.DataFrame(zip(groupIDs, uvs, vjs), columns=[
+            'groupID', 'U_V', 'V_J'])
+        composite_uvj_df.to_csv(
+            '/Users/galaxies-air/mosdef/UVJ_Colors/composite_uvjs.csv', index=False)
+
+
+def observe_filt(interp_sed, filter_num, max_interp=99999999.):
     """given an SED filter interpolated, measure the value of the SED in that filter
 
     Parameters:
     interp_sed (scipy.interp1d): interp1d of the SED that you want to measure
     filter_num (int): Number of the filter to observe from in FILTER.RES.latest
+    max_interp (float): Maxmum allowed value for interpolation. If below the filte,r returns -99
 
     Returns:
     flux_filter_nu (int): The photometric SED point for that filter - the observation (in frequency units)
@@ -95,9 +158,102 @@ def observe_filt(interp_sed, filter_num):
 
     wavelength_min = np.min(filter_df['wavelength'])
     wavelength_max = np.max(filter_df['wavelength'])
+    # Check to see if the value will be above the interpolation range
+    if max_interp < wavelength_max:
+        print(f'Value above interpolation range for filter {filter_num}')
+        return -99
     numerator = integrate.quad(lambda wave: (1/3**18)*(wave*interp_sed(wave) *
                                                        interp_filt(wave)), wavelength_min, wavelength_max)[0]
-    denominator = integrate.quad(lambda wave: (wave /
-                                               interp_filt(wave)), wavelength_min, wavelength_max)[0]
+    denominator = integrate.quad(lambda wave: (
+        interp_filt(wave) / wave), wavelength_min, wavelength_max)[0]
     flux_filter_nu = numerator/denominator
     return flux_filter_nu
+
+
+def plot_uvj_cluster(groupID):
+    """given a groupID, plot the UVJ diagram of the composite and all galaxies within cluster
+
+    Parameters:
+    groupID (int):
+
+    Returns:
+    """
+
+    # Read in the galaxies from that cluster
+    cluster_names = os.listdir(cluster_dir+'/'+str(groupID))
+    # Splits into list of tuples: [(field, v4id), (field, v4id), (field, v4id), ...]
+    fields_ids = [(line.split('_')[0], line.split('_')[1])
+                  for line in cluster_names]
+
+    # UVJs of all galaxies
+    galaxy_uvj_df = ascii.read(
+        '/Users/galaxies-air/mosdef/UVJ_Colors/galaxy_uvjs.csv').to_pandas()
+    # UVJs of all composite SEDs
+    composite_uvj_df = ascii.read(
+        '/Users/galaxies-air/mosdef/UVJ_Colors/composite_uvjs.csv').to_pandas()
+
+    # Get their uvj values
+    u_v = []
+    v_j = []
+    for obj in fields_ids:
+        field = obj[0]
+        v4id = int(obj[1])
+        idx = np.logical_and(galaxy_uvj_df['field'] ==
+                             field, galaxy_uvj_df['v4id'] == v4id)
+        u_v.append(galaxy_uvj_df[idx]['U_V'].iloc[0])
+        v_j.append(galaxy_uvj_df[idx]['V_J'].iloc[0])
+        # Catalog calculation
+        #uvjs.append(get_uvj(field, v4id))
+    #u_v = [i[0] for i in uvjs]
+    #v_j = [i[1] for i in uvjs]
+
+    # Get uvj value of composite sed
+    #composite_sed = read_composite_sed(groupID)
+    #uvj_composite = observe_uvj(composite_sed)
+
+    uvj_composite = composite_uvj_df[composite_uvj_df['groupID'] == groupID]
+
+    axisfont = 14
+    ticksize = 12
+    ticks = 8
+    titlefont = 24
+    legendfont = 14
+    textfont = 16
+
+    # Generate the first figure, which will just show the spectra
+    fig, ax = plt.subplots(figsize=(8, 7))
+
+    # Plots all UVJs in grey
+    ax.plot(galaxy_uvj_df['V_J'], galaxy_uvj_df['U_V'],
+            ls='', marker='o', markersize=1.5, color='grey', label='All Galaxies')
+
+    # Plots the one within the cluster in black
+    ax.plot(v_j, u_v,
+            ls='', marker='o', markersize=3.5, color='black', label='Cluster Galaxies')
+
+    # Plot all composites as blue X
+    ax.plot(composite_uvj_df['V_J'], composite_uvj_df['U_V'],
+            ls='', marker='x', markersize=5, markeredgewidth=2, color='purple', label='All Composite SEDs')
+
+    # Plot the composite SED as a red X
+    ax.plot(uvj_composite['V_J'], uvj_composite['U_V'],
+            ls='', marker='x', markersize=8, markeredgewidth=2, color='red', label='Composite SED')
+
+    ax.plot((-100, 0.69), (1.3, 1.3), color='black')
+    ax.plot((1.5, 1.5), (2.01, 100), color='black')
+    xline = np.arange(0.69, 1.5, 0.001)
+    yline = xline*0.88+0.69
+    ax.plot(xline, yline, color='black')
+
+    ax.set_xlabel('V-J', fontsize=axisfont)
+    ax.set_ylabel('U-V', fontsize=axisfont)
+    ax.set_xlim(0, 2)
+    ax.set_ylim(0, 2.5)
+    ax.legend(fontsize=legendfont-4)
+    ax.tick_params(labelsize=ticksize, size=ticks)
+    fig.savefig(cluster_dir+f'/cluster_stats/uvj_diagrams/{groupID}_UVJ.pdf')
+    plt.close()
+
+
+# for i in range(0,25):
+#     plot_uvj_cluster(i)
