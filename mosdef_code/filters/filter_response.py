@@ -7,14 +7,15 @@ import numpy as np
 import pandas as pd
 import re
 from astropy.io import ascii
+import initialize_mosdef_dirs as imd
 
 
-f = open('/Users/galaxies-air/code/mosdef_code/catalog_filters/FILTER.RES.latest')
+f = open(imd.home_dir + '/code/mosdef_code/filters/catalog_filters/FILTER.RES.latest')
 lines = f.readlines()
 f.close()
 
 # Read the overview file as a dataframe
-loc_overview = 'catalog_filters/overview'
+loc_overview = imd.home_dir + '/code/mosdef_code/filters/catalog_filters/overview'
 overview = pd.read_csv(loc_overview, header=None, sep='\n')
 
 
@@ -29,8 +30,9 @@ def get_index(filter_num):
     idx (int): index of the line containing this
     """
 
-    # Subtract one here since python dataframe is 0 indexed but document is 1 indexed!
-    overview_filt = overview.iloc[filter_num-1]
+    # Subtract one here since python dataframe is 0 indexed but document is 1
+    # indexed!
+    overview_filt = overview.iloc[filter_num - 1]
     # Name of the full line to search for in the overview textfile
     filt_fullname = overview_filt.iloc[0][7:]  # .split(' ', 1)[0]
 
@@ -55,17 +57,19 @@ def get_filter_response(filter_num, lines=lines, overview=overview):
     response_df (pd.DataFrame): dataframe containing the response curve for the filter
     """
 
-    # Get the index of the current filter (start), and of the next filter (end), then create a dataframe of everything in between
+    # Get the index of the current filter (start), and of the next filter
+    # (end), then create a dataframe of everything in between
     start_idx = get_index(filter_num)
-    end_idx = get_index(filter_num+1)
+    end_idx = get_index(filter_num + 1)
 
     # Line with the info about the filter
     header_line = lines[start_idx]
 
     # Get all the lines in between to make dataframe, ignoring the first line
-    response_lines = lines[start_idx+1:end_idx]
+    response_lines = lines[start_idx + 1:end_idx]
 
-    # chop off the \n at the end and number and whitespace at beginning of each line:
+    # chop off the \n at the end and number and whitespace at beginning of
+    # each line:
     response_list = [(float(line[7:18]), float(line[19:-1]))
                      for line in response_lines]
 

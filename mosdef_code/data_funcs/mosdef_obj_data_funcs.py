@@ -10,6 +10,7 @@ from astropy.io import fits
 from tabulate import tabulate
 from astropy.table import Table
 from read_data import mosdef_df
+import initialize_mosdef_dirs as imd
 
 
 def get_mosdef_obj(field, v4id):
@@ -46,9 +47,9 @@ def read_sed(field, v4id):
 
     Returns:
     """
-    sed_location = f'/Users/galaxies-air/mosdef/sed_csvs/{field}_{v4id}_sed.csv'
+    sed_location = imd.home_dir + f'/mosdef/sed_csvs/{field}_{v4id}_sed.csv'
     if not os.path.exists(sed_location):
-        sed_location = f'/Users/galaxies-air/mosdef/sed_csvs/{field}_{v4id}_3DHST_sed.csv'
+        sed_location = imd.home_dir + f'/mosdef/sed_csvs/{field}_{v4id}_3DHST_sed.csv'
     sed = ascii.read(sed_location).to_pandas()
     return sed
 
@@ -63,9 +64,9 @@ def read_mock_sed(field, v4id):
 
     Returns:
     """
-    sed_location = f'/Users/galaxies-air/mosdef/mock_sed_csvs/{field}_{v4id}_sed.csv'
+    sed_location = imd.home_dir + f'/mosdef/mock_sed_csvs/{field}_{v4id}_sed.csv'
     if not os.path.exists(sed_location):
-        sed_location = f'/Users/galaxies-air/mosdef/mock_sed_csvs/{field}_{v4id}_3DHST_sed.csv'
+        sed_location = imd.home_dir + f'/mosdef/mock_sed_csvs/{field}_{v4id}_3DHST_sed.csv'
     sed = ascii.read(sed_location).to_pandas()
     return sed
 
@@ -79,6 +80,6 @@ def read_composite_sed(groupID):
 
     Returns:
     """
-    sed_location = f'/Users/galaxies-air/mosdef/composite_sed_csvs/{groupID}_sed.csv'
+    sed_location = imd.home_dir + f'/mosdef/composite_sed_csvs/{groupID}_sed.csv'
     sed = ascii.read(sed_location).to_pandas()
     return sed

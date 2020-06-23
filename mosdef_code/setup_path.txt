@@ -1,0 +1,1 @@
+cp mosdef_paths.pth /Users/brianlorenz/opt/anaconda3/lib/python3.7/site-packages/

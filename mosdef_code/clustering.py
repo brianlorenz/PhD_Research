@@ -12,6 +12,7 @@ from mosdef_obj_data_funcs import get_mosdef_obj, read_sed
 from sklearn.cluster import SpectralClustering
 import matplotlib.pyplot as plt
 import shutil
+import initialize_mosdef_dirs as imd
 
 
 # X = np.array([[1, 1],
@@ -35,8 +36,6 @@ import shutil
 # clusters = clustering.labels_
 # plt.scatter(xvals, yvals, c=clusters_aff)
 
-cluster_dir = '/Users/galaxies-air/mosdef/Clustering/'
-
 
 def cluster_seds(n_clusters):
     """Read in the similarity matrix and cluster the SEDs
@@ -47,10 +46,10 @@ def cluster_seds(n_clusters):
     """
 
     affinity_matrix = ascii.read(
-        cluster_dir+'similarity_matrix.csv').to_pandas().to_numpy()
+        imd.cluster_dir + 'similarity_matrix.csv').to_pandas().to_numpy()
 
     zobjs_df = ascii.read(
-        cluster_dir+'zobjs_order.csv', data_start=1).to_pandas()
+        imd.cluster_dir + 'zobjs_order.csv', data_start=1).to_pandas()
     zobjs_df.columns = ['new_index', 'original_zobjs_index', 'field', 'v4id']
 
     clustering_aff = SpectralClustering(
@@ -62,17 +61,17 @@ def cluster_seds(n_clusters):
         cluster_num_df, left_index=True, right_index=True)
 
     zobjs_df.to_csv(
-        '/Users/galaxies-air/mosdef/Clustering/zobjs_clustered.csv', index=False)
+        imd.home_dir + '/mosdef/Clustering/zobjs_clustered.csv', index=False)
 
     for i in range(n_clusters):
-        os.mkdir(cluster_dir+str(i))
+        os.mkdir(imd.cluster_dir + str(i))
 
     for i in range(len(zobjs_df)):
         obj = zobjs_df.iloc[i]
         filename = f'{obj["field"]}_{obj["v4id"]}_mocktest.pdf'
         print(filename)
-        print(cluster_dir+f'{obj["cluster_num"]}/'+filename)
-        shutil.copy(f'/Users/galaxies-air/mosdef/SED_Images/mock_sed_images/'+filename, cluster_dir+f'{obj["cluster_num"]}/'+filename)
+        print(imd.cluster_dir + f'{obj["cluster_num"]}/' + filename)
+        shutil.copy(imd.home_dir + f'/mosdef/SED_Images/mock_sed_images/' + filename, imd.cluster_dir + f'{obj["cluster_num"]}/' + filename)
 
     return
 

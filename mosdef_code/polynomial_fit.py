@@ -17,6 +17,6 @@ def poly_fit(field, v4id):
     # Poly_fit says to use 1/sigma weights for gaussian uncertainties
     # What degree to use for fitting?
     coeff = np.polyfit(np.log10(sed[good_idxs]['peak_wavelength']),
-                       sed[good_idxs]['f_lambda'], deg=8, w=(1/sed[good_idxs]['err_f_lambda']))
+                       sed[good_idxs]['f_lambda'], deg=8, w=(1 / sed[good_idxs]['err_f_lambda']))
     fit_func = np.poly1d(coeff)
     return fit_func

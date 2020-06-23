@@ -1,4 +1,6 @@
 # Plots some statistics about each cluser
+# plot_similarity can plot the similarities between each pair of galaxies
+# in a cluster and each galaxy and its SED
 
 import sys
 import os
@@ -8,36 +10,35 @@ import pandas as pd
 from astropy.io import ascii
 from astropy.io import fits
 from read_data import mosdef_df
-from clustering import cluster_dir
 from mosdef_obj_data_funcs import read_sed
 import matplotlib.pyplot as plt
+import initialize_mosdef_dirs as imd
 
 
-def plot_uvj():
-
-
-def plot_similarity():
-    """Create a histogram of similarity in each cluser
+def plot_similarity(composite_sed=False):
+    """Create a histogram of similarities between individual galaxies in each cluser
 
     Parameters:
+    composite_sed (boolean): Set to True if you want to compare to the SED rather then to each other
 
     Returns:
     """
-    save_dir = cluster_dir+'/cluster_stats/similarities/'
+    save_dir = imd.cluster_dir + '/cluster_stats/similarities/'
 
     similarity_matrix = ascii.read(
-        cluster_dir+'similarity_matrix.csv').to_pandas().to_numpy()
+        imd.cluster_dir + 'similarity_matrix.csv').to_pandas().to_numpy()
     zobjs = ascii.read(
-        cluster_dir+'zobjs_clustered.csv', data_start=1).to_pandas()
+        imd.cluster_dir + 'zobjs_clustered.csv', data_start=1).to_pandas()
 
-    num_clusters = np.max(zobjs['cluster_num'])
+    num_clusters = np.max(zobjs['cluster_num']) + 1
 
     for groupID in range(num_clusters):
+        print(f'Computing Similarity for Cluster {groupID}')
         galaxies = zobjs[zobjs['cluster_num'] == groupID]
         similarities = []
         num_galaxies = len(galaxies)
         for i in range(num_galaxies):
-            for j in range(num_galaxies-i):
+            for j in range(num_galaxies - i):
                 if i != j:
                     similarities.append(
                         similarity_matrix[galaxies.iloc[i]['new_index'], galaxies.iloc[j]['new_index']])
@@ -58,5 +59,5 @@ def plot_similarity():
         ax.set_xlabel('Similarity', fontsize=axisfont)
         ax.set_ylabel('Number of pairs', fontsize=axisfont)
         ax.tick_params(labelsize=ticksize, size=ticks)
-        fig.savefig(save_dir+f'{groupID}_similarity')
+        fig.savefig(save_dir + f'{groupID}_similarity')
         plt.close()

@@ -9,11 +9,11 @@ from astropy.io import ascii
 from astropy.io import fits
 from read_data import mosdef_df
 from mosdef_obj_data_funcs import read_sed
-from clustering import cluster_dir
 import matplotlib.pyplot as plt
 from filter_response import lines, overview, get_index, get_filter_response
 from scipy import interpolate
 from composite_sed import get_normalized_sed, get_good_idx
+import initialize_mosdef_dirs as imd
 
 
 def vis_normalized_sed(target_field, target_v4id, field, v4id):
@@ -47,7 +47,7 @@ def vis_normalized_sed(target_field, target_v4id, field, v4id):
     plt.tight_layout()
     plt.show()
     ax.legend()
-    # fig.savefig(f'/Users/galaxies-air/mosdef/Clustering/composite_seds/{groupID}_sed.pdf')
+    # fig.savefig(imd.home_dir + f'/mosdef/Clustering/composite_seds/{groupID}_sed.pdf')
     # plt.close()
 
 

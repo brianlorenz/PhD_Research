@@ -14,6 +14,8 @@ from read_data import mosdef_df
 from mosdef_obj_data_funcs import get_mosdef_obj, read_sed
 from plot_funcs import populate_main_axis
 import matplotlib.pyplot as plt
+import initialize_mosdef_dirs as imd
+
 
 np.random.seed(seed=901969)
 
@@ -34,15 +36,17 @@ def gen_mock_sed(field, v4id, log_filter_centers=log_filter_centers, width=width
     Returns:
     """
     sed = read_sed(field, v4id)
-    # Only consider those measurements with detections? Or do we allow less than 0 fluxes? Set them to zero?
+    # Only consider those measurements with detections? Or do we allow less
+    # than 0 fluxes? Set them to zero?
     good_idxs = np.logical_and(
         sed['f_lambda'] > -99, sed['err_f_lambda'] >= 0)
 
     # SED that only contains the good indexes, use this for fitting
     sed_fit = sed[good_idxs]
 
-    # Assumes all fiters are boxes that run into each other and are the same size
-    filter_size = (log_filter_centers[1] - log_filter_centers[0])/2
+    # Assumes all fiters are boxes that run into each other and are the same
+    # size
+    filter_size = (log_filter_centers[1] - log_filter_centers[0]) / 2
 
     mock_sed = []
     mock_sed_u_errs = []
@@ -51,8 +55,8 @@ def gen_mock_sed(field, v4id, log_filter_centers=log_filter_centers, width=width
 
     for log_center_wave in log_filter_centers:
         # Pull all rows within +- width of peak wavelength
-        lower_wave = 10**(log_center_wave-width)
-        upper_wave = 10**(log_center_wave+width)
+        lower_wave = 10**(log_center_wave - width)
+        upper_wave = 10**(log_center_wave + width)
         points = sed_fit[sed_fit['peak_wavelength'].between(
             lower_wave, upper_wave)]
         unused_points = sed_fit[np.logical_not(sed_fit['peak_wavelength'].between(
@@ -62,7 +66,9 @@ def gen_mock_sed(field, v4id, log_filter_centers=log_filter_centers, width=width
             # Offsets from the central wavelength, dropping any negative valeus
             diffs = unused_points[(unused_points['peak_wavelength'] -
                                    10**log_center_wave) > 0]['peak_wavelength'] - 10**log_center_wave
-            # Try to add the nearest point. If this hits a Value Error, it should be because the sequence is empty, so there are no points to add
+            # Try to add the nearest point. If this hits a Value Error, it
+            # should be because the sequence is empty, so there are no points
+            # to add
             try:
                 add_index = diffs.idxmin()
                 # Update the points and unused_points objects accordingly
@@ -76,7 +82,9 @@ def gen_mock_sed(field, v4id, log_filter_centers=log_filter_centers, width=width
             # Offsets from the central wavelength, dropping any negative valeus
             diffs = 10**log_center_wave - unused_points[(10**log_center_wave - unused_points['peak_wavelength'])
                                                         > 0]['peak_wavelength']
-            # Try to add the nearest point. If this hits a Value Error, it should be because the sequence is empty, so there are no points to add
+            # Try to add the nearest point. If this hits a Value Error, it
+            # should be because the sequence is empty, so there are no points
+            # to add
             try:
                 add_index = diffs.idxmin()
                 # Update the points and unused_points objects accordingly
@@ -94,7 +102,7 @@ def gen_mock_sed(field, v4id, log_filter_centers=log_filter_centers, width=width
 
         # First, fit the points
         coeff = np.polyfit(np.log10(points['peak_wavelength']),
-                           points['f_lambda'], deg=2, w=(1/points['err_f_lambda']))
+                           points['f_lambda'], deg=2, w=(1 / points['err_f_lambda']))
         # Get the polynomial
         fit_func = np.poly1d(coeff)
         # x-range over which we fit
@@ -104,7 +112,7 @@ def gen_mock_sed(field, v4id, log_filter_centers=log_filter_centers, width=width
         fit_points = fit_func(fit_wavelengths)
         # Indexes of the values that lie in the mock filter
         fit_idx = np.logical_and(fit_wavelengths > (log_center_wave -
-                                                    filter_size), fit_wavelengths < (log_center_wave+filter_size))
+                                                    filter_size), fit_wavelengths < (log_center_wave + filter_size))
         # Average the values in the mock filter to get the mock point
         mock_sed_point = np.mean(fit_points[fit_idx])
         # Append the final point to the list for the mock sed
@@ -119,7 +127,7 @@ def gen_mock_sed(field, v4id, log_filter_centers=log_filter_centers, width=width
                     fit_wavelengths, fit_points, filter_size, mock_sed, mock_sed_u_errs, mock_sed_l_errs, good_idxs)
     sed_df = pd.DataFrame(np.transpose([10**log_filter_centers, mock_sed,
                                         mock_sed_u_errs, mock_sed_l_errs]), columns=['peak_wavelength', 'f_lambda', 'err_f_lambda_u', 'err_f_lambda_d'])
-    sed_df.to_csv(f'/Users/galaxies-air/mosdef/mock_sed_csvs/{field}_{v4id}_sed.csv', index=False)
+    sed_df.to_csv(imd.home_dir + f'/mosdef/mock_sed_csvs/{field}_{v4id}_sed.csv', index=False)
     return None
 
 
@@ -141,13 +149,13 @@ def fit_uncertainty(points, lower_wave, upper_wave, log_center_wave, filter_size
         fit_points = fit_func(fit_wavelengths)
         # Indexes of the values that lie in the mock filter
         fit_idx = np.logical_and(fit_wavelengths > (log_center_wave -
-                                                    filter_size), fit_wavelengths < (log_center_wave+filter_size))
+                                                    filter_size), fit_wavelengths < (log_center_wave + filter_size))
         # Average the values in the mock filter to get the mock point
         mock_sed_point = np.mean(fit_points[fit_idx])
         mock_points.append(mock_sed_point)
     # PERCENTILE ERROR HERE?
     mock_sed_point, l_err, u_err = np.percentile(mock_points, [50, 15.7, 84.3])
-    return mock_sed_point, u_err-mock_sed_point, mock_sed_point-l_err
+    return mock_sed_point, u_err - mock_sed_point, mock_sed_point - l_err
 
 
 def vis_fit(field, v4id, sed, points, mock_wave_centers, width, fit_wavelengths, fit_points, filter_size, mock_sed, mock_sed_u_errs, mock_sed_l_errs, good_idxs, showfit=False):
@@ -180,8 +188,8 @@ def vis_fit(field, v4id, sed, points, mock_wave_centers, width, fit_wavelengths,
     populate_main_axis(ax, sed, good_idxs, axisfont, ticksize, ticks)
 
     if showfit:
-        ax.axvspan(10**(np.log10(mock_wave_centers[-1])-filter_size),
-                   10**(np.log10(mock_wave_centers[-1])+filter_size), facecolor='grey', alpha=0.5, label='Filter')
+        ax.axvspan(10**(np.log10(mock_wave_centers[-1]) - filter_size),
+                   10**(np.log10(mock_wave_centers[-1]) + filter_size), facecolor='grey', alpha=0.5, label='Filter')
         ax.plot(10**fit_wavelengths, fit_points,
                 color='mediumseagreen', label='Fit')
 
@@ -190,13 +198,13 @@ def vis_fit(field, v4id, sed, points, mock_wave_centers, width, fit_wavelengths,
 
     ax.text(0.02, 0.95, f'{field} {v4id}', fontsize=axisfont, transform=ax.transAxes)
 
-    ax.set_ylim(min(0, min(sed[good_idxs]['f_lambda']))*1.2,
-                max(sed[good_idxs]['f_lambda']*1.2))
+    ax.set_ylim(min(0, min(sed[good_idxs]['f_lambda'])) * 1.2,
+                max(sed[good_idxs]['f_lambda'] * 1.2))
     ax.set_xscale('log')
-    ax.set_xlim(3*10**3, 10**5)
+    ax.set_xlim(3 * 10**3, 10**5)
     ax.tick_params(labelsize=ticksize, size=ticks)
     ax.legend(fontsize=legendfont, loc=0)
-    fig.savefig(f'/Users/galaxies-air/mosdef/SED_Images/mock_sed_images/{field}_{v4id}_mock.pdf')
+    fig.savefig(imd.home_dir + f'/mosdef/SED_Images/mock_sed_images/{field}_{v4id}_mock.pdf')
     plt.close('all')
     return None
 
@@ -224,4 +232,4 @@ def gen_all_seds(zobjs):
             print(excpt)
             plt.close('all')
             sys.exit()
-        counter = counter+1
+        counter = counter + 1

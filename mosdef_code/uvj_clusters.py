@@ -1,4 +1,5 @@
-# Deals with the UVJ of the seds and composites. Make sure to run observe_all_uvj to save a dataframe of all uvj values
+# Deals with the UVJ of the seds and composites. Make sure to run
+# observe_all_uvj to save a dataframe of all uvj values
 
 import sys
 import os
@@ -10,11 +11,12 @@ from astropy.io import fits
 from read_data import mosdef_df
 from mosdef_obj_data_funcs import read_sed, read_mock_sed, get_mosdef_obj, read_composite_sed
 from filter_response import lines, overview, get_index, get_filter_response
-from clustering import cluster_dir
 import matplotlib.pyplot as plt
 from scipy import interpolate
 import scipy.integrate as integrate
 from query_funcs import get_zobjs
+import initialize_mosdef_dirs as imd
+import cluster_data_funcs as cdf
 
 
 def get_uvj(field, v4id):
@@ -30,7 +32,9 @@ def get_uvj(field, v4id):
 
     # Read the file
     uvj_df = ascii.read(
-        '/Users/galaxies-air/mosdef/uvj_latest.dat').to_pandas()
+        imd.home_dir + '/mosdef/uvj_latest.dat').to_pandas()
+
+    breakpoint()
 
     # Get the object from mosdef_df, since we need id and not v4id
     mosdef_obj = get_mosdef_obj(field, v4id)
@@ -61,12 +65,14 @@ def observe_uvj(sed, composite=True):
     """
 
     if composite == False:
-        sed['rest_wavelength'] = sed['peak_wavelength']/(1+sed['Z_MOSFIRE'])
+        sed['rest_wavelength'] = sed[
+            'peak_wavelength'] / (1 + sed['Z_MOSFIRE'])
         good_idx = np.logical_and(
             sed['f_lambda'] > -98, sed['err_f_lambda'] > 0)
         sed = sed[good_idx]
 
-    # Create an interpolation object. Use this with interp_sed(wavelength) to get f_lambda at that wavelength
+    # Create an interpolation object. Use this with interp_sed(wavelength) to
+    # get f_lambda at that wavelength
     interp_sed = interpolate.interp1d(sed['rest_wavelength'], sed['f_lambda'])
     max_interp = np.max(sed['rest_wavelength'])
 
@@ -81,10 +87,10 @@ def observe_uvj(sed, composite=True):
     J_flux_nu = observe_filt(interp_sed, J_filt_num, max_interp)
     print(U_flux_nu, V_flux_nu, J_flux_nu)
 
-    U_V = -2.5*np.log10(U_flux_nu/V_flux_nu)
+    U_V = -2.5 * np.log10(U_flux_nu / V_flux_nu)
     if U_flux_nu == -99 or V_flux_nu == -99:
         U_V = -99
-    V_J = -2.5*np.log10(V_flux_nu/J_flux_nu)
+    V_J = -2.5 * np.log10(V_flux_nu / J_flux_nu)
     if V_flux_nu == -99 or J_flux_nu == -99:
         V_J = -99
 
@@ -122,7 +128,7 @@ def observe_all_uvj(n_clusters, individual_gals=False, composite_uvjs=True):
         galaxy_uvj_df = pd.DataFrame(zip(fields, v4ids, uvs, vjs), columns=[
                                      'field', 'v4id', 'U_V', 'V_J'])
         galaxy_uvj_df.to_csv(
-            '/Users/galaxies-air/mosdef/UVJ_Colors/galaxy_uvjs.csv', index=False)
+            imd.home_dir + '/mosdef/UVJ_Colors/galaxy_uvjs.csv', index=False)
 
     if composite_uvjs:
         uvs = []
@@ -137,7 +143,7 @@ def observe_all_uvj(n_clusters, individual_gals=False, composite_uvjs=True):
         composite_uvj_df = pd.DataFrame(zip(groupIDs, uvs, vjs), columns=[
             'groupID', 'U_V', 'V_J'])
         composite_uvj_df.to_csv(
-            '/Users/galaxies-air/mosdef/UVJ_Colors/composite_uvjs.csv', index=False)
+            imd.home_dir + '/mosdef/UVJ_Colors/composite_uvjs.csv', index=False)
 
 
 def observe_filt(interp_sed, filter_num, max_interp=99999999.):
@@ -162,11 +168,11 @@ def observe_filt(interp_sed, filter_num, max_interp=99999999.):
     if max_interp < wavelength_max:
         print(f'Value above interpolation range for filter {filter_num}')
         return -99
-    numerator = integrate.quad(lambda wave: (1/3**18)*(wave*interp_sed(wave) *
-                                                       interp_filt(wave)), wavelength_min, wavelength_max)[0]
+    numerator = integrate.quad(lambda wave: (1 / 3**18) * (wave * interp_sed(wave) *
+                                                           interp_filt(wave)), wavelength_min, wavelength_max)[0]
     denominator = integrate.quad(lambda wave: (
         interp_filt(wave) / wave), wavelength_min, wavelength_max)[0]
-    flux_filter_nu = numerator/denominator
+    flux_filter_nu = numerator / denominator
     return flux_filter_nu
 
 
@@ -174,23 +180,24 @@ def plot_uvj_cluster(groupID):
     """given a groupID, plot the UVJ diagram of the composite and all galaxies within cluster
 
     Parameters:
-    groupID (int):
+    groupID (int): ID of the cluster to plot
 
     Returns:
     """
 
     # Read in the galaxies from that cluster
-    cluster_names = os.listdir(cluster_dir+'/'+str(groupID))
-    # Splits into list of tuples: [(field, v4id), (field, v4id), (field, v4id), ...]
+    cluster_names = os.listdir(imd.cluster_dir + '/' + str(groupID))
+    # Splits into list of tuples: [(field, v4id), (field, v4id), (field,
+    # v4id), ...]
     fields_ids = [(line.split('_')[0], line.split('_')[1])
                   for line in cluster_names]
 
     # UVJs of all galaxies
     galaxy_uvj_df = ascii.read(
-        '/Users/galaxies-air/mosdef/UVJ_Colors/galaxy_uvjs.csv').to_pandas()
+        imd.home_dir + '/mosdef/UVJ_Colors/galaxy_uvjs.csv').to_pandas()
     # UVJs of all composite SEDs
     composite_uvj_df = ascii.read(
-        '/Users/galaxies-air/mosdef/UVJ_Colors/composite_uvjs.csv').to_pandas()
+        imd.home_dir + '/mosdef/UVJ_Colors/composite_uvjs.csv').to_pandas()
 
     # Get their uvj values
     u_v = []
@@ -242,18 +249,82 @@ def plot_uvj_cluster(groupID):
     ax.plot((-100, 0.69), (1.3, 1.3), color='black')
     ax.plot((1.5, 1.5), (2.01, 100), color='black')
     xline = np.arange(0.69, 1.5, 0.001)
-    yline = xline*0.88+0.69
+    yline = xline * 0.88 + 0.69
     ax.plot(xline, yline, color='black')
 
     ax.set_xlabel('V-J', fontsize=axisfont)
     ax.set_ylabel('U-V', fontsize=axisfont)
     ax.set_xlim(0, 2)
     ax.set_ylim(0, 2.5)
-    ax.legend(fontsize=legendfont-4)
+    ax.legend(fontsize=legendfont - 4)
     ax.tick_params(labelsize=ticksize, size=ticks)
-    fig.savefig(cluster_dir+f'/cluster_stats/uvj_diagrams/{groupID}_UVJ.pdf')
+    fig.savefig(imd.cluster_dir + f'/cluster_stats/uvj_diagrams/{groupID}_UVJ.pdf')
     plt.close()
 
 
-# for i in range(0,25):
-#     plot_uvj_cluster(i)
+def plot_all_uvj_clusters(n_clusters):
+    """Makes UVJ diagrams for all of the clusters
+
+    Parameters:
+    n_clusters (int): Number of clusters
+
+    Returns:
+    """
+    for i in range(n_clusters):
+        plot_uvj_cluster(i)
+
+
+def plot_full_uvj(n_clusters):
+    """Generate one overview UVJ diagram, with clusters marked by low-membership and labeled by number
+
+    Parameters:
+    n_clusters: Number of clusters
+
+    Returns:
+    """
+
+    # UVJs of all galaxies
+    galaxy_uvj_df = ascii.read(
+        imd.home_dir + '/mosdef/UVJ_Colors/galaxy_uvjs.csv').to_pandas()
+    # UVJs of all composite SEDs
+    composite_uvj_df = ascii.read(
+        imd.home_dir + '/mosdef/UVJ_Colors/composite_uvjs.csv').to_pandas()
+
+    axisfont = 14
+    ticksize = 12
+    ticks = 8
+    titlefont = 24
+    legendfont = 14
+    textfont = 16
+
+    # Generate the first figure, which will just show the spectra
+    fig, ax = plt.subplots(figsize=(8, 7))
+
+    # Plots all UVJs in grey
+    ax.plot(galaxy_uvj_df['V_J'], galaxy_uvj_df['U_V'],
+            ls='', marker='o', markersize=1.5, color='grey', label='All Galaxies')
+
+    # Plot all composites as blue X
+    ax.plot(composite_uvj_df['V_J'], composite_uvj_df['U_V'],
+            ls='', marker='x', markersize=5, markeredgewidth=2, color='purple', label='All Composite SEDs')
+
+    low_clusters = cdf.find_low_clusters(n_clusters, thresh=5)
+
+    # ALSO FILTER BY SIMILARITIES SOMEHOW
+
+    # Plot the bad composite SEDs as a red X
+
+    ax.plot((-100, 0.69), (1.3, 1.3), color='black')
+    ax.plot((1.5, 1.5), (2.01, 100), color='black')
+    xline = np.arange(0.69, 1.5, 0.001)
+    yline = xline * 0.88 + 0.69
+    ax.plot(xline, yline, color='black')
+
+    ax.set_xlabel('V-J', fontsize=axisfont)
+    ax.set_ylabel('U-V', fontsize=axisfont)
+    ax.set_xlim(0, 2)
+    ax.set_ylim(0, 2.5)
+    ax.legend(fontsize=legendfont - 4)
+    ax.tick_params(labelsize=ticksize, size=ticks)
+    fig.savefig(imd.cluster_dir + f'/cluster_stats/uvj_diagrams/{groupID}_UVJ.pdf')
+    plt.close()
