@@ -50,7 +50,7 @@ def cluster_seds(n_clusters):
 
     zobjs_df = ascii.read(
         imd.cluster_dir + 'zobjs_order.csv', data_start=1).to_pandas()
-    zobjs_df.columns = ['new_index', 'original_zobjs_index', 'field', 'v4id']
+    zobjs_df.columns = ['original_zobjs_index', 'field', 'v4id']
 
     clustering_aff = SpectralClustering(
         n_clusters=n_clusters, assign_labels="discretize", random_state=0, affinity='precomputed').fit(affinity_matrix)
@@ -64,11 +64,11 @@ def cluster_seds(n_clusters):
         imd.home_dir + '/mosdef/Clustering/zobjs_clustered.csv', index=False)
 
     for i in range(n_clusters):
-        os.mkdir(imd.cluster_dir + str(i))
+        imd.check_and_make_dir(imd.cluster_dir + str(i))
 
     for i in range(len(zobjs_df)):
         obj = zobjs_df.iloc[i]
-        filename = f'{obj["field"]}_{obj["v4id"]}_mocktest.pdf'
+        filename = f'{obj["field"]}_{obj["v4id"]}_mock.pdf'
         print(filename)
         print(imd.cluster_dir + f'{obj["cluster_num"]}/' + filename)
         shutil.copy(imd.home_dir + f'/mosdef/SED_Images/mock_sed_images/' + filename, imd.cluster_dir + f'{obj["cluster_num"]}/' + filename)

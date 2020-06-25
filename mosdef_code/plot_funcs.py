@@ -13,29 +13,35 @@ from polynomial_fit import poly_fit
 import matplotlib.pyplot as plt
 import fnmatch
 import initialize_mosdef_dirs as imd
+from spectra_funcs import clip_skylines, get_spectra_files
 
 
 def populate_main_axis(ax, sed, good_idxs, axisfont, ticksize, ticks):
-    ax.errorbar(sed[good_idxs]['peak_wavelength'], sed[good_idxs]['f_lambda'], yerr=[
+    ax.errorbar(sed[good_idxs]['rest_wavelength'], sed[good_idxs]['f_lambda'], yerr=[
                 sed[good_idxs]['err_f_lambda'], sed[good_idxs]['err_f_lambda']], ls='None', color='black', marker='o')
     outliers = sed[np.logical_not(good_idxs)]
-    [ax.axvspan(outliers.iloc[i]['peak_wavelength'] * 0.99,
-                outliers.iloc[i]['peak_wavelength'] * 1.01, facecolor='r', alpha=0.5) for i in range(len(outliers))]
+    [ax.axvspan(outliers.iloc[i]['rest_wavelength'] * 0.99,
+                outliers.iloc[i]['rest_wavelength'] * 1.01, facecolor='r', alpha=0.5) for i in range(len(outliers))]
     ax.set_xlabel('log($\lambda$) ($\AA$)', fontsize=axisfont)
     ax.set_ylabel('f$_{\lambda}$', fontsize=axisfont)
 
 
-def plot_sed(field, v4id, plot_spec=False):
+def plot_sed(field, v4id, plot_spec=False, plot_fit=False):
     """Given a field and id, read in the sed and create a plot of it
 
     Parameters:
     field (string): name of the field of the object
     v4id (int): HST V4.1 id of the object
+    plot_spec (boolean): Set to true to plot spectrum
+    plot_fit (boolean): Set to true to plot polynomial fit
 
 
     Returns:
     """
     sed = read_sed(field, v4id)
+    mosdef_obj = get_mosdef_obj(field, v4id)
+    sed['rest_wavelength'] = sed['peak_wavelength'] / \
+        (1 + mosdef_obj['Z_MOSFIRE'])
 
     mosdef_obj = get_mosdef_obj(field, v4id)
 
@@ -69,9 +75,8 @@ def plot_sed(field, v4id, plot_spec=False):
     ax_main.text(0.02, 0.89, f'z = ' + str(rounded_z), fontsize=axisfont, transform=ax_main.transAxes)
 
     ax_main.set_xscale('log')
-    ax_main.set_xlim(3 * 10**3, 10**5)
-    ax_zoom.set_xlim(3 * 10**3, 2.5 * 10**4)
-    ax_zoom.set_xlim(10**4, 2 * 10**4)
+    ax_main.set_xlim(800, 45000)
+    ax_zoom.set_xlim(3000, 7000)
     ax_zoom.set_xscale('log')
 
     # labels_x = ['']*len(ax_zoom.get_xticks(minor=True))
@@ -93,8 +98,9 @@ def plot_sed(field, v4id, plot_spec=False):
         plot_spectrum(ax_zoom, field, v4id, mosdef_obj)
 
     # SED FIT PLOTTING:
-    plot_sed_fit(ax_main, field, v4id)
-    plot_sed_fit(ax_zoom, field, v4id)
+    if plot_fit:
+        plot_sed_fit(ax_main, field, v4id)
+        plot_sed_fit(ax_zoom, field, v4id)
 
     fig.savefig(imd.home_dir + f'/mosdef/SED_Images/{field}_{v4id}.pdf')
     plt.close('all')
@@ -141,16 +147,15 @@ def plot_spectrum(ax, field, v4id, mosdef_obj):
     Returns:
     """
     # First get a list of all things in the Spectra directory
-    spectra_dir = imd.home_dir + '/mosdef/Spectra/1D/'
-    all_spectra_files = os.listdir(spectra_dir)
-    obj_files = [filename for filename in all_spectra_files if f'.{mosdef_obj["ID"]}.ell' in filename]
+    obj_files = get_spectra_files(mosdef_obj)
     for file in obj_files:
         print(f'Plotting {file}')
-        spec_loc = spectra_dir + file
+        spec_loc = imd.spectra_dir + file
         hdu = fits.open(spec_loc)[1]
         spec_data = hdu.data
         wavelength = (
             1. + np.arange(hdu.header["naxis1"]) - hdu.header["crpix1"]) * hdu.header["cdelt1"] + hdu.header["crval1"]
+        spec_data = clip_skylines(wavelength, spec_data)
         ax.plot(wavelength, spec_data, color='blue', lw=1)
 
 
@@ -169,8 +174,21 @@ def plot_all_seds(zobjs):
         v4id = obj[1]
         print(f'Creating SED for {field}_{v4id}, {counter}/{len(zobjs)}')
         try:
-            plot_sed(field, v4id)
+            plot_sed(field, v4id, plot_fit=True)
         except:
             print(f'Couldnt create plot for {field}_{v4id}')
             plt.close('all')
         counter = counter + 1
+
+
+def setup_spec_only(field, v4id, mosdef_obj):
+    """Sets up the plot to plot ONLY the spectrum
+
+    Parameters:
+
+
+    Returns:
+    """
+    fig, ax = plt.subplots(1, 1, figsize=(8, 8))
+    plot_spectrum(ax, field, v4id, mosdef_obj)
+    plt.show()

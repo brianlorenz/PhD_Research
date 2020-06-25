@@ -1,5 +1,7 @@
 # Deals with the UVJ of the seds and composites. Make sure to run
 # observe_all_uvj to save a dataframe of all uvj values
+# plot_all_uvj_clusters(n_clusters)
+# plot_full_uvj()
 
 import sys
 import os
@@ -126,7 +128,7 @@ def observe_all_uvj(n_clusters, individual_gals=False, composite_uvjs=True):
             uvs.append(uvj[0])
             vjs.append(uvj[1])
         galaxy_uvj_df = pd.DataFrame(zip(fields, v4ids, uvs, vjs), columns=[
-                                     'field', 'v4id', 'U_V', 'V_J'])
+            'field', 'v4id', 'U_V', 'V_J'])
         galaxy_uvj_df.to_csv(
             imd.home_dir + '/mosdef/UVJ_Colors/galaxy_uvjs.csv', index=False)
 
@@ -185,12 +187,7 @@ def plot_uvj_cluster(groupID):
     Returns:
     """
 
-    # Read in the galaxies from that cluster
-    cluster_names = os.listdir(imd.cluster_dir + '/' + str(groupID))
-    # Splits into list of tuples: [(field, v4id), (field, v4id), (field,
-    # v4id), ...]
-    fields_ids = [(line.split('_')[0], line.split('_')[1])
-                  for line in cluster_names]
+    cluster_names, fields_ids = cdf.get_cluster_fields_ids(groupID)
 
     # UVJs of all galaxies
     galaxy_uvj_df = ascii.read(
@@ -227,35 +224,18 @@ def plot_uvj_cluster(groupID):
     legendfont = 14
     textfont = 16
 
-    # Generate the first figure, which will just show the spectra
     fig, ax = plt.subplots(figsize=(8, 7))
 
-    # Plots all UVJs in grey
-    ax.plot(galaxy_uvj_df['V_J'], galaxy_uvj_df['U_V'],
-            ls='', marker='o', markersize=1.5, color='grey', label='All Galaxies')
+    setup_uvj_plot(ax, galaxy_uvj_df, composite_uvj_df)
 
     # Plots the one within the cluster in black
     ax.plot(v_j, u_v,
             ls='', marker='o', markersize=3.5, color='black', label='Cluster Galaxies')
 
-    # Plot all composites as blue X
-    ax.plot(composite_uvj_df['V_J'], composite_uvj_df['U_V'],
-            ls='', marker='x', markersize=5, markeredgewidth=2, color='purple', label='All Composite SEDs')
-
     # Plot the composite SED as a red X
     ax.plot(uvj_composite['V_J'], uvj_composite['U_V'],
             ls='', marker='x', markersize=8, markeredgewidth=2, color='red', label='Composite SED')
 
-    ax.plot((-100, 0.69), (1.3, 1.3), color='black')
-    ax.plot((1.5, 1.5), (2.01, 100), color='black')
-    xline = np.arange(0.69, 1.5, 0.001)
-    yline = xline * 0.88 + 0.69
-    ax.plot(xline, yline, color='black')
-
-    ax.set_xlabel('V-J', fontsize=axisfont)
-    ax.set_ylabel('U-V', fontsize=axisfont)
-    ax.set_xlim(0, 2)
-    ax.set_ylim(0, 2.5)
     ax.legend(fontsize=legendfont - 4)
     ax.tick_params(labelsize=ticksize, size=ticks)
     fig.savefig(imd.cluster_dir + f'/cluster_stats/uvj_diagrams/{groupID}_UVJ.pdf')
@@ -271,6 +251,7 @@ def plot_all_uvj_clusters(n_clusters):
     Returns:
     """
     for i in range(n_clusters):
+        print(f'Plotting Cluster {i}')
         plot_uvj_cluster(i)
 
 
@@ -297,34 +278,57 @@ def plot_full_uvj(n_clusters):
     legendfont = 14
     textfont = 16
 
-    # Generate the first figure, which will just show the spectra
     fig, ax = plt.subplots(figsize=(8, 7))
 
-    # Plots all UVJs in grey
-    ax.plot(galaxy_uvj_df['V_J'], galaxy_uvj_df['U_V'],
-            ls='', marker='o', markersize=1.5, color='grey', label='All Galaxies')
+    setup_uvj_plot(ax, galaxy_uvj_df, composite_uvj_df)
 
-    # Plot all composites as blue X
-    ax.plot(composite_uvj_df['V_J'], composite_uvj_df['U_V'],
-            ls='', marker='x', markersize=5, markeredgewidth=2, color='purple', label='All Composite SEDs')
+    bad_clusters = cdf.find_bad_clusters(n_clusters)
+    bad_uvjs = composite_uvj_df.loc[bad_clusters]
 
-    low_clusters = cdf.find_low_clusters(n_clusters, thresh=5)
+    ax.plot(bad_uvjs['V_J'], bad_uvjs['U_V'],
+            ls='', marker='x', markersize=5, markeredgewidth=2, color='red', label='Bad Composite SEDs')
 
-    # ALSO FILTER BY SIMILARITIES SOMEHOW
+    for groupID in range(n_clusters):
+        ax.text(composite_uvj_df.iloc[groupID]['V_J'] - 0.02, composite_uvj_df.iloc[groupID]['U_V'] + 0.03, f'{groupID}', size=12, fontweight='bold', color='purple')
+
+    for groupID in bad_uvjs['groupID']:
+        ax.text(composite_uvj_df.iloc[groupID]['V_J'] - 0.02, composite_uvj_df.iloc[groupID]['U_V'] + 0.03, f'{groupID}', size=12, fontweight='bold', color='red')
 
     # Plot the bad composite SEDs as a red X
 
+    ax.legend(fontsize=legendfont - 4)
+    ax.tick_params(labelsize=ticksize, size=ticks)
+    fig.savefig(imd.cluster_dir + f'/cluster_stats/uvj_diagrams/Full_UVJ.pdf')
+    plt.close()
+
+
+def setup_uvj_plot(ax, galaxy_uvj_df, composite_uvj_df):
+    """Plots all background galaxies and clusters onto the UVJ diagram, as well as the lines
+
+    Parameters:
+    ax (matplotlib axis): matplotlib axis to plot on
+    galaxy_uvj_df (pd.dataFrame): dataframe containing uvj values for all galaxies
+    composite_uvj_df (pd.dataFrame): dataframe containing uvj values for all composites
+
+    Returns:
+    """
+
+    # Plots all galaxy UVJs in grey
+    ax.plot(galaxy_uvj_df['V_J'], galaxy_uvj_df['U_V'],
+            ls='', marker='o', markersize=1.5, color='grey', label='All Galaxies')
+
+    # Plot all composites as purple X
+    ax.plot(composite_uvj_df['V_J'], composite_uvj_df['U_V'],
+            ls='', marker='x', markersize=5, markeredgewidth=2, color='purple', label='All Composite SEDs')
+
+    # UVJ diagram lines
     ax.plot((-100, 0.69), (1.3, 1.3), color='black')
     ax.plot((1.5, 1.5), (2.01, 100), color='black')
     xline = np.arange(0.69, 1.5, 0.001)
     yline = xline * 0.88 + 0.69
     ax.plot(xline, yline, color='black')
 
-    ax.set_xlabel('V-J', fontsize=axisfont)
-    ax.set_ylabel('U-V', fontsize=axisfont)
-    ax.set_xlim(0, 2)
+    ax.set_xlabel('V-J', fontsize=14)
+    ax.set_ylabel('U-V', fontsize=14)
+    ax.set_xlim(-0.5, 2)
     ax.set_ylim(0, 2.5)
-    ax.legend(fontsize=legendfont - 4)
-    ax.tick_params(labelsize=ticksize, size=ticks)
-    fig.savefig(imd.cluster_dir + f'/cluster_stats/uvj_diagrams/{groupID}_UVJ.pdf')
-    plt.close()

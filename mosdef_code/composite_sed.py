@@ -12,6 +12,7 @@ from astropy.io import ascii
 from astropy.io import fits
 from read_data import mosdef_df
 from mosdef_obj_data_funcs import read_sed, read_mock_sed
+from cross_correlate import get_cross_cor
 import matplotlib.pyplot as plt
 from filter_response import lines, overview, get_index, get_filter_response
 from scipy import interpolate
@@ -55,14 +56,8 @@ def get_normalized_sed(target_field, target_v4id, field, v4id):
     target_good_idx = get_good_idx(target_sed)
     sed_good_idx = get_good_idx(sed)
 
-    # Old code, works but does not account for uncertainties
-    # norm_factor = np.sum(
-    # mock_target_sed['f_lambda']*mock_sed['f_lambda']) /
-    # np.sum(mock_sed['f_lambda']**2)
-
-    # adding uncertainties, ask about this
-    norm_factor = np.sum(
-        (mock_target_sed['f_lambda'] / mock_target_sed['err_f_lambda_u']) * (mock_sed['f_lambda'] / mock_sed['err_f_lambda_u'])) / np.sum(((mock_sed['f_lambda'])**2) / (mock_target_sed['err_f_lambda_u'] * mock_sed['err_f_lambda_u']))
+    # CONSIDER ADDING UNCERTANTIES
+    norm_factor = get_cross_cor(mock_target_sed, mock_sed)[0]
 
     print(f'Normalizing by multiplying {norm_factor}')
     if norm_factor < 0:
@@ -135,7 +130,7 @@ def get_composite_sed(groupID, run_filters=True):
             count = 1
         else:
             total_sed = pd.concat([total_sed, sed])
-        sed.to_csv(imd.home_dir + f'/mosdef/sed_csvs/norm_sed_csvs/{field}_{v4id}_norm.csv')
+        sed.to_csv(imd.home_dir + f'/mosdef/sed_csvs/norm_sed_csvs/{field}_{v4id}_norm.csv', index=False)
 
     # Now we have total_seds, which is a huge dataframe that combines the seds
     # of all of the individual objects
