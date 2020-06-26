@@ -134,7 +134,7 @@ def plot_image(ax, field, v4id, mosdef_obj):
     ax.get_yaxis().set_visible(False)
 
 
-def plot_spectrum(ax, field, v4id, mosdef_obj):
+def plot_spectrum(ax, field, v4id, mosdef_obj, ax_sn):
     """Given a field, id, and axis, plot the mosdef spectrum of an object
 
     Parameters:
@@ -151,12 +151,21 @@ def plot_spectrum(ax, field, v4id, mosdef_obj):
     for file in obj_files:
         print(f'Plotting {file}')
         spec_loc = imd.spectra_dir + file
-        hdu = fits.open(spec_loc)[1]
-        spec_data = hdu.data
+        hdu_spec = fits.open(spec_loc)[1]
+        hdu_errs = fits.open(spec_loc)[2]
+        spec_data = hdu_spec.data
+        spec_data_errs = hdu_errs.data
         wavelength = (
-            1. + np.arange(hdu.header["naxis1"]) - hdu.header["crpix1"]) * hdu.header["cdelt1"] + hdu.header["crval1"]
-        spec_data = clip_skylines(wavelength, spec_data)
+            1. + np.arange(hdu_spec.header["naxis1"]) - hdu_spec.header["crpix1"]) * hdu_spec.header["cdelt1"] + hdu_spec.header["crval1"]
+
+        spec_data, mask = clip_skylines(
+            wavelength, spec_data, spec_data_errs)
+        ax.plot(wavelength, spec_data_errs, color='orange', lw=1)
         ax.plot(wavelength, spec_data, color='blue', lw=1)
+        ax_sn.plot(wavelength, (spec_data / spec_data_errs))
+        ax.scatter(wavelength * np.logical_not(mask),
+                   np.zeros(len(wavelength)), color='red', lw=1)
+        ax.set_xlim(ax_sn.get_xlim())
 
 
 def plot_all_seds(zobjs):
@@ -181,7 +190,7 @@ def plot_all_seds(zobjs):
         counter = counter + 1
 
 
-def setup_spec_only(field, v4id, mosdef_obj):
+def setup_spec_only(zobjs):
     """Sets up the plot to plot ONLY the spectrum
 
     Parameters:
@@ -189,6 +198,11 @@ def setup_spec_only(field, v4id, mosdef_obj):
 
     Returns:
     """
-    fig, ax = plt.subplots(1, 1, figsize=(8, 8))
-    plot_spectrum(ax, field, v4id, mosdef_obj)
-    plt.show()
+    for obj in zobjs:
+        field = obj[0]
+        v4id = obj[1]
+        mosdef_obj = get_mosdef_obj(field, v4id)
+
+        fig, (ax, ax_sn) = plt.subplots(2, 1, figsize=(8, 9))
+        plot_spectrum(ax, field, v4id, mosdef_obj, ax_sn)
+        plt.show()

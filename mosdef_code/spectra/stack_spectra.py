@@ -17,6 +17,7 @@ from query_funcs import get_zobjs
 import initialize_mosdef_dirs as imd
 import cluster_data_funcs as cdf
 from spectra_funcs import clip_skylines, get_spectra_files
+import matplotlib.patches as patches
 
 
 def stack_spectra(groupID):
@@ -33,13 +34,14 @@ def stack_spectra(groupID):
     mosdef_objs = [get_mosdef_obj(field, int(v4id))
                    for field, v4id in fields_ids]
 
-    #min, max, step-size
+    # min, max, step-size
     spectrum_wavelength = np.arange(3000, 10000, 1)
 
     # Now that we have the mosdef objs for each galaxy in the cluster, we need
     # to loop over each one
     cluster_spectra_dfs = []
     interp_cluster_spectra_dfs = []
+    norm_factors = []
     for mosdef_obj in mosdef_objs:
         # Get the redshift and normalization
         z_spec = mosdef_obj['Z_MOSFIRE']
@@ -53,24 +55,18 @@ def stack_spectra(groupID):
         for spectrum_file in spectra_files:
             # Looping over each file, open the spectrum
             spec_loc = imd.spectra_dir + spectrum_file
-            hdu = fits.open(spec_loc)[1]
-            spec_data = hdu.data
-
-            if 'H' in spectrum_file:
-                filt = 'H'
-            if 'K' in spectrum_file:
-                filt = 'K'
-            if 'J' in spectrum_file:
-                filt = 'J'
-            if 'Y' in spectrum_file:
-                filt = 'Y'
+            hdu_spec = fits.open(spec_loc)[1]
+            hdu_errs = fits.open(spec_loc)[2]
+            spec_data = hdu_spec.data
+            spec_data_errs = hdu_errs.data
 
             # Compute the wavelength range
-            wavelength = (1. + np.arange(hdu.header["naxis1"]) - hdu.header[
-                "crpix1"]) * hdu.header["cdelt1"] + hdu.header["crval1"]
+            wavelength = (1. + np.arange(hdu_spec.header["naxis1"]) - hdu_spec.header[
+                "crpix1"]) * hdu_spec.header["cdelt1"] + hdu_spec.header["crval1"]
 
             # Clip the skylines:
-            spec_data = clip_skylines(wavelength, spec_data, filt)
+            spec_data, mask = clip_skylines(
+                wavelength, spec_data, spec_data_errs)
 
             # De-redshift
             rest_wavelength = wavelength / (1 + z_spec)
@@ -92,17 +88,37 @@ def stack_spectra(groupID):
                                               columns=['rest_wavelength', 'f_lambda_norm'])
             cluster_spectra_dfs.append(spectrum_df)
             interp_cluster_spectra_dfs.append(interp_spectrum_df)
+            norm_factors.append(norm_factor)
 
     # Pulls out just the flux values of each spectrum
     norm_interp_specs = [interp_cluster_spectra_dfs[i]['f_lambda_norm']
                          for i in range(len(interp_cluster_spectra_dfs))]
-    # For each wavelength, counts the number of spectra that are nonzero
+
+    nonzero_idxs = [np.nonzero(np.array(norm_interp_specs[i]))
+                    for i in range(len(norm_interp_specs))]
+
+    sum_norms = [np.zeros(len(norm_interp_specs[i]))
+                 for i in range(len(norm_interp_specs))]
+
+    for i in range(len(norm_interp_specs)):
+        sum_norms[i][nonzero_idxs[i]] = norm_factors[i]
+    # This sum_norms variable is a list of arrays. Each array correponds to
+    # one spectrum from one galaxy. In that array, every point for which this
+    # galaxy has a non-masked flux, there is it's normalization value. All
+    # other points are zero
+
+    # For each wavelength, counts the number of spectra that are nonzero - NOT
+    # USING
     number_specs_by_wave = np.count_nonzero(norm_interp_specs, axis=0)
 
+    norm_value_specs_by_wave = np.sum(sum_norms, axis=0)
+
     summed_spec = np.sum(norm_interp_specs, axis=0)
-    #total_spec = (summed_spec / number_specs_by_wave)
+
     # Have to use divz since lots of zeros
-    total_spec = divz(summed_spec, number_specs_by_wave)
+    total_spec = divz(summed_spec, norm_value_specs_by_wave)
+    # Now we have divided each point by the sum of the normalizations that
+    # contributed to it.
     total_spec_df = pd.DataFrame(zip(spectrum_wavelength, total_spec),
                                  columns=['wavelength', 'f_lambda'])
 
@@ -132,20 +148,62 @@ def plot_spec(groupID):
     total_spec_df = ascii.read(
         imd.cluster_dir + f'/composite_spectra/{groupID}_spectrum.csv').to_pandas()
 
-    fig, ax = plt.subplots(1, 1, figsize=(8, 8))
+    fig = plt.figure(figsize=(8, 8))
+    ax = fig.add_axes([0.07, 0.05, 0.9, 0.9])
+    ax_Ha = fig.add_axes([0.69, 0.65, 0.25, 0.25])
+
+    ax_Ha.spines['bottom'].set_color('red')
+    ax_Ha.spines['top'].set_color('red')
+    ax_Ha.spines['right'].set_color('red')
+    ax_Ha.spines['left'].set_color('red')
 
     spectrum = total_spec_df['f_lambda']
     wavelength = total_spec_df['wavelength']
 
     ax.plot(wavelength, spectrum, color='black', lw=1)
+    ax_Ha.plot(wavelength, spectrum, color='black', lw=1)
 
-    ax.set_ylim(-1 * 10**-18, 1 * 10**-18)
+    ax.set_ylim(-1 * 10**-18, 1.01 * np.max(spectrum))
+    y_Ha_lim_max = np.max(spectrum[np.logical_and(
+        wavelength > 6570, wavelength < 6800)])
+    y_Ha_lim_min = np.min(spectrum[np.logical_and(
+        wavelength > 6570, wavelength < 6800)])
+    ax_Ha.set_ylim(y_Ha_lim_min, y_Ha_lim_max)
+    ax_Ha.set_xlim(6500, 6800)
+
+    rect = patches.Rectangle((6500, y_Ha_lim_min), 300, (y_Ha_lim_max -
+                                                         y_Ha_lim_min), linewidth=1, edgecolor='red', facecolor='None')
+
+    ax.add_patch(rect)
     # ax.set_xlim()
 
-    plt.tight_layout()
     fig.savefig(imd.cluster_dir + f'/composite_spectra/{groupID}_spectrum.pdf')
     plt.close()
 
 
 def divz(X, Y):
     return X / np.where(Y, Y, Y + 1) * np.not_equal(Y, 0)
+
+
+def stack_all_spectra(n_clusters):
+    """Runs the stack_spectra() function on every cluster
+
+    Parameters:
+    n_clusters (int): Number of clusters
+
+    Returns:
+    """
+    for i in range(n_clusters):
+        stack_spectra(i)
+
+
+def plot_all_spectra(n_clusters):
+    """Runs the plot_spec() function on every cluster
+
+    Parameters:
+    n_clusters (int): Number of clusters
+
+    Returns:
+    """
+    for i in range(n_clusters):
+        plot_spec(i)

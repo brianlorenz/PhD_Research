@@ -15,21 +15,18 @@ import cluster_data_funcs as cdf
 import mpu
 
 
-def clip_skylines(wavelength, spectrum, filt):
+def clip_skylines(wavelength, spectrum, spectrum_errs):
     """Automated way to remove skylines form a spectrum
 
     Parameters:
     wavelength (array): array of the wavelength range
     spectrum (array): array of the corresponding f_lambda values
-    filt (str): letter of the filter. e.g. 'J'
+    spectrum_errs (array): array of the corresponding f_lambda uncertainty values
+
 
     Returns:
     spectrum_clip (array): clipped spectrum, with skylines set to zero
     """
-
-    # This stacks observed spectra to find the skylines, then masks them out
-    filt_mask = ascii.read(imd.home_dir + f'/mosdef/Spectra/skyline_masks/{filt}_mask.csv', format='no_header').to_pandas()
-    filt_mask.columns = ['mask']
 
     '''
     # This clips based on high deviations from the median spectrum
@@ -38,20 +35,23 @@ def clip_skylines(wavelength, spectrum, filt):
     spectrum[spectrum < -np.abs(2 * perc_low)] = 0.
     '''
 
-    '''
-    for skyline in skylines:
-        bad = np.greater(wavelength, skyline - 3) * \
-            np.less(wavelength, skyline + 3)
-    '''
+    thresh = np.percentile(spectrum, 95)
+    print(thresh)
+    mask = np.ones(len(spectrum))
 
-    mask = [mpu.string.str2bool(filt_mask['test'].iloc[i])
-            for i in range(len(filt_mask))]
+    thresh = 3 * np.median(spectrum_errs)
+    for i in range(len(spectrum)):
+        if spectrum_errs[i] > thresh:
+            # Masks one pixel on either side of the current pixel
+            mask[i - 1:i + 2] = 0
 
-    spectrum[mask] = 0
+    thresh = 3
+    sig_noise = spectrum / spectrum_errs
+    mask = sig_noise < thresh
 
-    breakpoint()
+    spectrum = spectrum * mask
 
-    return spectrum
+    return spectrum, mask
 
 
 def get_spectra_files(mosdef_obj, filt=0):
@@ -72,7 +72,7 @@ def get_spectra_files(mosdef_obj, filt=0):
 
 
 def find_skylines(zobjs, filt):
-    """Stacks many spectra to identify the birghtest skylines
+    """Stacks many spectra to identify the birghtest skylines - Doesn't work
 
     Parameters:
     zobjs (list): Use get_zobjs() function. Only needs a slice of this
@@ -84,6 +84,8 @@ def find_skylines(zobjs, filt):
     # Idea here is to read in a bunch of spectra (which will be at different
     # redshifts, then stack them, leaving only the skylines. Emission should
     # get washed out)
+
+    # Doesn't Work, skylines are at different locations
     spectra_dfs = []
 
     for field, v4id in zobjs:
