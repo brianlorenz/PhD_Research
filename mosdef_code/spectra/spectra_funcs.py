@@ -26,6 +26,7 @@ def clip_skylines(wavelength, spectrum, spectrum_errs):
 
     Returns:
     spectrum_clip (array): clipped spectrum, with skylines set to zero
+    mask (array): 0 where the spectrum should be clipped, 1 where it is fine
     """
 
     '''
@@ -49,9 +50,9 @@ def clip_skylines(wavelength, spectrum, spectrum_errs):
     sig_noise = spectrum / spectrum_errs
     mask = sig_noise < thresh
 
-    spectrum = spectrum * mask
+    spectrum_clip = spectrum * mask
 
-    return spectrum, mask
+    return spectrum_clip, mask
 
 
 def get_spectra_files(mosdef_obj, filt=0):
@@ -69,6 +70,32 @@ def get_spectra_files(mosdef_obj, filt=0):
     if filt:
         obj_files = [filename for filename in obj_files if f'{filt}' in filename]
     return obj_files
+
+
+def median_bin_spec(wavelength, spectrum, binsize=10):
+    """Median-bins a spectrum
+
+    Parameters:
+    wavelength (array): array of the wavelength range
+    spectrum (array): array of the corresponding f_lambda values
+    binsize (int): Number of points to bin over
+
+    Returns:
+    wave_bin (array): Binned wavelengths
+    spec_bin (array): Binned spectral value
+    """
+    count_idx = 0
+    wave_bin = []
+    spec_bin = []
+    while count_idx < len(wavelength):
+        if count_idx + binsize > len(wavelength):
+            binsize = len(wavelength) - count_idx
+        wave_bin.append(np.median(wavelength[count_idx:count_idx + binsize]))
+        spec_bin.append(np.median(spectrum[count_idx:count_idx + binsize]))
+        count_idx = count_idx + binsize
+    wave_bin = np.array(wave_bin)
+    spec_bin = np.array(spec_bin)
+    return wave_bin, spec_bin
 
 
 def find_skylines(zobjs, filt):

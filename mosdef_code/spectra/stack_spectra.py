@@ -16,7 +16,7 @@ import scipy.integrate as integrate
 from query_funcs import get_zobjs
 import initialize_mosdef_dirs as imd
 import cluster_data_funcs as cdf
-from spectra_funcs import clip_skylines, get_spectra_files
+from spectra_funcs import clip_skylines, get_spectra_files, median_bin_spec
 import matplotlib.patches as patches
 
 
@@ -119,8 +119,8 @@ def stack_spectra(groupID):
     total_spec = divz(summed_spec, norm_value_specs_by_wave)
     # Now we have divided each point by the sum of the normalizations that
     # contributed to it.
-    total_spec_df = pd.DataFrame(zip(spectrum_wavelength, total_spec),
-                                 columns=['wavelength', 'f_lambda'])
+    total_spec_df = pd.DataFrame(zip(spectrum_wavelength, total_spec, number_specs_by_wave, norm_value_specs_by_wave),
+                                 columns=['wavelength', 'f_lambda', 'n_galaxies', 'norm_value_summed'])
 
     total_spec_df.to_csv(
         imd.cluster_dir + f'/composite_spectra/{groupID}_spectrum.csv', index=False)
@@ -149,8 +149,9 @@ def plot_spec(groupID):
         imd.cluster_dir + f'/composite_spectra/{groupID}_spectrum.csv').to_pandas()
 
     fig = plt.figure(figsize=(8, 8))
-    ax = fig.add_axes([0.07, 0.05, 0.9, 0.9])
-    ax_Ha = fig.add_axes([0.69, 0.65, 0.25, 0.25])
+    ax = fig.add_axes([0.09, 0.35, 0.88, 0.60])
+    ax_Ha = fig.add_axes([0.69, 0.70, 0.25, 0.21])
+    ax_contribute = fig.add_axes([0.09, 0.08, 0.88, 0.22])
 
     ax_Ha.spines['bottom'].set_color('red')
     ax_Ha.spines['top'].set_color('red')
@@ -159,23 +160,39 @@ def plot_spec(groupID):
 
     spectrum = total_spec_df['f_lambda']
     wavelength = total_spec_df['wavelength']
+    n_galaxies = total_spec_df['n_galaxies']
+    norm_value_summed = total_spec_df['norm_value_summed']
 
-    ax.plot(wavelength, spectrum, color='black', lw=1)
+    wave_bin, spec_bin = median_bin_spec(wavelength, spectrum)
+
+    ax.plot(wavelength, spectrum, color='black', lw=1, label='Spectrum')
+    ax.plot(wave_bin, spec_bin, color='orange', lw=1, label='Median Binned')
     ax_Ha.plot(wavelength, spectrum, color='black', lw=1)
+    ax_contribute.plot(wavelength, n_galaxies, color='orange',
+                       lw=1, label='Number of Galaxies')
+    ax_contribute.plot(wavelength, norm_value_summed, color='black',
+                       lw=1, label='Normalized Value of Galaxies')
 
     ax.set_ylim(-1 * 10**-18, 1.01 * np.max(spectrum))
     y_Ha_lim_max = np.max(spectrum[np.logical_and(
         wavelength > 6570, wavelength < 6800)])
     y_Ha_lim_min = np.min(spectrum[np.logical_and(
         wavelength > 6570, wavelength < 6800)])
-    ax_Ha.set_ylim(y_Ha_lim_min, y_Ha_lim_max)
+    ax_Ha.set_ylim(y_Ha_lim_min, y_Ha_lim_max * 1.1)
     ax_Ha.set_xlim(6500, 6800)
+    ax.legend(loc=2, fontsize=axisfont - 3)
+    ax_contribute.legend(fontsize=axisfont - 3)
 
     rect = patches.Rectangle((6500, y_Ha_lim_min), 300, (y_Ha_lim_max -
-                                                         y_Ha_lim_min), linewidth=1, edgecolor='red', facecolor='None')
+                                                         y_Ha_lim_min), linewidth=1.5, edgecolor='red', facecolor='None')
 
     ax.add_patch(rect)
     # ax.set_xlim()
+    ax_contribute.set_xlabel('Wavelength ($\\rm{\AA}$)', fontsize=axisfont)
+    ax_contribute.set_ylabel('N', fontsize=axisfont)
+    ax.set_ylabel('F$_\lambda$', fontsize=axisfont)
+    ax.tick_params(labelsize=ticksize, size=ticks)
+    ax_contribute.tick_params(labelsize=ticksize, size=ticks)
 
     fig.savefig(imd.cluster_dir + f'/composite_spectra/{groupID}_spectrum.pdf')
     plt.close()

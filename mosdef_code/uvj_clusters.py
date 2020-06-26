@@ -289,7 +289,7 @@ def plot_full_uvj(n_clusters):
             ls='', marker='x', markersize=5, markeredgewidth=2, color='red', label='Bad Composite SEDs')
 
     for groupID in range(n_clusters):
-        ax.text(composite_uvj_df.iloc[groupID]['V_J'] - 0.02, composite_uvj_df.iloc[groupID]['U_V'] + 0.03, f'{groupID}', size=12, fontweight='bold', color='purple')
+        ax.text(composite_uvj_df.iloc[groupID]['V_J'] - 0.02, composite_uvj_df.iloc[groupID]['U_V'] + 0.03, f'{groupID}', size=12, fontweight='bold', color='black')
 
     for groupID in bad_uvjs['groupID']:
         ax.text(composite_uvj_df.iloc[groupID]['V_J'] - 0.02, composite_uvj_df.iloc[groupID]['U_V'] + 0.03, f'{groupID}', size=12, fontweight='bold', color='red')
@@ -319,7 +319,7 @@ def setup_uvj_plot(ax, galaxy_uvj_df, composite_uvj_df):
 
     # Plot all composites as purple X
     ax.plot(composite_uvj_df['V_J'], composite_uvj_df['U_V'],
-            ls='', marker='x', markersize=5, markeredgewidth=2, color='purple', label='All Composite SEDs')
+            ls='', marker='x', markersize=5, markeredgewidth=2, color='black', label='All Composite SEDs')
 
     # UVJ diagram lines
     ax.plot((-100, 0.69), (1.3, 1.3), color='black')
