@@ -133,7 +133,6 @@ def plot_spec(groupID):
     """Plots the spectrum
 
     Parameters:
-    total_spec_df (pd.DataFrame): Dataframe from above containing wavelength vs f_lambda, all normalizeda and stacked
     groupID (int): id of the group that you are working with
 
     Returns:
