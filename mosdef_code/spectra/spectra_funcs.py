@@ -120,8 +120,8 @@ def norm_spec_sed(composite_sed, spectrum_flux, spectrum_wavelength, mask):
 
     Parameters:
     composite_sed (pd.DataFrame): From read_composite_sed
-    fluxes (pd.DataFrame): spectrum fluxes
-    wavelength (array): spectrum wavelength
+    spectrum_flux (pd.DataFrame): spectrum fluxes
+    spectrum_wavelength (array): spectrum wavelength
     mask (0,1 array): values of skylines to mask, 0 where spectrum should be clipped
 
     Returns:
@@ -136,9 +136,10 @@ def norm_spec_sed(composite_sed, spectrum_flux, spectrum_wavelength, mask):
 
     min_wave = spectrum_wavelength[edge]
     max_wave = spectrum_wavelength[-edge]
+    nonzero_idxs = (spectrum_flux != 0)
 
     wave_bin, spec_bin = median_bin_spec(
-        spectrum_wavelength[edge:-edge], spectrum_flux[edge:-edge], binsize=smooth_width)
+        spectrum_wavelength[nonzero_idxs][edge:-edge], spectrum_flux[nonzero_idxs][edge:-edge], binsize=smooth_width)
     interp_binned_spec = interpolate.interp1d(
         wave_bin, spec_bin, fill_value=0, bounds_error=False)
 
@@ -154,12 +155,7 @@ def norm_spec_sed(composite_sed, spectrum_flux, spectrum_wavelength, mask):
     spectrum_idxs = [np.argmin(np.abs(spectrum_wavelength - wave))
                      for wave in compare_waves]
 
-    # Meidan-smooth by smooth_width
-    spectrum_fluxes = [np.median(spectrum_flux[idx - smooth_width:idx + smooth_width])
-                       for idx in spectrum_idxs]
-
     f1 = sed_flux[sed_idxs[0]]
-    #f2 = np.array(spectrum_fluxes)
     f2 = np.array(interp_binned_spec(compare_waves))
 
     a12 = divz(np.sum(f1 * f2), np.sum(f2**2))
@@ -198,6 +194,57 @@ def get_too_low_gals(groupID, thresh=0.1):
     cut_wave_high = np.percentile(wavelength[too_low_gals][plot_cut], 5)
 
     return too_low_gals, plot_cut, not_plot_cut, n_gals_in_group, cutoff, cut_wave_high, cut_wave_low
+
+
+def prepare_mock_observe_spectrum(groupID):
+    """Calculates filter ranges for all SEDs in the group
+
+    Parameters:
+    groupID (int): ID of the cluster
+
+    Returns:
+    filter_dfs(list of pd.DataFrames): Each entry of the list is the a dataframe of a filter curve
+    bounds (list of tuples of floats): (start_wavelength, end_wavelength) for each filter curve
+    points (list of ints): Wavelength of each point that the filter corresponds to on the composite sed
+    """
+    filter_dir = imd.home_dir + f'/mosdef/composite_sed_csvs/composite_filter_csvs/{groupID}_filter_csvs/'
+    filter_files = os.listdir(filter_dir)
+    filter_dfs = [ascii.read(filter_dir + file).to_pandas()
+                  for file in filter_files]
+    filt_starts = [filter_df.iloc[filter_df[filter_df.transmission.ne(
+        0)].index[0]].rest_wavelength for filter_df in filter_dfs]
+    filt_ends = [filter_df.iloc[filter_df[filter_df.transmission.ne(
+        0)].index[-1]].rest_wavelength for filter_df in filter_dfs]
+    bounds = list(zip(filt_starts, filt_ends))
+    points = [int(file[6:-4]) for file in filter_files]
+    return filter_dfs, bounds, points
+
+
+def mock_observe_spectrum(composite_sed, spectrum_flux, spectrum_wavelength, filter_dfs, bounds):
+    """Calculates filter ranges for all SEDs in the group
+
+    Parameters:
+    groupID (int): ID of the cluster
+    filter_dfs(list of pd.DataFrames): Each entry of the list is the a dataframe of a filter curve
+    bounds (list of tuples of floats): (start_wavelength, end_wavelength) for each filter curve
+
+    Returns:
+
+    """
+    spectrum_wavelength_min = spectrum_wavelength[0]
+    spectrum_wavelength_max = spectrum_wavelength[-1]
+
+
+# WORKING HERE WANT TO FIND THE BEST WAY TO LOCATE WHERE WE SOULD MOCK
+# OBSERVE THE SPECTRUM
+
+    count = 0
+    useable_idxs = []
+    for start, end in bounds:
+        if start > spectrum_wavelength_min and end < spectrum_wavelength_max:
+            useable_idxs.append(count)
+
+        count = count + 1
 
 
 def find_skylines(zobjs, filt):
