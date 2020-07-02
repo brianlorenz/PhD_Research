@@ -13,6 +13,7 @@ import matplotlib.pyplot as plt
 import initialize_mosdef_dirs as imd
 import cluster_data_funcs as cdf
 import mpu
+from scipy import interpolate
 
 
 def clip_skylines(wavelength, spectrum, spectrum_errs):
@@ -37,7 +38,6 @@ def clip_skylines(wavelength, spectrum, spectrum_errs):
     '''
 
     thresh = np.percentile(spectrum, 95)
-    print(thresh)
     mask = np.ones(len(spectrum))
 
     thresh = 3 * np.median(spectrum_errs)
@@ -45,10 +45,11 @@ def clip_skylines(wavelength, spectrum, spectrum_errs):
         if spectrum_errs[i] > thresh:
             # Masks one pixel on either side of the current pixel
             mask[i - 1:i + 2] = 0
-
+    '''
     thresh = 3
-    sig_noise = spectrum / spectrum_errs
-    mask = sig_noise < thresh
+    sig_noise = divz(spectrum, spectrum_errs)
+    mask = sig_noise > thresh
+    '''
 
     spectrum_clip = spectrum * mask
 
@@ -96,6 +97,107 @@ def median_bin_spec(wavelength, spectrum, binsize=10):
     wave_bin = np.array(wave_bin)
     spec_bin = np.array(spec_bin)
     return wave_bin, spec_bin
+
+
+def read_spectrum(groupID, norm_method='cluster_norm'):
+    """Reads in the spectrum file for a given cluster
+
+    Parameters:
+    groupID (int): id of the cluster to read
+    norm_method (str): folder to look for spectrum
+
+    Returns:
+    spectrum_df (pd.DataFrame): Dataframe containing wavelength and fluxes for the spectrum
+    """
+    spectrum_df = ascii.read(
+        imd.cluster_dir + f'/composite_spectra/{norm_method}/{groupID}_spectrum.csv').to_pandas()
+
+    return spectrum_df
+
+
+def norm_spec_sed(composite_sed, spectrum_flux, spectrum_wavelength, mask):
+    """Gets the normalization and correlation between composite SED and composite spectrum
+
+    Parameters:
+    composite_sed (pd.DataFrame): From read_composite_sed
+    fluxes (pd.DataFrame): spectrum fluxes
+    wavelength (array): spectrum wavelength
+    mask (0,1 array): values of skylines to mask, 0 where spectrum should be clipped
+
+    Returns:
+    a12 (float): Normalization coefficient
+    b12 (float): correlation, where 0 is identical and 1 is uncorrelated
+    used_fluxes_df (pd.DataFrame): DataFrame containing the wavelengths and fluxes of the points that were compared on
+    """
+    # First, we find the points in the composite SED that we can correlate against
+    # Want to use all points not near edges of spectrum
+    edge = 50
+    smooth_width = 200
+
+    min_wave = spectrum_wavelength[edge]
+    max_wave = spectrum_wavelength[-edge]
+
+    wave_bin, spec_bin = median_bin_spec(
+        spectrum_wavelength[edge:-edge], spectrum_flux[edge:-edge], binsize=smooth_width)
+    interp_binned_spec = interpolate.interp1d(
+        wave_bin, spec_bin, fill_value=0, bounds_error=False)
+
+    sed_flux = composite_sed['f_lambda']
+    sed_wavelength = composite_sed['rest_wavelength']
+
+    sed_idxs = np.where(np.logical_and(
+        sed_wavelength > min_wave, sed_wavelength < max_wave))
+
+    compare_waves = sed_wavelength.iloc[sed_idxs]
+
+    # Find where spectrum is closest to these values
+    spectrum_idxs = [np.argmin(np.abs(spectrum_wavelength - wave))
+                     for wave in compare_waves]
+
+    # Meidan-smooth by smooth_width
+    spectrum_fluxes = [np.median(spectrum_flux[idx - smooth_width:idx + smooth_width])
+                       for idx in spectrum_idxs]
+
+    f1 = sed_flux[sed_idxs[0]]
+    #f2 = np.array(spectrum_fluxes)
+    f2 = np.array(interp_binned_spec(compare_waves))
+
+    a12 = divz(np.sum(f1 * f2), np.sum(f2**2))
+    b12 = np.sqrt(np.sum((f1 - a12 * f2)**2) / np.sum(f1**2))
+
+    print(f'Normalization: {a12}')
+
+    used_fluxes_df = pd.DataFrame(zip(compare_waves, f1, f2), columns=[
+                                  'wavelength', 'sed_flux', 'spectrum_flux'])
+    return a12, b12, used_fluxes_df
+
+
+def get_too_low_gals(groupID, thresh=0.1):
+    """Given a groupID, find out which parts of the spectrum have too few galaxies to be useable
+
+    Parameters:
+    groupID (int): ID of the cluster to use
+    thresh (float): from 0 to 1, fraction of galaxies over which is acceptable. i.e., thresh=0.1 means to good parts of the spectrum have at least 10% of the number of galaxies in the cluster
+
+    Returns:
+    too_low_gals (pd.DataFrame): True/False frame of where the spectrum is 'good'
+    plot_cut (pd.DataFrame): Frist half of the above frame, less than 500 angstroms. Used for plotting
+    not_plot_clut (pd.DataFrame): Other half of the above frame, used for plotting
+    n_gals_in_group (int): Number of galaxies in the cluster
+    cutoff (int): Number of galaixes above which ist acceptable
+    """
+    n_gals_in_group = len(os.listdir(imd.cluster_dir + '/' + str(groupID)))
+    total_spec_df = read_spectrum(groupID)
+    wavelength = total_spec_df['wavelength']
+    n_galaxies = total_spec_df['n_galaxies']
+    too_low_gals = (n_galaxies / n_gals_in_group) < thresh
+    plot_cut = (wavelength[too_low_gals] > 5000)
+    not_plot_cut = np.logical_not(plot_cut)
+    cutoff = int(thresh * n_gals_in_group)
+    cut_wave_low = np.percentile(wavelength[too_low_gals][not_plot_cut], 95)
+    cut_wave_high = np.percentile(wavelength[too_low_gals][plot_cut], 5)
+
+    return too_low_gals, plot_cut, not_plot_cut, n_gals_in_group, cutoff, cut_wave_high, cut_wave_low
 
 
 def find_skylines(zobjs, filt):
@@ -171,3 +273,7 @@ def find_skylines(zobjs, filt):
     plt.show()
 
     return
+
+
+def divz(X, Y):
+    return X / np.where(Y, Y, Y + 1) * np.not_equal(Y, 0)

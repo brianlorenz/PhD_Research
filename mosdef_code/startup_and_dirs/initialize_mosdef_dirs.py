@@ -3,9 +3,9 @@ import os
 import sys
 
 home_dir = str(Path.home())
-cluster_dir = home_dir + '/mosdef/Clustering/'
-spectra_dir = home_dir + '/mosdef/Spectra/1D/'
-mosdef_dir = home_dir + '/mosdef/'
+cluster_dir = home_dir + '/mosdef/Clustering'
+spectra_dir = home_dir + '/mosdef/Spectra/1D'
+mosdef_dir = home_dir + '/mosdef'
 
 loc_3DHST = home_dir + '/mosdef/Surveys/3DHST/v4.1/'
 loc_ZFOURGE = home_dir + '/mosdef/Surveys/ZFOURGE/'
@@ -31,6 +31,8 @@ def reset_cluster_dirs(cluster_dir):
     check_and_make_dir(cluster_dir + '/composite_seds')
     check_and_make_dir(cluster_dir + '/composite_seds/composite_seds_nofilt')
     check_and_make_dir(cluster_dir + '/composite_spectra')
+    check_and_make_dir(cluster_dir + '/composite_spectra/cluster_norm')
+    check_and_make_dir(cluster_dir + '/composite_spectra/composite_sed_norm')
 
 
 def reset_sed_dirs(mosdef_dir):

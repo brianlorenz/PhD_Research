@@ -18,7 +18,7 @@ import scipy.integrate as integrate
 from query_funcs import get_zobjs
 import initialize_mosdef_dirs as imd
 import cluster_data_funcs as cdf
-from spectra_funcs import clip_skylines, get_spectra_files, median_bin_spec
+from spectra_funcs import clip_skylines, get_spectra_files, median_bin_spec, norm_spec_sed, get_too_low_gals, read_spectrum
 import matplotlib.patches as patches
 
 
@@ -39,9 +39,13 @@ def plot_spectrum_sed(groupID, binsize):
     legendfont = 14
     textfont = 16
 
-    total_spec_df = ascii.read(
-        imd.cluster_dir + f'/composite_spectra/{groupID}_spectrum.csv').to_pandas()
+    total_spec_df = read_spectrum(groupID)
     composite_sed = read_composite_sed(groupID)
+
+    #norm, b12, used_values_df = norm_spec_sed(composite_sed, total_spec_df)
+    # print(f'Normalized by {norm}')
+    # print(f'Correlation factor: {1 - b12}')
+    norm = 1
 
     fig, ax = plt.subplots(1, 1, figsize=(8, 8))
 
@@ -50,21 +54,37 @@ def plot_spectrum_sed(groupID, binsize):
 
     wave_bin, spec_bin = median_bin_spec(wavelength, spectrum, binsize=binsize)
 
+    too_low_gals, plot_cut, not_plot_cut, n_gals_in_group, cutoff, cut_wave_high, cut_wave_low = get_too_low_gals(
+        groupID)
+
     # ax.plot(wavelength, spectrum, color='black', lw=1, label='Spectrum')
-    ax.plot(wave_bin, spec_bin, color='blue',
+    ax.plot(wave_bin, spec_bin * norm, color='blue',
             lw=1, label='Median Binned Spectrum')
+    ax.plot(wave_bin[wave_bin < cut_wave_low], spec_bin[wave_bin < cut_wave_low] * norm, color='red',
+            lw=1)
+    ax.plot(wave_bin[wave_bin > cut_wave_high], spec_bin[wave_bin > cut_wave_high] * norm, color='red',
+            lw=1)
+    # ax.plot(wave_bin[plot_cut], spec_bin[plot_cut] * norm, color='red',
+    #         lw=1, label=f'Too Low ({cutoff})')
+    # ax.plot(wave_bin[not_plot_cut], spec_bin[not_plot_cut] * norm, color='red',
+    #         lw=1)
+    # ax.plot(used_values_df['wavelength'],
+    #         used_values_df['sed_flux'], color='orange', ls='None', marker='o')
+    # ax.plot(used_values_df['wavelength'],
+    # used_values_df['spectrum_flux'] * norm, color='purple', ls='None',
+    # marker='o')
     ax.errorbar(composite_sed['rest_wavelength'], composite_sed['f_lambda'],
                 yerr=[composite_sed['err_f_lambda_d'], composite_sed['err_f_lambda_u']], ls='', marker='o', markersize=4, color='black')
 
-    if np.min(spec_bin) < 0:
-        min_y = 1.01 * np.min([np.min(spec_bin),
+    if np.min(spec_bin * norm) < 0:
+        min_y = 1.01 * np.min([np.min(spec_bin * norm),
                                np.min(composite_sed['f_lambda'])])
     else:
-        min_y = 0.99 * np.min([np.min(spec_bin),
+        min_y = 0.99 * np.min([np.min(spec_bin * norm),
                                np.min(composite_sed['f_lambda'])])
-    ax.set_ylim(min_y, 1.01 * np.max([np.max(spec_bin),
+    ax.set_ylim(min_y, 1.01 * np.max([np.max(spec_bin * norm),
                                       np.max(composite_sed['f_lambda'])]))
-    ax.legend(loc=2, fontsize=axisfont - 3)
+    ax.legend(loc=1, fontsize=axisfont - 3)
 
     ax.set_xlabel('Wavelength ($\\rm{\AA}$)', fontsize=axisfont)
     ax.set_ylabel('F$_\lambda$', fontsize=axisfont)
