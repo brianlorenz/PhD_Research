@@ -9,6 +9,7 @@ from astropy.io import ascii
 from astropy.io import fits
 from read_data import mosdef_df
 from mosdef_obj_data_funcs import read_sed, read_mock_sed, get_mosdef_obj, read_composite_sed
+import scipy.integrate as integrate
 import matplotlib.pyplot as plt
 import initialize_mosdef_dirs as imd
 import cluster_data_funcs as cdf
@@ -99,7 +100,7 @@ def median_bin_spec(wavelength, spectrum, binsize=10):
     return wave_bin, spec_bin
 
 
-def read_spectrum(groupID, norm_method='cluster_norm'):
+def read_composite_spectrum(groupID, norm_method='cluster_norm'):
     """Reads in the spectrum file for a given cluster
 
     Parameters:
@@ -115,14 +116,12 @@ def read_spectrum(groupID, norm_method='cluster_norm'):
     return spectrum_df
 
 
-def norm_spec_sed(composite_sed, spectrum_flux, spectrum_wavelength, mask):
+def norm_spec_sed(composite_sed, spectrum_df):
     """Gets the normalization and correlation between composite SED and composite spectrum
 
     Parameters:
     composite_sed (pd.DataFrame): From read_composite_sed
-    spectrum_flux (pd.DataFrame): spectrum fluxes
-    spectrum_wavelength (array): spectrum wavelength
-    mask (0,1 array): values of skylines to mask, 0 where spectrum should be clipped
+    spectrum_df (pd.DataFrame): From stack_spectra.py, read in spectra then clipped skylines
 
     Returns:
     a12 (float): Normalization coefficient
@@ -131,15 +130,18 @@ def norm_spec_sed(composite_sed, spectrum_flux, spectrum_wavelength, mask):
     """
     # First, we find the points in the composite SED that we can correlate against
     # Want to use all points not near edges of spectrum
-    edge = 50
+    edge = 20
     smooth_width = 200
+
+    masked_spectrum_df = spectrum_df[spectrum_df['mask'] == 1]
+    spectrum_flux = masked_spectrum_df['f_lambda']
+    spectrum_wavelength = masked_spectrum_df['rest_wavelength']
 
     min_wave = spectrum_wavelength[edge]
     max_wave = spectrum_wavelength[-edge]
-    nonzero_idxs = (spectrum_flux != 0)
 
     wave_bin, spec_bin = median_bin_spec(
-        spectrum_wavelength[nonzero_idxs][edge:-edge], spectrum_flux[nonzero_idxs][edge:-edge], binsize=smooth_width)
+        spectrum_wavelength[edge:-edge], spectrum_flux[edge:-edge], binsize=smooth_width)
     interp_binned_spec = interpolate.interp1d(
         wave_bin, spec_bin, fill_value=0, bounds_error=False)
 
@@ -183,7 +185,7 @@ def get_too_low_gals(groupID, thresh=0.1):
     cutoff (int): Number of galaixes above which ist acceptable
     """
     n_gals_in_group = len(os.listdir(imd.cluster_dir + '/' + str(groupID)))
-    total_spec_df = read_spectrum(groupID)
+    total_spec_df = read_composite_spectrum(groupID)
     wavelength = total_spec_df['wavelength']
     n_galaxies = total_spec_df['n_galaxies']
     too_low_gals = (n_galaxies / n_gals_in_group) < thresh
@@ -220,31 +222,64 @@ def prepare_mock_observe_spectrum(groupID):
     return filter_dfs, bounds, points
 
 
-def mock_observe_spectrum(composite_sed, spectrum_flux, spectrum_wavelength, filter_dfs, bounds):
+def mock_observe_spectrum(composite_sed, spectrum_df, filter_dfs, bounds, points):
     """Calculates filter ranges for all SEDs in the group
 
     Parameters:
-    groupID (int): ID of the cluster
+    composite_sed (pd.DataFrame): Composite SED of the group, from read_composite_sed()
+    spectrum_df (pd.DataFrame): from stack_spectra.py, read in spectrum with sky lines clipped
     filter_dfs(list of pd.DataFrames): Each entry of the list is the a dataframe of a filter curve
     bounds (list of tuples of floats): (start_wavelength, end_wavelength) for each filter curve
+    points (list): Centers of the points
 
     Returns:
+    scaled_flux_filter_nu (float): The result of observing the specturm in this filter, scaled by the amount of flux missing
+    fraction_in_range (float): Percentage of the filter transmission that the spectrum covers - 1 means the spectrum is fully inside the filter. Errors increase as this gets lower
+    composite_wave (float): wavelength used for comparison with composite SED
+    composite_flux (float): flux value at that wavelength
 
     """
-    spectrum_wavelength_min = spectrum_wavelength[0]
-    spectrum_wavelength_max = spectrum_wavelength[-1]
+    masked_spectrum_df = spectrum_df[spectrum_df['mask'] == 1]
 
+    spectrum_flux_clip = masked_spectrum_df['f_lambda_clip']
+    spectrum_wavelength = masked_spectrum_df['rest_wavelength']
 
-# WORKING HERE WANT TO FIND THE BEST WAY TO LOCATE WHERE WE SOULD MOCK
-# OBSERVE THE SPECTRUM
+    spectrum_wavelength_min = spectrum_wavelength.iloc[0]
+    spectrum_wavelength_max = spectrum_wavelength.iloc[-1]
+    spectrum_wavelength_mid = np.median(spectrum_wavelength)
 
-    count = 0
-    useable_idxs = []
-    for start, end in bounds:
-        if start > spectrum_wavelength_min and end < spectrum_wavelength_max:
-            useable_idxs.append(count)
+    # Then, use the one that is the most centered on the spectrum
+    idx_use = np.argmin(np.abs(points - spectrum_wavelength_mid))
 
-        count = count + 1
+    filter_df = filter_dfs[idx_use]
+
+    # Observes the filter
+    interp_spec = interpolate.interp1d(spectrum_wavelength, spectrum_flux_clip)
+    interp_filt = interpolate.interp1d(
+        filter_df['rest_wavelength'], filter_df['transmission'])
+    numerator = integrate.quad(lambda wave: (1 / 3**18) * (wave * interp_spec(wave) *
+                                                           interp_filt(wave)), spectrum_wavelength_min, spectrum_wavelength_max)[0]
+    denominator = integrate.quad(lambda wave: (
+        interp_filt(wave) / wave), spectrum_wavelength_min, spectrum_wavelength_max)[0]
+    flux_filter_nu = numerator / denominator
+
+    # We need to correct for the fraction of missing flux - BIG ASSUMPTION
+    # HERE
+    transmission_spectrum_range = integrate.quad(lambda wave: (interp_filt(
+        wave)), spectrum_wavelength_min, spectrum_wavelength_max)[0]
+    transmission_full_range = integrate.quad(lambda wave: (interp_filt(
+        wave)), filter_df['rest_wavelength'].iloc[0], filter_df['rest_wavelength'].iloc[-1])[0]
+    fraction_in_range = transmission_spectrum_range / transmission_full_range
+
+    scaled_flux_filter_nu = flux_filter_nu / fraction_in_range
+
+    composite_sed_idx = np.argmin(
+        np.abs(composite_sed['rest_wavelength'] - points[idx_use]))
+
+    composite_wave = composite_sed['rest_wavelength'].iloc[composite_sed_idx]
+    composite_flux = composite_sed['f_lambda'].iloc[composite_sed_idx]
+
+    return scaled_flux_filter_nu, fraction_in_range, composite_wave, composite_flux
 
 
 def find_skylines(zobjs, filt):
@@ -320,6 +355,39 @@ def find_skylines(zobjs, filt):
     plt.show()
 
     return
+
+
+def read_spectrum(mosdef_obj, spectrum_file):
+    """Reads a spectrum, returning fluxes, wavelength, and flux errors
+
+    Parameters:
+    mosdef_obj (pd.DataFrame): Run the get_mosdef_obj() function for this
+    spectrum_file (str): Name of the spectrum
+
+    Returns:
+    spectrum_df (pd.DataFrame): Dataframe containing spectrum wavlength, fluxes, and uncertainties
+
+    """
+    z_spec = mosdef_obj['Z_MOSFIRE']
+    field = mosdef_obj['FIELD_STR']
+    v4id = mosdef_obj['V4ID']
+
+    spec_loc = imd.spectra_dir + '/' + spectrum_file
+    hdu_spec = fits.open(spec_loc)[1]
+    hdu_errs = fits.open(spec_loc)[2]
+    spec_data = hdu_spec.data
+    spec_data_errs = hdu_errs.data
+
+    # Compute the wavelength range
+    wavelength = (1. + np.arange(hdu_spec.header["naxis1"]) - hdu_spec.header[
+        "crpix1"]) * hdu_spec.header["cdelt1"] + hdu_spec.header["crval1"]
+
+    rest_wavelength = wavelength / (1 + z_spec)
+
+    spectrum_df = pd.DataFrame(zip(rest_wavelength, spec_data, spec_data_errs, wavelength), columns=[
+                               'rest_wavelength', 'f_lambda', 'err_f_lambda', 'obs_wavelength'])
+
+    return spectrum_df
 
 
 def divz(X, Y):

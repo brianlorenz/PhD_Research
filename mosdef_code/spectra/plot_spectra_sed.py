@@ -18,11 +18,11 @@ import scipy.integrate as integrate
 from query_funcs import get_zobjs
 import initialize_mosdef_dirs as imd
 import cluster_data_funcs as cdf
-from spectra_funcs import clip_skylines, get_spectra_files, median_bin_spec, norm_spec_sed, get_too_low_gals, read_spectrum
+from spectra_funcs import clip_skylines, get_spectra_files, median_bin_spec, norm_spec_sed, get_too_low_gals, read_spectrum, read_composite_spectrum
 import matplotlib.patches as patches
 
 
-def plot_spectrum_sed(groupID, binsize):
+def plot_spectrum_sed(groupID, norm_method, binsize):
     """Overplots a smoothed spectrum on the SED
 
     Parameters:
@@ -39,7 +39,7 @@ def plot_spectrum_sed(groupID, binsize):
     legendfont = 14
     textfont = 16
 
-    total_spec_df = read_spectrum(groupID)
+    total_spec_df = read_composite_spectrum(groupID, norm_method)
     composite_sed = read_composite_sed(groupID)
 
     #norm, b12, used_values_df = norm_spec_sed(composite_sed, total_spec_df)
@@ -90,7 +90,7 @@ def plot_spectrum_sed(groupID, binsize):
     ax.set_ylabel('F$_\lambda$', fontsize=axisfont)
     ax.tick_params(labelsize=ticksize, size=ticks)
 
-    fig.savefig(imd.cluster_dir + f'/composite_spectra/{groupID}_spectrum_sed.pdf')
+    fig.savefig(imd.cluster_dir + f'/composite_spectra/{norm_method}/{groupID}_spectrum_sed.pdf')
     plt.close()
 
 

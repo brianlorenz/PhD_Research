@@ -16,19 +16,28 @@ import scipy.integrate as integrate
 from query_funcs import get_zobjs
 import initialize_mosdef_dirs as imd
 import cluster_data_funcs as cdf
-from spectra_funcs import clip_skylines, get_spectra_files, median_bin_spec, read_spectrum, get_too_low_gals, norm_spec_sed
+from spectra_funcs import clip_skylines, get_spectra_files, median_bin_spec, read_spectrum, get_too_low_gals, norm_spec_sed, read_composite_spectrum, prepare_mock_observe_spectrum, mock_observe_spectrum
 import matplotlib.patches as patches
 
 
-def stack_spectra(groupID, norm_method):
+def stack_spectra(groupID, norm_method, re_observe=False):
     """Stack all the spectra for every object in a given group
 
     Parameters:
     groupID (int): ID of the cluster to perform the stacking
-    norm_method (str): Method to normalize - 'cluster_norm' for same norms as sed stacking, 'composite_sed_norm' to normalize to the composite
+    norm_method (str): Method to normalize - 'cluster_norm' for same norms as sed stacking, 'composite_sed_norm' to normalize to the composite, 'composite_filter' to observe the spectrum in a filter and use one point to normalize
+    re_observe (boolean): Set to True if using 'composite_filter' and you want to re-observe all of the spectra
 
     Returns:
     """
+    # Used to check if this is the first time through the loop
+    if re_observe == True:
+        first_loop = 1
+        spectrum_files_list = []
+        scaled_observed_fluxes = []
+        fraction_in_ranges = []
+        composite_waves = []
+        composite_fluxes = []
 
     composite_sed = read_composite_sed(groupID)
 
@@ -42,7 +51,6 @@ def stack_spectra(groupID, norm_method):
 
     # Now that we have the mosdef objs for each galaxy in the cluster, we need
     # to loop over each one
-    cluster_spectra_dfs = []
     interp_cluster_spectra_dfs = []
     norm_factors = []
     for mosdef_obj in mosdef_objs:
@@ -55,52 +63,72 @@ def stack_spectra(groupID, norm_method):
         # Find all the spectra files corresponding to this object
         spectra_files = get_spectra_files(mosdef_obj)
         for spectrum_file in spectra_files:
-            # Looping over each file, open the spectrum
-            spec_loc = imd.spectra_dir + '/' + spectrum_file
-            hdu_spec = fits.open(spec_loc)[1]
-            hdu_errs = fits.open(spec_loc)[2]
-            spec_data = hdu_spec.data
-            spec_data_errs = hdu_errs.data
-
-            # Compute the wavelength range
-            wavelength = (1. + np.arange(hdu_spec.header["naxis1"]) - hdu_spec.header[
-                "crpix1"]) * hdu_spec.header["cdelt1"] + hdu_spec.header["crval1"]
+            spectrum_df = read_spectrum(mosdef_obj, spectrum_file)
 
             # Clip the skylines:
-            spec_data_clip, mask = clip_skylines(
-                wavelength, spec_data, spec_data_errs)
-
-            # De-redshift
-            rest_wavelength = wavelength / (1 + z_spec)
+            spectrum_df['f_lambda_clip'], spectrum_df['mask'] = clip_skylines(
+                spectrum_df['obs_wavelength'], spectrum_df['f_lambda'], spectrum_df['err_f_lambda'])
 
             # NORMALZE - HOW BEST TO DO THIS?
             # Original Method - using the computed norm_factors
             if norm_method == 'cluster_norm':
                 norm_factor = np.median(norm_sed['norm_factor'])
-                spec_data_norm = spec_data_clip * norm_factor
             elif norm_method == 'composite_sed_norm':
                 norm_factor, spec_correlate, used_points = norm_spec_sed(
-                    composite_sed, spec_data_clip, wavelength, mask)
-                spec_data_norm = spec_data_clip * norm_factor
+                    composite_sed, spectrum_df['f_lambda_clip'], spectrum_df['rest_wavelength'], spectrum_df['mask'])
+            elif norm_method == 'composite_filter':
+                if re_observe == True:
+                    if first_loop == 1:
+                        filter_dfs, bounds, points = prepare_mock_observe_spectrum(
+                            groupID)
+                        print(f'Done reading filters for group {groupID}')
+                        first_loop = 0
+                    scaled_flux_filter_nu, fraction_in_range, composite_wave, composite_flux = mock_observe_spectrum(
+                        composite_sed, spectrum_df, filter_dfs, bounds, points)
+                    print(f'Observed spectrum {spectrum_file}')
+                    spectrum_files_list.append(spectrum_file)
+                    scaled_observed_fluxes.append(scaled_flux_filter_nu)
+                    fraction_in_ranges.append(fraction_in_range)
+                    composite_waves.append(composite_wave)
+                    composite_fluxes.append(composite_flux)
+                    continue
+                else:
+                    observed_spec_df = ascii.read(imd.cluster_dir + f'/composite_spectra/composite_filter/{groupID}_observed_specs.csv').to_pandas()
+                    file_idx = observed_spec_df['filename'] == spectrum_file
+                    spectrum_flux_filter = observed_spec_df[
+                        file_idx]['observed_flux']
+                    composite_flux_filter = observed_spec_df[
+                        file_idx]['composite_flux']
+                    norm_factor = (composite_flux_filter /
+                                   spectrum_flux_filter).iloc[0]
+                    if norm_factor < 0:
+                        norm_factor = 0
+                    print(norm_factor)
+
             else:
                 sys.exit(
                     'Select norm_method: "cluster_norm", "composite_sed_norm", ')
 
+            spectrum_df['f_lambda_norm'] = spectrum_df[
+                'f_lambda_clip'] * norm_factor
+
             norm_interp = interpolate.interp1d(
-                rest_wavelength, spec_data_norm, fill_value=0, bounds_error=False)
+                spectrum_df['rest_wavelength'], spectrum_df['f_lambda_norm'], fill_value=0, bounds_error=False)
 
             spectrum_flux_norm = norm_interp(spectrum_wavelength)
 
-            # Save one instance that contians just the data
-            spectrum_df = pd.DataFrame(zip(rest_wavelength, spec_data_clip, spec_data_norm),
-                                       columns=['rest_wavelength', 'f_lambda', 'f_lambda_norm'])
-
-            # Save a second instance that conatins the interpolated spectrum
+            # Save the interpolated spectrum
             interp_spectrum_df = pd.DataFrame(zip(spectrum_wavelength, spectrum_flux_norm),
                                               columns=['rest_wavelength', 'f_lambda_norm'])
-            cluster_spectra_dfs.append(spectrum_df)
             interp_cluster_spectra_dfs.append(interp_spectrum_df)
             norm_factors.append(norm_factor)
+
+    if re_observe == True:
+        observed_spec_df = pd.DataFrame(zip(spectrum_files_list, scaled_observed_fluxes, fraction_in_ranges, composite_waves, composite_fluxes), columns=[
+            'filename', 'observed_flux', 'fraction_in_range', 'composite_wavelength', 'composite_flux'])
+        observed_spec_df.to_csv(imd.cluster_dir + f'/composite_spectra/composite_filter/{groupID}_observed_specs.csv', index=False)
+        print(f'Saved {groupID}_observed_specs.csv')
+        return
 
     # Pulls out just the flux values of each spectrum
     norm_interp_specs = [interp_cluster_spectra_dfs[i]['f_lambda_norm']
@@ -158,7 +186,7 @@ def plot_spec(groupID, norm_method, thresh=0.1):
     legendfont = 14
     textfont = 16
 
-    total_spec_df = read_spectrum(groupID, norm_method)
+    total_spec_df = read_composite_spectrum(groupID, norm_method)
 
     fig = plt.figure(figsize=(8, 8))
     ax = fig.add_axes([0.09, 0.35, 0.88, 0.60])
@@ -227,7 +255,7 @@ def divz(X, Y):
     return X / np.where(Y, Y, Y + 1) * np.not_equal(Y, 0)
 
 
-def stack_all_spectra(n_clusters, norm_method):
+def stack_all_spectra(n_clusters, norm_method, re_observe=False):
     """Runs the stack_spectra() function on every cluster
 
     Parameters:
@@ -236,7 +264,7 @@ def stack_all_spectra(n_clusters, norm_method):
     Returns:
     """
     for i in range(n_clusters):
-        stack_spectra(i, norm_method)
+        stack_spectra(i, norm_method, re_observe)
 
 
 def plot_all_spectra(n_clusters, norm_method):
