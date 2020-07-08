@@ -17,13 +17,14 @@ import mpu
 from scipy import interpolate
 
 
-def clip_skylines(wavelength, spectrum, spectrum_errs):
+def clip_skylines(wavelength, spectrum, spectrum_errs, mask_negatives=False):
     """Automated way to remove skylines form a spectrum
 
     Parameters:
     wavelength (array): array of the wavelength range
     spectrum (array): array of the corresponding f_lambda values
     spectrum_errs (array): array of the corresponding f_lambda uncertainty values
+    mask_negatives (boolean): Set to true to mask all negative values
 
 
     Returns:
@@ -51,6 +52,11 @@ def clip_skylines(wavelength, spectrum, spectrum_errs):
     sig_noise = divz(spectrum, spectrum_errs)
     mask = sig_noise > thresh
     '''
+
+    if mask_negatives:
+        for i in range(len(spectrum)):
+            if spectrum[i] < 0:
+                mask[i] = 0
 
     spectrum_clip = spectrum * mask
 

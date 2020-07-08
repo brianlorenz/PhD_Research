@@ -33,6 +33,7 @@ def reset_cluster_dirs(cluster_dir):
     check_and_make_dir(cluster_dir + '/composite_spectra')
     check_and_make_dir(cluster_dir + '/composite_spectra/cluster_norm')
     check_and_make_dir(cluster_dir + '/composite_spectra/composite_sed_norm')
+    check_and_make_dir(cluster_dir + '/emission_fitting')
 
 
 def reset_sed_dirs(mosdef_dir):

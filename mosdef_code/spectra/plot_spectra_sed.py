@@ -27,6 +27,7 @@ def plot_spectrum_sed(groupID, norm_method, binsize):
 
     Parameters:
     groupID (int): ID of the cluster to perform the stacking
+    norm_method (str): Method used to normalize the galaxies - e.g. 'composite_filter', 'cluster_norm'
     binsize (int): how many points to put in each bin when smoothing the spectrum
 
     Returns:
@@ -94,14 +95,15 @@ def plot_spectrum_sed(groupID, norm_method, binsize):
     plt.close()
 
 
-def plot_all_spectrum_sed(n_clusters, binsize):
+def plot_all_spectrum_sed(n_clusters, norm_method, binsize):
     """Overplots a smoothed spectrum on the SED for all clusters
 
     Parameters:
     n_clusters (int): Number of clusters of galaxies
+    norm_method (str): Method used to normalize the galaxies - e.g. 'composite_filter', 'cluster_norm'
     binsize (int): how many points to put in each bin when smoothing the spectrum
 
     Returns:
     """
     for groupID in range(n_clusters):
-        plot_spectrum_sed(groupID, binsize)
+        plot_spectrum_sed(groupID, norm_method, binsize)

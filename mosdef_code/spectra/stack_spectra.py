@@ -20,13 +20,14 @@ from spectra_funcs import clip_skylines, get_spectra_files, median_bin_spec, rea
 import matplotlib.patches as patches
 
 
-def stack_spectra(groupID, norm_method, re_observe=False):
+def stack_spectra(groupID, norm_method, re_observe=False, mask_negatives=False):
     """Stack all the spectra for every object in a given group
 
     Parameters:
     groupID (int): ID of the cluster to perform the stacking
-    norm_method (str): Method to normalize - 'cluster_norm' for same norms as sed stacking, 'composite_sed_norm' to normalize to the composite, 'composite_filter' to observe the spectrum in a filter and use one point to normalize
+    norm_method (str): Method to normalize - 'cluster_norm' for same norms as sed stacking, 'composite_sed_norm' to normalize to the composite, 'composite_filter' to observe the spectrum in a filter and use one point to normalize, 'positive_median' to take the median of all poitive values and scale that
     re_observe (boolean): Set to True if using 'composite_filter' and you want to re-observe all of the spectra
+    mask_negatives (boolean): Set to True to mask all negative values in the spectra
 
     Returns:
     """
@@ -67,7 +68,7 @@ def stack_spectra(groupID, norm_method, re_observe=False):
 
             # Clip the skylines:
             spectrum_df['f_lambda_clip'], spectrum_df['mask'] = clip_skylines(
-                spectrum_df['obs_wavelength'], spectrum_df['f_lambda'], spectrum_df['err_f_lambda'])
+                spectrum_df['obs_wavelength'], spectrum_df['f_lambda'], spectrum_df['err_f_lambda'], mask_negatives=mask_negatives)
 
             # NORMALZE - HOW BEST TO DO THIS?
             # Original Method - using the computed norm_factors
@@ -101,13 +102,22 @@ def stack_spectra(groupID, norm_method, re_observe=False):
                         file_idx]['composite_flux']
                     norm_factor = (composite_flux_filter /
                                    spectrum_flux_filter).iloc[0]
-                    if norm_factor < 0:
+                    if norm_factor < 0 or norm_factor > 100:
                         norm_factor = 0
-                    print(norm_factor)
 
+            elif norm_method == 'positive_median':
+                med_wave = np.median(spectrum_df['rest_wavelength'])
+                med_pos_flux = np.median(
+                    spectrum_df[spectrum_df['f_lambda_clip'] > 0]['f_lambda_clip'])
+                interp_sed = interpolate.interp1d(
+                    composite_sed['rest_wavelength'], composite_sed['f_lambda'])
+                scale_sed_flux = interp_sed(med_wave)
+                norm_factor = scale_sed_flux / med_pos_flux
             else:
                 sys.exit(
                     'Select norm_method: "cluster_norm", "composite_sed_norm", ')
+
+            print(f'Norm factor: {norm_factor}')
 
             spectrum_df['f_lambda_norm'] = spectrum_df[
                 'f_lambda_clip'] * norm_factor
@@ -255,7 +265,7 @@ def divz(X, Y):
     return X / np.where(Y, Y, Y + 1) * np.not_equal(Y, 0)
 
 
-def stack_all_spectra(n_clusters, norm_method, re_observe=False):
+def stack_all_spectra(n_clusters, norm_method, re_observe=False, mask_negatives=False):
     """Runs the stack_spectra() function on every cluster
 
     Parameters:
@@ -264,7 +274,8 @@ def stack_all_spectra(n_clusters, norm_method, re_observe=False):
     Returns:
     """
     for i in range(n_clusters):
-        stack_spectra(i, norm_method, re_observe)
+        stack_spectra(i, norm_method, re_observe=re_observe,
+                      mask_negatives=mask_negatives)
 
 
 def plot_all_spectra(n_clusters, norm_method):
