@@ -60,7 +60,7 @@ def fit_emission(groupID, norm_method):
     # Then, for each line, we guess an amplitude
     for i in range(len(line_list)):
         guess.append(amp_guess)
-    popt, pcov = curve_fit(multi_gaussian, composite_spectrum_df[
+    popt, pcov = curve_fit(auto_multi_gaussian, composite_spectrum_df[
         'wavelength'], composite_spectrum_df['f_lambda'], guess)
 
     # Now, parse the results into a dataframe
@@ -148,7 +148,7 @@ def plot_emission_fit(groupID, norm_method):
     pars.append(fit_df['fixed_velocity'].iloc[0])
     for i in range(len(fit_df)):
         pars.append(fit_df.iloc[i]['amplitude'])
-    gauss_fit = multi_gaussian(wavelength, pars)
+    gauss_fit = auto_multi_gaussian(wavelength, pars)
 
     # Plots the spectrum and fit on all axes
     for axis in axes_arr:
@@ -203,7 +203,7 @@ def plot_emission_fit(groupID, norm_method):
     return
 
 
-def gaussian(wavelength, peak_wavelength, amp, sig):
+def gaussian_func(wavelength, peak_wavelength, amp, sig):
     """Standard Gaussian funciton
 
     Parameters:
@@ -231,19 +231,42 @@ def multi_gaussian(wavelength, *pars):
     z_offset = pars[0]
     offset = pars[1]
     velocity = pars[2]
-    g0 = gaussian(wavelength, line_list[0][
-                  1] + z_offset, pars[3], velocity_to_sig(line_list[0][1], velocity))
-    g1 = gaussian(wavelength, line_list[1][
-                  1] + z_offset, pars[4],  velocity_to_sig(line_list[1][1], velocity))
-    g2 = gaussian(wavelength, line_list[2][
-                  1] + z_offset, pars[5], velocity_to_sig(line_list[2][1], velocity))
-    g3 = gaussian(wavelength, line_list[3][
-                  1] + z_offset, pars[6], velocity_to_sig(line_list[3][1], velocity))
-    g4 = gaussian(wavelength, line_list[4][
-                  1] + z_offset, pars[7], velocity_to_sig(line_list[4][1], velocity))
-    g5 = gaussian(wavelength, line_list[5][
-                  1] + z_offset, pars[8], velocity_to_sig(line_list[5][1], velocity))
+    g0 = gaussian_func(wavelength, line_list[0][
+        1] + z_offset, pars[3], velocity_to_sig(line_list[0][1], velocity))
+    g1 = gaussian_func(wavelength, line_list[1][
+        1] + z_offset, pars[4],  velocity_to_sig(line_list[1][1], velocity))
+    g2 = gaussian_func(wavelength, line_list[2][
+        1] + z_offset, pars[5], velocity_to_sig(line_list[2][1], velocity))
+    g3 = gaussian_func(wavelength, line_list[3][
+        1] + z_offset, pars[6], velocity_to_sig(line_list[3][1], velocity))
+    g4 = gaussian_func(wavelength, line_list[4][
+        1] + z_offset, pars[7], velocity_to_sig(line_list[4][1], velocity))
+    g5 = gaussian_func(wavelength, line_list[5][
+        1] + z_offset, pars[8], velocity_to_sig(line_list[5][1], velocity))
     return g0 + g1 + g2 + g3 + g4 + g5 + offset
+
+
+def auto_multi_gaussian(wavelength, *pars):
+    """Fits all Gaussians simulatneously at fixed redshift
+
+    Parameters:
+    wavelength (pd.DataFrame): Wavelength array to fit
+    pars (list): List of all of the parameters
+
+    Returns:
+    """
+    if len(pars) == 1:
+        pars = pars[0]
+    z_offset = pars[0]
+    offset = pars[1]
+    velocity = pars[2]
+    gaussians = []
+    for i in range(len(line_list)):
+        gaussian = gaussian_func(wavelength, line_list[i][
+                                 1] + z_offset, pars[i + 3], velocity_to_sig(line_list[i][1], velocity))
+        gaussians.append(gaussian)
+
+    return np.sum(gaussians, axis=0) + offset
 
 
 def velocity_to_sig(line_center, velocity):
