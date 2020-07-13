@@ -13,7 +13,7 @@ from polynomial_fit import poly_fit
 import matplotlib.pyplot as plt
 import fnmatch
 import initialize_mosdef_dirs as imd
-from spectra_funcs import clip_skylines, get_spectra_files
+from spectra_funcs import clip_skylines, get_spectra_files, median_bin_spec, read_spectrum, smooth_spectrum
 
 
 def populate_main_axis(ax, sed, good_idxs, axisfont, ticksize, ticks):
@@ -67,6 +67,9 @@ def plot_sed(field, v4id, plot_spec=False, plot_fit=False):
 
     ax_main.set_ylim(min(0, min(sed[good_idxs]['f_lambda'])) * 1.2,
                      max(sed[good_idxs]['f_lambda'] * 1.2))
+    if plot_spec == True:
+        ax_main.set_ylim(-max(sed[good_idxs]['f_lambda'] * 1.2),
+                         max(sed[good_idxs]['f_lambda'] * 1.2))
     ax_zoom.set_ylim(min(0, min(sed[good_idxs][sed[good_idxs]['peak_wavelength'] < 20000]['f_lambda'])) * 1.2,
                      max(sed[good_idxs][sed[good_idxs]['peak_wavelength'] < 20000]['f_lambda'] * 1.2))
 
@@ -134,7 +137,7 @@ def plot_image(ax, field, v4id, mosdef_obj):
     ax.get_yaxis().set_visible(False)
 
 
-def plot_spectrum(ax, field, v4id, mosdef_obj, ax_sn):
+def plot_spectrum(ax, field, v4id, mosdef_obj):
     """Given a field, id, and axis, plot the mosdef spectrum of an object
 
     Parameters:
@@ -147,25 +150,30 @@ def plot_spectrum(ax, field, v4id, mosdef_obj, ax_sn):
     Returns:
     """
     # First get a list of all things in the Spectra directory
+    redshift = mosdef_obj['Z_MOSFIRE']
     obj_files = get_spectra_files(mosdef_obj)
+    print(obj_files)
     for file in obj_files:
         print(f'Plotting {file}')
-        spec_loc = imd.spectra_dir + file
-        hdu_spec = fits.open(spec_loc)[1]
-        hdu_errs = fits.open(spec_loc)[2]
-        spec_data = hdu_spec.data
-        spec_data_errs = hdu_errs.data
-        wavelength = (
-            1. + np.arange(hdu_spec.header["naxis1"]) - hdu_spec.header["crpix1"]) * hdu_spec.header["cdelt1"] + hdu_spec.header["crval1"]
+        spectrum_df = read_spectrum(mosdef_obj, file)
 
-        spec_data, mask = clip_skylines(
-            wavelength, spec_data, spec_data_errs)
-        ax.plot(wavelength, spec_data_errs, color='orange', lw=1)
-        ax.plot(wavelength, spec_data, color='blue', lw=1)
-        ax_sn.plot(wavelength, (spec_data / spec_data_errs))
-        ax.scatter(wavelength * np.logical_not(mask),
-                   np.zeros(len(wavelength)), color='red', lw=1)
-        ax.set_xlim(ax_sn.get_xlim())
+        spectrum_df['f_lambda_clip'], spectrum_df['mask'] = clip_skylines(
+            spectrum_df['rest_wavelength'], spectrum_df['f_lambda'], spectrum_df['err_f_lambda'])
+
+        wave_bin, spec_bin = median_bin_spec(
+            spectrum_df['rest_wavelength'], spectrum_df['f_lambda_clip'], binsize=100)
+        smooth_spec = smooth_spectrum(
+            spectrum_df['f_lambda_clip'], width=200)
+        # ax.plot(wavelength / (1 + redshift),
+        #         spec_data_errs, color='orange', lw=1)
+        ax.plot(spectrum_df['rest_wavelength'], spectrum_df[
+                'f_lambda_clip'], color='blue', lw=1)
+        #ax.plot(wave_bin, spec_bin, color='orange', lw=1)
+        ax.plot(spectrum_df['rest_wavelength'],
+                smooth_spec, color='orange', lw=1)
+        ax.scatter(spectrum_df['rest_wavelength'] * spectrum_df['mask'],
+                   np.zeros(len(spectrum_df['f_lambda'])), color='red')
+        # ax.set_xlim(ax_sn.get_xlim())
 
 
 def plot_all_seds(zobjs):
@@ -183,7 +191,7 @@ def plot_all_seds(zobjs):
         v4id = obj[1]
         print(f'Creating SED for {field}_{v4id}, {counter}/{len(zobjs)}')
         try:
-            plot_sed(field, v4id, plot_fit=True)
+            plot_sed(field, v4id, plot_fit=True, plot_spec=True)
         except:
             print(f'Couldnt create plot for {field}_{v4id}')
             plt.close('all')

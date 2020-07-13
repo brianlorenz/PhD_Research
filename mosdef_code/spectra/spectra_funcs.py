@@ -85,7 +85,7 @@ def median_bin_spec(wavelength, spectrum, binsize=10):
 
     Parameters:
     wavelength (array): array of the wavelength range
-    spectrum (array): array of the corresponding f_lambda values
+    spectrum (array): pd.DatatFrame of the corresponding f_lambda values
     binsize (int): Number of points to bin over
 
     Returns:
@@ -98,15 +98,45 @@ def median_bin_spec(wavelength, spectrum, binsize=10):
     while count_idx < len(wavelength):
         if count_idx + binsize > len(wavelength):
             binsize = len(wavelength) - count_idx
+        wave_range = wavelength[count_idx:count_idx + binsize]
+        spec_range = spectrum[count_idx:count_idx + binsize]
         wave_bin.append(np.median(wavelength[count_idx:count_idx + binsize]))
-        spec_bin.append(np.median(spectrum[count_idx:count_idx + binsize]))
+        spec_ne_zero = spec_range[spec_range != 0]
+        if len(spec_ne_zero) > 1:
+            spec_bin.append(np.median(spec_ne_zero))
+        else:
+            spec_bin.append(0)
         count_idx = count_idx + binsize
     wave_bin = np.array(wave_bin)
     spec_bin = np.array(spec_bin)
     return wave_bin, spec_bin
 
 
-def read_composite_spectrum(groupID, norm_method='cluster_norm'):
+def smooth_spectrum(spectrum, width=25):
+    """Smooths a spectrum by setting each point to the median of surrounding points
+
+    Parameters:
+    spectrum (pd.DataFrame): pd.DatatFrame of the corresponding f_lambda values
+
+    Returns:
+    smooth_spec (array): Binned spectral value
+    """
+    smooth_spec = np.zeros(spectrum.shape)
+    # repeat values near the edges of the spectrum for better medianing
+    spectrum_pad = np.pad(spectrum, width, 'constant',
+                          constant_values=(spectrum.iloc[0], spectrum.iloc[-1]))
+    for i in range(len(smooth_spec)):
+        j = i + width
+        spec_range_values = spectrum_pad[j - width:j + width]
+        nonzero = spec_range_values != 0
+        nonzero_values = spec_range_values[nonzero]
+        if len(nonzero_values) < 1:
+            nonzero_values = -99
+        smooth_spec[i] = np.median(nonzero_values)
+    return smooth_spec
+
+
+def read_composite_spectrum(groupID, norm_method):
     """Reads in the spectrum file for a given cluster
 
     Parameters:
@@ -143,8 +173,8 @@ def norm_spec_sed(composite_sed, spectrum_df):
     spectrum_flux = masked_spectrum_df['f_lambda']
     spectrum_wavelength = masked_spectrum_df['rest_wavelength']
 
-    min_wave = spectrum_wavelength[edge]
-    max_wave = spectrum_wavelength[-edge]
+    min_wave = spectrum_wavelength.iloc[edge]
+    max_wave = spectrum_wavelength.iloc[-edge]
 
     wave_bin, spec_bin = median_bin_spec(
         spectrum_wavelength[edge:-edge], spectrum_flux[edge:-edge], binsize=smooth_width)
@@ -176,11 +206,12 @@ def norm_spec_sed(composite_sed, spectrum_df):
     return a12, b12, used_fluxes_df
 
 
-def get_too_low_gals(groupID, thresh=0.1):
+def get_too_low_gals(groupID, norm_method, thresh=0.15):
     """Given a groupID, find out which parts of the spectrum have too few galaxies to be useable
 
     Parameters:
     groupID (int): ID of the cluster to use
+    norm_method (str): Normalization method used
     thresh (float): from 0 to 1, fraction of galaxies over which is acceptable. i.e., thresh=0.1 means to good parts of the spectrum have at least 10% of the number of galaxies in the cluster
 
     Returns:
@@ -191,13 +222,14 @@ def get_too_low_gals(groupID, thresh=0.1):
     cutoff (int): Number of galaixes above which ist acceptable
     """
     n_gals_in_group = len(os.listdir(imd.cluster_dir + '/' + str(groupID)))
-    total_spec_df = read_composite_spectrum(groupID)
+    total_spec_df = read_composite_spectrum(groupID, norm_method)
     wavelength = total_spec_df['wavelength']
     n_galaxies = total_spec_df['n_galaxies']
-    too_low_gals = (n_galaxies / n_gals_in_group) < thresh
+    # too_low_gals = (n_galaxies / n_gals_in_group) < thresh
+    too_low_gals = (n_galaxies / np.max(n_galaxies)) < thresh
     plot_cut = (wavelength[too_low_gals] > 5000)
     not_plot_cut = np.logical_not(plot_cut)
-    cutoff = int(thresh * n_gals_in_group)
+    cutoff = int(thresh * np.max(n_galaxies))
     cut_wave_low = np.percentile(wavelength[too_low_gals][not_plot_cut], 95)
     cut_wave_high = np.percentile(wavelength[too_low_gals][plot_cut], 5)
 
@@ -394,6 +426,19 @@ def read_spectrum(mosdef_obj, spectrum_file):
                                'rest_wavelength', 'f_lambda', 'err_f_lambda', 'obs_wavelength'])
 
     return spectrum_df
+
+
+def divide_continuum(composite_spectrum_df):
+    """Given a spectrum, divide through by the continuum
+
+    Parameters:
+    composite_spectrum_df (pd.DataFrame): Dataframe containing spectrum wavlength, fluxes
+
+
+    Returns:
+    """
+    composite_spectrum_df['wavelength']
+    composite_spectrum_df['f_lambda']
 
 
 def divz(X, Y):

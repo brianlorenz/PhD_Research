@@ -20,7 +20,7 @@ from spectra_funcs import clip_skylines, get_spectra_files, median_bin_spec, rea
 import matplotlib.patches as patches
 
 
-def stack_spectra(groupID, norm_method, re_observe=False, mask_negatives=False):
+def stack_spectra(groupID, norm_method, re_observe=False, mask_negatives=False, ignore_low_spectra=False):
     """Stack all the spectra for every object in a given group
 
     Parameters:
@@ -28,6 +28,7 @@ def stack_spectra(groupID, norm_method, re_observe=False, mask_negatives=False):
     norm_method (str): Method to normalize - 'cluster_norm' for same norms as sed stacking, 'composite_sed_norm' to normalize to the composite, 'composite_filter' to observe the spectrum in a filter and use one point to normalize, 'positive_median' to take the median of all poitive values and scale that
     re_observe (boolean): Set to True if using 'composite_filter' and you want to re-observe all of the spectra
     mask_negatives (boolean): Set to True to mask all negative values in the spectra
+    ignore_low_spectra (boolean): Set to True to ignore all spectra with negative median values
 
     Returns:
     """
@@ -70,13 +71,31 @@ def stack_spectra(groupID, norm_method, re_observe=False, mask_negatives=False):
             spectrum_df['f_lambda_clip'], spectrum_df['mask'] = clip_skylines(
                 spectrum_df['obs_wavelength'], spectrum_df['f_lambda'], spectrum_df['err_f_lambda'], mask_negatives=mask_negatives)
 
+            if ignore_low_spectra:
+                # Find the matching wavelength
+                med_spec_wave = np.median(spectrum_df['rest_wavelength'])
+                sed_idx = np.argmin(
+                    np.abs(norm_sed['rest_wavelength'] - med_spec_wave))
+                sed_val = norm_sed['f_lambda'].iloc[sed_idx]
+                spec_median = np.median(spectrum_df[spectrum_df['f_lambda_clip'] != 0][
+                    'f_lambda_clip'])
+                ratio = sed_val / spec_median
+                print(f'Ratio = {ratio}')
+                if ratio > 2 or ratio < 0:
+                    print('Skipping')
+                    continue
+
             # NORMALZE - HOW BEST TO DO THIS?
             # Original Method - using the computed norm_factors
             if norm_method == 'cluster_norm':
                 norm_factor = np.median(norm_sed['norm_factor'])
             elif norm_method == 'composite_sed_norm':
-                norm_factor, spec_correlate, used_points = norm_spec_sed(
-                    composite_sed, spectrum_df['f_lambda_clip'], spectrum_df['rest_wavelength'], spectrum_df['mask'])
+                try:
+                    norm_factor, spec_correlate, used_points = norm_spec_sed(
+                        composite_sed, spectrum_df)
+                except Exception as expt:
+                    print('Could nor normalize')
+                    print(expt)
             elif norm_method == 'composite_filter':
                 if re_observe == True:
                     if first_loop == 1:
@@ -180,7 +199,7 @@ def stack_spectra(groupID, norm_method, re_observe=False, mask_negatives=False):
     return
 
 
-def plot_spec(groupID, norm_method, thresh=0.1):
+def plot_spec(groupID, norm_method, mask_negatives=False, thresh=0.1):
     """Plots the spectrum
 
     Parameters:
@@ -218,7 +237,7 @@ def plot_spec(groupID, norm_method, thresh=0.1):
     wave_bin, spec_bin = median_bin_spec(wavelength, spectrum)
 
     too_low_gals, plot_cut, not_plot_cut, n_gals_in_group, cutoff, cutoff_low, cutoff_high = get_too_low_gals(
-        groupID, thresh)
+        groupID, norm_method, thresh)
 
     ax.plot(wavelength, spectrum, color='black', lw=1, label='Spectrum')
     ax.plot(wavelength[too_low_gals][plot_cut], spectrum[too_low_gals][plot_cut],
@@ -236,11 +255,18 @@ def plot_spec(groupID, norm_method, thresh=0.1):
     # ax_contribute.plot(wavelength, norm_value_summed, color='orange',
     #                    lw = 1, label = 'Normalized Value of Galaxies')
 
-    ax.set_ylim(-1 * 10**-18, 1.01 * np.max(spectrum))
+    if mask_negatives:
+        ax.set_ylim(-1 * 10**-20, 1.01 * np.max(spectrum))
+    else:
+        ax.set_ylim(-1 * 10**-18, 1.01 * np.max(spectrum))
     y_Ha_lim_max = np.max(spectrum[np.logical_and(
         wavelength > 6570, wavelength < 6800)])
-    y_Ha_lim_min = np.min(spectrum[np.logical_and(
-        wavelength > 6570, wavelength < 6800)])
+    if mask_negatives:
+        y_Ha_lim_min = 0.9 * np.min(spectrum[np.logical_and(
+            wavelength > 6570, wavelength < 6800)])
+    else:
+        y_Ha_lim_min = np.min(spectrum[np.logical_and(
+            wavelength > 6570, wavelength < 6800)])
     ax_Ha.set_ylim(y_Ha_lim_min, y_Ha_lim_max * 1.1)
     ax_Ha.set_xlim(6500, 6800)
     ax.legend(loc=2, fontsize=axisfont - 3)
@@ -265,7 +291,7 @@ def divz(X, Y):
     return X / np.where(Y, Y, Y + 1) * np.not_equal(Y, 0)
 
 
-def stack_all_spectra(n_clusters, norm_method, re_observe=False, mask_negatives=False):
+def stack_all_spectra(n_clusters, norm_method, re_observe=False, mask_negatives=False, ignore_low_spectra=False):
     """Runs the stack_spectra() function on every cluster
 
     Parameters:
@@ -274,18 +300,20 @@ def stack_all_spectra(n_clusters, norm_method, re_observe=False, mask_negatives=
     Returns:
     """
     for i in range(n_clusters):
+        print(f'Stacking spectrum {groupID}')
         stack_spectra(i, norm_method, re_observe=re_observe,
-                      mask_negatives=mask_negatives)
+                      mask_negatives=mask_negatives, ignore_low_spectra=ignore_low_spectra)
 
 
-def plot_all_spectra(n_clusters, norm_method):
+def plot_all_spectra(n_clusters, norm_method, mask_negatives=False):
     """Runs the plot_spec() function on every cluster
 
     Parameters:
     n_clusters (int): Number of clusters
     norm_method (str): "cluster_norm" or "composite_sed_norm"
 
+
     Returns:
     """
     for i in range(n_clusters):
-        plot_spec(i, norm_method)
+        plot_spec(i, norm_method, mask_negatives=mask_negatives)
