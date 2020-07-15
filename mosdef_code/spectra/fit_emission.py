@@ -13,7 +13,7 @@ from filter_response import lines, overview, get_index, get_filter_response
 import matplotlib.pyplot as plt
 from scipy import interpolate
 import scipy.integrate as integrate
-from scipy.optimize import curve_fit
+from scipy.optimize import curve_fit, minimize, leastsq
 from query_funcs import get_zobjs
 import initialize_mosdef_dirs as imd
 import cluster_data_funcs as cdf
@@ -31,12 +31,13 @@ line_list = [
 ]
 
 
-def fit_emission(groupID, norm_method):
+def fit_emission(groupID, norm_method, constrain_O3=False):
     """Given a groupID, fit the emission lines in that composite spectrum
 
     Parameters:
     groupID (int): Number of the cluster to fit
     norm_methd (str): Method used for normalization, points to the folder where spectra are stored
+    constrain_O3 (boolean): Set to True to constrain the fitting of O3 to have a flux ratio of 2.97
 
     Returns:
     Saves a csv of the fits for all of the lines
@@ -44,12 +45,17 @@ def fit_emission(groupID, norm_method):
 
     composite_spectrum_df = read_composite_spectrum(groupID, norm_method)
 
+    line_names = [line_list[i][0] for i in range(len(line_list))]
+
     # Build the initial guesses
     guess = []
+    bounds_low = []
+    bounds_high = []
     amp_guess = 10**-18  # flux units
     velocity_guess = 200  # km/s
     z_offset_guess = 0  # Angstrom
     continuum_offset_guess = 10**-20  # flux untis,
+    slope_guess = 0  # flux untis,
     # should eventually divide out the shape of continuum
     # First, we guess the z_offset
     guess.append(z_offset_guess)
@@ -59,8 +65,16 @@ def fit_emission(groupID, norm_method):
     guess.append(velocity_guess)
     # Then, for each line, we guess an amplitude
     for i in range(len(line_list)):
+        if 'O3_5008' in line_names and 'O3_4960' in line_names:
+            idx_5008 = line_names.index('O3_5008')
+            idx_4960 = line_names.index('O3_4960')
+            if i == idx_5008:
+                guess.append(1)
+                continue
         guess.append(amp_guess)
-    popt, pcov = curve_fit(auto_multi_gaussian, composite_spectrum_df[
+    guess.append(slope_guess)
+
+    popt, pcov = curve_fit(multi_gaussian, composite_spectrum_df[
         'wavelength'], composite_spectrum_df['f_lambda'], guess)
 
     # Now, parse the results into a dataframe
@@ -71,10 +85,26 @@ def fit_emission(groupID, norm_method):
     velocity = [popt[2] for i in range(len(line_list))]
     sigs = [velocity_to_sig(line_list[i][1], popt[2])
             for i in range(len(line_list))]
-    amps = popt[3:]
+
+    if 'O3_5008' in line_names and 'O3_4960' in line_names:
+        idx_5008 = line_names.index('O3_5008')
+        idx_4960 = line_names.index('O3_4960')
+        sig_5008 = sigs[idx_5008]
+        sig_4960 = sigs[idx_4960]
+        amp_4960 = popt[idx_4960 + 3]
+        if constrain_O3 == True:
+            amp_5008 = 2.97 * amp_4960 * (sig_4960 / sig_5008)
+        else:
+            amp_5008 = 2.97 * amp_4960 * \
+                (sig_4960 / sig_5008) * popt[idx_5008 + 3]
+        popt[3 + idx_5008] = amp_5008
+
+    amps = popt[3:-1]
+    slope = [popt[-1] for i in range(len(line_list))]
+    fluxes = [get_flux(amps[i], sigs[i]) for i in range(len(line_list))]
 
     fit_df = pd.DataFrame(zip(line_names, line_centers_rest,
-                              z_offset, continuum_offset, velocity, amps, sigs), columns=['line_name', 'line_center_rest', 'z_offset', 'continuum_offset', 'fixed_velocity', 'amplitude', 'sigma'])
+                              z_offset, continuum_offset, velocity, amps, sigs, fluxes, slope), columns=['line_name', 'line_center_rest', 'z_offset', 'continuum_offset', 'fixed_velocity', 'amplitude', 'sigma', 'flux', 'slope'])
 
     fit_df.to_csv(imd.cluster_dir + f'/emission_fitting/{groupID}_emission_fits.csv', index=False)
     plot_emission_fit(groupID, norm_method)
@@ -148,7 +178,8 @@ def plot_emission_fit(groupID, norm_method):
     pars.append(fit_df['fixed_velocity'].iloc[0])
     for i in range(len(fit_df)):
         pars.append(fit_df.iloc[i]['amplitude'])
-    gauss_fit = auto_multi_gaussian(wavelength, pars)
+    pars.append(fit_df['slope'].iloc[0])
+    gauss_fit = multi_gaussian(wavelength, pars, fit=False)
 
     # Plots the spectrum and fit on all axes
     for axis in axes_arr:
@@ -173,7 +204,7 @@ def plot_emission_fit(groupID, norm_method):
     ax.plot(wavelength[too_low_gals][not_plot_cut], spectrum[too_low_gals][not_plot_cut],
             color='red', lw=1)
 
-    #ax.set_ylim(-1 * 10**-20, 1.01 * np.max(spectrum))
+    # ax.set_ylim(-1 * 10**-20, 1.01 * np.max(spectrum))
     ax.set_ylim(-1 * 10**-20, 8 * np.median(spectrum))
     Ha_plot_range = (6530, 6600)  # Angstrom
     Hb_plot_range = (4840, 5030)
@@ -217,12 +248,13 @@ def gaussian_func(wavelength, peak_wavelength, amp, sig):
     return amp * np.exp(-(wavelength - peak_wavelength)**2 / (2 * sig**2))
 
 
-def multi_gaussian(wavelength, *pars):
+def multi_gaussian(wavelength, *pars, fit=True):
     """Fits all Gaussians simulatneously at fixed redshift
 
     Parameters:
     wavelength (pd.DataFrame): Wavelength array to fit
     pars (list): List of all of the parameters
+    fit (boolean): Set to True if fitting (ie amps are not constrained yet)
 
     Returns:
     """
@@ -231,42 +263,33 @@ def multi_gaussian(wavelength, *pars):
     z_offset = pars[0]
     offset = pars[1]
     velocity = pars[2]
-    g0 = gaussian_func(wavelength, line_list[0][
-        1] + z_offset, pars[3], velocity_to_sig(line_list[0][1], velocity))
-    g1 = gaussian_func(wavelength, line_list[1][
-        1] + z_offset, pars[4],  velocity_to_sig(line_list[1][1], velocity))
-    g2 = gaussian_func(wavelength, line_list[2][
-        1] + z_offset, pars[5], velocity_to_sig(line_list[2][1], velocity))
-    g3 = gaussian_func(wavelength, line_list[3][
-        1] + z_offset, pars[6], velocity_to_sig(line_list[3][1], velocity))
-    g4 = gaussian_func(wavelength, line_list[4][
-        1] + z_offset, pars[7], velocity_to_sig(line_list[4][1], velocity))
-    g5 = gaussian_func(wavelength, line_list[5][
-        1] + z_offset, pars[8], velocity_to_sig(line_list[5][1], velocity))
-    return g0 + g1 + g2 + g3 + g4 + g5 + offset
+    slope = pars[-1]
 
+    # Force the fluxes of the OIII lines to be in the ratio 2.97
+    line_names = [line_list[i][0] for i in range(len(line_list))]
 
-def auto_multi_gaussian(wavelength, *pars):
-    """Fits all Gaussians simulatneously at fixed redshift
+    # If both lines are present, fix the ratio of the lines
+    if 'O3_5008' in line_names and 'O3_4960' in line_names and fit == True:
+        idx_5008 = line_names.index('O3_5008')
+        idx_4960 = line_names.index('O3_4960')
+        sig_5008 = velocity_to_sig(line_list[idx_5008][1], velocity)
+        sig_4960 = velocity_to_sig(line_list[idx_4960][1], velocity)
+        amp_4960 = pars[idx_4960 + 3]
+        amp_5008 = 2.97 * amp_4960 * (sig_4960 / sig_5008) * pars[idx_5008 + 3]
 
-    Parameters:
-    wavelength (pd.DataFrame): Wavelength array to fit
-    pars (list): List of all of the parameters
-
-    Returns:
-    """
-    if len(pars) == 1:
-        pars = pars[0]
-    z_offset = pars[0]
-    offset = pars[1]
-    velocity = pars[2]
     gaussians = []
     for i in range(len(line_list)):
-        gaussian = gaussian_func(wavelength, line_list[i][
-                                 1] + z_offset, pars[i + 3], velocity_to_sig(line_list[i][1], velocity))
+        peak_wavelength = line_list[i][1]
+        amp = pars[i + 3]
+        # Special case to fix the ratio of O3 lines
+        if line_list[i][0] == 'O3_5008' and fit == True:
+            gaussian = gaussian_func(wavelength, peak_wavelength +
+                                     z_offset, amp_5008, velocity_to_sig(peak_wavelength, velocity))
+        else:
+            gaussian = gaussian_func(wavelength, peak_wavelength +
+                                     z_offset, amp, velocity_to_sig(peak_wavelength, velocity))
         gaussians.append(gaussian)
-
-    return np.sum(gaussians, axis=0) + offset
+    return np.sum(gaussians, axis=0) + offset + slope * wavelength
 
 
 def velocity_to_sig(line_center, velocity):
@@ -278,7 +301,34 @@ def velocity_to_sig(line_center, velocity):
 
     Returns:
     sig (float): Standard deviation of the gaussian (angstrom)
-
     '''
     sig = line_center * (velocity / (3 * 10**5))
     return sig
+
+
+def get_flux(amp, sig):
+    '''Given the amplitude and std deviation of a Gaussian, compute the line flux
+
+    Parameters:
+    amp (float): amplitude of gaussian (flux units)
+    sig (float): Standard deviation of the gaussian (angstrom)
+
+    Returns:
+    flux (float): Total area under the Gaussian
+    '''
+    flux = amp * sig * np.sqrt(2 * np.pi)
+    return flux
+
+
+def fit_all_emission(n_clusters, norm_method, constrain_O3=False):
+    """Runs the fit_emission() function on every cluster
+
+    Parameters:
+    n_clusters (int): Number of clusters
+    norm_method (str): Method of normalization
+
+    Returns:
+    """
+    for i in range(n_clusters):
+        print(f'Fitting emission for {i}')
+        fit_emission(i, norm_method, constrain_O3=constrain_O3)

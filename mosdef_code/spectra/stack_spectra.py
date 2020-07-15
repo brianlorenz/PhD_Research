@@ -300,7 +300,7 @@ def stack_all_spectra(n_clusters, norm_method, re_observe=False, mask_negatives=
     Returns:
     """
     for i in range(n_clusters):
-        print(f'Stacking spectrum {groupID}')
+        print(f'Stacking spectrum {i}')
         stack_spectra(i, norm_method, re_observe=re_observe,
                       mask_negatives=mask_negatives, ignore_low_spectra=ignore_low_spectra)
 
