@@ -251,3 +251,23 @@ def get_all_seds(zobjs):
     # So one window that has SED, spectrum, F160 image - nice overview of each galaxy. Maybe plot half-light radius?
     # What is unit of half-light radius?
     # Need to clean the error logs ech time before running the code
+
+
+def get_zobjs_sort_nodup():
+    """Like get_zobjs(), but removes all duplicates and sorts
+
+    Parameters:
+
+    Returns:
+    zobjs (list of tuples): containing the *field* and *id* of each object
+        field (string): name of the field of the object, all caps, no whitespace. eg 'COSMOS' or 'GOODS-N'
+        id (int): HST V4.1 id of the object
+    """
+    zobjs = get_zobjs()
+    # Drop duplicates
+    zobjs = list(dict.fromkeys(zobjs))
+    # Remove objects with ID less than zero
+    zobjs = [obj for obj in zobjs if obj[1] > 0]
+    # Sort
+    zobjs.sort()
+    return zobjs

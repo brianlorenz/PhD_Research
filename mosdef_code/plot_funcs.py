@@ -10,9 +10,11 @@ from astropy.table import Table
 from read_data import mosdef_df
 from mosdef_obj_data_funcs import get_mosdef_obj, read_sed
 from polynomial_fit import poly_fit
+from query_funcs import get_zobjs
 import matplotlib.pyplot as plt
 import fnmatch
 import initialize_mosdef_dirs as imd
+import shutil
 from spectra_funcs import clip_skylines, get_spectra_files, median_bin_spec, read_spectrum, smooth_spectrum
 
 
@@ -214,3 +216,65 @@ def setup_spec_only(zobjs):
         fig, (ax, ax_sn) = plt.subplots(2, 1, figsize=(8, 9))
         plot_spectrum(ax, field, v4id, mosdef_obj, ax_sn)
         plt.show()
+
+
+def sort_by_sn():
+    """Sorts the galaxies by signal-to-noise ratio of their spectra
+
+    Parameters:
+
+    Returns:
+    """
+
+    # Make sure the directories are set up
+    all_dir = imd.mosdef_dir + '/SED_Images/All_High_SN'
+    some_dir = imd.mosdef_dir + '/SED_Images/Some_High_SN'
+    none_dir = imd.mosdef_dir + '/SED_Images/None_High_SN'
+    source_dir = imd.mosdef_dir + '/SED_Images/'
+    imd.check_and_make_dir(all_dir)
+    imd.check_and_make_dir(some_dir)
+    imd.check_and_make_dir(none_dir)
+
+    zobjs = get_zobjs()
+    # Drop duplicates
+    zobjs = list(dict.fromkeys(zobjs))
+    # Remove objects with ID less than zero
+    zobjs = [obj for obj in zobjs if obj[1] > 0]
+    # Sort
+    zobjs.sort()
+
+    # Signal-to-noise threshold to be considered good signal to noise
+    thresh = 3
+
+    for obj in zobjs:
+        mosdef_obj = get_mosdef_obj(obj[0], obj[1])
+        files = get_spectra_files(mosdef_obj)
+
+        if len(files) < 1:
+            continue
+
+        sig_noises = []
+        for file in files:
+            spectrum_df = read_spectrum(mosdef_obj, file)
+            # Mask out skylines using 5*median of the noise
+            mask_sky = spectrum_df['err_f_lambda'] < 5 * \
+                np.median(spectrum_df['err_f_lambda'])
+            mask_zeros = spectrum_df['f_lambda'] != 0
+            mask = np.logical_and(mask_sky, mask_zeros)
+            sig_noise = np.median(
+                spectrum_df[mask]['f_lambda']) / np.median(spectrum_df[mask]['err_f_lambda'])
+            sig_noises.append(sig_noise)
+            print(f'sig_noise = {sig_noise}')
+
+        # Now, copy the files if they have good signal to noise
+        source_file = source_dir + f'{obj[0]}_{obj[1]}.pdf'
+        if np.all([y > thresh for y in sig_noises]):
+            # Move file
+            shutil.copy(source_file, all_dir)
+            print('Copied ' + f'{obj[0]}_{obj[1]}.pdf ' + 'to all_dir')
+        elif np.any([y > thresh for y in sig_noises]):
+            shutil.copy(source_file, some_dir)
+            print('Copied ' + f'{obj[0]}_{obj[1]}.pdf ' + 'to some_dir')
+        else:
+            shutil.copy(source_file, none_dir)
+            print('Copied ' + f'{obj[0]}_{obj[1]}.pdf ' + 'to none_dir')

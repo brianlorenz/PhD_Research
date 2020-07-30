@@ -13,7 +13,7 @@ from filter_response import lines, overview, get_index, get_filter_response
 import matplotlib.pyplot as plt
 from scipy import interpolate
 import scipy.integrate as integrate
-from query_funcs import get_zobjs
+from query_funcs import get_zobjs, get_zobjs_sort_nodup
 import initialize_mosdef_dirs as imd
 import cluster_data_funcs as cdf
 
@@ -29,13 +29,7 @@ def make_axis_ratio_catalogs():
     field_names = ['AEGIS', 'COSMOS', 'GOODS-N', 'GOODS-S', 'UDS']
     cat_names = os.listdir(imd.mosdef_dir + '/axis_ratio_data/AEGIS/')
 
-    zobjs = get_zobjs()
-    # Drop duplicates
-    zobjs = list(dict.fromkeys(zobjs))
-    # Remove objects with ID less than zero
-    zobjs = [obj for obj in zobjs if obj[1] > 0]
-    # Sort
-    zobjs.sort()
+    zobjs = get_zobjs_sort_nodup()
 
     for cat_name in cat_names:
         cat_dfs = [ascii.read(imd.mosdef_dir + f'/axis_ratio_data/{field}/' +
@@ -84,3 +78,62 @@ def read_axis_ratio(filt, objs):
         rows.append(cat_obj)
     final_df = pd.concat(rows)
     return final_df
+
+
+def interpolate_axis_ratio():
+    '''Use the redshift of each object to make a catalog of what the axis ratio would be at 5000 angstroms
+
+    Parameters:
+
+    Returns:
+    '''
+    zobjs = get_zobjs_sort_nodup()
+    F125_df = read_axis_ratio(125, zobjs)
+    F140_df = read_axis_ratio(140, zobjs)
+    F160_df = read_axis_ratio(160, zobjs)
+    F125_df[['F125_axis_ratio', 'F125_err_axis_ratio']
+            ] = F125_df[['axis_ratio', 'err_axis_ratio']]
+    F140_df[['F140_axis_ratio', 'F140_err_axis_ratio']
+            ] = F140_df[['axis_ratio', 'err_axis_ratio']]
+    F160_df[['F160_axis_ratio', 'F160_err_axis_ratio']
+            ] = F160_df[['axis_ratio', 'err_axis_ratio']]
+    all_axis_ratios_df = pd.concat([F125_df[['F125_axis_ratio', 'F125_err_axis_ratio']], F140_df[
+                                   ['F140_axis_ratio', 'F140_err_axis_ratio']]], axis=1)
+    all_axis_ratios_df = pd.concat([all_axis_ratios_df, F160_df[
+                                   ['F160_axis_ratio', 'F160_err_axis_ratio']]], axis=1)
+    zs = []
+    for obj in zobjs:
+        mosdef_obj = get_mosdef_obj(obj[0], obj[1])
+        zs.append(mosdef_obj['Z_MOSFIRE'])
+    all_axis_ratios_df['Z_MOSFIRE'] = zs
+
+    # If 5000 angstrom is outside of the range of observations, use the closest measurement
+    # If 5000 is in the range, interpolate
+    # DOESNT HANDLE NEGATIVE VALUES WELL
+    # NOT SURE WHAT TO DO WITH ERRORS. IS THIS EVEN GOOD? SHOULD I IGNORE F140
+    use_ratios = []
+    for i in range(len(all_axis_ratios_df)):
+        F125W_peak = 12471.0
+        F140W_peak = 13924.0
+        F160W_peak = 15396.0
+        peaks = [F125W_peak, F140W_peak, F160W_peak]
+        rest_waves = np.array([peak / (1 + all_axis_ratios_df.iloc[i]['Z_MOSFIRE'])
+                               for peak in peaks])
+        filters = ['125', '140', '160']
+        axis_ratios = np.array([all_axis_ratios_df.iloc[i][f'F{j}_axis_ratio'] for j in filters])
+        good_ratios = [ratio > -0.1 for ratio in axis_ratios]
+        if len(axis_ratios[good_ratios]) == 1:
+            use_ratio = axis_ratios[good_ratios]
+            use_ratios.append(float(use_ratio))
+            continue
+        if len(axis_ratios[good_ratios]) == 0:
+            use_ratio = -999.0
+            use_ratios.append(float(use_ratio))
+            continue
+        axis_interp = interpolate.interp1d(rest_waves[good_ratios], axis_ratios[good_ratios], fill_value=(
+            axis_ratios[good_ratios][0], axis_ratios[good_ratios][-1]), bounds_error=False)
+        use_ratio = axis_interp(5000)
+        use_ratios.append(float(use_ratio))
+    all_axis_ratios_df['use_ratio'] = use_ratios
+    all_axis_ratios_df.to_csv(
+        imd.mosdef_dir + '/axis_ratio_data/Merged_catalogs/mosdef_all_cats.csv', index=False)
