@@ -102,9 +102,13 @@ def interpolate_axis_ratio():
     all_axis_ratios_df = pd.concat([all_axis_ratios_df, F160_df[
                                    ['F160_axis_ratio', 'F160_err_axis_ratio']]], axis=1)
     zs = []
+    fields = []
+    v4ids = []
     for obj in zobjs:
         mosdef_obj = get_mosdef_obj(obj[0], obj[1])
         zs.append(mosdef_obj['Z_MOSFIRE'])
+        fields.append(obj[0])
+        v4ids.append(obj[1])
     all_axis_ratios_df['Z_MOSFIRE'] = zs
 
     # If 5000 angstrom is outside of the range of observations, use the closest measurement
@@ -112,6 +116,7 @@ def interpolate_axis_ratio():
     # DOESNT HANDLE NEGATIVE VALUES WELL
     # NOT SURE WHAT TO DO WITH ERRORS. IS THIS EVEN GOOD? SHOULD I IGNORE F140
     use_ratios = []
+    use_errors = []
     for i in range(len(all_axis_ratios_df)):
         F125W_peak = 12471.0
         F140W_peak = 13924.0
@@ -121,19 +126,37 @@ def interpolate_axis_ratio():
                                for peak in peaks])
         filters = ['125', '140', '160']
         axis_ratios = np.array([all_axis_ratios_df.iloc[i][f'F{j}_axis_ratio'] for j in filters])
+        axis_errors = np.array([all_axis_ratios_df.iloc[i][f'F{j}_err_axis_ratio'] for j in filters])
         good_ratios = [ratio > -0.1 for ratio in axis_ratios]
         if len(axis_ratios[good_ratios]) == 1:
             use_ratio = axis_ratios[good_ratios]
+            use_error = axis_errors[good_ratios]
             use_ratios.append(float(use_ratio))
+            use_errors.append(float(use_error))
             continue
         if len(axis_ratios[good_ratios]) == 0:
             use_ratio = -999.0
+            use_error = -999.0
             use_ratios.append(float(use_ratio))
+            use_errors.append(float(use_error))
             continue
         axis_interp = interpolate.interp1d(rest_waves[good_ratios], axis_ratios[good_ratios], fill_value=(
             axis_ratios[good_ratios][0], axis_ratios[good_ratios][-1]), bounds_error=False)
+        err_interp = interpolate.interp1d(rest_waves[good_ratios], axis_errors[good_ratios], fill_value=(
+            axis_errors[good_ratios][0], axis_errors[good_ratios][-1]), bounds_error=False)
         use_ratio = axis_interp(5000)
+        use_error = err_interp(5000)
         use_ratios.append(float(use_ratio))
+        use_errors.append(float(use_error))
     all_axis_ratios_df['use_ratio'] = use_ratios
+    all_axis_ratios_df['err_use_ratio'] = use_errors
+    all_axis_ratios_df['field'] = fields
+    all_axis_ratios_df['v4id'] = v4ids
     all_axis_ratios_df.to_csv(
         imd.mosdef_dir + '/axis_ratio_data/Merged_catalogs/mosdef_all_cats.csv', index=False)
+
+
+def read_interp_axis_ratio():
+    merged_ar_df = ascii.read(imd.mosdef_dir +
+                              '/axis_ratio_data/Merged_catalogs/mosdef_all_cats.csv').to_pandas()
+    return merged_ar_df

@@ -1,4 +1,5 @@
-# Codes for stacking MOSDEF spectra within clusters
+# Codes for stacking MOSDEF spectra
+# stack_spectra(groupID, norm_method) to stack within clusters
 
 import sys
 import os
@@ -18,6 +19,7 @@ import initialize_mosdef_dirs as imd
 import cluster_data_funcs as cdf
 from spectra_funcs import clip_skylines, get_spectra_files, median_bin_spec, read_spectrum, get_too_low_gals, norm_spec_sed, read_composite_spectrum, prepare_mock_observe_spectrum, mock_observe_spectrum
 import matplotlib.patches as patches
+from axis_ratio_funcs import read_interp_axis_ratio
 
 
 def stack_spectra(groupID, norm_method, re_observe=False, mask_negatives=False, ignore_low_spectra=False):
@@ -317,3 +319,14 @@ def plot_all_spectra(n_clusters, norm_method, mask_negatives=False):
     """
     for i in range(n_clusters):
         plot_spec(i, norm_method, mask_negatives=mask_negatives)
+
+
+def stack_axis_ratio():
+    """Stacks galaxies in groups by axis ratio
+
+    Parameters:
+
+    Returns:
+    """
+    ar_df = read_interp_axis_ratio()
+    ar_df_sorted = ar_df.sort_values('use_ratio')

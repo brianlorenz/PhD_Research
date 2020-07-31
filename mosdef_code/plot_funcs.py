@@ -16,6 +16,7 @@ import fnmatch
 import initialize_mosdef_dirs as imd
 import shutil
 from spectra_funcs import clip_skylines, get_spectra_files, median_bin_spec, read_spectrum, smooth_spectrum
+from axis_ratio_funcs import read_interp_axis_ratio
 
 
 def populate_main_axis(ax, sed, good_idxs, axisfont, ticksize, ticks):
@@ -170,7 +171,7 @@ def plot_spectrum(ax, field, v4id, mosdef_obj):
         #         spec_data_errs, color='orange', lw=1)
         ax.plot(spectrum_df['rest_wavelength'], spectrum_df[
                 'f_lambda_clip'], color='blue', lw=1)
-        #ax.plot(wave_bin, spec_bin, color='orange', lw=1)
+        # ax.plot(wave_bin, spec_bin, color='orange', lw=1)
         ax.plot(spectrum_df['rest_wavelength'],
                 smooth_spec, color='orange', lw=1)
         ax.scatter(spectrum_df['rest_wavelength'] * spectrum_df['mask'],
@@ -278,3 +279,33 @@ def sort_by_sn():
         else:
             shutil.copy(source_file, none_dir)
             print('Copied ' + f'{obj[0]}_{obj[1]}.pdf ' + 'to none_dir')
+
+
+def plot_all_axis_ratios():
+    """Makes a histogram of all the axis ratios
+
+    Parameters:
+
+    Returns:
+    """
+    merged_ar_df = read_interp_axis_ratio()
+
+    axisfont = 14
+    ticksize = 12
+    ticks = 8
+    titlefont = 24
+    legendfont = 14
+    textfont = 16
+
+    # Figure for just the galaixes in that cluster
+    fig, ax = plt.subplots(figsize=(8, 7))
+
+    bins = np.arange(0, 1.05, 0.05)
+    ax.hist(merged_ar_df['use_ratio'], bins=bins, color='black')
+
+    ax.set_xlim(-0.05, 1.05)
+    ax.set_xlabel('Axis Ratio', fontsize=axisfont)
+    ax.tick_params(labelsize=ticksize, size=ticks)
+    fig.savefig(imd.mosdef_dir +
+                '/axis_ratio_data/Merged_catalogs/all_axis_ratios.pdf')
+    plt.close()
