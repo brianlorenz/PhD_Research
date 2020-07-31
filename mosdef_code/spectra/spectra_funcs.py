@@ -42,7 +42,7 @@ def clip_skylines(wavelength, spectrum, spectrum_errs, mask_negatives=False):
     thresh = np.percentile(spectrum, 95)
     mask = np.ones(len(spectrum))
 
-    thresh = 3 * np.median(spectrum_errs)
+    thresh = 10 * np.median(spectrum_errs)
     for i in range(len(spectrum)):
         if spectrum_errs[i] > thresh:
             # Masks one pixel on either side of the current pixel
@@ -428,18 +428,114 @@ def read_spectrum(mosdef_obj, spectrum_file):
     return spectrum_df
 
 
-def divide_continuum(composite_spectrum_df):
-    """Given a spectrum, divide through by the continuum
+def check_line_coverage(mosdef_obj, plot=False):
+    """Checks to see if all five emission lines fall within the spectra for this object
 
     Parameters:
-    composite_spectrum_df (pd.DataFrame): Dataframe containing spectrum wavlength, fluxes
-
+    mosdef_obj (pd.DataFrame): From get_mosdef_obj(field, v4id)
+    plot (boolean): Set to True if you want to plot the spectra and emission lines
 
     Returns:
     """
-    composite_spectrum_df['wavelength']
-    composite_spectrum_df['f_lambda']
+    # Number of angstroms around the line that need to not be masked on either
+    # side
+    check_range = 4
+
+    line_list = [
+        ('Halpha', 6564.61),
+        ('Hbeta', 4862.68),
+        ('O3_5008', 5008.24),
+        ('O3_4960', 4960.295),
+        ('N2_6585', 6585.27)
+    ]
+    spectra_files = get_spectra_files(mosdef_obj)
+    spectrum_dfs = []
+    for file in spectra_files:
+        spectrum_df = read_spectrum(mosdef_obj, file)
+        spectrum_df['f_lambda_clip'], spectrum_df['mask'] = clip_skylines(
+            spectrum_df['obs_wavelength'], spectrum_df['f_lambda'], spectrum_df['err_f_lambda'])
+        spectrum_dfs.append(spectrum_df)
+
+    lines_ok = []
+    for line in line_list:
+        # Assume the line is bad
+        line_ok = 0
+        coverage = 0
+
+        line_name = line[0]
+        line_wave = line[1]
+        for spectrum_df in spectrum_dfs:
+            # Check if the line is even covered. If not, it will loop to the
+            # next dataframe
+            if line_wave > spectrum_df['rest_wavelength'].iloc[0] and line_wave < spectrum_df['rest_wavelength'].iloc[-1]:
+                # If the line is covered, then we need to check if it is near
+                # bad pixels
+                coverage = 1
+
+                # Find the index nearest to the line
+                index = np.argmin(
+                    np.abs(spectrum_df['rest_wavelength'] - line_wave))
+                low_idx = np.max([0, index - check_range])
+                high_idx = np.min([len(spectrum_df), index + check_range])
+                if 0 not in spectrum_df.iloc[low_idx:high_idx]['f_lambda_clip'].to_numpy():
+                    line_ok = 1
+                    print(f'{line_name} is ok')
+                else:
+                    print(spectrum_df.iloc[low_idx:high_idx]['f_lambda_clip'])
+                    print(f'{line_name} has bad pixels nearby')
+        if coverage == 0:
+            print(f'{line_name} has no coverage')
+        # After checking all of the dataframes, append whether of not the line
+        # is ok
+        lines_ok.append(line_ok)
+    if 0 in lines_ok:
+        all_ok = False
+        print(f"{mosdef_obj['FIELD_STR']}, {mosdef_obj['V4ID']} has at least one bad line")
+    else:
+        all_ok = True
+        print(f"{mosdef_obj['FIELD_STR']}, {mosdef_obj['V4ID']} has full coverage!")
+    if plot:
+        plot_coverage(spectrum_dfs, line_list, check_range, lines_ok)
+    return all_ok
 
 
 def divz(X, Y):
     return X / np.where(Y, Y, Y + 1) * np.not_equal(Y, 0)
+
+
+def plot_coverage(spectrum_dfs, line_list, check_range, lines_ok):
+    axisfont = 14
+    ticksize = 12
+    ticks = 8
+    titlefont = 24
+    legendfont = 14
+    textfont = 16
+
+    fig, ax = plt.subplots(1, 1, figsize=(8, 8))
+
+    for spectrum_df in spectrum_dfs:
+        ax.plot(spectrum_df['rest_wavelength'], spectrum_df[
+                'f_lambda'], color='blue', lw=1, alpha=0.5)
+        ax.plot(spectrum_df['rest_wavelength'], spectrum_df[
+                'f_lambda_clip'], color='black', lw=1)
+    for i in range(len(line_list)):
+        line = line_list[i]
+        line_name = line[0]
+        line_wave = line[1]
+        ax.plot([line_wave, line_wave], [-100, 100], color='purple', lw=1)
+        if lines_ok[i] == 1:
+            ok_color = 'green'
+        else:
+            ok_color = 'red'
+        ax.axvspan(line_wave - check_range, line_wave +
+                   check_range, facecolor=ok_color, alpha=0.5)
+
+    ax.set_ylim(np.percentile(spectrum_df[
+                'f_lambda'], 1), np.percentile(spectrum_df[
+                    'f_lambda'], 99))
+
+    plt.show()
+    # ax.set_xlim()
+
+    # fig.savefig(imd.cluster_dir +
+    # f'/composite_spectra/{groupID}_spectrum.pdf')

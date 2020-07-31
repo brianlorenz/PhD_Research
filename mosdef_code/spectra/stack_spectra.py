@@ -17,7 +17,7 @@ import scipy.integrate as integrate
 from query_funcs import get_zobjs
 import initialize_mosdef_dirs as imd
 import cluster_data_funcs as cdf
-from spectra_funcs import clip_skylines, get_spectra_files, median_bin_spec, read_spectrum, get_too_low_gals, norm_spec_sed, read_composite_spectrum, prepare_mock_observe_spectrum, mock_observe_spectrum
+from spectra_funcs import clip_skylines, check_line_coverage, get_spectra_files, median_bin_spec, read_spectrum, get_too_low_gals, norm_spec_sed, read_composite_spectrum, prepare_mock_observe_spectrum, mock_observe_spectrum
 import matplotlib.patches as patches
 from axis_ratio_funcs import read_interp_axis_ratio
 
@@ -64,6 +64,10 @@ def stack_spectra(groupID, norm_method, re_observe=False, mask_negatives=False, 
         v4id = mosdef_obj['V4ID']
         norm_sed = read_sed(field, v4id, norm=True)
         print(f'Reading Spectra for {field} {v4id}, z={z_spec:.3f}')
+        # Check to see if the galaxy includes all emission lines
+        covered = check_line_coverage(mosdef_obj)
+        if covered == False:
+            continue
         # Find all the spectra files corresponding to this object
         spectra_files = get_spectra_files(mosdef_obj)
         for spectrum_file in spectra_files:
@@ -329,4 +333,7 @@ def stack_axis_ratio():
     Returns:
     """
     ar_df = read_interp_axis_ratio()
+
+    # Remove objects with greater than 0.1 error
+    ar_df = ar_df[ar_df['err_use_ratio'] < 0.1]
     ar_df_sorted = ar_df.sort_values('use_ratio')
