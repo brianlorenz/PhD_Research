@@ -17,7 +17,7 @@ from scipy.optimize import curve_fit, minimize, leastsq
 from query_funcs import get_zobjs
 import initialize_mosdef_dirs as imd
 import cluster_data_funcs as cdf
-from spectra_funcs import read_composite_spectrum, get_too_low_gals
+from spectra_funcs import read_axis_ratio_spectrum, read_composite_spectrum, get_too_low_gals
 import matplotlib.patches as patches
 
 
@@ -31,19 +31,23 @@ line_list = [
 ]
 
 
-def fit_emission(groupID, norm_method, constrain_O3=False):
+def fit_emission(groupID, norm_method, constrain_O3=False, axis_group=-1):
     """Given a groupID, fit the emission lines in that composite spectrum
 
     Parameters:
     groupID (int): Number of the cluster to fit
     norm_methd (str): Method used for normalization, points to the folder where spectra are stored
     constrain_O3 (boolean): Set to True to constrain the fitting of O3 to have a flux ratio of 2.97
+    axis_group (int): Set to the number of the axis ratio group to fit that instead
 
     Returns:
     Saves a csv of the fits for all of the lines
     """
 
-    composite_spectrum_df = read_composite_spectrum(groupID, norm_method)
+    if axis_group > -1:
+        composite_spectrum_df = read_axis_ratio_spectrum(axis_group)
+    else:
+        composite_spectrum_df = read_composite_spectrum(groupID, norm_method)
 
     line_names = [line_list[i][0] for i in range(len(line_list))]
 
@@ -106,8 +110,12 @@ def fit_emission(groupID, norm_method, constrain_O3=False):
     fit_df = pd.DataFrame(zip(line_names, line_centers_rest,
                               z_offset, continuum_offset, velocity, amps, sigs, fluxes, slope), columns=['line_name', 'line_center_rest', 'z_offset', 'continuum_offset', 'fixed_velocity', 'amplitude', 'sigma', 'flux', 'slope'])
 
-    fit_df.to_csv(imd.cluster_dir + f'/emission_fitting/{groupID}_emission_fits.csv', index=False)
-    plot_emission_fit(groupID, norm_method)
+    if axis_group > -1:
+        fit_df.to_csv(imd.cluster_dir + f'/emission_fitting/axis_ratio_clusters/{axis_group}_emission_fits.csv', index=False)
+        plot_emission_fit(groupID, norm_method, axis_group=axis_group)
+    else:
+        fit_df.to_csv(imd.cluster_dir + f'/emission_fitting/{groupID}_emission_fits.csv', index=False)
+        plot_emission_fit(groupID, norm_method)
     return
 
 
@@ -124,18 +132,17 @@ def fit_all_emission(n_clusters, norm_method):
         fit_emission(i, norm_method)
 
 
-def plot_emission_fit(groupID, norm_method):
+def plot_emission_fit(groupID, norm_method, axis_group=-1):
     """Plots the fit to each emission line
 
     Parameters:
     groupID (int): Number of the cluster to fit
     norm_methd (str): Method used for normalization, points to the folder where spectra are stored
+    axis_group (int): Set to the number of the axis ratio group to fit that instead
 
     Returns:
     Saves a pdf of the fits for all of the lines
     """
-    fit_df = ascii.read(imd.cluster_dir + f'/emission_fitting/{groupID}_emission_fits.csv').to_pandas()
-
     axisfont = 14
     ticksize = 12
     ticks = 8
@@ -143,7 +150,12 @@ def plot_emission_fit(groupID, norm_method):
     legendfont = 14
     textfont = 16
 
-    total_spec_df = read_composite_spectrum(groupID, norm_method)
+    if axis_group > -1:
+        fit_df = ascii.read(imd.cluster_dir + f'/emission_fitting/axis_ratio_clusters/{axis_group}_emission_fits.csv').to_pandas()
+        total_spec_df = read_axis_ratio_spectrum(axis_group)
+    else:
+        fit_df = ascii.read(imd.cluster_dir + f'/emission_fitting/{groupID}_emission_fits.csv').to_pandas()
+        total_spec_df = read_composite_spectrum(groupID, norm_method)
 
     fig = plt.figure(figsize=(8, 8))
     ax = fig.add_axes([0.09, 0.08, 0.88, 0.42])
@@ -169,7 +181,7 @@ def plot_emission_fit(groupID, norm_method):
     norm_value_summed = total_spec_df['norm_value_summed']
 
     too_low_gals, plot_cut, not_plot_cut, n_gals_in_group, cutoff, cutoff_low, cutoff_high = get_too_low_gals(
-        groupID, norm_method)
+        groupID, norm_method, axis_group=axis_group)
 
     # Set up the parameters from the fitting
     pars = []
@@ -229,7 +241,10 @@ def plot_emission_fit(groupID, norm_method):
     ax.set_ylabel('F$_\lambda$', fontsize=axisfont)
     ax.tick_params(labelsize=ticksize, size=ticks)
 
-    fig.savefig(imd.cluster_dir + f'/emission_fitting/{groupID}_emission_fit.pdf')
+    if axis_group > -1:
+        fig.savefig(imd.cluster_dir + f'/emission_fitting/axis_ratio_clusters/{axis_group}_emission_fit.pdf')
+    else:
+        fig.savefig(imd.cluster_dir + f'/emission_fitting/{groupID}_emission_fit.pdf')
     plt.close()
     return
 

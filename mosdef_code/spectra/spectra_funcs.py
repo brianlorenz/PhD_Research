@@ -152,6 +152,21 @@ def read_composite_spectrum(groupID, norm_method):
     return spectrum_df
 
 
+def read_axis_ratio_spectrum(axis_group):
+    """Reads in the spectrum file for a given cluster
+
+    Parameters:
+    axis_group (int): id of the group to read
+
+    Returns:
+    spectrum_df (pd.DataFrame): Dataframe containing wavelength and fluxes for the spectrum
+    """
+    spectrum_df = ascii.read(
+        imd.cluster_dir + f'/composite_spectra/axis_stack/{axis_group}_spectrum.csv').to_pandas()
+
+    return spectrum_df
+
+
 def norm_spec_sed(composite_sed, spectrum_df):
     """Gets the normalization and correlation between composite SED and composite spectrum
 
@@ -206,13 +221,14 @@ def norm_spec_sed(composite_sed, spectrum_df):
     return a12, b12, used_fluxes_df
 
 
-def get_too_low_gals(groupID, norm_method, thresh=0.15):
+def get_too_low_gals(groupID, norm_method, thresh=0.15, axis_group=-1):
     """Given a groupID, find out which parts of the spectrum have too few galaxies to be useable
 
     Parameters:
     groupID (int): ID of the cluster to use
     norm_method (str): Normalization method used
     thresh (float): from 0 to 1, fraction of galaxies over which is acceptable. i.e., thresh=0.1 means to good parts of the spectrum have at least 10% of the number of galaxies in the cluster
+    axis_group (int): Set to greater than -1 if you are plotting axis ratios instead
 
     Returns:
     too_low_gals (pd.DataFrame): True/False frame of where the spectrum is 'good'
@@ -221,8 +237,14 @@ def get_too_low_gals(groupID, norm_method, thresh=0.15):
     n_gals_in_group (int): Number of galaxies in the cluster
     cutoff (int): Number of galaixes above which ist acceptable
     """
-    n_gals_in_group = len(os.listdir(imd.cluster_dir + '/' + str(groupID)))
-    total_spec_df = read_composite_spectrum(groupID, norm_method)
+    if axis_group > -1:
+        total_spec_df = read_axis_ratio_spectrum(axis_group)
+        ar_df = ascii.read(
+            imd.cluster_dir + f'/composite_spectra/axis_stack/{axis_group}_df.csv').to_pandas()
+        n_gals_in_group = len(ar_df)
+    else:
+        n_gals_in_group = len(os.listdir(imd.cluster_dir + '/' + str(groupID)))
+        total_spec_df = read_composite_spectrum(groupID, norm_method)
     wavelength = total_spec_df['wavelength']
     n_galaxies = total_spec_df['n_galaxies']
     # too_low_gals = (n_galaxies / n_gals_in_group) < thresh

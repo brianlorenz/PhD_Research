@@ -17,7 +17,7 @@ import scipy.integrate as integrate
 from query_funcs import get_zobjs
 import initialize_mosdef_dirs as imd
 import cluster_data_funcs as cdf
-from spectra_funcs import clip_skylines, check_line_coverage, get_spectra_files, median_bin_spec, read_spectrum, get_too_low_gals, norm_spec_sed, read_composite_spectrum, prepare_mock_observe_spectrum, mock_observe_spectrum
+from spectra_funcs import read_axis_ratio_spectrum, clip_skylines, check_line_coverage, get_spectra_files, median_bin_spec, read_spectrum, get_too_low_gals, norm_spec_sed, read_composite_spectrum, prepare_mock_observe_spectrum, mock_observe_spectrum
 import matplotlib.patches as patches
 from axis_ratio_funcs import read_interp_axis_ratio
 
@@ -244,8 +244,7 @@ def plot_spec(groupID, norm_method, mask_negatives=False, thresh=0.1, axis_group
     textfont = 16
 
     if axis_group > -1:
-        total_spec_df = ascii.read(
-            imd.cluster_dir + f'/composite_spectra/axis_stack/{axis_group}_spectrum.csv').to_pandas()
+        total_spec_df = read_axis_ratio_spectrum(axis_group)
     else:
         total_spec_df = read_composite_spectrum(groupID, norm_method)
 
@@ -269,7 +268,7 @@ def plot_spec(groupID, norm_method, mask_negatives=False, thresh=0.1, axis_group
     wave_bin, spec_bin = median_bin_spec(wavelength, spectrum)
 
     too_low_gals, plot_cut, not_plot_cut, n_gals_in_group, cutoff, cutoff_low, cutoff_high = get_too_low_gals(
-        groupID, norm_method, thresh)
+        groupID, norm_method, thresh, axis_group=axis_group)
 
     ax.plot(wavelength, spectrum, color='black', lw=1, label='Spectrum')
     ax.plot(wavelength[too_low_gals][plot_cut], spectrum[too_low_gals][plot_cut],
@@ -375,8 +374,9 @@ def stack_axis_ratio(n_bins=10):
         median_ratio = np.median(df['use_ratio'])
         scatter_ratio = np.std(df['use_ratio'])
         print(f'Median: {median_ratio} \nScatter: {scatter_ratio}')
+        # Save the dataframe for the group
+        df.to_csv(
+            imd.cluster_dir + f'/composite_spectra/axis_stack/{axis_group}_df.csv', index=False)
         # Within each group, start stacking the spectra
         stack_spectra(0, 'cluster_norm', axis_ratio_df=df,
                       axis_group=axis_group)
-        df.to_csv(
-            imd.cluster_dir + f'/composite_spectra/axis_stack/{axis_group}_df.csv', index=False)
