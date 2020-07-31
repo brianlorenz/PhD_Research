@@ -22,7 +22,7 @@ import matplotlib.patches as patches
 from axis_ratio_funcs import read_interp_axis_ratio
 
 
-def stack_spectra(groupID, norm_method, re_observe=False, mask_negatives=False, ignore_low_spectra=False):
+def stack_spectra(groupID, norm_method, re_observe=False, mask_negatives=False, ignore_low_spectra=False, axis_ratio_df=[], axis_group=0):
     """Stack all the spectra for every object in a given group
 
     Parameters:
@@ -31,6 +31,8 @@ def stack_spectra(groupID, norm_method, re_observe=False, mask_negatives=False, 
     re_observe (boolean): Set to True if using 'composite_filter' and you want to re-observe all of the spectra
     mask_negatives (boolean): Set to True to mask all negative values in the spectra
     ignore_low_spectra (boolean): Set to True to ignore all spectra with negative median values
+    axis_ratio_df (pd.DataFrame): Set to a dataframe of axis ratios and it will stack all spectra within that dataframe. Also set axis_group
+    axis_group (int): Number of the axis ratio group
 
     Returns:
     """
@@ -43,12 +45,22 @@ def stack_spectra(groupID, norm_method, re_observe=False, mask_negatives=False, 
         composite_waves = []
         composite_fluxes = []
 
-    composite_sed = read_composite_sed(groupID)
+    # Check if we are using axis ratio stacking or not
+    axis_stack = False
+    if len(axis_ratio_df) > 0:
+        axis_stack = True
 
-    cluster_names, fields_ids = cdf.get_cluster_fields_ids(groupID)
+    if axis_stack:
+        mosdef_objs = [get_mosdef_obj(axis_ratio_df.iloc[i]['field'], axis_ratio_df.iloc[
+            i]['v4id']) for i in range(len(axis_ratio_df))]
 
-    mosdef_objs = [get_mosdef_obj(field, int(v4id))
-                   for field, v4id in fields_ids]
+    else:
+        composite_sed = read_composite_sed(groupID)
+
+        cluster_names, fields_ids = cdf.get_cluster_fields_ids(groupID)
+
+        mosdef_objs = [get_mosdef_obj(field, int(v4id))
+                       for field, v4id in fields_ids]
 
     # min, max, step-size
     spectrum_wavelength = np.arange(3000, 10000, 1)
@@ -129,7 +141,6 @@ def stack_spectra(groupID, norm_method, re_observe=False, mask_negatives=False, 
                                    spectrum_flux_filter).iloc[0]
                     if norm_factor < 0 or norm_factor > 100:
                         norm_factor = 0
-
             elif norm_method == 'positive_median':
                 med_wave = np.median(spectrum_df['rest_wavelength'])
                 med_pos_flux = np.median(
@@ -142,6 +153,9 @@ def stack_spectra(groupID, norm_method, re_observe=False, mask_negatives=False, 
                 sys.exit(
                     'Select norm_method: "cluster_norm", "composite_sed_norm", ')
 
+            # If stacking in axis ratio groups, do NOT normalize
+            if axis_stack:
+                norm_factor = 1.
             print(f'Norm factor: {norm_factor}')
 
             spectrum_df['f_lambda_norm'] = spectrum_df[
@@ -198,19 +212,27 @@ def stack_spectra(groupID, norm_method, re_observe=False, mask_negatives=False, 
     total_spec_df = pd.DataFrame(zip(spectrum_wavelength, total_spec, number_specs_by_wave, norm_value_specs_by_wave),
                                  columns=['wavelength', 'f_lambda', 'n_galaxies', 'norm_value_summed'])
 
-    total_spec_df.to_csv(
-        imd.cluster_dir + f'/composite_spectra/{norm_method}/{groupID}_spectrum.csv', index=False)
+    if axis_stack:
+        median_ratio = np.median(axis_ratio_df['use_ratio'])
+        total_spec_df.to_csv(
+            imd.cluster_dir + f'/composite_spectra/axis_stack/{axis_group}_spectrum.csv', index=False)
+        plot_spec(groupID, norm_method, axis_group=axis_group)
 
-    plot_spec(groupID, norm_method)
+    else:
+        total_spec_df.to_csv(
+            imd.cluster_dir + f'/composite_spectra/{norm_method}/{groupID}_spectrum.csv', index=False)
+
+        plot_spec(groupID, norm_method)
     return
 
 
-def plot_spec(groupID, norm_method, mask_negatives=False, thresh=0.1):
+def plot_spec(groupID, norm_method, mask_negatives=False, thresh=0.1, axis_group=-1):
     """Plots the spectrum
 
     Parameters:
     groupID (int): id of the group that you are working with
     thresh (float): From 0 to 1, fraction where less than this percentage of the group will be marked as a bad part of the spectrum
+    axis_group(int): Set the the group number to instead plot for the aixs_ratio group
 
     Returns:
     """
@@ -221,7 +243,11 @@ def plot_spec(groupID, norm_method, mask_negatives=False, thresh=0.1):
     legendfont = 14
     textfont = 16
 
-    total_spec_df = read_composite_spectrum(groupID, norm_method)
+    if axis_group > -1:
+        total_spec_df = ascii.read(
+            imd.cluster_dir + f'/composite_spectra/axis_stack/{axis_group}_spectrum.csv').to_pandas()
+    else:
+        total_spec_df = read_composite_spectrum(groupID, norm_method)
 
     fig = plt.figure(figsize=(8, 8))
     ax = fig.add_axes([0.09, 0.35, 0.88, 0.60])
@@ -288,8 +314,11 @@ def plot_spec(groupID, norm_method, mask_negatives=False, thresh=0.1):
     ax.set_ylabel('F$_\lambda$', fontsize=axisfont)
     ax.tick_params(labelsize=ticksize, size=ticks)
     ax_contribute.tick_params(labelsize=ticksize, size=ticks)
-
-    fig.savefig(imd.cluster_dir + f'/composite_spectra/{norm_method}/{groupID}_spectrum.pdf')
+    if axis_group > -1:
+        ax.text
+        fig.savefig(imd.cluster_dir + f'/composite_spectra/axis_stack/{axis_group}_spectrum.pdf')
+    else:
+        fig.savefig(imd.cluster_dir + f'/composite_spectra/{norm_method}/{groupID}_spectrum.pdf')
     plt.close()
 
 
@@ -325,10 +354,11 @@ def plot_all_spectra(n_clusters, norm_method, mask_negatives=False):
         plot_spec(i, norm_method, mask_negatives=mask_negatives)
 
 
-def stack_axis_ratio():
+def stack_axis_ratio(n_bins=10):
     """Stacks galaxies in groups by axis ratio
 
     Parameters:
+    n_bins (int): Number of bins to divide galaxies into
 
     Returns:
     """
@@ -337,3 +367,16 @@ def stack_axis_ratio():
     # Remove objects with greater than 0.1 error
     ar_df = ar_df[ar_df['err_use_ratio'] < 0.1]
     ar_df_sorted = ar_df.sort_values('use_ratio')
+    # Split into n_bins groups
+    ar_dfs = np.array_split(ar_df_sorted, n_bins)
+    for axis_group in range(len(ar_dfs)):
+        df = ar_dfs[axis_group]
+        # For each group, get a median and scatter of the axis ratios
+        median_ratio = np.median(df['use_ratio'])
+        scatter_ratio = np.std(df['use_ratio'])
+        print(f'Median: {median_ratio} \nScatter: {scatter_ratio}')
+        # Within each group, start stacking the spectra
+        stack_spectra(0, 'cluster_norm', axis_ratio_df=df,
+                      axis_group=axis_group)
+        df.to_csv(
+            imd.cluster_dir + f'/composite_spectra/axis_stack/{axis_group}_df.csv', index=False)
