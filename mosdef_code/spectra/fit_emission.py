@@ -69,19 +69,19 @@ def fit_emission(groupID, norm_method, constrain_O3=False, axis_group=-1):
     guess.append(velocity_guess)
     # Then, for each line, we guess an amplitude
     for i in range(len(line_list)):
-        if 'O3_5008' in line_names and 'O3_4960' in line_names:
-            idx_5008 = line_names.index('O3_5008')
-            idx_4960 = line_names.index('O3_4960')
-            if i == idx_5008:
-                guess.append(1)
-                continue
+        # if 'O3_5008' in line_names and 'O3_4960' in line_names:
+        #     idx_5008 = line_names.index('O3_5008')
+        #     idx_4960 = line_names.index('O3_4960')
+        #     if i == idx_5008:
+        #         guess.append(1)
+        #         continue
         guess.append(amp_guess)
     guess.append(slope_guess)
 
     n_loops = 10
-    breakpoint()
-    monte_carlo_fit(multi_gaussian, composite_spectrum_df[
+    popt, arr_popt = monte_carlo_fit(multi_gaussian, composite_spectrum_df[
         'wavelength'], composite_spectrum_df['f_lambda'], composite_spectrum_df['err_f_lambda'], guess, n_loops)
+    err_popt = np.std(arr_popt, axis=0)
     # popt, pcov = curve_fit(multi_gaussian, composite_spectrum_df[
     #     'wavelength'], composite_spectrum_df['f_lambda'], guess)
 
@@ -89,30 +89,40 @@ def fit_emission(groupID, norm_method, constrain_O3=False, axis_group=-1):
     line_names = [line_list[i][0] for i in range(len(line_list))]
     line_centers_rest = [line_list[i][1] for i in range(len(line_list))]
     z_offset = [popt[0] for i in range(len(line_list))]
+    err_z_offset = [err_popt[0] for i in range(len(line_list))]
     continuum_offset = [popt[1] for i in range(len(line_list))]
+    err_continuum_offset = [err_popt[1] for i in range(len(line_list))]
     velocity = [popt[2] for i in range(len(line_list))]
+    err_velocity = [err_popt[2] for i in range(len(line_list))]
     sigs = [velocity_to_sig(line_list[i][1], popt[2])
             for i in range(len(line_list))]
+    err_sigs = [velocity_to_sig(line_list[i][1], popt[2] + err_popt[2]) - sigs[i]
+                for i in range(len(line_list))]
 
-    if 'O3_5008' in line_names and 'O3_4960' in line_names:
-        idx_5008 = line_names.index('O3_5008')
-        idx_4960 = line_names.index('O3_4960')
-        sig_5008 = sigs[idx_5008]
-        sig_4960 = sigs[idx_4960]
-        amp_4960 = popt[idx_4960 + 3]
-        if constrain_O3 == True:
-            amp_5008 = 2.97 * amp_4960 * (sig_4960 / sig_5008)
-        else:
-            amp_5008 = 2.97 * amp_4960 * \
-                (sig_4960 / sig_5008) * popt[idx_5008 + 3]
-        popt[3 + idx_5008] = amp_5008
+    # if 'O3_5008' in line_names and 'O3_4960' in line_names:
+    #     idx_5008 = line_names.index('O3_5008')
+    #     idx_4960 = line_names.index('O3_4960')
+    #     sig_5008 = sigs[idx_5008]
+    #     sig_4960 = sigs[idx_4960]
+    #     amp_4960 = popt[idx_4960 + 3]
+    #     if constrain_O3 == True:
+    #         amp_5008 = 2.97 * amp_4960 * (sig_4960 / sig_5008)
+    #     else:
+    #         amp_5008 = 2.97 * amp_4960 * \
+    #             (sig_4960 / sig_5008) * popt[idx_5008 + 3]
+    #     popt[3 + idx_5008] = amp_5008
 
     amps = popt[3:-1]
+    err_amps = err_popt[3:-1]
     slope = [popt[-1] for i in range(len(line_list))]
-    fluxes = [get_flux(amps[i], sigs[i]) for i in range(len(line_list))]
+    err_slope = [err_popt[-1] for i in range(len(line_list))]
+    flux_tuples = [get_flux(amps[i], sigs[i], err_amps[i], err_sigs[
+                            i]) for i in range(len(line_list))]
+    fluxes = [i[0] for i in flux_tuples]
+    err_fluxes = [i[1] for i in flux_tuples]
 
     fit_df = pd.DataFrame(zip(line_names, line_centers_rest,
-                              z_offset, continuum_offset, velocity, amps, sigs, fluxes, slope), columns=['line_name', 'line_center_rest', 'z_offset', 'continuum_offset', 'fixed_velocity', 'amplitude', 'sigma', 'flux', 'slope'])
+                              z_offset, err_z_offset, continuum_offset, err_continuum_offset, slope, err_slope, velocity, err_velocity, amps, err_amps, sigs, err_sigs, fluxes, err_fluxes), columns=['line_name', 'line_center_rest', 'z_offset', 'err_z_offset', 'continuum_offset', 'err_continuum_offset', 'slope', 'err_slope', 'fixed_velocity', 'err_fixed_velocity', 'amplitude', 'err_amplitude', 'sigma', 'err_sigma', 'flux', 'err_flux'])
 
     if axis_group > -1:
         fit_df.to_csv(imd.cluster_dir + f'/emission_fitting/axis_ratio_clusters/{axis_group}_emission_fits.csv', index=False)
@@ -220,8 +230,6 @@ def plot_emission_fit(groupID, norm_method, axis_group=-1):
     ax.plot(wavelength[too_low_gals][not_plot_cut], spectrum[too_low_gals][not_plot_cut],
             color='red', lw=1)
 
-    # ax.set_ylim(-1 * 10**-20, 1.01 * np.max(spectrum))
-    ax.set_ylim(-1 * 10**-20, 8 * np.median(spectrum))
     Ha_plot_range = (6530, 6600)  # Angstrom
     Hb_plot_range = (4840, 5030)
 
@@ -238,6 +246,9 @@ def plot_emission_fit(groupID, norm_method, axis_group=-1):
 
     set_plot_ranges(ax, ax_Ha, Ha_plot_range, Ha_zoom_box_color)
     set_plot_ranges(ax, ax_Hb, Hb_plot_range, Hb_zoom_box_color)
+
+    # ax.set_ylim(-1 * 10**-20, 1.01 * np.max(spectrum))
+    ax.set_ylim(np.percentile(spectrum, [1, 99]))
 
     ax.legend(loc=1, fontsize=axisfont - 3)
 
@@ -288,25 +299,25 @@ def multi_gaussian(wavelength, *pars, fit=True):
     line_names = [line_list[i][0] for i in range(len(line_list))]
 
     # If both lines are present, fix the ratio of the lines
-    if 'O3_5008' in line_names and 'O3_4960' in line_names and fit == True:
-        idx_5008 = line_names.index('O3_5008')
-        idx_4960 = line_names.index('O3_4960')
-        sig_5008 = velocity_to_sig(line_list[idx_5008][1], velocity)
-        sig_4960 = velocity_to_sig(line_list[idx_4960][1], velocity)
-        amp_4960 = pars[idx_4960 + 3]
-        amp_5008 = 2.97 * amp_4960 * (sig_4960 / sig_5008) * pars[idx_5008 + 3]
+    # if 'O3_5008' in line_names and 'O3_4960' in line_names and fit == True:
+    #     idx_5008 = line_names.index('O3_5008')
+    #     idx_4960 = line_names.index('O3_4960')
+    #     sig_5008 = velocity_to_sig(line_list[idx_5008][1], velocity)
+    #     sig_4960 = velocity_to_sig(line_list[idx_4960][1], velocity)
+    #     amp_4960 = pars[idx_4960 + 3]
+    #     amp_5008 = 2.97 * amp_4960 * (sig_4960 / sig_5008) * pars[idx_5008 + 3]
 
     gaussians = []
     for i in range(len(line_list)):
         peak_wavelength = line_list[i][1]
         amp = pars[i + 3]
-        # Special case to fix the ratio of O3 lines
-        if line_list[i][0] == 'O3_5008' and fit == True:
-            gaussian = gaussian_func(wavelength, peak_wavelength +
-                                     z_offset, amp_5008, velocity_to_sig(peak_wavelength, velocity))
-        else:
-            gaussian = gaussian_func(wavelength, peak_wavelength +
-                                     z_offset, amp, velocity_to_sig(peak_wavelength, velocity))
+        # # Special case to fix the ratio of O3 lines
+        # if line_list[i][0] == 'O3_5008' and fit == True:
+        #     gaussian = gaussian_func(wavelength, peak_wavelength +
+        #                              z_offset, amp_5008, velocity_to_sig(peak_wavelength, velocity))
+        # else:
+        gaussian = gaussian_func(wavelength, peak_wavelength +
+                                 z_offset, amp, velocity_to_sig(peak_wavelength, velocity))
         gaussians.append(gaussian)
     return np.sum(gaussians, axis=0) + offset + slope * wavelength
 
@@ -327,14 +338,15 @@ def monte_carlo_fit(func, x_data, y_data, y_err, guess, n_loops):
     '''
     popt, pcov = curve_fit(func, x_data, y_data, guess)
     for i in range(n_loops):
-        new_ys = [np.random_normal(loc=y_data.iloc[j], scale=y_err.iloc[
+        print(f'Bootstrapping loop {i}')
+        new_ys = [np.random.normal(loc=y_data.iloc[j], scale=y_err.iloc[
                                    j]) for j in range(len(y_data))]
         new_popt, new_pcov = curve_fit(func, x_data, new_ys, guess)
         if i == 0:
             arr_popt = np.array(new_popt)
         else:
-            np.vstack((arr_popt, np.array(new_popt)))
-    return
+            arr_popt = np.vstack((arr_popt, np.array(new_popt)))
+    return popt, arr_popt
 
 
 def velocity_to_sig(line_center, velocity):
@@ -351,7 +363,7 @@ def velocity_to_sig(line_center, velocity):
     return sig
 
 
-def get_flux(amp, sig):
+def get_flux(amp, sig, amp_err, sig_err):
     '''Given the amplitude and std deviation of a Gaussian, compute the line flux
 
     Parameters:
@@ -362,7 +374,11 @@ def get_flux(amp, sig):
     flux (float): Total area under the Gaussian
     '''
     flux = amp * sig * np.sqrt(2 * np.pi)
-    return flux
+    amp_err_pct = amp_err / amp
+    sig_err_pct = sig_err / sig
+    flux_err_pct = amp_err_pct + sig_err_pct
+    flux_err = flux * flux_err_pct
+    return (flux, flux_err)
 
 
 def fit_all_emission(n_clusters, norm_method, constrain_O3=False):
@@ -377,3 +393,17 @@ def fit_all_emission(n_clusters, norm_method, constrain_O3=False):
     for i in range(n_clusters):
         print(f'Fitting emission for {i}')
         fit_emission(i, norm_method, constrain_O3=constrain_O3)
+
+
+def fit_all_axis_ratio_emission(n_groups):
+    """Runs the fit_emission() function on every cluster
+
+    Parameters:
+    n_clusters (int): Number of clusters
+    norm_method (str): Method of normalization
+
+    Returns:
+    """
+    for i in range(n_groups):
+        print(f'Fitting emission for axis ratio group {i}')
+        fit_emission(i, 'cluster_norm', axis_group=i)

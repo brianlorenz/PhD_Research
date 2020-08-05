@@ -35,13 +35,22 @@ def plot_axis_ratio_clusters_balmer_dec(n_groups):
     stds = [np.std(ar_df['use_ratio']) for ar_df in ar_dfs]
 
     balmer_decs = []
+    balmer_errs = []
     for i in range(len(fit_dfs)):
         fit_df = fit_dfs[i]
         ha_flux = float(fit_df[fit_df['line_name'] == 'Halpha']['flux'])
+        err_ha_flux = float(
+            fit_df[fit_df['line_name'] == 'Halpha']['err_flux'])
         hb_flux = float(fit_df[fit_df['line_name'] == 'Hbeta']['flux'])
+        err_hb_flux = float(fit_df[fit_df['line_name'] == 'Hbeta']['err_flux'])
         balmer_dec = ha_flux / hb_flux
         balmer_decs.append(balmer_dec)
-        # STILL NEED ERRORS AFTER DOING MONTE CARLO
+        balmer_dec_err = balmer_dec * \
+            ((err_ha_flux / ha_flux) +
+             (err_hb_flux / hb_flux))
+        breakpoint()
+        balmer_errs.append(balmer_dec_err)
+    breakpoint()
 
     axisfont = 14
     ticksize = 12
@@ -53,7 +62,7 @@ def plot_axis_ratio_clusters_balmer_dec(n_groups):
     # Figure for just the galaixes in that cluster
     fig, ax = plt.subplots(figsize=(8, 7))
 
-    ax.errorbar(medians, balmer_decs, xerr=stds, yerr=None,
+    ax.errorbar(medians, balmer_decs, xerr=stds, yerr=balmer_errs,
                 color='black', ls='None', marker='o')
 
     ax.set_xlim(-0.05, 1.05)
