@@ -20,6 +20,8 @@ import cluster_data_funcs as cdf
 from spectra_funcs import read_axis_ratio_spectrum, clip_skylines, check_line_coverage, get_spectra_files, median_bin_spec, read_spectrum, get_too_low_gals, norm_spec_sed, read_composite_spectrum, prepare_mock_observe_spectrum, mock_observe_spectrum
 import matplotlib.patches as patches
 from axis_ratio_funcs import read_interp_axis_ratio
+from operator import itemgetter
+from itertools import *
 
 
 def stack_spectra(groupID, norm_method, re_observe=False, mask_negatives=False, ignore_low_spectra=False, axis_ratio_df=[], axis_group=0):
@@ -86,7 +88,7 @@ def stack_spectra(groupID, norm_method, re_observe=False, mask_negatives=False, 
             spectrum_df = read_spectrum(mosdef_obj, spectrum_file)
 
             # Clip the skylines:
-            spectrum_df['f_lambda_clip'], spectrum_df['mask'] = clip_skylines(
+            spectrum_df['f_lambda_clip'], spectrum_df['mask'], spectrum_df['err_f_lambda_clip'] = clip_skylines(
                 spectrum_df['obs_wavelength'], spectrum_df['f_lambda'], spectrum_df['err_f_lambda'], mask_negatives=mask_negatives)
 
             if ignore_low_spectra:
@@ -161,14 +163,33 @@ def stack_spectra(groupID, norm_method, re_observe=False, mask_negatives=False, 
             spectrum_df['f_lambda_norm'] = spectrum_df[
                 'f_lambda_clip'] * norm_factor
 
+            spectrum_df['err_f_lambda_norm'] = spectrum_df[
+                'err_f_lambda_clip'] * norm_factor
+
+            # These create a padded_mask which is True for each of the pixesl
+            # AROUND the masked lines
+            mask = spectrum_df['f_lambda_clip'] == 0
+            padded_mask = add_trues(mask)
+
+            # Interpolate using the mask, then this will not drag down points
+            # near masked values
             norm_interp = interpolate.interp1d(
-                spectrum_df['rest_wavelength'], spectrum_df['f_lambda_norm'], fill_value=0, bounds_error=False)
+                spectrum_df[np.logical_not(mask)]['rest_wavelength'], spectrum_df[np.logical_not(mask)]['f_lambda_norm'], fill_value=0, bounds_error=False)
+            err_interp = interpolate.interp1d(
+                spectrum_df[np.logical_not(mask)]['rest_wavelength'], spectrum_df[np.logical_not(mask)]['err_f_lambda_norm'], fill_value=0, bounds_error=False)
 
             spectrum_flux_norm = norm_interp(spectrum_wavelength)
+            spectrum_err_norm = err_interp(spectrum_wavelength)
+            # After interpolation, we need to set points to zero that fall in
+            # the ranges
+            spectrum_flux_norm = clip_spectrum(
+                spectrum_df, padded_mask, spectrum_wavelength, spectrum_flux_norm)
+            spectrum_err_norm = clip_spectrum(
+                spectrum_df, padded_mask, spectrum_wavelength, spectrum_err_norm)
 
             # Save the interpolated spectrum
-            interp_spectrum_df = pd.DataFrame(zip(spectrum_wavelength, spectrum_flux_norm),
-                                              columns=['rest_wavelength', 'f_lambda_norm'])
+            interp_spectrum_df = pd.DataFrame(zip(spectrum_wavelength, spectrum_flux_norm, spectrum_err_norm),
+                                              columns=['rest_wavelength', 'f_lambda_norm', 'err_f_lambda_norm'])
             interp_cluster_spectra_dfs.append(interp_spectrum_df)
             norm_factors.append(norm_factor)
 
@@ -182,6 +203,9 @@ def stack_spectra(groupID, norm_method, re_observe=False, mask_negatives=False, 
     # Pulls out just the flux values of each spectrum
     norm_interp_specs = [interp_cluster_spectra_dfs[i]['f_lambda_norm']
                          for i in range(len(interp_cluster_spectra_dfs))]
+    # Pull out the errors
+    norm_interp_errs = [interp_cluster_spectra_dfs[i]['err_f_lambda_norm']
+                        for i in range(len(interp_cluster_spectra_dfs))]
 
     nonzero_idxs = [np.nonzero(np.array(norm_interp_specs[i]))
                     for i in range(len(norm_interp_specs))]
@@ -196,21 +220,28 @@ def stack_spectra(groupID, norm_method, re_observe=False, mask_negatives=False, 
     # galaxy has a non-masked flux, there is it's normalization value. All
     # other points are zero
 
-    # For each wavelength, counts the number of spectra that are nonzero - NOT
-    # USING
+    # For each wavelength, counts the number of spectra that are nonzero
     number_specs_by_wave = np.count_nonzero(norm_interp_specs, axis=0)
 
+    # This computes the value of the normalizations at each wavelength - NOT
+    # USING
     norm_value_specs_by_wave = np.sum(sum_norms, axis=0)
 
+    # Add the spectrum
     summed_spec = np.sum(norm_interp_specs, axis=0)
+
+    # Add the errors in quadrature:
+    variances = [norm_interp_spec**2 for norm_interp_spec in norm_interp_specs]
+    err_in_sum = np.sqrt(np.sum(variances, axis=0))
 
     # Have to use divz since lots of zeros
     # total_spec = divz(summed_spec, norm_value_specs_by_wave)
     total_spec = divz(summed_spec, number_specs_by_wave)
+    total_errs = divz(err_in_sum, number_specs_by_wave)
     # Now we have divided each point by the sum of the normalizations that
     # contributed to it.
-    total_spec_df = pd.DataFrame(zip(spectrum_wavelength, total_spec, number_specs_by_wave, norm_value_specs_by_wave),
-                                 columns=['wavelength', 'f_lambda', 'n_galaxies', 'norm_value_summed'])
+    total_spec_df = pd.DataFrame(zip(spectrum_wavelength, total_spec, total_errs, number_specs_by_wave, norm_value_specs_by_wave),
+                                 columns=['wavelength', 'f_lambda', 'err_f_lambda', 'n_galaxies', 'norm_value_summed'])
 
     if axis_stack:
         median_ratio = np.median(axis_ratio_df['use_ratio'])
@@ -260,6 +291,7 @@ def plot_spec(groupID, norm_method, mask_negatives=False, thresh=0.1, axis_group
     ax_Ha.spines['left'].set_color(zoom_box_color)
 
     spectrum = total_spec_df['f_lambda']
+    err_spectrum = total_spec_df['err_f_lambda']
     wavelength = total_spec_df['wavelength']
     n_galaxies = total_spec_df['n_galaxies']
     norm_value_summed = total_spec_df['norm_value_summed']
@@ -271,6 +303,10 @@ def plot_spec(groupID, norm_method, mask_negatives=False, thresh=0.1, axis_group
         groupID, norm_method, thresh, axis_group=axis_group)
 
     ax.plot(wavelength, spectrum, color='black', lw=1, label='Spectrum')
+    ax.fill_between(wavelength, spectrum - err_spectrum, spectrum + err_spectrum,
+                    color='gray', alpha=0.5)
+    ax_Ha.fill_between(wavelength, spectrum - err_spectrum, spectrum + err_spectrum,
+                       color='gray', alpha=0.5)
     ax.plot(wavelength[too_low_gals][plot_cut], spectrum[too_low_gals][plot_cut],
             color='red', lw=1, label=f'Too Few Galaxies ({cutoff})')
     ax.plot(wavelength[too_low_gals][not_plot_cut], spectrum[too_low_gals][not_plot_cut],
@@ -376,7 +412,60 @@ def stack_axis_ratio(n_bins=10):
         print(f'Median: {median_ratio} \nScatter: {scatter_ratio}')
         # Save the dataframe for the group
         df.to_csv(
-            imd.cluster_dir + f'/composite_spectra/axis_stack/{axis_group}_df.csv', index=False)
+            (imd.cluster_dir + f'/composite_spectra/axis_stack/{axis_group}_df.csv'), index=False)
         # Within each group, start stacking the spectra
         stack_spectra(0, 'cluster_norm', axis_ratio_df=df,
                       axis_group=axis_group)
+
+
+def add_trues(df):
+    """Given a dataframe of True and False, pad a True onto each group of Trues
+
+    Parameters:
+    df (pd.DataFrame): dataframe containing trues and falses
+
+    Returns:
+    df(pd.DataFrame): modified dataframe where every value adjacent to a group of Trues is now True
+    """
+    i = 0
+    # Loop through the dataframe until second to last value
+    while i < (len(df) - 1):
+        current_bool = df.iloc[i]
+        next_bool = df.iloc[i + 1]
+        # If the values match, ignore it, if they don't, we need to change one
+        # of them
+        if current_bool != next_bool:
+            # If the current value is True, then we want to add another True to
+            # the next value, then skip over evaluating that one
+            if current_bool == True:
+                df.iloc[i + 1] = True
+                # Skip the next value, since we just set it to true
+                i = i + 1
+            # If the current value is False, make it true
+            if current_bool == False:
+                df.iloc[i] = True
+        # Move on to the next element
+        i = i + 1
+    return df
+
+
+def clip_spectrum(spectrum_df, padded_mask, spectrum_wavelength, spectrum_flux_norm):
+    """Sets the spectrum to zero in the regions where we need the spectrum clipped (between where padded_mask == True)
+
+    Parameters:
+    spectrum_df (pd.DataFrame): dataframe containing spectrum info from code
+    padded_mask (pd.DataFrame): dataframe of same size that contains trues in clusters that should be masked out
+
+    Returns:
+    """
+    indices = spectrum_df['rest_wavelength'][padded_mask].index
+    idx_array = np.array(indices)
+    idx_lists = [list(map(itemgetter(1), g)) for k, g in groupby(
+        enumerate(idx_array), lambda x: x[0] - x[1])]
+    mins_maxs = [(np.min(spectrum_df['rest_wavelength'].iloc[idx_list]), np.max(
+        spectrum_df['rest_wavelength'].iloc[idx_list])) for idx_list in idx_lists]
+    idx_clips = [np.logical_and(spectrum_wavelength > waves[
+                                0], spectrum_wavelength < waves[1]) for waves in mins_maxs]
+    for idx in idx_clips:
+        spectrum_flux_norm[idx] = 0
+    return spectrum_flux_norm

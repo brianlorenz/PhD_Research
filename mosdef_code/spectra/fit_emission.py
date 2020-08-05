@@ -78,8 +78,12 @@ def fit_emission(groupID, norm_method, constrain_O3=False, axis_group=-1):
         guess.append(amp_guess)
     guess.append(slope_guess)
 
-    popt, pcov = curve_fit(multi_gaussian, composite_spectrum_df[
-        'wavelength'], composite_spectrum_df['f_lambda'], guess)
+    n_loops = 10
+    breakpoint()
+    monte_carlo_fit(multi_gaussian, composite_spectrum_df[
+        'wavelength'], composite_spectrum_df['f_lambda'], composite_spectrum_df['err_f_lambda'], guess, n_loops)
+    # popt, pcov = curve_fit(multi_gaussian, composite_spectrum_df[
+    #     'wavelength'], composite_spectrum_df['f_lambda'], guess)
 
     # Now, parse the results into a dataframe
     line_names = [line_list[i][0] for i in range(len(line_list))]
@@ -305,6 +309,32 @@ def multi_gaussian(wavelength, *pars, fit=True):
                                      z_offset, amp, velocity_to_sig(peak_wavelength, velocity))
         gaussians.append(gaussian)
     return np.sum(gaussians, axis=0) + offset + slope * wavelength
+
+
+def monte_carlo_fit(func, x_data, y_data, y_err, guess, n_loops):
+    '''Fit the multi-gaussian to the data, use monte carlo to get uncertainties
+
+    Parameters:
+    x_data (pd.DataFrame): x data to be fit, 1d
+    y_data (pd.DataFrame): y data to be fit, 1d
+    y_err (pd.DataFrame): Uncertainties on the y_data
+    guess (list): list of guesses for the parameters of the fit
+    n_loops (int): Number of times to run the monte_carlo simulations
+
+    Returns:
+    popt (list): List of the fit parameters
+    err_popt (list): Uncertainties on these parameters
+    '''
+    popt, pcov = curve_fit(func, x_data, y_data, guess)
+    for i in range(n_loops):
+        new_ys = [np.random_normal(loc=y_data.iloc[j], scale=y_err.iloc[
+                                   j]) for j in range(len(y_data))]
+        new_popt, new_pcov = curve_fit(func, x_data, new_ys, guess)
+        if i == 0:
+            arr_popt = np.array(new_popt)
+        else:
+            np.vstack((arr_popt, np.array(new_popt)))
+    return
 
 
 def velocity_to_sig(line_center, velocity):

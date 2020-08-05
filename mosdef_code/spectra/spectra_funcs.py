@@ -59,8 +59,9 @@ def clip_skylines(wavelength, spectrum, spectrum_errs, mask_negatives=False):
                 mask[i] = 0
 
     spectrum_clip = spectrum * mask
+    err_spectrum_clip = spectrum_errs * mask
 
-    return spectrum_clip, mask
+    return spectrum_clip, mask, err_spectrum_clip
 
 
 def get_spectra_files(mosdef_obj, filt=0):
@@ -474,7 +475,7 @@ def check_line_coverage(mosdef_obj, plot=False):
     spectrum_dfs = []
     for file in spectra_files:
         spectrum_df = read_spectrum(mosdef_obj, file)
-        spectrum_df['f_lambda_clip'], spectrum_df['mask'] = clip_skylines(
+        spectrum_df['f_lambda_clip'], spectrum_df['mask'], spectrum_df['err_f_lambda_clip'] = clip_skylines(
             spectrum_df['obs_wavelength'], spectrum_df['f_lambda'], spectrum_df['err_f_lambda'])
         spectrum_dfs.append(spectrum_df)
 
