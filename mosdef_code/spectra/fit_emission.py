@@ -19,7 +19,7 @@ import initialize_mosdef_dirs as imd
 import cluster_data_funcs as cdf
 from spectra_funcs import read_axis_ratio_spectrum, read_composite_spectrum, get_too_low_gals
 import matplotlib.patches as patches
-
+import time
 
 line_list = [
     ('Halpha', 6564.61),
@@ -51,6 +51,9 @@ def fit_emission(groupID, norm_method, constrain_O3=False, axis_group=-1):
 
     line_names = [line_list[i][0] for i in range(len(line_list))]
 
+    # Scale factor to make fitting more robust
+    scale_factor = 10**18
+
     # Build the initial guesses
     guess = []
     bounds_low = []
@@ -59,14 +62,19 @@ def fit_emission(groupID, norm_method, constrain_O3=False, axis_group=-1):
     velocity_guess = 200  # km/s
     z_offset_guess = 0  # Angstrom
     continuum_offset_guess = 10**-20  # flux untis,
-    slope_guess = 0  # flux untis,
     # should eventually divide out the shape of continuum
     # First, we guess the z_offset
     guess.append(z_offset_guess)
-    # THen, the continuum offset
-    guess.append(continuum_offset_guess)
+    bounds_low.append(-10)
+    bounds_high.append(10)
+    # THen, the Hbeta continuum offset
+    guess.append(scale_factor * continuum_offset_guess)
+    bounds_low.append(scale_factor * -1 * 10**-17)
+    bounds_high.append(scale_factor * 1 * 10**-17)
     # THen, the velocity
     guess.append(velocity_guess)
+    bounds_low.append(30)
+    bounds_high.append(1000)
     # Then, for each line, we guess an amplitude
     for i in range(len(line_list)):
         # if 'O3_5008' in line_names and 'O3_4960' in line_names:
@@ -75,12 +83,23 @@ def fit_emission(groupID, norm_method, constrain_O3=False, axis_group=-1):
         #     if i == idx_5008:
         #         guess.append(1)
         #         continue
-        guess.append(amp_guess)
-    guess.append(slope_guess)
+        guess.append(scale_factor * amp_guess)
+        bounds_low.append(0)
+        bounds_high.append(scale_factor * 10**-16)
+    guess.append(scale_factor * continuum_offset_guess)
+    bounds_low.append(scale_factor * -1 * 10**-17)
+    bounds_high.append(scale_factor * 1 * 10**-17)
+    bounds = (np.array(bounds_low), np.array(bounds_high))
 
-    n_loops = 10
-    popt, arr_popt = monte_carlo_fit(multi_gaussian, composite_spectrum_df[
-        'wavelength'], composite_spectrum_df['f_lambda'], composite_spectrum_df['err_f_lambda'], guess, n_loops)
+    n_loops = 50
+    wavelength = composite_spectrum_df[
+        'wavelength']
+    full_cut = get_fit_range(wavelength)
+    wavelength_cut = wavelength[full_cut]
+    popt, arr_popt = monte_carlo_fit(multi_gaussian, wavelength_cut, scale_factor * composite_spectrum_df[full_cut][
+                                     'f_lambda'], scale_factor * composite_spectrum_df[full_cut]['err_f_lambda'], np.array(guess), bounds, n_loops)
+    # popt = popt
+    # arr_popt = arr_popt
     err_popt = np.std(arr_popt, axis=0)
     # popt, pcov = curve_fit(multi_gaussian, composite_spectrum_df[
     #     'wavelength'], composite_spectrum_df['f_lambda'], guess)
@@ -90,8 +109,10 @@ def fit_emission(groupID, norm_method, constrain_O3=False, axis_group=-1):
     line_centers_rest = [line_list[i][1] for i in range(len(line_list))]
     z_offset = [popt[0] for i in range(len(line_list))]
     err_z_offset = [err_popt[0] for i in range(len(line_list))]
-    continuum_offset = [popt[1] for i in range(len(line_list))]
-    err_continuum_offset = [err_popt[1] for i in range(len(line_list))]
+    hb_continuum_offset = [
+        popt[1] / scale_factor for i in range(len(line_list))]
+    err_hb_continuum_offset = [err_popt[1] /
+                               scale_factor for i in range(len(line_list))]
     velocity = [popt[2] for i in range(len(line_list))]
     err_velocity = [err_popt[2] for i in range(len(line_list))]
     sigs = [velocity_to_sig(line_list[i][1], popt[2])
@@ -112,17 +133,19 @@ def fit_emission(groupID, norm_method, constrain_O3=False, axis_group=-1):
     #             (sig_4960 / sig_5008) * popt[idx_5008 + 3]
     #     popt[3 + idx_5008] = amp_5008
 
-    amps = popt[3:-1]
-    err_amps = err_popt[3:-1]
-    slope = [popt[-1] for i in range(len(line_list))]
-    err_slope = [err_popt[-1] for i in range(len(line_list))]
+    amps = popt[3:-1] / scale_factor
+    err_amps = err_popt[3:-1] / scale_factor
+    ha_continuum_offset = [popt[-1] /
+                           scale_factor for i in range(len(line_list))]
+    err_ha_continuum_offset = [err_popt[-1] /
+                               scale_factor for i in range(len(line_list))]
     flux_tuples = [get_flux(amps[i], sigs[i], err_amps[i], err_sigs[
                             i]) for i in range(len(line_list))]
     fluxes = [i[0] for i in flux_tuples]
     err_fluxes = [i[1] for i in flux_tuples]
 
     fit_df = pd.DataFrame(zip(line_names, line_centers_rest,
-                              z_offset, err_z_offset, continuum_offset, err_continuum_offset, slope, err_slope, velocity, err_velocity, amps, err_amps, sigs, err_sigs, fluxes, err_fluxes), columns=['line_name', 'line_center_rest', 'z_offset', 'err_z_offset', 'continuum_offset', 'err_continuum_offset', 'slope', 'err_slope', 'fixed_velocity', 'err_fixed_velocity', 'amplitude', 'err_amplitude', 'sigma', 'err_sigma', 'flux', 'err_flux'])
+                              z_offset, err_z_offset, hb_continuum_offset, err_hb_continuum_offset, ha_continuum_offset, err_ha_continuum_offset, velocity, err_velocity, amps, err_amps, sigs, err_sigs, fluxes, err_fluxes), columns=['line_name', 'line_center_rest', 'z_offset', 'err_z_offset', 'hb_continuum_offset', 'err_hb_continuum_offset', 'ha_continuum_offset', 'err_ha_continuum_offset', 'fixed_velocity', 'err_fixed_velocity', 'amplitude', 'err_amplitude', 'sigma', 'err_sigma', 'flux', 'err_flux'])
 
     if axis_group > -1:
         fit_df.to_csv(imd.cluster_dir + f'/emission_fitting/axis_ratio_clusters/{axis_group}_emission_fits.csv', index=False)
@@ -200,18 +223,23 @@ def plot_emission_fit(groupID, norm_method, axis_group=-1):
     # Set up the parameters from the fitting
     pars = []
     pars.append(fit_df['z_offset'].iloc[0])
-    pars.append(fit_df['continuum_offset'].iloc[0])
+    pars.append(fit_df['hb_continuum_offset'].iloc[0])
     pars.append(fit_df['fixed_velocity'].iloc[0])
     for i in range(len(fit_df)):
         pars.append(fit_df.iloc[i]['amplitude'])
-    pars.append(fit_df['slope'].iloc[0])
-    gauss_fit = multi_gaussian(wavelength, pars, fit=False)
+    pars.append(fit_df['ha_continuum_offset'].iloc[0])
+
+    full_cut = get_fit_range(wavelength)
+    gauss_fit = multi_gaussian(wavelength[full_cut], pars, fit=False)
+    hb_range = wavelength[full_cut] < 5500
 
     # Plots the spectrum and fit on all axes
     for axis in axes_arr:
         axis.plot(wavelength, spectrum, color='black', lw=1, label='Spectrum')
-        axis.plot(wavelength, gauss_fit, color='orange',
+        axis.plot(wavelength[full_cut][hb_range], gauss_fit[hb_range], color='orange',
                   lw=1, label='Gaussian Fit')
+        axis.plot(wavelength[full_cut][~hb_range], gauss_fit[~hb_range], color='orange',
+                  lw=1)
         if axis != ax:
             # Add text for each of the lines:
             for i in range(len(line_list)):
@@ -264,6 +292,42 @@ def plot_emission_fit(groupID, norm_method, axis_group=-1):
     return
 
 
+def norm_gausses(wavelength, peak_wavelength, sig):
+    """Normalized Gaussians
+
+    Parameters:
+    wavelength (pd.DataFrame): Wavelength array to fit
+    peak_wavelength (float): Peak of the line in the rest frame [angstroms]
+    sig (float): Standard deviation of the gaussian [angstroms]
+
+    Returns:
+    """
+    A48, A63, A83, B = get_amps(wavelength, peak_wavelength, sig)
+    gauss = np.exp(-0.5 * (wavelength - (peak_wavelength))**2 /
+                   (np.e**sig)**2) / np.sqrt(2 * np.pi * (np.e**sig)**2)
+    s = A48 * g48 + A63 * g63 + A83 * g83 + B * m
+    return s
+
+
+def get_amps(wavelength, peak_wavelength, sig, spectrum, model):
+    """Finds the amplitudes for a range of Gaussians
+
+    Parameters:
+    wavelength (pd.DataFrame): Wavelength array to fit
+    peak_wavelength (float): Peak of the line in the rest frame [angstroms]
+    sig (float): Standard deviation of the gaussian [angstroms]
+    spectrum (): Spectrum
+    model (): Continuum model
+
+    Returns:
+    amps_and_offset (list) = First n elemenst are the n amplitudes, last element is the continuum offset
+    """
+    gauss = np.exp(-0.5 * (wavelength - (peak_wavelength))**2 /
+                   (np.e**sig)**2) / np.sqrt(2 * np.pi * (np.e**sig)**2)
+    amps_and_offset = nnls(np.transpose([g48, g63, g83, model]), spectrum)[0]
+    return amps_and_offset
+
+
 def gaussian_func(wavelength, peak_wavelength, amp, sig):
     """Standard Gaussian funciton
 
@@ -278,11 +342,11 @@ def gaussian_func(wavelength, peak_wavelength, amp, sig):
     return amp * np.exp(-(wavelength - peak_wavelength)**2 / (2 * sig**2))
 
 
-def multi_gaussian(wavelength, *pars, fit=True):
+def multi_gaussian(wavelength_cut, *pars, fit=True):
     """Fits all Gaussians simulatneously at fixed redshift
 
     Parameters:
-    wavelength (pd.DataFrame): Wavelength array to fit
+    wavelength_cut (pd.DataFrame): Wavelength array to fit, just the two emission line regions concatenated together
     pars (list): List of all of the parameters
     fit (boolean): Set to True if fitting (ie amps are not constrained yet)
 
@@ -291,9 +355,13 @@ def multi_gaussian(wavelength, *pars, fit=True):
     if len(pars) == 1:
         pars = pars[0]
     z_offset = pars[0]
-    offset = pars[1]
+    offset_hb = pars[1]
     velocity = pars[2]
-    slope = pars[-1]
+    offset_ha = pars[-1]
+
+    # Split the wavelength into its Halpha nad Hbeta parts
+    wavelength_hb = wavelength_cut[wavelength_cut < 5500]
+    wavelength_ha = wavelength_cut[wavelength_cut > 5500]
 
     # Force the fluxes of the OIII lines to be in the ratio 2.97
     line_names = [line_list[i][0] for i in range(len(line_list))]
@@ -305,24 +373,48 @@ def multi_gaussian(wavelength, *pars, fit=True):
     #     sig_5008 = velocity_to_sig(line_list[idx_5008][1], velocity)
     #     sig_4960 = velocity_to_sig(line_list[idx_4960][1], velocity)
     #     amp_4960 = pars[idx_4960 + 3]
-    #     amp_5008 = 2.97 * amp_4960 * (sig_4960 / sig_5008) * pars[idx_5008 + 3]
+    # amp_5008 = 2.97 * amp_4960 * (sig_4960 / sig_5008) * pars[idx_5008 + 3]
+    hb_idxs = [i for i, line in enumerate(line_list) if line[0] in [
+        'Hbeta', 'O3_5008', 'O3_4960']]
+    ha_idxs = [i for i, line in enumerate(line_list) if line[0] not in [
+        'Hbeta', 'O3_5008', 'O3_4960']]
+    #start_2 = time.time()
+    gaussians_hb = [gaussian_func(wavelength_hb, line_list[i][
+                                  1] + z_offset, pars[i + 3], velocity_to_sig(line_list[i][1], velocity)) for i in hb_idxs]
+    gaussians_ha = [gaussian_func(wavelength_ha, line_list[i][
+                                  1] + z_offset, pars[i + 3], velocity_to_sig(line_list[i][1], velocity)) for i in ha_idxs]
 
-    gaussians = []
-    for i in range(len(line_list)):
-        peak_wavelength = line_list[i][1]
-        amp = pars[i + 3]
-        # # Special case to fix the ratio of O3 lines
-        # if line_list[i][0] == 'O3_5008' and fit == True:
-        #     gaussian = gaussian_func(wavelength, peak_wavelength +
-        #                              z_offset, amp_5008, velocity_to_sig(peak_wavelength, velocity))
-        # else:
-        gaussian = gaussian_func(wavelength, peak_wavelength +
-                                 z_offset, amp, velocity_to_sig(peak_wavelength, velocity))
-        gaussians.append(gaussian)
-    return np.sum(gaussians, axis=0) + offset + slope * wavelength
+    # gaussians_ha = []
+    # gaussians_hb = []
+    # for i in range(len(line_list)):
+    #     peak_wavelength = line_list[i][1]
+    #     amp = pars[i + 3]
+    #     line_name = line_names[i]
+    #     # # Special case to fix the ratio of O3 lines
+    #     # if line_list[i][0] == 'O3_5008' and fit == True:
+    #     #     gaussian = gaussian_func(wavelength, peak_wavelength +
+    #     #                              z_offset, amp_5008, velocity_to_sig(peak_wavelength, velocity))
+    #     # else:
+    #     if line_name in ['Hbeta', 'O3_5008', 'O3_4960']:
+    #         wavelength_clip = wavelength_hb
+    #         gaussian = gaussian_func(wavelength_clip, peak_wavelength +
+    #                                  z_offset, amp, velocity_to_sig(peak_wavelength, velocity))
+    #         gaussians_hb.append(gaussian)
+    #     else:
+    #         wavelength_clip = wavelength_ha
+    #         gaussian = gaussian_func(wavelength_clip, peak_wavelength +
+    #                                  z_offset, amp, velocity_to_sig(peak_wavelength, velocity))
+    #         gaussians_ha.append(gaussian)
+
+    hb_y_vals = np.sum(gaussians_hb, axis=0) + offset_hb
+    ha_y_vals = np.sum(gaussians_ha, axis=0) + offset_ha
+    combined_gauss = np.concatenate([hb_y_vals, ha_y_vals])
+
+    return combined_gauss
+    # return np.sum(gaussians, axis=0) + offset
 
 
-def monte_carlo_fit(func, x_data, y_data, y_err, guess, n_loops):
+def monte_carlo_fit(func, x_data, y_data, y_err, guess, bounds, n_loops):
     '''Fit the multi-gaussian to the data, use monte carlo to get uncertainties
 
     Parameters:
@@ -330,23 +422,44 @@ def monte_carlo_fit(func, x_data, y_data, y_err, guess, n_loops):
     y_data (pd.DataFrame): y data to be fit, 1d
     y_err (pd.DataFrame): Uncertainties on the y_data
     guess (list): list of guesses for the parameters of the fit
+    bounds (tuple of array-like): bounds for the fit
     n_loops (int): Number of times to run the monte_carlo simulations
 
     Returns:
     popt (list): List of the fit parameters
     err_popt (list): Uncertainties on these parameters
     '''
-    popt, pcov = curve_fit(func, x_data, y_data, guess)
-    for i in range(n_loops):
-        print(f'Bootstrapping loop {i}')
-        new_ys = [np.random.normal(loc=y_data.iloc[j], scale=y_err.iloc[
-                                   j]) for j in range(len(y_data))]
-        new_popt, new_pcov = curve_fit(func, x_data, new_ys, guess)
-        if i == 0:
-            arr_popt = np.array(new_popt)
-        else:
-            arr_popt = np.vstack((arr_popt, np.array(new_popt)))
-    return popt, arr_popt
+    # ftol = 0.005
+    # xtol = 0.005
+    start = time.time()
+    popt, pcov = curve_fit(func, x_data, y_data, guess, bounds=bounds)
+    end = time.time()
+    print(f'Length of one fit: {end-start}')
+    start = time.time()
+    # I replaced the loop below with list comprehensions
+    # for i in range(n_loops):
+    #     print(f'Bootstrapping loop {i}')
+    #     new_ys = [np.random.normal(loc=y_data.iloc[j], scale=y_err.iloc[
+    #         j]) for j in range(len(y_data))]
+    #     new_popt, new_pcov = curve_fit(
+    #         func, x_data, new_ys, guess, bounds=bounds)
+    #     if i == 0:
+    #         arr_popt = np.array(new_popt)
+    #     else:
+    #         arr_popt = np.vstack((arr_popt, np.array(new_popt)))
+    # end = time.time()
+    # print(f'Length of {n_loops} fits in loop: {end-start}')
+
+    start = time.time()
+    new_y_datas = [[np.random.normal(loc=y_data.iloc[j], scale=y_err.iloc[
+                                     j]) for j in range(len(y_data))] for i in range(n_loops)]
+    fits_out = [curve_fit(func, x_data, new_y, guess, bounds=bounds)
+                for new_y in new_y_datas]
+    new_popts = [i[0] for i in fits_out]
+    end = time.time()
+    print(f'Length of {n_loops} fits list comprehension: {end-start}')
+    return popt, new_popts
+    # return popt, arr_p opt
 
 
 def velocity_to_sig(line_center, velocity):
@@ -407,3 +520,19 @@ def fit_all_axis_ratio_emission(n_groups):
     for i in range(n_groups):
         print(f'Fitting emission for axis ratio group {i}')
         fit_emission(i, 'cluster_norm', axis_group=i)
+
+
+def get_fit_range(wavelength):
+    """Gets the arrray of booleans that contains the two ranges to perform fitting
+
+    Parameters:
+    wavelength (pd.DataFrame): Dataframe of wavelength
+
+    Returns:
+    """
+    cut_ha = np.logical_and(
+        wavelength > 6500, wavelength < 6650)
+    cut_hb = np.logical_and(
+        wavelength > 4800, wavelength < 5050)
+    full_cut = np.logical_or(cut_hb, cut_ha)
+    return full_cut
