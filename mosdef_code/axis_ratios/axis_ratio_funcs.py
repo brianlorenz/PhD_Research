@@ -117,14 +117,15 @@ def interpolate_axis_ratio():
     # NOT SURE WHAT TO DO WITH ERRORS. IS THIS EVEN GOOD? SHOULD I IGNORE F140
     use_ratios = []
     use_errors = []
+    # Now ignores F140
     for i in range(len(all_axis_ratios_df)):
         F125W_peak = 12471.0
-        F140W_peak = 13924.0
+        #F140W_peak = 13924.0
         F160W_peak = 15396.0
-        peaks = [F125W_peak, F140W_peak, F160W_peak]
+        peaks = [F125W_peak, F160W_peak]  # F140W_peak,
         rest_waves = np.array([peak / (1 + all_axis_ratios_df.iloc[i]['Z_MOSFIRE'])
                                for peak in peaks])
-        filters = ['125', '140', '160']
+        filters = ['125', '160']  # '140',
         axis_ratios = np.array([all_axis_ratios_df.iloc[i][f'F{j}_axis_ratio'] for j in filters])
         axis_errors = np.array([all_axis_ratios_df.iloc[i][f'F{j}_err_axis_ratio'] for j in filters])
         good_ratios = [ratio > -0.1 for ratio in axis_ratios]

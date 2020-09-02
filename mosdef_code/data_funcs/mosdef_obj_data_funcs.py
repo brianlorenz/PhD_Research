@@ -100,3 +100,22 @@ def read_mock_composite_sed(groupID):
     sed_location = imd.home_dir + f'/mosdef/mock_sed_csvs/mock_composite_sed_csvs/{groupID}_mock_sed.csv'
     sed = ascii.read(sed_location).to_pandas()
     return sed
+
+
+def read_fast_continuum(mosdef_obj):
+    """Given a field and id, read in the fast fit continuum for that SED
+
+    Parameters:
+    mosdef_obj (pd.DataFrame): From the get_mosdef_obj function
+
+    Returns:
+    """
+    field = mosdef_obj['FIELD_STR']
+    mosdef_id = mosdef_obj['V4ID']
+    cont_location = imd.home_dir + f'/mosdef/FAST/{field}_BEST_FITS/{field}_v4.1_zall.fast_{mosdef_id}.fit'
+    cont = ascii.read(cont_location).to_pandas()
+    cont.columns = ['observed_wavelength', 'f_lambda']
+    cont['rest_wavelength'] = cont['observed_wavelength'] / \
+        (1 + mosdef_obj['Z_MOSFIRE'])
+    cont['f_lambda'] = 10**(-19) * cont['f_lambda']
+    return cont

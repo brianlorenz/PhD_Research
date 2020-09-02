@@ -8,7 +8,7 @@ from astropy.io import fits
 from tabulate import tabulate
 from astropy.table import Table
 from read_data import mosdef_df
-from mosdef_obj_data_funcs import get_mosdef_obj, read_sed
+from mosdef_obj_data_funcs import get_mosdef_obj, read_sed, read_fast_continuum
 from polynomial_fit import poly_fit
 from query_funcs import get_zobjs
 import matplotlib.pyplot as plt
@@ -29,7 +29,7 @@ def populate_main_axis(ax, sed, good_idxs, axisfont, ticksize, ticks):
     ax.set_ylabel('f$_{\lambda}$', fontsize=axisfont)
 
 
-def plot_sed(field, v4id, plot_spec=False, plot_fit=False):
+def plot_sed(field, v4id, plot_spec=False, plot_fit=False, plot_cont=False):
     """Given a field and id, read in the sed and create a plot of it
 
     Parameters:
@@ -108,6 +108,10 @@ def plot_sed(field, v4id, plot_spec=False, plot_fit=False):
         plot_sed_fit(ax_main, field, v4id)
         plot_sed_fit(ax_zoom, field, v4id)
 
+    if plot_cont == True:
+        plot_continuum(ax_main, mosdef_obj)
+        plot_continuum(ax_zoom, mosdef_obj)
+
     fig.savefig(imd.home_dir + f'/mosdef/SED_Images/{field}_{v4id}.pdf')
     plt.close('all')
 
@@ -116,7 +120,7 @@ def plot_sed_fit(ax, field, v4id):
     fit_func = poly_fit(field, v4id)
     fit_wavelengths = np.arange(2, 6, 0.02)
     ax.plot(10**fit_wavelengths, fit_func(
-        fit_wavelengths), color='mediumseagreen')
+        fit_wavelengths), color='grey')
 
 
 def plot_image(ax, field, v4id, mosdef_obj):
@@ -140,6 +144,21 @@ def plot_image(ax, field, v4id, mosdef_obj):
     ax.get_yaxis().set_visible(False)
 
 
+def plot_continuum(ax, mosdef_obj):
+    """Given an axis on mosdef_obj, plot the FAST fit continuum onto the axis
+
+    Parameters:
+    ax (plt.axis): axis to plot the image onto
+    mosdef_obj (pd.Dataframe): single entry of mosdef_df from get_mosdef_obj()
+
+
+    Returns:
+    """
+    cont_df = read_fast_continuum(mosdef_obj)
+    ax.plot(cont_df['rest_wavelength'], cont_df[
+        'f_lambda'], color='mediumseagreen', lw=1, label='FAST Continuum')
+
+
 def plot_spectrum(ax, field, v4id, mosdef_obj):
     """Given a field, id, and axis, plot the mosdef spectrum of an object
 
@@ -160,7 +179,7 @@ def plot_spectrum(ax, field, v4id, mosdef_obj):
         print(f'Plotting {file}')
         spectrum_df = read_spectrum(mosdef_obj, file)
 
-        spectrum_df['f_lambda_clip'], spectrum_df['mask'] = clip_skylines(
+        spectrum_df['f_lambda_clip'], spectrum_df['mask'], spectrum_df['err_f_lambda_clip'] = clip_skylines(
             spectrum_df['rest_wavelength'], spectrum_df['f_lambda'], spectrum_df['err_f_lambda'])
 
         wave_bin, spec_bin = median_bin_spec(
@@ -189,14 +208,20 @@ def plot_all_seds(zobjs):
     Returns:
     """
     counter = 0
+
+    # Removes duplicates
+    zobjs = list(dict.fromkeys(zobjs))
+
     for obj in zobjs:
         field = obj[0]
         v4id = obj[1]
         print(f'Creating SED for {field}_{v4id}, {counter}/{len(zobjs)}')
         try:
-            plot_sed(field, v4id, plot_fit=True, plot_spec=True)
+            plot_sed(field, v4id, plot_fit=False,
+                     plot_spec=True, plot_cont=True)
+            print(f'\nSaved plot for {field}_{v4id}\n')
         except:
-            print(f'Couldnt create plot for {field}_{v4id}')
+            print(f'\nCouldnt create plot for {field}_{v4id}\n')
             plt.close('all')
         counter = counter + 1
 
