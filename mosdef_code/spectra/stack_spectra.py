@@ -24,7 +24,7 @@ from operator import itemgetter
 from itertools import *
 
 
-def stack_spectra(groupID, norm_method, re_observe=False, mask_negatives=False, ignore_low_spectra=False, axis_ratio_df=[], axis_group=0):
+def stack_spectra(groupID, norm_method, re_observe=False, mask_negatives=False, ignore_low_spectra=False, axis_ratio_df=[], axis_group=0, save_name=''):
     """Stack all the spectra for every object in a given group
 
     Parameters:
@@ -35,6 +35,7 @@ def stack_spectra(groupID, norm_method, re_observe=False, mask_negatives=False, 
     ignore_low_spectra (boolean): Set to True to ignore all spectra with negative median values
     axis_ratio_df (pd.DataFrame): Set to a dataframe of axis ratios and it will stack all spectra within that dataframe. Also set axis_group
     axis_group (int): Number of the axis ratio group
+    save_name (str): location to save the files
 
     Returns:
     """
@@ -268,8 +269,9 @@ def stack_spectra(groupID, norm_method, re_observe=False, mask_negatives=False, 
     if axis_stack:
         median_ratio = np.median(axis_ratio_df['use_ratio'])
         total_spec_df.to_csv(
-            imd.cluster_dir + f'/composite_spectra/axis_stack/{axis_group}_spectrum.csv', index=False)
-        plot_spec(groupID, norm_method, axis_group=axis_group)
+            imd.cluster_dir + f'/composite_spectra/axis_stack{save_name}/{axis_group}_spectrum.csv', index=False)
+        plot_spec(groupID, norm_method,
+                  axis_group=axis_group, save_name=save_name)
 
     else:
         total_spec_df.to_csv(
@@ -279,7 +281,7 @@ def stack_spectra(groupID, norm_method, re_observe=False, mask_negatives=False, 
     return
 
 
-def plot_spec(groupID, norm_method, mask_negatives=False, thresh=0.1, axis_group=-1):
+def plot_spec(groupID, norm_method, mask_negatives=False, thresh=0.1, axis_group=-1, save_name=''):
     """Plots the spectrum
 
     Parameters:
@@ -297,7 +299,8 @@ def plot_spec(groupID, norm_method, mask_negatives=False, thresh=0.1, axis_group
     textfont = 16
 
     if axis_group > -1:
-        total_spec_df = read_axis_ratio_spectrum(axis_group)
+        total_spec_df = read_axis_ratio_spectrum(
+            axis_group, save_name=save_name)
     else:
         total_spec_df = read_composite_spectrum(groupID, norm_method)
 
@@ -323,7 +326,7 @@ def plot_spec(groupID, norm_method, mask_negatives=False, thresh=0.1, axis_group
     wave_bin, spec_bin = median_bin_spec(wavelength, spectrum)
 
     too_low_gals, plot_cut, not_plot_cut, n_gals_in_group, cutoff, cutoff_low, cutoff_high = get_too_low_gals(
-        groupID, norm_method, thresh, axis_group=axis_group)
+        groupID, norm_method, save_name, thresh, axis_group=axis_group)
 
     ax.plot(wavelength, spectrum, color='black', lw=1, label='Spectrum')
     ax.fill_between(wavelength, spectrum - err_spectrum, spectrum + err_spectrum,
@@ -376,7 +379,7 @@ def plot_spec(groupID, norm_method, mask_negatives=False, thresh=0.1, axis_group
     ax_contribute.tick_params(labelsize=ticksize, size=ticks)
     if axis_group > -1:
         ax.text
-        fig.savefig(imd.cluster_dir + f'/composite_spectra/axis_stack/{axis_group}_spectrum.pdf')
+        fig.savefig(imd.cluster_dir + f'/composite_spectra/axis_stack{save_name}/{axis_group}_spectrum.pdf')
     else:
         fig.savefig(imd.cluster_dir + f'/composite_spectra/{norm_method}/{groupID}_spectrum.pdf')
     plt.close()
@@ -414,11 +417,12 @@ def plot_all_spectra(n_clusters, norm_method, mask_negatives=False):
         plot_spec(i, norm_method, mask_negatives=mask_negatives)
 
 
-def stack_axis_ratio(n_bins=10):
+def stack_axis_ratio(n_bins=10, l_mass_cutoff=0):
     """Stacks galaxies in groups by axis ratio
 
     Parameters:
     n_bins (int): Number of bins to divide galaxies into
+    l_mass_cutoff (int): Splits into 2 mass bins in each group - those above mass of cutoff, and those below
 
     Returns:
     """
@@ -426,21 +430,39 @@ def stack_axis_ratio(n_bins=10):
 
     # Remove objects with greater than 0.1 error
     ar_df = ar_df[ar_df['err_use_ratio'] < 0.1]
+    # Sort, so we can easily split by axis ratio
     ar_df_sorted = ar_df.sort_values('use_ratio')
+
+    # Add masses
+    l_masses = [get_mosdef_obj(ar_df.iloc[i]['field'], ar_df.iloc[i]['v4id'])[
+        'LMASS'] for i in range(len(ar_df))]
+    ar_df_sorted['LMASS'] = l_masses
+
     # Split into n_bins groups
+    axis_group = 0
     ar_dfs = np.array_split(ar_df_sorted, n_bins)
-    for axis_group in range(len(ar_dfs)):
-        df = ar_dfs[axis_group]
-        # For each group, get a median and scatter of the axis ratios
-        median_ratio = np.median(df['use_ratio'])
-        scatter_ratio = np.std(df['use_ratio'])
-        print(f'Median: {median_ratio} \nScatter: {scatter_ratio}')
-        # Save the dataframe for the group
-        df.to_csv(
-            (imd.cluster_dir + f'/composite_spectra/axis_stack/{axis_group}_df.csv'), index=False)
-        # Within each group, start stacking the spectra
-        stack_spectra(0, 'cluster_norm', axis_ratio_df=df,
-                      axis_group=axis_group)
+    for i in range(len(ar_dfs)):
+        df = ar_dfs[i]
+        if l_mass_cutoff > 0:
+            df_low = df[df['LMASS'] < l_mass_cutoff]
+            df_high = df[df['LMASS'] >= l_mass_cutoff]
+            dfs = [df_low, df_high]
+            save_name = '_mass'
+        else:
+            dfs = [df]
+            save_name = ''
+        for df in dfs:
+            # For each group, get a median and scatter of the axis ratios
+            median_ratio = np.median(df['use_ratio'])
+            scatter_ratio = np.std(df['use_ratio'])
+            print(f'Median: {median_ratio} \nScatter: {scatter_ratio}')
+            # Save the dataframe for the group
+            df.to_csv(
+                (imd.cluster_dir + f'/composite_spectra/axis_stack{save_name}/{axis_group}_df.csv'), index=False)
+            # Within each group, start stacking the spectra
+            stack_spectra(0, 'cluster_norm', axis_ratio_df=df,
+                          axis_group=axis_group, save_name=save_name)
+            axis_group = axis_group + 1
 
 
 def add_trues(df):

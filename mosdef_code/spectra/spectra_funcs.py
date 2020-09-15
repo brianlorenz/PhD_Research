@@ -153,17 +153,18 @@ def read_composite_spectrum(groupID, norm_method):
     return spectrum_df
 
 
-def read_axis_ratio_spectrum(axis_group):
+def read_axis_ratio_spectrum(axis_group, save_name):
     """Reads in the spectrum file for a given cluster
 
     Parameters:
     axis_group (int): id of the group to read
+    save_name(str): folder where they are saved. '' for the default
 
     Returns:
     spectrum_df (pd.DataFrame): Dataframe containing wavelength and fluxes for the spectrum
     """
     spectrum_df = ascii.read(
-        imd.cluster_dir + f'/composite_spectra/axis_stack/{axis_group}_spectrum.csv').to_pandas()
+        imd.cluster_dir + f'/composite_spectra/axis_stack{save_name}/{axis_group}_spectrum.csv').to_pandas()
 
     return spectrum_df
 
@@ -222,7 +223,7 @@ def norm_spec_sed(composite_sed, spectrum_df):
     return a12, b12, used_fluxes_df
 
 
-def get_too_low_gals(groupID, norm_method, thresh=0.15, axis_group=-1):
+def get_too_low_gals(groupID, norm_method, save_name, thresh=0.15, axis_group=-1):
     """Given a groupID, find out which parts of the spectrum have too few galaxies to be useable
 
     Parameters:
@@ -239,9 +240,10 @@ def get_too_low_gals(groupID, norm_method, thresh=0.15, axis_group=-1):
     cutoff (int): Number of galaixes above which ist acceptable
     """
     if axis_group > -1:
-        total_spec_df = read_axis_ratio_spectrum(axis_group)
+        total_spec_df = read_axis_ratio_spectrum(
+            axis_group, save_name=save_name)
         ar_df = ascii.read(
-            imd.cluster_dir + f'/composite_spectra/axis_stack/{axis_group}_df.csv').to_pandas()
+            imd.cluster_dir + f'/composite_spectra/axis_stack{save_name}/{axis_group}_df.csv').to_pandas()
         n_gals_in_group = len(ar_df)
     else:
         n_gals_in_group = len(os.listdir(imd.cluster_dir + '/' + str(groupID)))

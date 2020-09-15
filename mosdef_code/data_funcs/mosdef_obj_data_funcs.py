@@ -119,3 +119,34 @@ def read_fast_continuum(mosdef_obj):
         (1 + mosdef_obj['Z_MOSFIRE'])
     cont['f_lambda'] = 10**(-19) * cont['f_lambda']
     return cont
+
+
+def setup_get_AV():
+    """Run this before running get_AV, asince what this returns needs to be passed to get_Av
+
+    Parameters:
+
+    Returns:
+    fields (list): Strings of the fields in mosdef
+    av_dfs (list of pd.DataFrames): Conatins dataframes in the order of fields with FAST fit info
+    """
+    fields = ['AEGIS', 'COSMOS', 'GOODS-N', 'GOODS-S', 'UDS']
+    av_dfs = [ascii.read(imd.mosdef_dir + f'/Fast/{field}_v4.1_zall.fast.fout', header_start=17).to_pandas() for field in fields]
+    return fields, av_dfs
+
+
+def get_AV(fields, av_dfs, mosdef_obj):
+    """Pass in the outputs of setup_get_AV, then a mosdef_obj to return the Av
+
+    Parameters:
+    fields (list): Strings of the fields in mosdef
+    av_dfs (list of pd.DataFrames): Conatins dataframes in the order of fields with FAST fit info
+
+    Returns:
+    Av (float): AV  of the object
+    """
+    field_index = [i for i, field in enumerate(
+        fields) if field == mosdef_obj['FIELD_STR']][0]
+    av_df = av_dfs[field_index]
+    Av = av_df[av_df['id'] == mosdef_obj['V4ID']]['Av'].iloc[0]
+    return Av
