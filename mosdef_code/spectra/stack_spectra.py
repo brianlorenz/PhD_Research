@@ -9,7 +9,7 @@ import pandas as pd
 from astropy.io import ascii
 from astropy.io import fits
 from read_data import mosdef_df
-from mosdef_obj_data_funcs import read_sed, read_mock_sed, get_mosdef_obj, read_composite_sed, read_fast_continuum
+from mosdef_obj_data_funcs import read_sed, read_mock_sed, get_mosdef_obj, read_composite_sed, read_fast_continuum, setup_get_ssfr, merge_ar_ssfr
 from filter_response import lines, overview, get_index, get_filter_response
 import matplotlib.pyplot as plt
 from scipy import interpolate
@@ -253,7 +253,7 @@ def stack_spectra(groupID, norm_method, re_observe=False, mask_negatives=False, 
     summed_cont = np.sum(norm_interp_conts, axis=0)
 
     # Add the errors in quadrature:
-    variances = [norm_interp_spec**2 for norm_interp_spec in norm_interp_specs]
+    variances = [norm_interp_err**2 for norm_interp_err in norm_interp_errs]
     err_in_sum = np.sqrt(np.sum(variances, axis=0))
 
     # Have to use divz since lots of zeros
@@ -417,12 +417,13 @@ def plot_all_spectra(n_clusters, norm_method, mask_negatives=False):
         plot_spec(i, norm_method, mask_negatives=mask_negatives)
 
 
-def stack_axis_ratio(n_bins=10, l_mass_cutoff=0):
+def stack_axis_ratio(n_bins=10, l_mass_cutoff=0, l_ssfr_cutoff=0):
     """Stacks galaxies in groups by axis ratio
 
     Parameters:
     n_bins (int): Number of bins to divide galaxies into
     l_mass_cutoff (int): Splits into 2 mass bins in each group - those above mass of cutoff, and those below
+    l_mass_cutoff (int): Splits into 2 ssfr bins in each group - those above ssfr of cutoff, and those below
 
     Returns:
     """
@@ -430,11 +431,17 @@ def stack_axis_ratio(n_bins=10, l_mass_cutoff=0):
 
     # Remove objects with greater than 0.1 error
     ar_df = ar_df[ar_df['err_use_ratio'] < 0.1]
+
+    # Add ssfrs if needed:
+    if l_ssfr_cutoff != 0:
+        ssfr_mosdef_merge_no_dups = setup_get_ssfr()
+        ar_df = merge_ar_ssfr(ar_df, ssfr_mosdef_merge_no_dups)
+
     # Sort, so we can easily split by axis ratio
     ar_df_sorted = ar_df.sort_values('use_ratio')
 
     # Add masses
-    l_masses = [get_mosdef_obj(ar_df.iloc[i]['field'], ar_df.iloc[i]['v4id'])[
+    l_masses = [get_mosdef_obj(ar_df_sorted.iloc[i]['field'], ar_df_sorted.iloc[i]['v4id'])[
         'LMASS'] for i in range(len(ar_df))]
     ar_df_sorted['LMASS'] = l_masses
 
@@ -448,6 +455,14 @@ def stack_axis_ratio(n_bins=10, l_mass_cutoff=0):
             df_high = df[df['LMASS'] >= l_mass_cutoff]
             dfs = [df_low, df_high]
             save_name = '_mass'
+        if l_ssfr_cutoff != 0:
+            # Remove anything without a measured ssfr
+            df = df[df['SSFR'] > 0]
+            df['LSSFR'] = np.log10(df['SSFR'])
+            df_low = df[df['LSSFR'] < l_ssfr_cutoff]
+            df_high = df[df['LSSFR'] >= l_ssfr_cutoff]
+            dfs = [df_low, df_high]
+            save_name = '_ssfr'
         else:
             dfs = [df]
             save_name = ''

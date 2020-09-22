@@ -150,3 +150,50 @@ def get_AV(fields, av_dfs, mosdef_obj):
     av_df = av_dfs[field_index]
     Av = av_df[av_df['id'] == mosdef_obj['V4ID']]['Av'].iloc[0]
     return Av
+
+
+def setup_get_ssfr():
+    """Run this before running get_ssfr, asince what this returns needs to be passed to get_Av
+
+    Parameters:
+
+    Returns:
+    ssfr_mosdef_merge_no_dups (pd.DataFrame): Pandas dataframe of the ssfr info, mosdef_df info, and duplicates removed
+    """
+    ssfr_dat = Table.read(
+        imd.mosdef_dir + '/mosdef_sfrs_latest.fits', format='fits')
+    ssfr_df = ssfr_dat.to_pandas()
+    ssfr_df['FIELD_STR'] = [ssfr_df.iloc[i]['FIELD'].decode(
+        "utf-8").rstrip() for i in range(len(ssfr_df))]
+    # Merge with mosdef_df so that we are matching v4ids
+    ssfr_mosdef_merge = mosdef_df.merge(ssfr_df, how='inner', left_on=[
+                                        'FIELD_STR', 'ID', 'MASKNAME'], right_on=['FIELD_STR', 'ID', 'MASKNAME'])
+    # Drop duplicates in favor of those that have measured ssfrs
+    # Finds all the duplicates
+    dupes = ssfr_mosdef_merge[ssfr_mosdef_merge.duplicated(
+        ['FIELD_STR', 'V4ID'], keep=False)]
+    # Find indicies of all with non-measurement for SSFR
+    dupes[dupes['SFR2'] < -1].index
+    drop_idx_non_detect = dupes[dupes['SFR2'] < -1].index
+    dupes = dupes.drop(drop_idx_non_detect)
+    drop_idx_still_dup = dupes[dupes.duplicated(['FIELD_STR', 'V4ID'])].index
+    ssfr_mosdef_merge = ssfr_mosdef_merge.drop(drop_idx_non_detect)
+    ssfr_mosdef_merge_no_dups = ssfr_mosdef_merge.drop(drop_idx_still_dup)
+    ssfrs = ssfr_mosdef_merge_no_dups[
+        'SFR2'] / 10**ssfr_mosdef_merge_no_dups['LMASS']
+    ssfrs[ssfrs < 0] = -999
+    ssfr_mosdef_merge_no_dups['SSFR'] = ssfrs
+    return ssfr_mosdef_merge_no_dups
+
+
+def merge_ar_ssfr(ar_df, ssfr_mosdef_merge_no_dups):
+    """Merges the ar_df with the ssfr_mosdef_merge_no_dups dataframe
+
+    Parameters:
+
+    Returns:
+    ar_ssfr_merge (pd.DataFrame): Pandas dataframe of the ssfr info, mosdef_df info, and duplicates removed
+    """
+    ar_ssfr_merge = ar_df.merge(ssfr_mosdef_merge_no_dups, how='left', left_on=[
+                                'field', 'v4id'], right_on=['FIELD_STR', 'V4ID'])
+    return ar_ssfr_merge

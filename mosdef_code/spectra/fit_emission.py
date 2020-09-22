@@ -193,7 +193,7 @@ def plot_emission_fit(groupID, norm_method, axis_group=-1, save_name=''):
 
     if axis_group > -1:
 
-        fit_df = ascii.read(imd.cluster_dir + f'/emission_fitting/axis_ratio_clusters/{axis_group}_emission_fits.csv').to_pandas()
+        fit_df = ascii.read(imd.cluster_dir + f'/emission_fitting/axis_ratio_clusters{save_name}/{axis_group}_emission_fits.csv').to_pandas()
         total_spec_df = read_axis_ratio_spectrum(axis_group, save_name)
     else:
         fit_df = ascii.read(imd.cluster_dir + f'/emission_fitting/{groupID}_emission_fits.csv').to_pandas()
@@ -224,7 +224,7 @@ def plot_emission_fit(groupID, norm_method, axis_group=-1, save_name=''):
     continuum = total_spec_df['cont_f_lambda']
 
     too_low_gals, plot_cut, not_plot_cut, n_gals_in_group, cutoff, cutoff_low, cutoff_high = get_too_low_gals(
-        groupID, norm_method, axis_group=axis_group)
+        groupID, norm_method, save_name, axis_group=axis_group)
 
     # Set up the parameters from the fitting
     pars = []
