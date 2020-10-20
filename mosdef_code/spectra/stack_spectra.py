@@ -9,7 +9,7 @@ import pandas as pd
 from astropy.io import ascii
 from astropy.io import fits
 from read_data import mosdef_df
-from mosdef_obj_data_funcs import read_sed, read_mock_sed, get_mosdef_obj, read_composite_sed, read_fast_continuum, setup_get_ssfr, merge_ar_ssfr
+from mosdef_obj_data_funcs import read_sed, read_mock_sed, get_mosdef_obj, read_composite_sed, read_fast_continuum, setup_get_ssfr, merge_ar_ssfr, merge_emission
 from filter_response import lines, overview, get_index, get_filter_response
 import matplotlib.pyplot as plt
 from scipy import interpolate
@@ -22,9 +22,10 @@ import matplotlib.patches as patches
 from axis_ratio_funcs import read_interp_axis_ratio
 from operator import itemgetter
 from itertools import *
+from astropy.table import Table
 
 
-def stack_spectra(groupID, norm_method, re_observe=False, mask_negatives=False, ignore_low_spectra=False, axis_ratio_df=[], axis_group=0, save_name=''):
+def stack_spectra(groupID, norm_method, re_observe=False, mask_negatives=False, ignore_low_spectra=False, axis_ratio_df=[], axis_group=0, save_name='', scale_factors=0):
     """Stack all the spectra for every object in a given group
 
     Parameters:
@@ -36,6 +37,7 @@ def stack_spectra(groupID, norm_method, re_observe=False, mask_negatives=False, 
     axis_ratio_df (pd.DataFrame): Set to a dataframe of axis ratios and it will stack all spectra within that dataframe. Also set axis_group
     axis_group (int): Number of the axis ratio group
     save_name (str): location to save the files
+    scale_factors (list): Set to a list to manually choose the normalization for each object - requires norm_method 'manual'
 
     Returns:
     """
@@ -72,7 +74,9 @@ def stack_spectra(groupID, norm_method, re_observe=False, mask_negatives=False, 
     # to loop over each one
     interp_cluster_spectra_dfs = []
     norm_factors = []
+    loop_count = -1
     for mosdef_obj in mosdef_objs:
+        loop_count += 1
         # Get the redshift and normalization
         z_spec = mosdef_obj['Z_MOSFIRE']
         field = mosdef_obj['FIELD_STR']
@@ -152,6 +156,8 @@ def stack_spectra(groupID, norm_method, re_observe=False, mask_negatives=False, 
                     composite_sed['rest_wavelength'], composite_sed['f_lambda'])
                 scale_sed_flux = interp_sed(med_wave)
                 norm_factor = scale_sed_flux / med_pos_flux
+            elif norm_method == 'manual':
+                pass
             else:
                 sys.exit(
                     'Select norm_method: "cluster_norm", "composite_sed_norm", ')
@@ -159,8 +165,12 @@ def stack_spectra(groupID, norm_method, re_observe=False, mask_negatives=False, 
             # If stacking in axis ratio groups, do NOT normalize
             if axis_stack:
                 norm_factor = 1.
-            print(f'Norm factor: {norm_factor}')
 
+            # Override all else if it's manual
+            if norm_method == 'manual':
+                norm_factor = scale_factors.iloc[loo p_count]
+
+            print(f'Norm factor: {norm_factor}')
             # Read in the continuum and normalize that
             continuum_df = read_fast_continuum(mosdef_obj)
             continuum_df['f_lambda_norm'] = continuum_df[
@@ -417,13 +427,15 @@ def plot_all_spectra(n_clusters, norm_method, mask_negatives=False):
         plot_spec(i, norm_method, mask_negatives=mask_negatives)
 
 
-def stack_axis_ratio(n_bins=10, l_mass_cutoff=0, l_ssfr_cutoff=0):
+def stack_axis_ratio(n_bins=10, l_mass_cutoff=0, l_ssfr_cutoff=0, l_mass_bins=0, l_ssfr_bins=0, scale_ha=0):
     """Stacks galaxies in groups by axis ratio
 
     Parameters:
     n_bins (int): Number of bins to divide galaxies into
     l_mass_cutoff (int): Splits into 2 mass bins in each group - those above mass of cutoff, and those below
-    l_mass_cutoff (int): Splits into 2 ssfr bins in each group - those above ssfr of cutoff, and those below
+    l_ssfr_cutoff (int): Splits into 2 ssfr bins in each group - those above ssfr of cutoff, and those below
+    l_mass_bins (list): [min, mid, max] - Splits into 2 mass bins in each group - from min to mid, and from mid to max
+    l_ssfr_bins (list): [min, mid, max] - Splits into 2 ssfr bins in each group - from min to mid, and from mid to max
 
     Returns:
     """
@@ -433,9 +445,13 @@ def stack_axis_ratio(n_bins=10, l_mass_cutoff=0, l_ssfr_cutoff=0):
     ar_df = ar_df[ar_df['err_use_ratio'] < 0.1]
 
     # Add ssfrs if needed:
-    if l_ssfr_cutoff != 0:
+    if l_ssfr_cutoff != 0 or l_ssfr_bins != 0:
         ssfr_mosdef_merge_no_dups = setup_get_ssfr()
         ar_df = merge_ar_ssfr(ar_df, ssfr_mosdef_merge_no_dups)
+
+    # Add line emission if needed
+    if scale_ha > 0:
+        ar_df = merge_emission(ar_df)
 
     # Sort, so we can easily split by axis ratio
     ar_df_sorted = ar_df.sort_values('use_ratio')
@@ -455,7 +471,7 @@ def stack_axis_ratio(n_bins=10, l_mass_cutoff=0, l_ssfr_cutoff=0):
             df_high = df[df['LMASS'] >= l_mass_cutoff]
             dfs = [df_low, df_high]
             save_name = '_mass'
-        if l_ssfr_cutoff != 0:
+        elif l_ssfr_cutoff != 0:
             # Remove anything without a measured ssfr
             df = df[df['SSFR'] > 0]
             df['LSSFR'] = np.log10(df['SSFR'])
@@ -463,6 +479,45 @@ def stack_axis_ratio(n_bins=10, l_mass_cutoff=0, l_ssfr_cutoff=0):
             df_high = df[df['LSSFR'] >= l_ssfr_cutoff]
             dfs = [df_low, df_high]
             save_name = '_ssfr'
+        elif l_mass_bins != 0:
+            mass_min, mass_mid, mass_max = l_mass_bins
+            df_low_idx = np.logical_and(
+                df['LMASS'] <= mass_mid, df['LMASS'] >= mass_min)
+            df_low = df[df_low_idx]
+            df_high_idx = np.logical_and(
+                df['LMASS'] > mass_mid, df['LMASS'] < mass_max)
+            df_high = df[df_high_idx]
+            dfs = [df_low, df_high]
+            save_name = '_mass_bins'
+        elif l_ssfr_bins != 0:
+            # Remove anything without a measured ssfr
+            df = df[df['SSFR'] > 0]
+
+            ssfr_min, ssfr_mid, ssfr_max = l_ssfr_bins
+            df_low_idx = np.logical_and(
+                df['LSSFR'] <= ssfr_mid, df['LSSFR'] >= ssfr_min)
+            df_low = df[df_low_idx]
+            df_high_idx = np.logical_and(
+                df['LSSFR'] > ssfr_mid, df['LSSFR'] < ssfr_max)
+            df_high = df[df_high_idx]
+            dfs = [df_low, df_high]
+            save_name = '_ssfr_bins'
+        if scale_ha > 0:
+            # Drops any negative fluxes/non-detections
+            df = df[df['HA6565_FLUX'] > 0]
+            # Take only the inner standard deviation:
+            ha_low, ha_high = np.percentile(df['HA6565_FLUX'], [16, 84])
+            keep_ha = np.logical_and(df['HA6565_FLUX'] >= ha_low, df[
+                                     'HA6565_FLUX'] <= ha_high)
+            df = df[keep_ha]
+            # Find the max of the now-shorter df
+            max_ha = np.max(df['HA6565_FLUX'])
+            # Find the scale factor for each row
+            scales = [max_ha / df.iloc[i]['HA6565_FLUX']
+                      for i in range(len(df))]
+            df['ha_scale_factor'] = scales
+            dfs = [df]
+            save_name = '_scale_ha'
         else:
             dfs = [df]
             save_name = ''
@@ -474,9 +529,14 @@ def stack_axis_ratio(n_bins=10, l_mass_cutoff=0, l_ssfr_cutoff=0):
             # Save the dataframe for the group
             df.to_csv(
                 (imd.cluster_dir + f'/composite_spectra/axis_stack{save_name}/{axis_group}_df.csv'), index=False)
-            # Within each group, start stacking the spectra
-            stack_spectra(0, 'cluster_norm', axis_ratio_df=df,
-                          axis_group=axis_group, save_name=save_name)
+            if scale_ha > 0:
+                print(df['ha_scale_factor'])
+                stack_spectra(0, 'manual', axis_ratio_df=df,
+                              axis_group=axis_group, save_name=save_name, scale_factors=df['ha_scale_factor'])
+            else:
+                # Within each group, start stacking the spectra
+                stack_spectra(0, 'cluster_norm', axis_ratio_df=df,
+                              axis_group=axis_group, save_name=save_name)
             axis_group = axis_group + 1
 
 

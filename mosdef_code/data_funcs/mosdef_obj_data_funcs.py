@@ -173,14 +173,14 @@ def setup_get_ssfr():
     dupes = ssfr_mosdef_merge[ssfr_mosdef_merge.duplicated(
         ['FIELD_STR', 'V4ID'], keep=False)]
     # Find indicies of all with non-measurement for SSFR
-    dupes[dupes['SFR2'] < -1].index
-    drop_idx_non_detect = dupes[dupes['SFR2'] < -1].index
+    dupes[dupes['SFR_CORR'] < -1].index
+    drop_idx_non_detect = dupes[dupes['SFR_CORR'] < -1].index
     dupes = dupes.drop(drop_idx_non_detect)
     drop_idx_still_dup = dupes[dupes.duplicated(['FIELD_STR', 'V4ID'])].index
     ssfr_mosdef_merge = ssfr_mosdef_merge.drop(drop_idx_non_detect)
     ssfr_mosdef_merge_no_dups = ssfr_mosdef_merge.drop(drop_idx_still_dup)
     ssfrs = ssfr_mosdef_merge_no_dups[
-        'SFR2'] / 10**ssfr_mosdef_merge_no_dups['LMASS']
+        'SFR_CORR'] / 10**ssfr_mosdef_merge_no_dups['LMASS']
     ssfrs[ssfrs < 0] = -999
     ssfr_mosdef_merge_no_dups['SSFR'] = ssfrs
     return ssfr_mosdef_merge_no_dups
@@ -197,3 +197,27 @@ def merge_ar_ssfr(ar_df, ssfr_mosdef_merge_no_dups):
     ar_ssfr_merge = ar_df.merge(ssfr_mosdef_merge_no_dups, how='left', left_on=[
                                 'field', 'v4id'], right_on=['FIELD_STR', 'V4ID'])
     return ar_ssfr_merge
+
+
+def merge_emission(ar_df):
+    """Run to merge ar_df with the line emission catalog
+
+    Parameters:
+
+    Returns:
+    ssfr_mosdef_merge_no_dups (pd.DataFrame): Pandas dataframe of the ssfr info, mosdef_df info, and duplicates removed
+    """
+    lines_dat = Table.read(
+        imd.mosdef_dir + '/linemeas_latest.fits', format='fits')
+    line_df = lines_dat.to_pandas()
+    line_df['FIELD_STR'] = [line_df.iloc[i]['FIELD'].decode(
+        "utf-8").rstrip() for i in range(len(line_df))]
+    # Merge with mosdef_df so that we are matching v4ids
+    line_mosdef_merge = mosdef_df.merge(line_df, how='inner', left_on=['FIELD', 'ID', 'MASKNAME', 'APERTURE_NO', 'SLITOBJNAME', 'FIELD_STR'], right_on=[
+                                        'FIELD', 'ID', 'MASKNAME', 'APERTURE_NO', 'SLITOBJNAME', 'FIELD_STR'])
+    drop_idx_dup = line_mosdef_merge[
+        line_mosdef_merge.duplicated(['FIELD_STR', 'V4ID'])].index
+    line_mosdef_merge = line_mosdef_merge.drop(drop_idx_dup)
+    ar_line_merge = ar_df.merge(line_mosdef_merge, how='inner', left_on=[
+                                'field', 'v4id'], right_on=['FIELD_STR', 'V4ID'])
+    return ar_line_merge
