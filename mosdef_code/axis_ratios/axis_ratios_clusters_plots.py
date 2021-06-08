@@ -24,6 +24,162 @@ from astropy.table import Table
 save_dir = imd.cluster_dir + '/axis_ratio_cluster_plots/'
 
 
+def plot_balmer_dec_AV_const_sfr_mass(n_groups, save_name=''):
+    """Plots the balmer dec for each cluster
+
+    Parameters:
+    n_groups (int): NUmber of axis ratio groups
+    save_name (list): Addition to the folder where the fils are saved
+    """
+    fit_dfs = [ascii.read(imd.cluster_dir + f'/emission_fitting/axis_ratio_clusters{save_name}/{axis_group}_emission_fits.csv').to_pandas() for axis_group in range(n_groups)]
+    ar_dfs = [ascii.read(imd.cluster_dir + f'/composite_spectra/axis_stack{save_name}/{axis_group}_df.csv').to_pandas() for axis_group in range(n_groups)]
+
+    fields, av_dfs = setup_get_AV()
+
+    medians = [np.median(ar_df['use_ratio']) for ar_df in ar_dfs]
+    # stds = [np.std(ar_df['use_ratio']) for ar_df in ar_dfs]
+    stds = [np.abs(np.median(ar_df['use_ratio']) -
+                   np.percentile(ar_df['use_ratio'], [16, 84])) for ar_df in ar_dfs]
+    stds_low = [std[0] for std in stds]
+    stds_high = [std[1] for std in stds]
+
+    for ar_df in ar_dfs:
+        mosdef_objs = [get_mosdef_obj(ar_df.iloc[i]['field'], ar_df.iloc[i][
+                                      'v4id']) for i in range(len(ar_df))]
+        Avs = [get_AV(fields, av_dfs, mosdef_obj)
+               for mosdef_obj in mosdef_objs]
+        ar_df['Av'] = Avs
+
+    median_Av = [np.median(ar_df['Av']) for ar_df in ar_dfs]
+    stds_Av = [np.std(ar_df['Av']) for ar_df in ar_dfs]
+
+    balmer_decs = []
+    balmer_errs_high = []
+    balmer_errs_low = []
+    colors = []
+    for i in range(len(fit_dfs)):
+        fit_df = fit_dfs[i]
+        balmer_decs.append(fit_df['balmer_dec'].iloc[0])
+        balmer_errs_low.append(fit_df['err_balmer_dec_low'].iloc[0])
+        balmer_errs_high.append(fit_df['err_balmer_dec_high'].iloc[0])
+        colors.append(ar_dfs[i]['plot_color'].iloc[0])
+    # balmer_errs = np.transpose(np.array(balmer_errs))
+
+    mass_medians = [np.median(ar_df['LMASS']) for ar_df in ar_dfs]
+    ssfr_medians = [np.median(ar_df['L_SSFR']) for ar_df in ar_dfs]
+    values_df = pd.DataFrame(zip(medians, stds_low, stds_high, balmer_decs, balmer_errs_low, balmer_errs_high, mass_medians, ssfr_medians, colors, median_Av, stds_Av), columns=[
+        'ars', 'scat_ars_low', 'scat_ars_high', 'balmers', 'err_balmers_low', 'err_balmers_high', 'masses', 'ssfrs', 'plot_color', 'Av', 'scat_AV', ])
+
+    axisfont = 14
+    ticksize = 12
+    ticks = 8
+    titlefont = 24
+    legendfont = 14
+    textfont = 16
+
+    # Figure for just the galaixes in that cluster
+    fig, ax = plt.subplots(figsize=(8, 7))
+
+    label1 = 1
+    label2 = 1
+    label3 = 1
+    label4 = 1
+    for i in range(len(values_df)):
+        if values_df['masses'].iloc[i] < 9.95 and values_df['ssfrs'].iloc[i] > -8.575:
+            color = 'royalblue'
+            if label1 == 1:
+                label = 'Low Mass, High sSFR'
+                label1 = 0
+            else:
+                label = None
+        elif values_df['masses'].iloc[i] < 9.95 and values_df['ssfrs'].iloc[i] < -8.575:
+            color = 'black'
+            if label2 == 1:
+                label = 'Low Mass, Low sSFR'
+                label2 = 0
+            else:
+                label = None
+        elif values_df['masses'].iloc[i] > 9.95 and values_df['ssfrs'].iloc[i] > -8.725:
+            color = 'firebrick'
+            if label3 == 1:
+                label = 'High Mass, High sSFR'
+                label3 = 0
+            else:
+                label = None
+        else:
+            color = 'sandybrown'
+            if label4 == 1:
+                label = 'Low Mass, Low sSFR'
+                label4 = 0
+            else:
+                label = None
+        ax.errorbar(values_df['ars'].iloc[i], values_df['balmers'].iloc[i], xerr=[[values_df['scat_ars_low'].iloc[i]], [values_df['scat_ars_high'].iloc[i]]], yerr=[[values_df['err_balmers_low'].iloc[i]], [values_df['err_balmers_high'].iloc[i]]],
+                    color=color, label=label, ls='None', marker='o')  # , ms=len(fit_dfs[i].iloc[i]) / 4)
+    ax.legend(fontsize=axisfont)
+
+    ax.set_xlim(-0.05, 1.05)
+    ax.set_ylim(0, 8)
+    ax.set_xlabel('Axis Ratio', fontsize=axisfont)
+    ax.set_ylabel('Balmer Decrement', fontsize=axisfont)
+    ax.tick_params(labelsize=ticksize, size=ticks)
+    fig.savefig(save_dir + save_name[1:] + f'/AR_Clusters_Balmer_Decs{save_name}.pdf')
+
+    plt.close()
+
+    # NOW DOING AVs
+
+    # Figure for just the galaixes in that cluster
+    fig, ax = plt.subplots(figsize=(8, 7))
+
+    label1 = 1
+    label2 = 1
+    label3 = 1
+    for i in range(len(values_df)):
+        if values_df['masses'].iloc[i] < 9.95 and values_df['ssfrs'].iloc[i] > -8.575:
+            color = 'royalblue'
+            if label1 == 1:
+                label = 'Low Mass, High sSFR'
+                label1 = 0
+            else:
+                label = None
+        elif values_df['masses'].iloc[i] < 9.95 and values_df['ssfrs'].iloc[i] < -8.575:
+            color = 'black'
+            if label2 == 1:
+                label = 'Low Mass, Low sSFR'
+                label2 = 0
+            else:
+                label = None
+        elif values_df['masses'].iloc[i] > 9.95 and values_df['ssfrs'].iloc[i] > -8.725:
+            color = 'firebrick'
+            if label3 == 1:
+                label = 'High Mass, High sSFR'
+                label3 = 0
+            else:
+                label = None
+        else:
+            color = 'sandybrown'
+            if label4 == 1:
+                label = 'Low Mass, Low sSFR'
+                label4 = 0
+            else:
+                label = None
+
+        ax.plot(ar_dfs[i]['use_ratio'], ar_dfs[i]['Av'], color=color,
+                marker='.', markersize=6, zorder=1, ls='None')
+        ax.errorbar(values_df['ars'].iloc[i], values_df['Av'].iloc[i], xerr=[[values_df['scat_ars_low'].iloc[i]], [values_df['scat_ars_high'].iloc[i]]], yerr=values_df['scat_AV'].iloc[i],
+                    color=color, ls='None', marker='o', label=label)
+
+    ax.legend(fontsize=axisfont)
+
+    ax.set_xlim(-0.05, 1.05)
+    # ax.set_ylim(8, 12)
+    ax.set_xlabel('Axis Ratio', fontsize=axisfont)
+    ax.set_ylabel('FAST A_V', fontsize=axisfont)
+    ax.tick_params(labelsize=ticksize, size=ticks)
+    fig.savefig(save_dir + save_name[1:] + f'/AR_Clusters_FAST_AV{save_name}.pdf')
+    plt.close()
+
+
 def plot_axis_ratio_clusters_balmer_dec(n_groups, save_name=''):
     """Plots the balmer dec for each cluster
 

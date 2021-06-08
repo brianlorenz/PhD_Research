@@ -178,11 +178,12 @@ def observe_filt(interp_sed, filter_num, max_interp=99999999.):
     return flux_filter_nu
 
 
-def plot_uvj_cluster(groupID):
+def plot_uvj_cluster(groupID, axis_obj='False'):
     """given a groupID, plot the UVJ diagram of the composite and all galaxies within cluster
 
     Parameters:
     groupID (int): ID of the cluster to plot
+    axis_obj (matplotlib axis): If given an axis, don't make a new figure - just plot on the given axis
 
     Returns:
     """
@@ -224,9 +225,12 @@ def plot_uvj_cluster(groupID):
     legendfont = 14
     textfont = 16
 
-    fig, ax = plt.subplots(figsize=(8, 7))
+    if axis_obj == 'False':
+        fig, ax = plt.subplots(figsize=(8, 7))
+    else:
+        ax = axis_obj
 
-    setup_uvj_plot(ax, galaxy_uvj_df, composite_uvj_df)
+    setup_uvj_plot(ax, galaxy_uvj_df, composite_uvj_df, axis_obj=axis_obj)
 
     # Plots the one within the cluster in black
     ax.plot(v_j, u_v,
@@ -236,10 +240,14 @@ def plot_uvj_cluster(groupID):
     ax.plot(uvj_composite['V_J'], uvj_composite['U_V'],
             ls='', marker='x', markersize=8, markeredgewidth=2, color='red', label='Composite SED')
 
-    ax.legend(fontsize=legendfont - 4)
-    ax.tick_params(labelsize=ticksize, size=ticks)
-    fig.savefig(imd.cluster_dir + f'/cluster_stats/uvj_diagrams/{groupID}_UVJ.pdf')
-    plt.close()
+    if axis_obj == 'False':
+        ax.legend(fontsize=legendfont - 4)
+        ax.tick_params(labelsize=ticksize, size=ticks)
+        fig.savefig(imd.cluster_dir + f'/cluster_stats/uvj_diagrams/{groupID}_UVJ.pdf')
+        plt.close()
+    else:
+        ax.legend()
+        return
 
 
 def plot_all_uvj_clusters(n_clusters):
@@ -302,7 +310,7 @@ def plot_full_uvj(n_clusters):
     plt.close()
 
 
-def setup_uvj_plot(ax, galaxy_uvj_df, composite_uvj_df):
+def setup_uvj_plot(ax, galaxy_uvj_df, composite_uvj_df, axis_obj='False'):
     """Plots all background galaxies and clusters onto the UVJ diagram, as well as the lines
 
     Parameters:
@@ -317,9 +325,10 @@ def setup_uvj_plot(ax, galaxy_uvj_df, composite_uvj_df):
     ax.plot(galaxy_uvj_df['V_J'], galaxy_uvj_df['U_V'],
             ls='', marker='o', markersize=1.5, color='grey', label='All Galaxies')
 
-    # Plot all composites as purple X
-    ax.plot(composite_uvj_df['V_J'], composite_uvj_df['U_V'],
-            ls='', marker='x', markersize=5, markeredgewidth=2, color='black', label='All Composite SEDs')
+    if axis_obj == 'False':
+        # Plot all composites as purple X
+        ax.plot(composite_uvj_df['V_J'], composite_uvj_df['U_V'],
+                ls='', marker='x', markersize=5, markeredgewidth=2, color='black', label='All Composite SEDs')
 
     # UVJ diagram lines
     ax.plot((-100, 0.69), (1.3, 1.3), color='black')
@@ -328,7 +337,9 @@ def setup_uvj_plot(ax, galaxy_uvj_df, composite_uvj_df):
     yline = xline * 0.88 + 0.69
     ax.plot(xline, yline, color='black')
 
-    ax.set_xlabel('V-J', fontsize=14)
-    ax.set_ylabel('U-V', fontsize=14)
+    if axis_obj == 'False':
+        ax.set_xlabel('V-J', fontsize=14)
+        ax.set_ylabel('U-V', fontsize=14)
+
     ax.set_xlim(-0.5, 2)
     ax.set_ylim(0, 2.5)

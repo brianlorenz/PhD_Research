@@ -23,6 +23,7 @@ from axis_ratio_funcs import read_interp_axis_ratio
 from operator import itemgetter
 from itertools import *
 from astropy.table import Table
+from matplotlib import patches
 
 
 def stack_spectra(groupID, norm_method, re_observe=False, mask_negatives=False, ignore_low_spectra=False, axis_ratio_df=[], axis_group=0, save_name='', scale_factors=0):
@@ -168,7 +169,7 @@ def stack_spectra(groupID, norm_method, re_observe=False, mask_negatives=False, 
 
             # Override all else if it's manual
             if norm_method == 'manual':
-                norm_factor = scale_factors.iloc[loo p_count]
+                norm_factor = scale_factors.iloc[loop_count]
 
             print(f'Norm factor: {norm_factor}')
             # Read in the continuum and normalize that
@@ -427,6 +428,103 @@ def plot_all_spectra(n_clusters, norm_method, mask_negatives=False):
         plot_spec(i, norm_method, mask_negatives=mask_negatives)
 
 
+def stack_axis_mass_ssfr(save_name='_constant_ssfr_mass'):
+    """Stacks galaxies in groups by axis ratio, keeping roughly constant mass and ssfr
+
+    Parameters:
+
+    Returns:
+    """
+    ar_df = read_interp_axis_ratio()
+
+    # Remove objects with greater than 0.1 error
+    ar_df = ar_df[ar_df['err_use_ratio'] < 0.1]
+
+    # Add ssfrs
+    ssfr_mosdef_merge_no_dups = setup_get_ssfr()
+    ar_df = merge_ar_ssfr(ar_df, ssfr_mosdef_merge_no_dups)
+
+    # Drop those with nonsense SFRs
+    ar_df = ar_df[ar_df['SFR_CORR'] > 0]
+    ar_df['L_SFR'] = np.log10(ar_df['SFR_CORR'])
+
+    # Add masses
+    l_masses = [get_mosdef_obj(ar_df.iloc[i]['field'], ar_df.iloc[i]['v4id'])[
+        'LMASS'] for i in range(len(ar_df))]
+    ar_df['LMASS'] = l_masses
+
+    ar_df['L_SSFR'] = np.log10(ar_df['SFR_CORR'] / 10**ar_df['LMASS'])
+
+    # split into axis raito groups
+    # ellipse_centers = [(9.7, 0.75), (10.1, 1.3),
+    #                    (10.5, 1.85)]  # (LMASS, L_SFR)
+    # ellipse_width_height = (0.325, 0.3)  # Semi-major axis
+
+    selection_centers = [(9.65, -8.35), (9.65, -8.8),
+                         (10.25, -8.5), (10.25, -8.95)]  # (LMASS, L_SFR)
+    selection_width_height = (0.6, 0.45)  # full width
+
+    # aixs_ratio < 0, axis ratio >=0 <=1, axis_ratio >1
+    axis_cutoffs = [0.4, 0.6]
+
+    # Will append all dataframe groups to groups
+    groups = []
+    fig, ax = plt.subplots(figsize=(8, 7))
+
+    ax.scatter(ar_df['LMASS'], ar_df['L_SSFR'], s=4, color='grey')
+    colors = ['blue', 'orange', 'green', 'black']
+    selection_colors = ['royalblue', 'black', 'firebrick', 'sandybrown']
+    for i in range(len(selection_centers)):
+        # ar_df[f'in_ellipse_{i}'] = (((ar_df['LMASS'] -
+        # ellipse_centers[i][0])**2 / ellipse_width_height[0]**2 +
+        # (ar_df['L_SFR'] - ellipse_centers[i][1])**2 /
+        # ellipse_width_height[1]**2) < 1).astype(int)
+        ar_df[f'in_selection_{i}'] = np.logical_and(np.abs(ar_df['LMASS'] - selection_centers[i][0]) < selection_width_height[0] / 2, np.abs(ar_df['L_SSFR'] - selection_centers[i][1]) < selection_width_height[1] / 2).astype(int)
+        rect_origin = (selection_centers[i][0] - selection_width_height[
+                       0] / 2, selection_centers[i][1] - selection_width_height[1] / 2)
+        patch_selection = patches.Rectangle(rect_origin, selection_width_height[
+                                            0], selection_width_height[1], color=selection_colors[i], fill=False)
+        # ellipse_selection = patches.Ellipse(ellipse_centers[i], ellipse_width_height[
+        # 0] * 2, ellipse_width_height[1] * 2, angle=0,
+        # color=ellipse_colors[i], fill=False)
+        ax.add_patch(patch_selection)
+
+        in_selection = ar_df[f'in_selection_{i}'] == 1
+        ar_df_in = ar_df[in_selection]
+        low_axis = ar_df_in['use_ratio'] < axis_cutoffs[0]
+        high_axis = ar_df_in['use_ratio'] > axis_cutoffs[1]
+        mid_axis = np.logical_and(ar_df_in['use_ratio'] <= axis_cutoffs[
+            1], ar_df_in['use_ratio'] >= axis_cutoffs[0])
+        axis_cuts = [low_axis, mid_axis, high_axis]
+        for j in range(3):
+            selected_df = ar_df_in[axis_cuts[j]].copy(deep=True)
+            ax.scatter(selected_df['LMASS'], selected_df[
+                       'L_SSFR'], s=4, color=colors[j])
+            selected_df['median_LMASS'] = np.median(
+                selected_df['LMASS'])
+            selected_df['median_L_SSFR'] = np.median(
+                selected_df['L_SSFR'])
+            selected_df['plot_color'] = colors[j]
+
+            ax.plot(selected_df['median_LMASS'], selected_df[
+                'median_L_SSFR'], marker='x', color=selected_df['plot_color'].iloc[0])
+
+            groups.append(selected_df)
+
+    ax.set_xlabel('LMASS', fontsize=14)
+    ax.set_ylabel('log(sSFR)', fontsize=14)
+    ax.tick_params(labelsize=12, size=8)
+    save_dir_ellipse = imd.cluster_dir + '/axis_ratio_cluster_plots/'
+    fig.savefig(save_dir_ellipse + save_name[1:] + f'/sample_selection.pdf')
+
+    axis_group = 0
+    for df in groups:
+        df.to_csv((imd.cluster_dir + f'/composite_spectra/axis_stack{save_name}/{axis_group}_df.csv'), index=False)
+        stack_spectra(0, 'cluster_norm', axis_ratio_df=df,
+                      axis_group=axis_group, save_name=save_name)
+        axis_group += 1
+
+
 def stack_axis_ratio(n_bins=10, l_mass_cutoff=0, l_ssfr_cutoff=0, l_mass_bins=0, l_ssfr_bins=0, scale_ha=0):
     """Stacks galaxies in groups by axis ratio
 
@@ -508,7 +606,7 @@ def stack_axis_ratio(n_bins=10, l_mass_cutoff=0, l_ssfr_cutoff=0, l_mass_bins=0,
             # Take only the inner standard deviation:
             ha_low, ha_high = np.percentile(df['HA6565_FLUX'], [16, 84])
             keep_ha = np.logical_and(df['HA6565_FLUX'] >= ha_low, df[
-                                     'HA6565_FLUX'] <= ha_high)
+                'HA6565_FLUX'] <= ha_high)
             df = df[keep_ha]
             # Find the max of the now-shorter df
             max_ha = np.max(df['HA6565_FLUX'])
@@ -588,5 +686,5 @@ def clip_spectrum(spectrum_df, padded_mask, spectrum_wavelength, spectrum_flux_n
     mins_maxs = [(np.min(spectrum_df['rest_wavelength'].iloc[idx_list]), np.max(
         spectrum_df['rest_wavelength'].iloc[idx_list])) for idx_list in idx_lists]
     idx_clips = [np.logical_and(spectrum_wavelength > waves[
-                                0], spectrum_wavelength < waves[1]) for waves in mins_maxs]
+        0], spectrum_wavelength < waves[1]) for waves in mins_maxs]
     return idx_clips

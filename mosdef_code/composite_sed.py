@@ -151,9 +151,10 @@ def get_composite_sed(groupID, run_filters=True):
     # Repeat the next few steps for every n points, where n is the number of galaxies.
     # i represents the current point
     i = 0
+    step_size = np.max([int(number_galaxies / 3), 1])
     while i < len(total_sed[good_idx]):
         # Check if there's space for 2 more sets of points
-        if (i + 2 * number_galaxies) < len(total_sed[good_idx]):
+        if (i + 2 * step_size) < len(total_sed[good_idx]):
             # If so, collect the next set
             selected_points = total_sed[good_idx].iloc[i:i + number_galaxies]
         else:
@@ -199,7 +200,7 @@ def get_composite_sed(groupID, run_filters=True):
 
         # End of while loop
         # Increment value, make sure to have a failsafe in case it is zero
-        i = i + np.max([int(number_galaxies / 3), 1])
+        i = i + step_size
 
     composite_sed = pd.DataFrame(
         zip(composite_sed_wavelengths, composite_sed_points, composite_sed_err_ds, composite_sed_err_us), columns=['rest_wavelength', 'f_lambda', 'err_f_lambda_d', 'err_f_lambda_u'])
