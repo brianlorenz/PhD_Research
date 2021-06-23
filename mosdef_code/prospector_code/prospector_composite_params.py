@@ -28,11 +28,10 @@ from astropy.io import fits
 
 
 ### SET THE GROUP HERE ###
-composite_group = '1'
-### PUT NEBULAR EMISSION BACK ON###
+composite_group = '3'
 
 
-# %run prospector_dynesty.py --param_file='prospector_composite_params.py' --outfile=composite_0_dynesty_test_scaled1000
+# %run prospector_dynesty.py --param_file='prospector_composite_params.py' --outfile='composite_group3_errs_inflate_dust1'
 
 # set up cosmology
 cosmo = FlatLambdaCDM(H0=70, Om0=.3)

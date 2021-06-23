@@ -192,7 +192,6 @@ def plot_emission_fit(groupID, norm_method, axis_group=-1, save_name=''):
     textfont = 16
 
     if axis_group > -1:
-
         fit_df = ascii.read(imd.cluster_dir + f'/emission_fitting/axis_ratio_clusters{save_name}/{axis_group}_emission_fits.csv').to_pandas()
         total_spec_df = read_axis_ratio_spectrum(axis_group, save_name)
     else:

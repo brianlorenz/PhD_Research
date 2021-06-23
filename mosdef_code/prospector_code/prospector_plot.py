@@ -25,6 +25,7 @@ from astropy.table import Table
 from convert_filter_to_sedpy import get_filt_list
 from convert_flux_to_maggies import prospector_maggies_to_flux, prospector_maggies_to_flux_spec
 from plot_mass_sfr import plot_mass_sfr_cluter
+from cosmology_calcs import luminosity_to_flux
 
 
 def read_output(file, get_sps=True):
@@ -84,17 +85,24 @@ def gen_phot(res, obs, mod, sps):
     all_phot = np.zeros((len(phot), len(idx_high_weights)))
     all_mfrac = np.zeros((len(idx_high_weights)))
     all_line_fluxes = np.zeros((len(line_fluxes), len(idx_high_weights)))
+    all_line_fluxes_erg = np.zeros((len(line_fluxes), len(idx_high_weights)))
     for i, weight_idx in enumerate(idx_high_weights):
         print(f'Finding mean model for {i}')
         theta_val = res['chain'][weight_idx, :]
         all_spec[:, i], all_phot[:, i], all_mfrac[i] = mod.mean_model(
             theta_val, obs, sps=sps)
-        line_waves, all_line_fluxes[:, i] = sps.get_galaxy_elines()
+        line_waves, line_fluxes = sps.get_galaxy_elines()
+        all_line_fluxes[:, i] = line_fluxes
+        mass = mod.params['mass']
+        line_fluxes_erg_s = line_fluxes * mass * 3.846e33
+        line_fluxes_erg_s_cm2 = luminosity_to_flux(
+            line_fluxes_erg_s, mod.params['zred'])
+        all_line_fluxes_erg[:, i] = line_fluxes_erg_s_cm2
 
-    return all_spec, all_phot, all_mfrac, all_line_fluxes, line_waves, weights, idx_high_weights
+    return all_spec, all_phot, all_mfrac, all_line_fluxes, all_line_fluxes_erg, line_waves, weights, idx_high_weights
 
 
-def make_plots(res, obs, mod, sps, all_spec, all_phot, all_line_fluxes, line_waves, weights, idx_high_weights, file, p_plots=False, mask=False, savename='False'):
+def make_plots(res, obs, mod, sps, all_spec, all_phot, all_line_fluxes, all_line_fluxes_erg, line_waves, weights, idx_high_weights, file, p_plots=False, mask=False, savename='False'):
     """Plots the observations vs the sps model
 
     Parameters:
@@ -146,6 +154,16 @@ def make_plots(res, obs, mod, sps, all_spec, all_phot, all_line_fluxes, line_wav
                         for i in range(all_line_fluxes.shape[0])])
     lines84 = np.array([quantile(all_line_fluxes[i, :], 84, weights=weights[idx_high_weights])
                         for i in range(all_line_fluxes.shape[0])])
+
+    lines16_erg = np.array([quantile(all_line_fluxes_erg[i, :], 16, weights=weights[idx_high_weights])
+                            for i in range(all_line_fluxes_erg.shape[0])])
+    lines50_erg = np.array([quantile(all_line_fluxes_erg[i, :], 50, weights=weights[idx_high_weights])
+                            for i in range(all_line_fluxes_erg.shape[0])])
+    lines84_erg = np.array([quantile(all_line_fluxes_erg[i, :], 84, weights=weights[idx_high_weights])
+                            for i in range(all_line_fluxes_erg.shape[0])])
+    # lines16_erg = (lines16_erg / 1000) * ((1 + obs['z'])**2)
+    # lines50_erg = (lines50_erg / 1000) * ((1 + obs['z'])**2)
+    # lines84_erg = (lines84_erg / 1000) * ((1 + obs['z'])**2)
 
     parnames = np.array(res.get('theta_labels', mod.theta_labels()))
 
@@ -337,7 +355,11 @@ def make_plots(res, obs, mod, sps, all_spec, all_phot, all_line_fluxes, line_wav
         ax_main.axvspan(4500, 5300, facecolor='r', alpha=0.5, label="Mask")
         ax_main.axvspan(6100, 6900, facecolor='r', alpha=0.5)
 
-    # Output the merged spectra
+    # Save the fluxes of the model lines
+    model_lines_df = pd.DataFrame(zip(line_waves, lines50_erg), columns=[
+                                  'rest_wavelength', 'flux'])
+
+    # Output the merged spectra and lines
     output_dir = '/Users/brianlorenz/mosdef/Prospector_Outs/'
     spec_df = pd.DataFrame(zip(z0_spec_wavelength, (spec16_flambda / 1000) * ((1 + obs['z'])**2), (spec50_flambda / 1000) * ((1 + obs['z'])**2), (spec84_flambda / 1000) * ((1 + obs['z'])**2)), columns=[
                            'rest_wavelength', 'spec16_flambda', 'spec50_flambda', 'spec84_flambda'])
@@ -345,6 +367,8 @@ def make_plots(res, obs, mod, sps, all_spec, all_phot, all_line_fluxes, line_wav
                            'rest_wavelength', 'phot16_flambda', 'phot50_flambda', 'phot84_flambda'])
     spec_df.to_csv(output_dir + savename + '_model_spec.csv', index=False)
     phot_df.to_csv(output_dir + savename + '_model_phot.csv', index=False)
+    model_lines_df.to_csv(output_dir + savename +
+                          '_model_lines.csv', index=False)
 
     # Save the plot
     ax_main.legend()
@@ -414,9 +438,9 @@ def read_and_make_plot(file, savename='False', mask=False):
 
     '''
     res, obs, mod, sps, file = read_output(file)
-    all_spec, all_phot, all_mfrac, all_line_fluxes, line_waves, weights, idx_high_weights = gen_phot(
+    all_spec, all_phot, all_mfrac, all_line_fluxes, all_line_fluxes_erg, line_waves, weights, idx_high_weights = gen_phot(
         res, obs, mod, sps)
-    make_plots(res, obs, mod, sps, all_spec, all_phot, all_line_fluxes, line_waves,
+    make_plots(res, obs, mod, sps, all_spec, all_phot, all_line_fluxes, all_line_fluxes_erg, line_waves,
                weights, idx_high_weights, file, p_plots=False, mask=mask, savename=savename)
 
     return [res, obs, mod, sps, all_spec, all_phot, all_line_fluxes, line_waves, weights, idx_high_weights, file]
@@ -429,7 +453,7 @@ def gen_continuum_spec(file, mask=False):
     savename = file[:-19] + '_CONT'
     res, obs, mod, sps, file = read_output(file)
     mod.params['add_neb_emission'] = np.array([False])
-    all_spec, all_phot, all_mfrac, all_line_fluxes, line_waves, weights, idx_high_weights = gen_phot(
+    all_spec, all_phot, all_mfrac, all_line_fluxes, all_line_fluxes_erg, line_waves, weights, idx_high_weights = gen_phot(
         res, obs, mod, sps)
-    make_plots(res, obs, mod, sps, all_spec, all_phot, all_line_fluxes, line_waves,
+    make_plots(res, obs, mod, sps, all_spec, all_phot, all_line_fluxes, all_line_fluxes_erg, line_waves,
                weights, idx_high_weights, file, p_plots=False, mask=mask, savename=savename)

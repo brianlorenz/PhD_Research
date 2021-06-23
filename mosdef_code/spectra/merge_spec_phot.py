@@ -38,10 +38,10 @@ from convert_flux_to_maggies import prospector_maggies_to_flux, prospector_maggi
 def main(groupID):
     spec, phot, phot_filters, phot_filter_keys = prepare_data_for_merge(
         groupID)
-    phot_merged, scale, target_fluxes, opt_point_fluxes, phot_waves, model_phot_df, flux_difference_scale, integral_range = merge_spec_phot(
+    phot_merged, scale, target_fluxes, opt_point_fluxes, phot_waves, model_phot_df, flux_difference_scale, sum_lines_scale, integral_range = merge_spec_phot(
         groupID, spec, phot, phot_filters, phot_filter_keys)
     merge_plot(groupID, phot_merged, phot, spec,
-               scale, target_fluxes, opt_point_fluxes, phot_waves, model_phot_df, flux_difference_scale, integral_range)
+               scale, target_fluxes, opt_point_fluxes, phot_waves, model_phot_df, flux_difference_scale, sum_lines_scale, integral_range)
 
 
 def merge_spec_phot(groupID, spec, phot, phot_filters, phot_filter_keys, keep_range=7):
@@ -124,8 +124,21 @@ def merge_spec_phot(groupID, spec, phot, phot_filters, phot_filter_keys, keep_ra
     fit_df = ascii.read(imd.cluster_dir + f'/emission_fitting/{groupID}_emission_fits.csv').to_pandas()
     total_line_flux = np.sum(fit_df['flux'])
     flux_difference_scale = flux_difference / total_line_flux
-
     print(f'Flux difference method would give a scale of {flux_difference_scale}')
+
+    # Sum the lines method - assume prospector got the total flux in the lines
+    # right, but not the ratio
+    lines_file = [name for name in prospector_files if f'group{groupID}' in name and 'dust1' in name and 'lines' in name and 'CONT' not in name]
+    model_lines_df = ascii.read(prospector_dir + lines_file[0]).to_pandas()
+    mosdef_lines = hb_lines + ha_lines
+    mosdef_line_fluxes = []
+    for line_wave in mosdef_lines:
+        line_idx = np.argmin(
+            np.abs(model_lines_df['rest_wavelength'] - line_wave))
+        mosdef_line_fluxes.append(model_lines_df.iloc[line_idx]['flux'])
+    sum_mosdef_line_fluxes = np.sum(mosdef_line_fluxes)
+    sum_lines_scale = sum_mosdef_line_fluxes / total_line_flux
+    print(f'Sum lines method would give a scale of {sum_lines_scale}')
 
     print('Finding optimal scale for the spectrum')
     scale, target_fluxes, opt_point_fluxes, phot_waves = find_line_flux(fit_df,
@@ -155,7 +168,7 @@ def merge_spec_phot(groupID, spec, phot, phot_filters, phot_filter_keys, keep_ra
     phot_merged = pd.concat([phot, merge_spec_df])
 
     # Save the merged dataframe
-    return phot_merged, scale, target_fluxes, opt_point_fluxes, phot_waves, model_phot_df, flux_difference_scale, integral_range
+    return phot_merged, scale, target_fluxes, opt_point_fluxes, phot_waves, model_phot_df, flux_difference_scale, sum_lines_scale, integral_range
 
 
 def prepare_data_for_merge(groupID):
@@ -329,7 +342,7 @@ def read_prospector_continuum(prospector_dir, files):
 # Plotting
 # -------------------
 
-def merge_plot(groupID, phot_merged, phot, spec, scale, target_fluxes, opt_point_fluxes, phot_waves, model_phot_df, flux_difference_scale, integral_range):
+def merge_plot(groupID, phot_merged, phot, spec, scale, target_fluxes, opt_point_fluxes, phot_waves, model_phot_df, flux_difference_scale, sum_lines_scale, integral_range):
     """Plots merging process
 
     Parameters:
@@ -385,6 +398,7 @@ def merge_plot(groupID, phot_merged, phot, spec, scale, target_fluxes, opt_point
 
     fig.text(0.1, 0.9, f'Scale = {round(scale[0], 3)}', transform=ax_final.transAxes)
     fig.text(0.1, 0.85, f'Flux Diff Scale = {round(flux_difference_scale, 3)}', transform=ax_final.transAxes)
+    fig.text(0.1, 0.80, f'Sum Lines Scale = {round(sum_lines_scale, 3)}', transform=ax_final.transAxes)
 
     # Color in the region we are integrating over for clarity
     # Need the indices of wavelength that are between the integral values
