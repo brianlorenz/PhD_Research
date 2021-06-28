@@ -148,7 +148,7 @@ def read_composite_spectrum(groupID, norm_method):
     spectrum_df (pd.DataFrame): Dataframe containing wavelength and fluxes for the spectrum
     """
     spectrum_df = ascii.read(
-        imd.cluster_dir + f'/composite_spectra/{norm_method}/{groupID}_spectrum.csv').to_pandas()
+        imd.composite_spec_dir + f'/{norm_method}_csvs/{groupID}_spectrum.csv').to_pandas()
 
     return spectrum_df
 
@@ -504,10 +504,11 @@ def check_line_coverage(mosdef_obj, plot=False):
                 high_idx = np.min([len(spectrum_df), index + check_range])
                 if 0 not in spectrum_df.iloc[low_idx:high_idx]['f_lambda_clip'].to_numpy():
                     line_ok = 1
-                    print(f'{line_name} is ok')
+                    # print(f'{line_name} is ok')
                 else:
-                    print(spectrum_df.iloc[low_idx:high_idx]['f_lambda_clip'])
-                    print(f'{line_name} has bad pixels nearby')
+                    pass
+                    # print(spectrum_df.iloc[low_idx:high_idx]['f_lambda_clip'])
+                    # print(f'{line_name} has bad pixels nearby')
         if coverage == 0:
             print(f'{line_name} has no coverage')
         # After checking all of the dataframes, append whether of not the line

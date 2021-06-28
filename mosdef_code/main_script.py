@@ -15,6 +15,7 @@ from scipy import interpolate
 import initialize_mosdef_dirs as imd
 import time
 from composite_sed import get_all_composite_seds
+from stack_spectra import stack_all_spectra
 
 '''Starting point: One folder ('cluster_folder') that contains: 
 -folders labeled '0', '1', ..., 'N' where N is the number of clusters-1. These will be the cluster "groups"
@@ -26,5 +27,6 @@ from composite_sed import get_all_composite_seds
 # Set the total number of clusters
 n_clusters = 1
 print('Generating composite seds...')
-get_all_composite_seds(n_clusters, run_filters=True)
-
+# get_all_composite_seds(n_clusters, run_filters=True)
+print('Generating composite spectra...')
+stack_all_spectra(n_clusters, 'cluster_norm')

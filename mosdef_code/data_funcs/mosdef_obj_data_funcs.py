@@ -50,8 +50,7 @@ def read_sed(field, v4id, norm=False):
     """
     sed_location = imd.sed_csvs_dir + f'/{field}_{v4id}_sed.csv'
     if norm:
-        sed_location = imd.home_dir + \
-            f'/mosdef/sed_csvs/norm_sed_csvs/{field}_{v4id}_norm.csv'
+        sed_location = imd.norm_sed_csvs_dir + f'/{field}_{v4id}_norm.csv'
     if not os.path.exists(sed_location):
         sed_location = imd.sed_csvs_dir + f'/{field}_{v4id}_3DHST_sed.csv'
     sed = ascii.read(sed_location).to_pandas()
@@ -84,8 +83,7 @@ def read_composite_sed(groupID):
 
     Returns:
     """
-    sed_location = imd.home_dir + \
-        f'/mosdef/composite_sed_csvs/{groupID}_sed.csv'
+    sed_location = imd.composite_sed_csvs_dir + f'/{groupID}_sed.csv'
     sed = ascii.read(sed_location).to_pandas()
     return sed
 

@@ -10,7 +10,6 @@ from astropy.io import ascii
 from astropy.io import fits
 from read_data import mosdef_df
 from mosdef_obj_data_funcs import read_sed, read_mock_sed, get_mosdef_obj, read_composite_sed, read_fast_continuum, setup_get_ssfr, merge_ar_ssfr, merge_emission
-from filter_response import lines, overview, get_index, get_filter_response
 import matplotlib.pyplot as plt
 from scipy import interpolate
 import scipy.integrate as integrate
@@ -83,7 +82,7 @@ def stack_spectra(groupID, norm_method, re_observe=False, mask_negatives=False, 
         field = mosdef_obj['FIELD_STR']
         v4id = mosdef_obj['V4ID']
         norm_sed = read_sed(field, v4id, norm=True)
-        print(f'Reading Spectra for {field} {v4id}, z={z_spec:.3f}')
+        # print(f'Reading Spectra for {field} {v4id}, z={z_spec:.3f}')
         # Check to see if the galaxy includes all emission lines
         covered = check_line_coverage(mosdef_obj)
         if covered == False:
@@ -112,7 +111,7 @@ def stack_spectra(groupID, norm_method, re_observe=False, mask_negatives=False, 
                     continue
 
             # NORMALZE - HOW BEST TO DO THIS?
-            # Original Method - using the computed norm_factors
+            # Original Method - using the computed norm_factors form composite sed formation
             if norm_method == 'cluster_norm':
                 norm_factor = np.median(norm_sed['norm_factor'])
             elif norm_method == 'composite_sed_norm':
@@ -171,7 +170,7 @@ def stack_spectra(groupID, norm_method, re_observe=False, mask_negatives=False, 
             if norm_method == 'manual':
                 norm_factor = scale_factors.iloc[loop_count]
 
-            print(f'Norm factor: {norm_factor}')
+            print(f'    Norm factor: {norm_factor}')
             # Read in the continuum and normalize that
             continuum_df = read_fast_continuum(mosdef_obj)
             continuum_df['f_lambda_norm'] = continuum_df[
@@ -213,7 +212,7 @@ def stack_spectra(groupID, norm_method, re_observe=False, mask_negatives=False, 
             spectrum_err_norm[idx_zeros] = 0
             cont_norm[idx_zeros] = 0
 
-            # Save the interpolated spectrum
+            # Store the interpolated spectrum
             interp_spectrum_df = pd.DataFrame(zip(spectrum_wavelength, spectrum_flux_norm, spectrum_err_norm, cont_norm),
                                               columns=['rest_wavelength', 'f_lambda_norm', 'err_f_lambda_norm', 'cont_norm'])
             interp_cluster_spectra_dfs.append(interp_spectrum_df)
@@ -285,8 +284,9 @@ def stack_spectra(groupID, norm_method, re_observe=False, mask_negatives=False, 
                   axis_group=axis_group, save_name=save_name)
 
     else:
-        total_spec_df.to_csv(
-            imd.cluster_dir + f'/composite_spectra/{norm_method}/{groupID}_spectrum.csv', index=False)
+        save_dir = imd.composite_spec_dir + f'/{norm_method}_csvs'
+        imd.check_and_make_dir(save_dir)
+        total_spec_df.to_csv(save_dir + f'/{groupID}_spectrum.csv', index=False)
 
         plot_spec(groupID, norm_method)
     return
@@ -305,9 +305,6 @@ def plot_spec(groupID, norm_method, mask_negatives=False, thresh=0.1, axis_group
     axisfont = 14
     ticksize = 12
     ticks = 8
-    titlefont = 24
-    legendfont = 14
-    textfont = 16
 
     if axis_group > -1:
         total_spec_df = read_axis_ratio_spectrum(
@@ -392,7 +389,9 @@ def plot_spec(groupID, norm_method, mask_negatives=False, thresh=0.1, axis_group
         ax.text
         fig.savefig(imd.cluster_dir + f'/composite_spectra/axis_stack{save_name}/{axis_group}_spectrum.pdf')
     else:
-        fig.savefig(imd.cluster_dir + f'/composite_spectra/{norm_method}/{groupID}_spectrum.pdf')
+        save_dir = imd.composite_spec_dir + f'/{norm_method}_images'
+        imd.check_and_make_dir(save_dir)
+        fig.savefig(save_dir + f'/{groupID}_spectrum.pdf')
     plt.close()
 
 
@@ -409,7 +408,7 @@ def stack_all_spectra(n_clusters, norm_method, re_observe=False, mask_negatives=
     Returns:
     """
     for i in range(n_clusters):
-        print(f'Stacking spectrum {i}')
+        print(f'Stacking spectrum {i}...')
         stack_spectra(i, norm_method, re_observe=re_observe,
                       mask_negatives=mask_negatives, ignore_low_spectra=ignore_low_spectra)
 
@@ -623,12 +622,12 @@ def stack_axis_ratio(n_bins=10, l_mass_cutoff=0, l_ssfr_cutoff=0, l_mass_bins=0,
             # For each group, get a median and scatter of the axis ratios
             median_ratio = np.median(df['use_ratio'])
             scatter_ratio = np.std(df['use_ratio'])
-            print(f'Median: {median_ratio} \nScatter: {scatter_ratio}')
+            # print(f'Median: {median_ratio} \nScatter: {scatter_ratio}')
             # Save the dataframe for the group
             df.to_csv(
                 (imd.cluster_dir + f'/composite_spectra/axis_stack{save_name}/{axis_group}_df.csv'), index=False)
             if scale_ha > 0:
-                print(df['ha_scale_factor'])
+                # print(df['ha_scale_factor'])
                 stack_spectra(0, 'manual', axis_ratio_df=df,
                               axis_group=axis_group, save_name=save_name, scale_factors=df['ha_scale_factor'])
             else:
