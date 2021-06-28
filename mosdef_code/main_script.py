@@ -8,6 +8,7 @@ import numpy as np
 from composite_sed import get_all_composite_seds
 from stack_spectra import stack_all_spectra
 from fit_emission import fit_all_emission
+from generate_cluster_plots import generate_all_cluster_plots
 
 '''Starting point: One folder ('cluster_folder') that contains: 
 -folders labeled '0', '1', ..., 'N' where N is the number of clusters-1. These will be the cluster "groups"
@@ -23,4 +24,10 @@ get_all_composite_seds(n_clusters, run_filters=True)
 print('Generating composite spectra...')
 stack_all_spectra(n_clusters, 'cluster_norm')
 print('Fitting emission lines...')
+
+# Will break here if one of the spectra is so bad that it can't fit
 fit_all_emission(n_clusters, 'cluster_norm')
+
+generate_all_cluster_plots(n_clusters)
+
+

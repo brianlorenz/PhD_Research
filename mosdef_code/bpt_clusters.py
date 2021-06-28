@@ -1,19 +1,10 @@
 # Deals with the BPT of the seds and composites.
 
-import sys
-import os
-import string
 import numpy as np
 import pandas as pd
-from astropy.io import ascii
-from astropy.io import fits
 from read_data import mosdef_df
-from mosdef_obj_data_funcs import read_sed, read_mock_sed, get_mosdef_obj, read_composite_sed
 from emission_measurements import read_emission_df, get_emission_measurements
 import matplotlib.pyplot as plt
-from scipy import interpolate
-import scipy.integrate as integrate
-from query_funcs import get_zobjs
 import initialize_mosdef_dirs as imd
 import cluster_data_funcs as cdf
 
@@ -117,11 +108,8 @@ def plot_bpt(emission_df, zobjs, savename='None', axis_obj='False', composite_bp
     axisfont = 14
     ticksize = 12
     ticks = 8
-    titlefont = 24
-    legendfont = 14
-    textfont = 16
 
-    # Get the bpt valeus to plot for all object
+    # Get the bpt valeus to plot for all objects
     bpt_df = get_bpt_coords(emission_df, zobjs)
 
     if axis_obj == 'False':
@@ -159,10 +147,10 @@ def plot_bpt(emission_df, zobjs, savename='None', axis_obj='False', composite_bp
     if savename != 'None':
         fig.savefig(savename)
 
-    plt.close('allplo')
+    plt.close('all')
 
 
-def plot_bpt_clusters(n_clusters):
+def plot_all_bpt_clusters(n_clusters):
     """Plots the bpt diagram for every cluster
 
     Parameters:
@@ -172,11 +160,21 @@ def plot_bpt_clusters(n_clusters):
     """
     # Read in the emission lines dataframe
     emission_df = read_emission_df()
-
     for groupID in range(n_clusters):
-        # Get the names of all galaxies in the cluster
-        cluster_names, fields_ids = cdf.get_cluster_fields_ids(groupID)
-        fields_ids = [(obj[0], int(obj[1])) for obj in fields_ids]
-        # Location to save the file
-        savename = imd.mosdef_dir + f'/Clustering/cluster_stats/bpt_diagrams/{groupID}_BPT.pdf'
-        plot_bpt(emission_df, fields_ids, savename=savename)
+        plot_bpt_cluster(emission_df, groupID)
+        
+
+
+def plot_bpt_cluster(emission_df, groupID):
+    """Plots the bpt diagram for one cluster, given emission df
+    
+    Parameters:
+    emission_df (pd.DataFrame): Use read_emission_df
+    groupID (int): ID number of the group to plot for
+    """
+    # Get the names of all galaxies in the cluster
+    cluster_names, fields_ids = cdf.get_cluster_fields_ids(groupID)
+    fields_ids = [(obj[0], int(obj[1])) for obj in fields_ids]
+    # Location to save the file
+    savename = imd.cluster_bpt_plots_dir + f'/{groupID}_BPT.pdf'
+    plot_bpt(emission_df, fields_ids, savename=savename)

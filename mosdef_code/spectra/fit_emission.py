@@ -151,11 +151,13 @@ def fit_emission(groupID, norm_method, constrain_O3=False, axis_group=-1, save_n
                               z_offset, err_z_offset, hb_scales, err_hb_scales, ha_scales, err_ha_scales, velocity, err_velocity, amps, err_amps, sigs, err_sigs, fluxes, err_fluxes, balmer_dec, err_balmer_dec_low, err_balmer_dec_high), columns=['line_name', 'line_center_rest', 'z_offset', 'err_z_offset', 'hb_scale', 'err_hb_scale', 'ha_scale', 'err_ha_scale', 'fixed_velocity', 'err_fixed_velocity', 'amplitude', 'err_amplitude', 'sigma', 'err_sigma', 'flux', 'err_flux', 'balmer_dec', 'err_balmer_dec_low', 'err_balmer_dec_high'])
 
     if axis_group > -1:
-        fit_df.to_csv(imd.cluster_dir + f'/emission_fitting/axis_ratio_clusters{save_name}/{axis_group}_emission_fits.csv', index=False)
+        fit_df.to_csv(
+            imd.cluster_dir + f'/emission_fitting/axis_ratio_clusters{save_name}/{axis_group}_emission_fits.csv', index=False)
         plot_emission_fit(groupID, norm_method,
                           axis_group=axis_group, save_name=save_name)
     else:
-        fit_df.to_csv(imd.emission_fit_csvs_dir + f'/{groupID}_emission_fits.csv', index=False)
+        fit_df.to_csv(imd.emission_fit_csvs_dir +
+                      f'/{groupID}_emission_fits.csv', index=False)
         plot_emission_fit(groupID, norm_method)
     return
 
@@ -192,10 +194,12 @@ def plot_emission_fit(groupID, norm_method, axis_group=-1, save_name=''):
     textfont = 16
 
     if axis_group > -1:
-        fit_df = ascii.read(imd.cluster_dir + f'/emission_fitting/axis_ratio_clusters{save_name}/{axis_group}_emission_fits.csv').to_pandas()
+        fit_df = ascii.read(
+            imd.cluster_dir + f'/emission_fitting/axis_ratio_clusters{save_name}/{axis_group}_emission_fits.csv').to_pandas()
         total_spec_df = read_axis_ratio_spectrum(axis_group, save_name)
     else:
-        fit_df = ascii.read(imd.emission_fit_csvs_dir + f'/{groupID}_emission_fits.csv').to_pandas()
+        fit_df = ascii.read(imd.emission_fit_csvs_dir +
+                            f'/{groupID}_emission_fits.csv').to_pandas()
         total_spec_df = read_composite_spectrum(groupID, norm_method)
 
     fig = plt.figure(figsize=(8, 8))
@@ -302,9 +306,11 @@ def plot_emission_fit(groupID, norm_method, axis_group=-1, save_name=''):
     ax.tick_params(labelsize=ticksize, size=ticks)
 
     if axis_group > -1:
-        fig.savefig(imd.cluster_dir + f'/emission_fitting/axis_ratio_clusters{save_name}/{axis_group}_emission_fit.pdf')
+        fig.savefig(
+            imd.cluster_dir + f'/emission_fitting/axis_ratio_clusters{save_name}/{axis_group}_emission_fit.pdf')
     else:
-        fig.savefig(imd.emission_fit_images_dir + f'/{groupID}_emission_fit.pdf')
+        fig.savefig(imd.emission_fit_images_dir +
+                    f'/{groupID}_emission_fit.pdf')
     plt.close()
     return
 
@@ -406,6 +412,7 @@ def monte_carlo_fit(func, wavelength_cut, continuum, y_data, y_err, guess, bound
     new_y_datas_cont_sub = [cont_tuple[0] for cont_tuple in new_cont_tuples]
     hb_scales = [cont_tuple[1] for cont_tuple in new_cont_tuples]
     ha_scales = [cont_tuple[2] for cont_tuple in new_cont_tuples]
+
     fits_out = [curve_fit(func, wavelength_cut, new_y, guess, bounds=bounds)
                 for new_y in new_y_datas_cont_sub]
     new_popts = [i[0] for i in fits_out]
@@ -413,7 +420,7 @@ def monte_carlo_fit(func, wavelength_cut, continuum, y_data, y_err, guess, bound
     cont_scale_out = (hb_scale, ha_scale, np.std(hb_scales), np.std(ha_scales))
 
     end = time.time()
-    print(f'Length of {n_loops} fits list comprehension: {end-start}')
+    print(f'Length of {n_loops} fits: {end-start}')
     return popt, new_popts, cont_scale_out
 
 
@@ -597,3 +604,4 @@ def get_cuts(wavelength_cut_section, width=7):
     cuts = np.prod(cuts, axis=0)
     cut = [bool(i) for i in cuts]
     return cut
+

@@ -32,8 +32,14 @@ emission_fit_dir = cluster_dir + '/emission_fitting'
 emission_fit_csvs_dir = emission_fit_dir + '/emission_fitting_csvs'
 emission_fit_images_dir = emission_fit_dir + '/emission_fitting_images'
 
+# Cluster plots
+cluster_plot_dir = cluster_dir + '/cluster_plots'
+cluster_bpt_plots_dir = cluster_plot_dir + '/bpt_diagrams'
+
+# Misc mosdef files
 loc_3DHST = home_dir + '/mosdef/Surveys/3DHST/v4.1/'
 loc_ZFOURGE = home_dir + '/mosdef/Surveys/ZFOURGE/'
+loc_linemeas = mosdef_dir + '/Mosdef_cats/linemeas_latest.csv'
 
 # Filters
 # Location of the translate filter file for mosdef
