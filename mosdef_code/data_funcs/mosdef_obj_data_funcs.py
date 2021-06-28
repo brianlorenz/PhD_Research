@@ -48,11 +48,12 @@ def read_sed(field, v4id, norm=False):
 
     Returns:
     """
-    sed_location = imd.home_dir + f'/mosdef/sed_csvs/{field}_{v4id}_sed.csv'
+    sed_location = imd.sed_csvs_dir + f'/{field}_{v4id}_sed.csv'
     if norm:
-        sed_location = imd.home_dir + f'/mosdef/sed_csvs/norm_sed_csvs/{field}_{v4id}_norm.csv'
+        sed_location = imd.home_dir + \
+            f'/mosdef/sed_csvs/norm_sed_csvs/{field}_{v4id}_norm.csv'
     if not os.path.exists(sed_location):
-        sed_location = imd.home_dir + f'/mosdef/sed_csvs/{field}_{v4id}_3DHST_sed.csv'
+        sed_location = imd.sed_csvs_dir + f'/{field}_{v4id}_3DHST_sed.csv'
     sed = ascii.read(sed_location).to_pandas()
     return sed
 
@@ -67,9 +68,9 @@ def read_mock_sed(field, v4id):
 
     Returns:
     """
-    sed_location = imd.home_dir + f'/mosdef/mock_sed_csvs/{field}_{v4id}_sed.csv'
+    sed_location = imd.mock_sed_csvs_dir + f'/{field}_{v4id}_sed.csv'
     if not os.path.exists(sed_location):
-        sed_location = imd.home_dir + f'/mosdef/mock_sed_csvs/{field}_{v4id}_3DHST_sed.csv'
+        sed_location = imd.mock_sed_csvs_dir + f'/{field}_{v4id}_3DHST_sed.csv'
     sed = ascii.read(sed_location).to_pandas()
     return sed
 
@@ -83,7 +84,8 @@ def read_composite_sed(groupID):
 
     Returns:
     """
-    sed_location = imd.home_dir + f'/mosdef/composite_sed_csvs/{groupID}_sed.csv'
+    sed_location = imd.home_dir + \
+        f'/mosdef/composite_sed_csvs/{groupID}_sed.csv'
     sed = ascii.read(sed_location).to_pandas()
     return sed
 
@@ -97,7 +99,8 @@ def read_mock_composite_sed(groupID):
 
     Returns:
     """
-    sed_location = imd.home_dir + f'/mosdef/mock_sed_csvs/mock_composite_sed_csvs/{groupID}_mock_sed.csv'
+    sed_location = imd.home_dir + \
+        f'/mosdef/mock_sed_csvs/mock_composite_sed_csvs/{groupID}_mock_sed.csv'
     sed = ascii.read(sed_location).to_pandas()
     return sed
 
@@ -112,7 +115,8 @@ def read_fast_continuum(mosdef_obj):
     """
     field = mosdef_obj['FIELD_STR']
     mosdef_id = mosdef_obj['V4ID']
-    cont_location = imd.home_dir + f'/mosdef/FAST/{field}_BEST_FITS/{field}_v4.1_zall.fast_{mosdef_id}.fit'
+    cont_location = imd.home_dir + \
+        f'/mosdef/FAST/{field}_BEST_FITS/{field}_v4.1_zall.fast_{mosdef_id}.fit'
     cont = ascii.read(cont_location).to_pandas()
     cont.columns = ['observed_wavelength', 'f_lambda']
     cont['rest_wavelength'] = cont['observed_wavelength'] / \
@@ -131,7 +135,8 @@ def setup_get_AV():
     av_dfs (list of pd.DataFrames): Conatins dataframes in the order of fields with FAST fit info
     """
     fields = ['AEGIS', 'COSMOS', 'GOODS-N', 'GOODS-S', 'UDS']
-    av_dfs = [ascii.read(imd.mosdef_dir + f'/Fast/{field}_v4.1_zall.fast.fout', header_start=17).to_pandas() for field in fields]
+    av_dfs = [ascii.read(
+        imd.mosdef_dir + f'/Fast/{field}_v4.1_zall.fast.fout', header_start=17).to_pandas() for field in fields]
     return fields, av_dfs
 
 

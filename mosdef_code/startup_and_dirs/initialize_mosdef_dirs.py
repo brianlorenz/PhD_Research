@@ -2,13 +2,42 @@ from pathlib import Path
 import os
 import sys
 
+from scipy.linalg.misc import norm
+
+# Set all of the directories to store files
 home_dir = str(Path.home())
-cluster_dir = home_dir + '/mosdef/Clustering'
-spectra_dir = home_dir + '/mosdef/Spectra/1D'
 mosdef_dir = home_dir + '/mosdef'
+
+cluster_dir = mosdef_dir + '/Clustering_2'
+spectra_dir = mosdef_dir + '/Spectra/1D'
+sed_csvs_dir = mosdef_dir + '/sed_csvs'
+norm_sed_csvs_dir = mosdef_dir + '/norm_sed_csvs'
+mock_sed_csvs_dir = mosdef_dir + '/mock_sed_csvs'
+
+# Composite seds
+composite_seds_dir = cluster_dir + '/composite_seds'
+composite_sed_csvs_dir = composite_seds_dir + '/composite_sed_csvs'
+composite_sed_images_dir = composite_seds_dir + '/composite_sed_images'
+
+# Composite filter curves
+composite_filters_dir = cluster_dir + '/composite_filters'
+composite_filter_csvs_dir = composite_filters_dir + '/composite_filter_csvs'
+composite_filter_images_dir = composite_filters_dir + '/composite_filter_images'
 
 loc_3DHST = home_dir + '/mosdef/Surveys/3DHST/v4.1/'
 loc_ZFOURGE = home_dir + '/mosdef/Surveys/ZFOURGE/'
+
+# Filters
+# Location of the translate filter file for mosdef
+mosdef_filter_translate = home_dir + '/code/mosdef_code/filters/catalog_filters/FILTER.RES.latest'
+mosdef_filter_overview = home_dir + '/code/mosdef_code/filters/catalog_filters/overview'
+
+
+all_dirs = [composite_seds_dir, composite_filters_dir, composite_filter_images_dir, composite_filter_csvs_dir, composite_sed_images_dir, composite_sed_csvs_dir, cluster_dir, spectra_dir, sed_csvs_dir, norm_sed_csvs_dir, mock_sed_csvs_dir, composite_seds_dir]
+
+def setup_cluster_dirs(all_dirs):
+    for dir in all_dirs:
+        check_and_make_dir(dir)
 
 
 def reset_cluster_dirs(cluster_dir):
@@ -55,8 +84,11 @@ def check_and_make_dir(file_path):
     """Checks to see if a directory exists - if not, creates the directory
 
     Parameters:
+    file_path (str): Path to a directory that you wish to create
 
     Returns:
     """
     if not os.path.exists(file_path):
         os.mkdir(file_path)
+
+# setup_cluster_dirs(all_dirs)

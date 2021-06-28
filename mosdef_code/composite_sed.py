@@ -30,7 +30,7 @@ def get_all_composite_seds(num_clusters, run_filters=True):
     Returns:
     """
     for i in range(num_clusters):
-        print(f'Getting composite sed for group {i}')
+        print(f'Getting composite sed for group {i}...')
         get_composite_sed(i, run_filters=run_filters)
 
 
@@ -47,21 +47,16 @@ def get_normalized_sed(target_field, target_v4id, field, v4id):
     sed (pd.DataFrame): the sed now modified with new columns with normalized info
     """
     sed = read_sed(field, v4id)
-    target_sed = read_sed(target_field, target_v4id)
 
     # Read the mock seds to be used for normalization
     mock_sed = read_mock_sed(field, v4id)
     mock_target_sed = read_mock_sed(target_field, target_v4id)
 
-    target_good_idx = get_good_idx(target_sed)
-    sed_good_idx = get_good_idx(sed)
-
-    # CONSIDER ADDING UNCERTANTIES
     norm_factor = get_cross_cor(mock_target_sed, mock_sed)[0]
 
-    print(f'Normalizing by multiplying {norm_factor}')
+    # print(f'Normalizing by multiplying {norm_factor}')
     if norm_factor < 0:
-        breakpoint()
+        sys.exit(f'Normalization for galaxy {[field, v4id]} to target {[target_field, target_v4id]} is less than zero')
 
     sed['norm_factor'] = np.ones(len(sed)) * norm_factor
     sed['norm_field'] = [f'{target_field}'] * len(sed)
@@ -100,29 +95,7 @@ def get_composite_sed(groupID, run_filters=True):
     for obj in fields_ids:
         field = obj[0]
         v4id = int(obj[1])
-        # sed = read_sed(field, v4id)
-        # sed_good_idx = get_good_idx(sed)
 
-        # Add column to normalize or scale the SED - WHAT'S THE BEST WAY TO DO THIS?
-        # norm_factor = np.median(sed['f_lambda'])
-        # This normalizationf actor is a12 in Kriek+2011
-        # norm_factor = np.sum(
-        # target_scale_sed[target_scale_good_idx]['f_lambda']*sed[sed_good_idx]['f_lambda'])
-        # / np.sum(sed[sed_good_idx]['f_lambda']**2)
-
-        '''
-        norm_factor = np.sum(
-            target_scale_sed[target_scale_good_idx]['f_lambda']*sed[sed_good_idx]['f_lambda']) / np.sum(sed[sed_good_idx]['f_lambda']**2)
-        print(f'Normalizing by multiplying {norm_factor}')
-        sed['norm_factor'] = np.ones(len(sed))*norm_factor
-        sed['norm_field'] = [f'{target_scale_field}']*len(sed)
-        sed['norm_v4id'] = [f'{target_scale_v4id}']*len(sed)
-        sed['f_lambda_norm'] = sed['f_lambda']*norm_factor
-        sed['err_f_lambda_norm'] = sed['err_f_lambda']*norm_factor
-        # Add a column to compute the rest_frame wavelength using the redshift
-        sed['rest_wavelength'] = sed['peak_wavelength'] / \
-            (1+sed['Z_MOSFIRE'])
-        '''
         sed = get_normalized_sed(target_field, target_v4id, field, v4id)
         # If it's the first one, start the total_sed, otherwise append to it
         if count == 0:
@@ -130,7 +103,7 @@ def get_composite_sed(groupID, run_filters=True):
             count = 1
         else:
             total_sed = pd.concat([total_sed, sed])
-        sed.to_csv(imd.home_dir + f'/mosdef/sed_csvs/norm_sed_csvs/{field}_{v4id}_norm.csv', index=False)
+        sed.to_csv(imd.norm_sed_csvs_dir + f'/{field}_{v4id}_norm.csv', index=False)
 
     # Now we have total_seds, which is a huge dataframe that combines the seds
     # of all of the individual objects
@@ -156,7 +129,7 @@ def get_composite_sed(groupID, run_filters=True):
         # Check if there's space for 2 more sets of points
         if (i + 2 * step_size) < len(total_sed[good_idx]):
             # If so, collect the next set
-            selected_points = total_sed[good_idx].iloc[i:i + number_galaxies]
+            selected_points = total_sed[good_idx].iloc[i:i + step_size]
         else:
             # Otherwise, take all points until the end and end the loop after
             # this cycle
@@ -178,19 +151,14 @@ def get_composite_sed(groupID, run_filters=True):
             selected_points, composite_sed_point)
         composite_sed_err_ds.append(composite_sed_err_d)
         composite_sed_err_us.append(composite_sed_err_u)
-        # Get the wavelength as the center of the wavelength range
 
         wavelength_min = np.min(
             selected_points['rest_wavelength'])
         wavelength_max = np.max(selected_points['rest_wavelength'])
 
-        # HOW TO SET COMPOSITE POINT WAVELENGTH? Probably best not to center, but rather be dragged to average of the consituent points?
-        # composite_sed_wave = (wavelength_max-wavelength_min)/2 +
-        # wavelength_min
         composite_sed_wave = np.mean(selected_points['rest_wavelength'])
         composite_sed_wavelengths.append(composite_sed_wave)
 
-        #
         if run_filters:
             composite_filter = get_composite_filter(selected_points, wavelength_min,
                                                     wavelength_max, composite_sed_wave, composite_sed_point, composite_sed_err_d, composite_sed_err_u, groupID)
@@ -209,7 +177,7 @@ def get_composite_sed(groupID, run_filters=True):
 
     # Save the composite SED
     composite_sed.to_csv(
-        imd.home_dir + f'/mosdef/composite_sed_csvs/{groupID}_sed.csv', index=False)
+        imd.composite_sed_csvs_dir + f'/{groupID}_sed.csv', index=False)
 
     # Copmosite filters already saved elsewhere
     return
@@ -264,7 +232,7 @@ def get_composite_filter(selected_points, wavelength_min, wavelength_max, compos
     """
     filt_resolution = 0.5  # Angstrom
 
-    print(f'Getting filter at point {composite_sed_wave}')
+    print(f'    Generating filter at point {int(composite_sed_wave)}...')
 
     # Number of points/filters that go into composite SED
     num_points = len(selected_points)
@@ -317,7 +285,7 @@ def get_composite_filter(selected_points, wavelength_min, wavelength_max, compos
     vis_composite_filt(selected_points, filt_wavelength, filt_values,
                        interp_filt_values, composite_sed_wave, composite_sed_point, composite_sed_err_d, composite_sed_err_u, groupID)
     # Save the filter using an int() of the composite sed wavelength
-    save_dir = imd.home_dir + f'/mosdef/composite_sed_csvs/composite_filter_csvs/{groupID}_filter_csvs/'
+    save_dir = imd.composite_filter_csvs_dir + f'/{groupID}_filter_csvs/'
     if not os.path.exists(save_dir):
         os.mkdir(save_dir)
     filt_response_df.to_csv(save_dir + f'point_{int(composite_sed_wave)}.csv', index=False)
@@ -381,7 +349,7 @@ def vis_composite_sed(total_sed, composite_sed=0, composite_filters=0, groupID=-
         filt_dir = 'composite_seds_nofilt/'
 
     plt.tight_layout()
-    fig.savefig(imd.home_dir + f'/mosdef/Clustering/composite_seds/{filt_dir}{groupID}_sed.pdf')
+    fig.savefig(imd.composite_sed_images_dir + f'/{filt_dir}{groupID}_sed.pdf')
     plt.close()
 
 
@@ -430,7 +398,7 @@ def vis_composite_filt(selected_points, filt_wavelength, filt_values, interp_fil
     # ax_sed.set_ylim(-0.2, 5)
     # ax_filt.set_ylim(-0.05, 1.05)
     plt.tight_layout()
-    save_dir = imd.home_dir + f'/mosdef/Clustering/composite_filter/{groupID}_filters/'
+    save_dir = imd.composite_filter_images_dir + f'/{groupID}_filters/'
     if not os.path.exists(save_dir):
         os.mkdir(save_dir)
     fig.savefig(save_dir + f'{int(composite_sed_wave)}.pdf')

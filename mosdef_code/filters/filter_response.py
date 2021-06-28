@@ -10,13 +10,12 @@ from astropy.io import ascii
 import initialize_mosdef_dirs as imd
 
 
-f = open(imd.home_dir + '/code/mosdef_code/filters/catalog_filters/FILTER.RES.latest')
+f = open(imd.mosdef_filter_translate)
 lines = f.readlines()
 f.close()
 
 # Read the overview file as a dataframe
-loc_overview = imd.home_dir + '/code/mosdef_code/filters/catalog_filters/overview'
-overview = pd.read_csv(loc_overview, header=None, sep='\n')
+overview = pd.read_csv(imd.mosdef_filter_overview, header=None, sep='\n')
 
 
 def get_index(filter_num):
