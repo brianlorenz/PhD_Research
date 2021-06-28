@@ -35,6 +35,7 @@ emission_fit_images_dir = emission_fit_dir + '/emission_fitting_images'
 # Cluster plots
 cluster_plot_dir = cluster_dir + '/cluster_plots'
 cluster_bpt_plots_dir = cluster_plot_dir + '/bpt_diagrams'
+cluster_sfr_plots_dir = cluster_plot_dir + '/mass_sfr'
 
 # Misc mosdef files
 loc_3DHST = home_dir + '/mosdef/Surveys/3DHST/v4.1/'
@@ -47,7 +48,7 @@ mosdef_filter_translate = home_dir + '/code/mosdef_code/filters/catalog_filters/
 mosdef_filter_overview = home_dir + '/code/mosdef_code/filters/catalog_filters/overview'
 
 
-all_dirs = [emission_fit_dir, emission_fit_csvs_dir, emission_fit_images_dir, composite_spec_dir, composite_seds_dir, composite_filters_dir, composite_filter_images_dir, composite_filter_csvs_dir, composite_sed_images_dir, composite_sed_csvs_dir, cluster_dir, spectra_dir, sed_csvs_dir, norm_sed_csvs_dir, mock_sed_csvs_dir, composite_seds_dir]
+all_dirs = [cluster_plot_dir, cluster_bpt_plots_dir, cluster_sfr_plots_dir, emission_fit_dir, emission_fit_csvs_dir, emission_fit_images_dir, composite_spec_dir, composite_seds_dir, composite_filters_dir, composite_filter_images_dir, composite_filter_csvs_dir, composite_sed_images_dir, composite_sed_csvs_dir, cluster_dir, spectra_dir, sed_csvs_dir, norm_sed_csvs_dir, mock_sed_csvs_dir, composite_seds_dir]
 
 def setup_cluster_dirs(all_dirs):
     for dir in all_dirs:

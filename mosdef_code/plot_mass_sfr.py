@@ -1,18 +1,9 @@
 # Deals with the BPT of the seds and composites.
 
-import sys
-import os
-import string
 import numpy as np
-import pandas as pd
-from astropy.io import ascii
-from astropy.io import fits
 from read_data import mosdef_df, read_file
-from mosdef_obj_data_funcs import read_sed, read_mock_sed, get_mosdef_obj, read_composite_sed
-from emission_measurements import read_emission_df, get_emission_measurements
+from mosdef_obj_data_funcs import get_mosdef_obj
 import matplotlib.pyplot as plt
-from scipy import interpolate
-import scipy.integrate as integrate
 from query_funcs import get_zobjs
 import initialize_mosdef_dirs as imd
 import cluster_data_funcs as cdf
@@ -97,9 +88,6 @@ def plot_mass_sfr(zobjs, savename='None', axis_obj='False', composite_sfr_mass_p
     axisfont = 14
     ticksize = 12
     ticks = 8
-    titlefont = 24
-    legendfont = 14
-    textfont = 16
 
     sfr_df = read_sfr_df()
     if all_sfrs_res == 'None':
@@ -163,7 +151,7 @@ def plot_mass_sfr(zobjs, savename='None', axis_obj='False', composite_sfr_mass_p
     plt.close('all')
 
 
-def plot_mass_sfr_cluter(groupID, axis_obj):
+def plot_mass_sfr_cluster(groupID, all_sfrs_res, axis_obj='False'):
     """Given one clustser, makes the sft/mass plot
 
     Parameters:
@@ -172,11 +160,11 @@ def plot_mass_sfr_cluter(groupID, axis_obj):
 
     Returns:
     """
-    sfr_df = read_sfr_df()
-    all_sfrs_res = get_all_sfrs_masses(sfr_df)
     cluster_names, fields_ids = cdf.get_cluster_fields_ids(groupID)
     fields_ids = [(obj[0], int(obj[1])) for obj in fields_ids]
-    plot_mass_sfr(fields_ids, axis_obj=axis_obj, all_sfrs_res=all_sfrs_res)
+    savename = imd.cluster_sfr_plots_dir + f'/{groupID}_mass_sfr.pdf'
+    plot_mass_sfr(fields_ids, savename=savename,
+                    axis_obj=axis_obj, composite_sfr_mass_point=[-47], all_sfrs_res=all_sfrs_res)
 
 
 def plot_mass_sfr_clusters(n_clusters):
@@ -190,13 +178,9 @@ def plot_mass_sfr_clusters(n_clusters):
 
     sfr_df = read_sfr_df()
     all_sfrs_res = get_all_sfrs_masses(sfr_df)
-
     for groupID in range(n_clusters):
-        cluster_names, fields_ids = cdf.get_cluster_fields_ids(groupID)
-        fields_ids = [(obj[0], int(obj[1])) for obj in fields_ids]
-        savename = imd.mosdef_dir + f'/Clustering/cluster_stats/mass_sfr_plots/{groupID}_mass_sfr.pdf'
-        plot_mass_sfr(fields_ids, savename=savename,
-                      axis_obj='False', composite_sfr_mass_point=[-47], all_sfrs_res=all_sfrs_res)
+        plot_mass_sfr(groupID, all_sfrs_res, axis_obj='False')
+
 
 
 def get_all_sfrs_masses(sfr_df):
