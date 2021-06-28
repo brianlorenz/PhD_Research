@@ -155,7 +155,7 @@ def fit_emission(groupID, norm_method, constrain_O3=False, axis_group=-1, save_n
         plot_emission_fit(groupID, norm_method,
                           axis_group=axis_group, save_name=save_name)
     else:
-        fit_df.to_csv(imd.cluster_dir + f'/emission_fitting/{groupID}_emission_fits.csv', index=False)
+        fit_df.to_csv(imd.emission_fit_csvs_dir + f'/{groupID}_emission_fits.csv', index=False)
         plot_emission_fit(groupID, norm_method)
     return
 
@@ -195,7 +195,7 @@ def plot_emission_fit(groupID, norm_method, axis_group=-1, save_name=''):
         fit_df = ascii.read(imd.cluster_dir + f'/emission_fitting/axis_ratio_clusters{save_name}/{axis_group}_emission_fits.csv').to_pandas()
         total_spec_df = read_axis_ratio_spectrum(axis_group, save_name)
     else:
-        fit_df = ascii.read(imd.cluster_dir + f'/emission_fitting/{groupID}_emission_fits.csv').to_pandas()
+        fit_df = ascii.read(imd.emission_fit_csvs_dir + f'/{groupID}_emission_fits.csv').to_pandas()
         total_spec_df = read_composite_spectrum(groupID, norm_method)
 
     fig = plt.figure(figsize=(8, 8))
@@ -304,7 +304,7 @@ def plot_emission_fit(groupID, norm_method, axis_group=-1, save_name=''):
     if axis_group > -1:
         fig.savefig(imd.cluster_dir + f'/emission_fitting/axis_ratio_clusters{save_name}/{axis_group}_emission_fit.pdf')
     else:
-        fig.savefig(imd.cluster_dir + f'/emission_fitting/{groupID}_emission_fit.pdf')
+        fig.savefig(imd.emission_fit_images_dir + f'/{groupID}_emission_fit.pdf')
     plt.close()
     return
 
