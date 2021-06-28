@@ -65,7 +65,7 @@ def make_filter_csv(cat):
     # Read in the translate file
     translate_df = ascii.read(translate_dict[cat], data_start=0).to_pandas()
     translate_df.columns = ['filter_name', 'filter_num']
-    # Selecting only the columfs with F - all the others start with E (error)
+    # Selecting only the columns with F - all the others start with E (error)
     translate_df = translate_df[translate_df['filter_name'].str.startswith(
         'f')]
     # Drops the F, leaving just the numbers
