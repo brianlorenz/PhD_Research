@@ -33,10 +33,7 @@ def get_uvj(field, v4id):
     """
 
     # Read the file
-    uvj_df = ascii.read(
-        imd.home_dir + '/mosdef/uvj_latest.dat').to_pandas()
-
-    breakpoint()
+    uvj_df = ascii.read(imd.loc_uvj).to_pandas()
 
     # Get the object from mosdef_df, since we need id and not v4id
     mosdef_obj = get_mosdef_obj(field, v4id)
@@ -130,7 +127,7 @@ def observe_all_uvj(n_clusters, individual_gals=False, composite_uvjs=True):
         galaxy_uvj_df = pd.DataFrame(zip(fields, v4ids, uvs, vjs), columns=[
             'field', 'v4id', 'U_V', 'V_J'])
         galaxy_uvj_df.to_csv(
-            imd.home_dir + '/mosdef/UVJ_Colors/galaxy_uvjs.csv', index=False)
+            imd.uvj_dir + '/galaxy_uvjs.csv', index=False)
 
     if composite_uvjs:
         uvs = []
@@ -145,7 +142,7 @@ def observe_all_uvj(n_clusters, individual_gals=False, composite_uvjs=True):
         composite_uvj_df = pd.DataFrame(zip(groupIDs, uvs, vjs), columns=[
             'groupID', 'U_V', 'V_J'])
         composite_uvj_df.to_csv(
-            imd.home_dir + '/mosdef/UVJ_Colors/composite_uvjs.csv', index=False)
+            imd.composite_uvj_dir + '/composite_uvjs.csv', index=False)
 
 
 def observe_filt(interp_sed, filter_num, max_interp=99999999.):
@@ -191,11 +188,10 @@ def plot_uvj_cluster(groupID, axis_obj='False'):
     cluster_names, fields_ids = cdf.get_cluster_fields_ids(groupID)
 
     # UVJs of all galaxies
-    galaxy_uvj_df = ascii.read(
-        imd.home_dir + '/mosdef/UVJ_Colors/galaxy_uvjs.csv').to_pandas()
+    galaxy_uvj_df = ascii.read(imd.uvj_dir + '/galaxy_uvjs.csv').to_pandas()
     # UVJs of all composite SEDs
     composite_uvj_df = ascii.read(
-        imd.home_dir + '/mosdef/UVJ_Colors/composite_uvjs.csv').to_pandas()
+        imd.composite_uvj_dir + '/composite_uvjs.csv').to_pandas()
 
     # Get their uvj values
     u_v = []
@@ -221,9 +217,7 @@ def plot_uvj_cluster(groupID, axis_obj='False'):
     axisfont = 14
     ticksize = 12
     ticks = 8
-    titlefont = 24
     legendfont = 14
-    textfont = 16
 
     if axis_obj == 'False':
         fig, ax = plt.subplots(figsize=(8, 7))
@@ -243,7 +237,7 @@ def plot_uvj_cluster(groupID, axis_obj='False'):
     if axis_obj == 'False':
         ax.legend(fontsize=legendfont - 4)
         ax.tick_params(labelsize=ticksize, size=ticks)
-        fig.savefig(imd.cluster_dir + f'/cluster_stats/uvj_diagrams/{groupID}_UVJ.pdf')
+        fig.savefig(imd.cluster_uvj_plots_dir + f'/{groupID}_UVJ.pdf')
         plt.close()
     else:
         ax.legend()
@@ -273,11 +267,10 @@ def plot_full_uvj(n_clusters):
     """
 
     # UVJs of all galaxies
-    galaxy_uvj_df = ascii.read(
-        imd.home_dir + '/mosdef/UVJ_Colors/galaxy_uvjs.csv').to_pandas()
+    galaxy_uvj_df = ascii.read(imd.uvj_dir + '/galaxy_uvjs.csv').to_pandas()
     # UVJs of all composite SEDs
     composite_uvj_df = ascii.read(
-        imd.home_dir + '/mosdef/UVJ_Colors/composite_uvjs.csv').to_pandas()
+        imd.composite_uvj_dir + '/composite_uvjs.csv').to_pandas()
 
     axisfont = 14
     ticksize = 12
@@ -297,16 +290,18 @@ def plot_full_uvj(n_clusters):
             ls='', marker='x', markersize=5, markeredgewidth=2, color='red', label='Bad Composite SEDs')
 
     for groupID in range(n_clusters):
-        ax.text(composite_uvj_df.iloc[groupID]['V_J'] - 0.02, composite_uvj_df.iloc[groupID]['U_V'] + 0.03, f'{groupID}', size=12, fontweight='bold', color='black')
+        ax.text(composite_uvj_df.iloc[groupID]['V_J'] - 0.02, composite_uvj_df.iloc[groupID]
+                ['U_V'] + 0.03, f'{groupID}', size=12, fontweight='bold', color='black')
 
     for groupID in bad_uvjs['groupID']:
-        ax.text(composite_uvj_df.iloc[groupID]['V_J'] - 0.02, composite_uvj_df.iloc[groupID]['U_V'] + 0.03, f'{groupID}', size=12, fontweight='bold', color='red')
+        ax.text(composite_uvj_df.iloc[groupID]['V_J'] - 0.02, composite_uvj_df.iloc[groupID]
+                ['U_V'] + 0.03, f'{groupID}', size=12, fontweight='bold', color='red')
 
     # Plot the bad composite SEDs as a red X
 
     ax.legend(fontsize=legendfont - 4)
     ax.tick_params(labelsize=ticksize, size=ticks)
-    fig.savefig(imd.cluster_dir + f'/cluster_stats/uvj_diagrams/Full_UVJ.pdf')
+    fig.savefig(imd.composite_uvj_dir + f'/Full_UVJ.pdf')
     plt.close()
 
 

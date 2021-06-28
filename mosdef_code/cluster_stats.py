@@ -24,7 +24,6 @@ def plot_similarity(n_clusters):
 
     Returns:
     """
-    save_dir = imd.cluster_dir + '/cluster_stats/similarities/'
 
     similarity_matrix = ascii.read(
         imd.cluster_dir + 'similarity_matrix.csv').to_pandas().to_numpy()
@@ -59,9 +58,6 @@ def plot_similarity(n_clusters):
         axisfont = 14
         ticksize = 12
         ticks = 8
-        titlefont = 24
-        legendfont = 14
-        textfont = 16
 
         # Figure for just the galaixes in that cluster
         fig, ax = plt.subplots(figsize=(8, 7))
@@ -73,7 +69,7 @@ def plot_similarity(n_clusters):
         ax.set_xlabel('Similarity', fontsize=axisfont)
         ax.set_ylabel('Number of pairs', fontsize=axisfont)
         ax.tick_params(labelsize=ticksize, size=ticks)
-        fig.savefig(save_dir + f'{groupID}_similarity.pdf')
+        fig.savefig(imd.cluster_similarity_plots_dir  + f'{groupID}_similarity.pdf')
         plt.close()
 
         # Figure for the correlation with the composite:
@@ -86,8 +82,8 @@ def plot_similarity(n_clusters):
         ax.set_xlabel('Similarity to Composite', fontsize=axisfont)
         ax.set_ylabel('Number of galaxies', fontsize=axisfont)
         ax.tick_params(labelsize=ticksize, size=ticks)
-        fig.savefig(save_dir + f'similarities_composite/{groupID}_similarity_composite.pdf')
+        fig.savefig(imd.cluster_similarity_composite_dir  + f'/{groupID}_similarity_composite.pdf')
         plt.close()
 
         # Also, save the values between each galaxy and the composite
-        galaxies.to_csv(save_dir + f'similarities_composite/{groupID}_similarity_composite.csv', index=False)
+        galaxies.to_csv(imd.cluster_similarity_composite_dir + f' /{groupID}_similarity_composite.csv', index=False)
