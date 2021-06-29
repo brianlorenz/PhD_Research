@@ -22,7 +22,7 @@ from uvj_clusters import observe_all_uvj
 # Set the total number of clusters
 n_clusters = 29
 # print('Generating composite seds...')
-# get_all_composite_seds(n_clusters, run_filters=True)
+get_all_composite_seds(n_clusters, run_filters=True)
 # print('Generating composite spectra...')
 # stack_all_spectra(n_clusters, 'cluster_norm')
 # print('Fitting emission lines...')

@@ -18,6 +18,7 @@ mock_sed_csvs_dir = mosdef_dir + '/mock_sed_csvs'
 composite_seds_dir = cluster_dir + '/composite_seds'
 composite_sed_csvs_dir = composite_seds_dir + '/composite_sed_csvs'
 composite_sed_images_dir = composite_seds_dir + '/composite_sed_images'
+total_sed_csvs_dir = composite_seds_dir + '/total_sed_csvs'
 mock_composite_sed_csvs_dir = composite_seds_dir + '/mock_composite_sed_csvs'
 mock_composite_sed_images_dir = composite_seds_dir + '/mock_composite_sed_images'
 

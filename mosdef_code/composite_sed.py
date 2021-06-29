@@ -5,19 +5,17 @@
 
 import sys
 import os
-import string
 import numpy as np
 import pandas as pd
 from astropy.io import ascii
-from astropy.io import fits
 from read_data import mosdef_df
 from mosdef_obj_data_funcs import read_sed, read_mock_sed
 from cross_correlate import get_cross_cor
 import matplotlib.pyplot as plt
 from filter_response import lines, overview, get_index, get_filter_response
 from scipy import interpolate
+from mosdef_obj_data_funcs import read_composite_sed
 import initialize_mosdef_dirs as imd
-import time
 
 
 def get_all_composite_seds(num_clusters, run_filters=True):
@@ -179,6 +177,10 @@ def get_composite_sed(groupID, run_filters=True):
     composite_sed.to_csv(
         imd.composite_sed_csvs_dir + f'/{groupID}_sed.csv', index=False)
 
+    # Save the total SED
+    total_sed.to_csv(imd.total_sed_csvs_dir + f'/{groupID}_total_sed.csv', index=False)
+    
+
     # Copmosite filters already saved elsewhere
     return
 
@@ -292,7 +294,10 @@ def get_composite_filter(selected_points, wavelength_min, wavelength_max, compos
     return filt_response_df
 
 
-def vis_composite_sed(total_sed, composite_sed=0, composite_filters=0, groupID=-99, std_scatter=0, run_filters=True):
+def vis_composite_sed(total_sed, composite_sed=0, composite_filters=0, groupID=-99, std_scatter=0, run_filters=True, axis_obj='False'):
+    """
+    If you set an axis obj, it will overwrite the others, and make sure to set a groupID
+    """
     axisfont = 14
     ticksize = 12
     ticks = 8
@@ -300,21 +305,28 @@ def vis_composite_sed(total_sed, composite_sed=0, composite_filters=0, groupID=-
     legendfont = 14
     textfont = 16
 
+
+
+    if axis_obj == 'False':
+        if run_filters:
+            fig, axarr = plt.subplots(2, 1, figsize=(
+                8, 9), gridspec_kw={'height_ratios': [6, 1]})
+            ax_sed = axarr[0]
+            ax_filt = axarr[1]
+        else:
+            fig, ax_sed = plt.subplots(1, 1, figsize=(
+                8, 8))
+            axarr = [ax_sed]
+    else:
+        ax_sed = axis_obj
+        axarr = [ax_sed]
+        total_sed = ascii.read(imd.total_sed_csvs_dir + f'/{groupID}_total_sed.csv')
+        composite_sed = read_composite_sed(groupID)
+
+
     good_idx = get_good_idx(total_sed)
 
-    if run_filters:
-        fig, axarr = plt.subplots(2, 1, figsize=(
-            8, 9), gridspec_kw={'height_ratios': [6, 1]})
-        ax_sed = axarr[0]
-        ax_filt = axarr[1]
-    else:
-        fig, ax_sed = plt.subplots(1, 1, figsize=(
-            8, 8))
-        axarr = [ax_sed]
-
-    # Parse the scattter into 16th and 84th percetile arrays
-    scatter_16 = [i for i, j in std_scatter]
-    scatter_84 = [j for i, j in std_scatter]
+    
 
     plt.set_cmap('plasma')  # coolwarm
     ax_sed.scatter(total_sed[good_idx]['rest_wavelength'], total_sed[good_idx]
@@ -323,10 +335,14 @@ def vis_composite_sed(total_sed, composite_sed=0, composite_filters=0, groupID=-
     ax_sed.errorbar(composite_sed['rest_wavelength'], composite_sed['f_lambda'],
                     yerr=[composite_sed['err_f_lambda_d'], composite_sed['err_f_lambda_u']], ls='', marker='o', markersize=4, color='black', zorder=2)
 
-    ax_sed.plot(composite_sed['rest_wavelength'], scatter_16,
-                ls='-', marker='o', markersize=2, color='dimgrey', alpha=0.9, zorder=3)
-    ax_sed.plot(composite_sed['rest_wavelength'], scatter_84,
-                ls='-', marker='o', markersize=2, color='dimgrey', alpha=0.9, zorder=3)
+    # Parse the scattter into 16th and 84th percetile arrays
+    if axis_obj == 'False':
+        scatter_16 = [i for i, j in std_scatter]
+        scatter_84 = [j for i, j in std_scatter]
+        ax_sed.plot(composite_sed['rest_wavelength'], scatter_16,
+                    ls='-', marker='o', markersize=2, color='dimgrey', alpha=0.9, zorder=3)
+        ax_sed.plot(composite_sed['rest_wavelength'], scatter_84,
+                    ls='-', marker='o', markersize=2, color='dimgrey', alpha=0.9, zorder=3)
 
     if run_filters:
         for i in range(len(composite_filters)):
@@ -348,9 +364,12 @@ def vis_composite_sed(total_sed, composite_sed=0, composite_filters=0, groupID=-
     else:
         filt_dir = 'composite_seds_nofilt/'
 
-    plt.tight_layout()
-    fig.savefig(imd.composite_sed_images_dir + f'/{filt_dir}{groupID}_sed.pdf')
-    plt.close()
+    if axis_obj == 'False':
+        plt.tight_layout()
+        fig.savefig(imd.composite_sed_images_dir + f'/{filt_dir}{groupID}_sed.pdf')
+        plt.close()
+    else:
+        return
 
 
 def vis_composite_filt(selected_points, filt_wavelength, filt_values, interp_filt_values, composite_sed_wave, composite_sed_point, composite_sed_err_d, composite_sed_err_u, groupID):

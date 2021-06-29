@@ -9,6 +9,7 @@ from plot_mass_sfr import plot_mass_sfr_cluster, read_sfr_df, get_all_sfrs_masse
 from uvj_clusters import plot_full_uvj, plot_uvj_cluster
 from cluster_stats import plot_similarity_cluster
 from stack_spectra import plot_spec
+from composite_sed import vis_composite_sed
 
 def generate_cluster_plots(groupID, emission_df, all_sfrs_res, zobjs, similarity_matrix, overview=False):
     '''
@@ -33,7 +34,9 @@ def generate_cluster_plots(groupID, emission_df, all_sfrs_res, zobjs, similarity
         ax_bpt = fig.add_axes([0.76, 0.63, 0.20, 0.30])
         ax_mass_sfr = fig.add_axes([0.52, 0.09, 0.20, 0.30])
         ax_uvj = fig.add_axes([0.76, 0.09, 0.20, 0.30])
+        vis_composite_sed(0, groupID=groupID, run_filters=False, axis_obj=ax_sed)
         plot_spec(groupID, 'cluster_norm', thresh=0.1, axis_obj = ax_spectrum)
+        
         
     
     else:
@@ -78,4 +81,4 @@ def generate_all_cluster_plots(n_clusters, overview=False):
     plot_full_uvj(n_clusters)
 
 
-generate_all_cluster_plots(1, overview=True)
+# generate_all_cluster_plots(1, overview=True)
