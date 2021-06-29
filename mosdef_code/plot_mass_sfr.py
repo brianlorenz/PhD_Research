@@ -226,7 +226,7 @@ def read_sfr_df():
 
     """
 
-    sfr_df = read_file('/Users/brianlorenz/mosdef/mosdef_sfrs_latest.fits')
+    sfr_df = read_file(imd.loc_sfrs_latest)
     sfr_df['FIELD_STR'] = [sfr_df.iloc[i]['FIELD'].decode(
         "utf-8").rstrip() for i in range(len(sfr_df))]
 

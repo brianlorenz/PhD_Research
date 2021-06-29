@@ -47,7 +47,7 @@ def find_dissimilar_clusters(n_clusters, thresh=0.7, verb=False):
 
     dissimilar_clusters = []
     for groupID in range(n_clusters):
-        similarity_composite_location = imd.cluster_dir + f'/cluster_stats/similarities/similarities_composite/{groupID}_similarity_composite.csv'
+        similarity_composite_location = imd.cluster_similarity_composite_dir + f'/{groupID}_similarity_composite.csv'
         similarity_composite_df = ascii.read(
             similarity_composite_location).to_pandas()
         sim_values = similarity_composite_df['similarity_composite']

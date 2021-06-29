@@ -28,10 +28,10 @@ def read_file(data_file):
     return df
 
 
-mosdef_df = read_file(imd.home_dir + '/mosdef/mosdef_0d_latest.fits')
+mosdef_df = read_file(imd.loc_mosdef0d)
 # The 'FIELD' column is in bytes format - here we convert to a string
 mosdef_df['FIELD_STR'] = [mosdef_df.iloc[i]['FIELD'].decode(
     "utf-8").rstrip() for i in range(len(mosdef_df))]
-linemeas_df = read_file(imd.home_dir + '/mosdef/linemeas_latest.fits')
-sfrs_df = read_file(imd.home_dir + '/mosdef/mosdef_sfrs_latest.fits')
-agnflag_df = read_file(imd.home_dir + '/mosdef/agnflag_latest.fits')
+linemeas_df = read_file(imd.mosdef_dir + '/Mosdef_cats/linemeas_latest.fits')
+sfrs_df = read_file(imd.loc_sfrs_latest)
+agnflag_df = read_file(imd.mosdef_dir + '/Mosdef_cats/agnflag_latest.fits')

@@ -87,10 +87,10 @@ def observe_uvj(sed, composite=True):
     print(U_flux_nu, V_flux_nu, J_flux_nu)
 
     U_V = -2.5 * np.log10(U_flux_nu / V_flux_nu)
-    if U_flux_nu == -99 or V_flux_nu == -99:
+    if U_flux_nu < 0 or V_flux_nu < 0:
         U_V = -99
     V_J = -2.5 * np.log10(V_flux_nu / J_flux_nu)
-    if V_flux_nu == -99 or J_flux_nu == -99:
+    if V_flux_nu < 0 or J_flux_nu < 0:
         V_J = -99
 
     uvj_tuple = (U_V, V_J)
@@ -272,12 +272,9 @@ def plot_full_uvj(n_clusters):
     composite_uvj_df = ascii.read(
         imd.composite_uvj_dir + '/composite_uvjs.csv').to_pandas()
 
-    axisfont = 14
     ticksize = 12
     ticks = 8
-    titlefont = 24
     legendfont = 14
-    textfont = 16
 
     fig, ax = plt.subplots(figsize=(8, 7))
 
