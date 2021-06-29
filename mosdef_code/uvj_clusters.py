@@ -320,7 +320,7 @@ def setup_uvj_plot(ax, galaxy_uvj_df, composite_uvj_df, axis_obj='False'):
     if axis_obj == 'False':
         # Plot all composites as purple X
         ax.plot(composite_uvj_df['V_J'], composite_uvj_df['U_V'],
-                ls='', marker='x', markersize=5, markeredgewidth=2, color='black', label='All Composite SEDs')
+                ls='', marker='x', markersize=5, markeredgewidth=2, color='purple', label='All Composite SEDs')
 
     # UVJ diagram lines
     ax.plot((-100, 0.69), (1.3, 1.3), color='black')

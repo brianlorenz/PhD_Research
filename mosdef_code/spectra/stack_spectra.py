@@ -292,7 +292,7 @@ def stack_spectra(groupID, norm_method, re_observe=False, mask_negatives=False, 
     return
 
 
-def plot_spec(groupID, norm_method, mask_negatives=False, thresh=0.1, axis_group=-1, save_name=''):
+def plot_spec(groupID, norm_method, mask_negatives=False, thresh=0.1, axis_group=-1, save_name='', axis_obj = 'False'):
     """Plots the spectrum
 
     Parameters:
@@ -312,16 +312,17 @@ def plot_spec(groupID, norm_method, mask_negatives=False, thresh=0.1, axis_group
     else:
         total_spec_df = read_composite_spectrum(groupID, norm_method)
 
-    fig = plt.figure(figsize=(8, 8))
-    ax = fig.add_axes([0.09, 0.35, 0.88, 0.60])
-    ax_Ha = fig.add_axes([0.69, 0.70, 0.25, 0.21])
-    ax_contribute = fig.add_axes([0.09, 0.08, 0.88, 0.22])
+    if axis_obj == 'False':
+        fig = plt.figure(figsize=(8, 8))
+        ax = fig.add_axes([0.09, 0.35, 0.88, 0.60])
+        ax_Ha = fig.add_axes([0.69, 0.70, 0.25, 0.21])
+        ax_contribute = fig.add_axes([0.09, 0.08, 0.88, 0.22])
 
-    zoom_box_color = 'mediumseagreen'
-    ax_Ha.spines['bottom'].set_color(zoom_box_color)
-    ax_Ha.spines['top'].set_color(zoom_box_color)
-    ax_Ha.spines['right'].set_color(zoom_box_color)
-    ax_Ha.spines['left'].set_color(zoom_box_color)
+        zoom_box_color = 'mediumseagreen'
+        ax_Ha.spines['bottom'].set_color(zoom_box_color)
+        ax_Ha.spines['top'].set_color(zoom_box_color)
+        ax_Ha.spines['right'].set_color(zoom_box_color)
+        ax_Ha.spines['left'].set_color(zoom_box_color)
 
     spectrum = total_spec_df['f_lambda']
     continuum = total_spec_df['cont_f_lambda']
@@ -336,16 +337,32 @@ def plot_spec(groupID, norm_method, mask_negatives=False, thresh=0.1, axis_group
     too_low_gals, plot_cut, not_plot_cut, n_gals_in_group, cutoff, cutoff_low, cutoff_high = get_too_low_gals(
         groupID, norm_method, save_name, thresh, axis_group=axis_group)
 
+    if axis_obj != 'False':
+        ax = axis_obj
+
     ax.plot(wavelength, spectrum, color='black', lw=1, label='Spectrum')
     ax.fill_between(wavelength, spectrum - err_spectrum, spectrum + err_spectrum,
                     color='gray', alpha=0.5)
-    ax_Ha.fill_between(wavelength, spectrum - err_spectrum, spectrum + err_spectrum,
-                       color='gray', alpha=0.5)
     ax.plot(wavelength[too_low_gals][plot_cut], spectrum[too_low_gals][plot_cut],
             color='red', lw=1, label=f'Too Few Galaxies ({cutoff})')
     ax.plot(wavelength[too_low_gals][not_plot_cut], spectrum[too_low_gals][not_plot_cut],
             color='red', lw=1)
     ax.plot(wave_bin, spec_bin, color='orange', lw=1, label='Median Binned')
+    ax.plot(wavelength, continuum, color='blue', lw=1, label='continuum')
+    if mask_negatives:
+        ax.set_ylim(-1 * 10**-20, 1.01 * np.max(spectrum))
+    else:
+        ax.set_ylim(-1 * 10**-18, 1.01 * np.max(spectrum))
+    ax.legend(loc=2, fontsize=axisfont - 3)
+    ax.set_ylabel('F$_\lambda$', fontsize=axisfont)
+    ax.tick_params(labelsize=ticksize, size=ticks)
+
+    if axis_obj != 'False':
+        return
+
+
+    ax_Ha.fill_between(wavelength, spectrum - err_spectrum, spectrum + err_spectrum,
+                       color='gray', alpha=0.5)
     ax_Ha.plot(wavelength, spectrum, color='black', lw=1)
     ax_contribute.plot(wavelength, n_galaxies, color='black',
                        lw=1, label='Number of Galaxies')
@@ -354,14 +371,11 @@ def plot_spec(groupID, norm_method, mask_negatives=False, thresh=0.1, axis_group
     ax_contribute.plot(wavelength[too_low_gals][not_plot_cut], n_galaxies[too_low_gals][not_plot_cut],
                        color='red', lw=1)
     # ax_contribute.plot(wavelength, norm_value_summed, color='orange',
-    #                    lw = 1, label = 'Normalized Value of Galaxies')
-    ax.plot(wavelength, continuum, color='blue', lw=1, label='continuum')
+    #                    lw = 1, label = 'Normalized Value of Galaxies'
     ax_Ha.plot(wavelength, continuum, color='blue', lw=1)
+    
 
-    if mask_negatives:
-        ax.set_ylim(-1 * 10**-20, 1.01 * np.max(spectrum))
-    else:
-        ax.set_ylim(-1 * 10**-18, 1.01 * np.max(spectrum))
+    
     y_Ha_lim_max = np.max(spectrum[np.logical_and(
         wavelength > 6570, wavelength < 6800)])
     if mask_negatives:
@@ -372,7 +386,7 @@ def plot_spec(groupID, norm_method, mask_negatives=False, thresh=0.1, axis_group
             wavelength > 6570, wavelength < 6800)])
     ax_Ha.set_ylim(y_Ha_lim_min, y_Ha_lim_max * 1.1)
     ax_Ha.set_xlim(6500, 6800)
-    ax.legend(loc=2, fontsize=axisfont - 3)
+    
     ax_contribute.legend(fontsize=axisfont - 3)
 
     rect = patches.Rectangle((6500, y_Ha_lim_min), 300, (y_Ha_lim_max -
@@ -382,8 +396,7 @@ def plot_spec(groupID, norm_method, mask_negatives=False, thresh=0.1, axis_group
     # ax.set_xlim()
     ax_contribute.set_xlabel('Wavelength ($\\rm{\AA}$)', fontsize=axisfont)
     ax_contribute.set_ylabel('N', fontsize=axisfont)
-    ax.set_ylabel('F$_\lambda$', fontsize=axisfont)
-    ax.tick_params(labelsize=ticksize, size=ticks)
+    
     ax_contribute.tick_params(labelsize=ticksize, size=ticks)
     if axis_group > -1:
         ax.text

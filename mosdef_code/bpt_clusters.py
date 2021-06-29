@@ -144,10 +144,9 @@ def plot_bpt(emission_df, zobjs, savename='None', axis_obj='False', composite_bp
         ax.set_ylabel('log(O[III] 5007 / H$\\beta$)', fontsize=axisfont)
         ax.tick_params(labelsize=ticksize, size=ticks)
 
-    if savename != 'None':
-        fig.savefig(savename)
+        if savename != 'None':
+            fig.savefig(savename)
 
-    plt.close('all')
 
 
 def plot_all_bpt_clusters(n_clusters):
@@ -165,7 +164,7 @@ def plot_all_bpt_clusters(n_clusters):
         
 
 
-def plot_bpt_cluster(emission_df, groupID):
+def plot_bpt_cluster(emission_df, groupID, axis_obj = 'False'):
     """Plots the bpt diagram for one cluster, given emission df
     
     Parameters:
@@ -177,4 +176,4 @@ def plot_bpt_cluster(emission_df, groupID):
     fields_ids = [(obj[0], int(obj[1])) for obj in fields_ids]
     # Location to save the file
     savename = imd.cluster_bpt_plots_dir + f'/{groupID}_BPT.pdf'
-    plot_bpt(emission_df, fields_ids, savename=savename)
+    plot_bpt(emission_df, fields_ids, savename=savename, axis_obj=axis_obj)

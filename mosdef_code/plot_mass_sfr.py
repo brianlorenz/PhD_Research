@@ -145,8 +145,8 @@ def plot_mass_sfr(zobjs, savename='None', axis_obj='False', composite_sfr_mass_p
         ax.set_ylabel('log(SFR) (M_sun/yr)', fontsize=axisfont)
         ax.tick_params(labelsize=ticksize, size=ticks)
 
-    if savename != 'None':
-        fig.savefig(savename)
+        if savename != 'None':
+            fig.savefig(savename)
 
     plt.close('all')
 

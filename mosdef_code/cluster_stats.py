@@ -53,11 +53,13 @@ def plot_similarity_cluster(groupID, zobjs, similarity_matrix, axis_obj='False')
     ax.hist(similarities, bins=bins, color='black')
 
     ax.set_xlim(-0.05, 1.05)
-    ax.set_xlabel('Similarity', fontsize=axisfont)
-    ax.set_ylabel('Number of pairs', fontsize=axisfont)
-    ax.tick_params(labelsize=ticksize, size=ticks)
+    
+    
     
     if axis_obj == 'False':
+        ax.set_xlabel('Similarity', fontsize=axisfont)
+        ax.set_ylabel('Number of pairs', fontsize=axisfont)
+        ax.tick_params(labelsize=ticksize, size=ticks)
         fig.savefig(imd.cluster_similarity_plots_dir + f'/{groupID}_similarity.pdf')
         plt.close()
 

@@ -41,8 +41,7 @@ cluster_sfr_plots_dir = cluster_plot_dir + '/mass_sfr'
 cluster_uvj_plots_dir = cluster_plot_dir + '/uvj_diagrams'
 cluster_similarity_plots_dir = cluster_plot_dir + '/similarities'
 cluster_similarity_composite_dir = cluster_similarity_plots_dir + '/similarity_to_composite'
-
-# Overview figures
+cluster_overview_dir = cluster_plot_dir + '/overviews'
 
 
 
@@ -126,4 +125,4 @@ def check_and_make_dir(file_path):
     if not os.path.exists(file_path):
         os.mkdir(file_path)
 
-setup_cluster_dirs(all_dirs)
+# setup_cluster_dirs(all_dirs)
