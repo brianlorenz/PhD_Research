@@ -207,7 +207,7 @@ def build_model(object_redshift=0.0, fixed_metallicity=None, add_duste=True,
 
     # Set to fit at median redshift
     model_params["zred"]['isfree'] = False
-    model_params["zred"]['init'] = find_median_redshift(composite_group)
+    model_params["zred"]['init'] = find_median_redshift(groupID)
 
     if add_duste:
         # Add dust emission (with fixed dust SED parameters)

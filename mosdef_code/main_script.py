@@ -4,6 +4,7 @@ import sys
 import os
 import string
 import numpy as np
+import initialize_mosdef_dirs as imd
 
 from composite_sed import get_all_composite_seds
 from stack_spectra import stack_all_spectra
@@ -12,6 +13,7 @@ from generate_cluster_plots import generate_all_cluster_plots
 from interpolate import gen_all_mock_composites
 from uvj_clusters import observe_all_uvj
 from convert_filter_to_sedpy import convert_all_folders_to_sedpy
+from convert_flux_to_maggies import convert_folder_to_maggies
 
 '''Starting point: One folder ('cluster_folder') that contains: 
 -folders labeled '0', '1', ..., 'N' where N is the number of clusters-1. These will be the cluster "groups"
@@ -40,7 +42,8 @@ n_clusters = 29
 # generate_all_cluster_plots(n_clusters)
 
 # Prepare for prospector:
-convert_all_folders_to_sedpy(n_clusters)
+# convert_all_folders_to_sedpy(n_clusters)
+convert_folder_to_maggies(imd.composite_sed_csvs_dir)
 
 
 

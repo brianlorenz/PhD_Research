@@ -24,7 +24,6 @@ def convert_flux_to_maggies(target_file):
     """
 
     data = ascii.read(target_file).to_pandas()
-    c = 3 * 10**8
     f_nu = data['f_lambda'] * (data['rest_wavelength']**2) * 3.34 * 10**(-19)
     f_jy = f_nu * (10**23)
     maggies = f_jy / 3631
@@ -37,6 +36,22 @@ def convert_flux_to_maggies(target_file):
     data['err_f_maggies_d'] = errd
     data['err_f_maggies_avg'] = (erru + errd) / 2
     data.to_csv(target_file, index=False)
+    return
+
+
+def convert_folder_to_maggies(target_folder):
+    """Adds a new column to all files in a folder that converts the flux to maggies, the unit needed by Prospector
+
+    Parameters:
+    target_folder (str) - location of folder containing composite SED csvs
+
+    """
+
+    # Figure out which files  in the folder are csv filters:
+    data_files = [file for file in os.listdir(target_folder) if '.csv' in file]
+
+    for data_file in data_files:
+        convert_flux_to_maggies(target_folder + '/' + data_file)
     return
 
 
@@ -90,17 +105,4 @@ def prospector_maggies_to_flux_spec(spec_wave, spec):
     return f_lambda_spec
 
 
-def convert_folder_to_maggies(target_folder):
-    """Adds a new column to all files in a folder that converts the flux to maggies, the unit needed by Prospector
 
-    Parameters:
-    target_folder (str) - location of folder containing composite SED csvs
-
-    """
-
-    # Figure out which files  in the folder are csv filters:
-    data_files = [file for file in os.listdir(target_folder) if '.csv' in file]
-
-    for data_file in data_files:
-        convert_flux_to_maggies(target_folder + data_file)
-    return
