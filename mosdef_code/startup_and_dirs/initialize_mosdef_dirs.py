@@ -26,6 +26,7 @@ mock_composite_sed_images_dir = composite_seds_dir + '/mock_composite_sed_images
 composite_filters_dir = cluster_dir + '/composite_filters'
 composite_filter_csvs_dir = composite_filters_dir + '/composite_filter_csvs'
 composite_filter_images_dir = composite_filters_dir + '/composite_filter_images'
+composite_filter_sedpy_dir = composite_filters_dir + '/sedpy_par_files'
 
 # Composite spectra
 composite_spec_dir = cluster_dir + '/composite_spectra'
@@ -68,7 +69,7 @@ mosdef_filter_translate = home_dir + '/code/mosdef_code/filters/catalog_filters/
 mosdef_filter_overview = home_dir + '/code/mosdef_code/filters/catalog_filters/overview'
 
 
-all_dirs = [cluster_plot_dir, mock_composite_sed_images_dir, mock_composite_sed_csvs_dir, cluster_similarity_plots_dir, cluster_similarity_composite_dir, composite_uvj_dir, uvj_dir, cluster_plot_dir, cluster_uvj_plots_dir, cluster_bpt_plots_dir, cluster_sfr_plots_dir, emission_fit_dir, emission_fit_csvs_dir, emission_fit_images_dir, composite_spec_dir, composite_seds_dir, composite_filters_dir, composite_filter_images_dir, composite_filter_csvs_dir, composite_sed_images_dir, composite_sed_csvs_dir, cluster_dir, spectra_dir, sed_csvs_dir, norm_sed_csvs_dir, mock_sed_csvs_dir, composite_seds_dir]
+all_dirs = [composite_filter_sedpy_dir, cluster_plot_dir, mock_composite_sed_images_dir, mock_composite_sed_csvs_dir, cluster_similarity_plots_dir, cluster_similarity_composite_dir, composite_uvj_dir, uvj_dir, cluster_plot_dir, cluster_uvj_plots_dir, cluster_bpt_plots_dir, cluster_sfr_plots_dir, emission_fit_dir, emission_fit_csvs_dir, emission_fit_images_dir, composite_spec_dir, composite_seds_dir, composite_filters_dir, composite_filter_images_dir, composite_filter_csvs_dir, composite_sed_images_dir, composite_sed_csvs_dir, cluster_dir, spectra_dir, sed_csvs_dir, norm_sed_csvs_dir, mock_sed_csvs_dir, composite_seds_dir]
 
 def setup_cluster_dirs(all_dirs):
     for dir in all_dirs:

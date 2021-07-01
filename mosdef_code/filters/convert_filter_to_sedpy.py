@@ -5,6 +5,7 @@ import sys
 import os
 import string
 import numpy as np
+from numpy.lib.npyio import save
 import pandas as pd
 from astropy.io import ascii
 from astropy.io import fits
@@ -19,17 +20,17 @@ import initialize_mosdef_dirs as imd
 # '/Users/brianlorenz/mosdef/composite_sed_csvs/composite_filter_csvs/0_filter_csvs/'
 
 
-def find_median_redshift(composite_group):
+def find_median_redshift(groupID):
     """Finds the median redshift within a composite sed group
 
     Parameters:
-    composite_group (int): number of the group to convert, used to find median z
+    groupID (int): number of the group to convert, used to find median z
 
     Returns:
     median_z (float): median redshift in that group
 
     """
-    files_list = os.listdir(f'/Users/brianlorenz/mosdef/Clustering/{composite_group}')
+    files_list = os.listdir(imd.cluster_dir + f'/{groupID}')
     names_list = [file[:-9] for file in files_list]
     z_list = []
     for name in names_list:
@@ -74,11 +75,12 @@ def de_median_redshift(wavelength, median_z):
     return wavelength_red
 
 
-def convert_filters_to_sedpy(target_folder):
+def convert_filters_to_sedpy(target_folder, groupID):
     """Converts every filter csv in the target folder into a style readable by sedpy
 
     Parameters:
-    target_folder (str) - location of folder containing filter points
+    target_folder (str): location of folder containing filter points
+    groupID (int): Id of the group corresponding to that folder
 
     """
 
@@ -87,7 +89,7 @@ def convert_filters_to_sedpy(target_folder):
 
     # Loop through files one at a time
     for file in filt_files:
-        print(f'Converting {file}')
+        print(f'    Converting {file}')
         # Read the wavelength/transmisison data
         data = ascii.read(target_folder + file).to_pandas()
         # Find the range that we care about, only the nonzero values
@@ -106,22 +108,30 @@ def convert_filters_to_sedpy(target_folder):
         new_name = append_zeros_to_filtname(file)
 
         data = data.iloc[nonzero_points]
-        data.to_csv(target_folder + new_name.replace('.csv', '.par'),
-                    index=False, sep=' ', header=False)
+        # This would save it as-is, but we have determined that it needs to be shifted to the median redshift of the group
+        # data.to_csv(target_folder + new_name.replace('.csv', '.par'),
+        #             index=False, sep=' ', header=False)
 
         # Redshift to the medain redshift of the group
-        group_num = int(target_folder[67:-13])
-        median_z = find_median_redshift(group_num)
+        median_z = find_median_redshift(groupID)
         data['rest_wavelength'] = to_median_redshift(
             data['rest_wavelength'], median_z)
-        data.to_csv(target_folder + new_name.replace('.csv', '_red.par'),
+        save_folder = imd.composite_filter_sedpy_dir + f'/{groupID}_sedpy_pars'
+        imd.check_and_make_dir(save_folder)
+        data.to_csv(save_folder + '/' + new_name.replace('.csv', '_red.par'),
                     index=False, sep=' ', header=False)
 
 
-def convert_multiple_folders():
-    for i in range(0, 29):
-        target_folder = f'/Users/brianlorenz/mosdef/composite_sed_csvs/composite_filter_csvs/{i}_filter_csvs/'
-        convert_filters_to_sedpy(target_folder)
+def convert_all_folders_to_sedpy(n_clusters):
+    """Runs the above convert_folder_to_sedpy script on multiple folders
+
+    Parameters:
+        n_clusters(int): Number of clusters
+    """
+    for groupID in range(n_clusters):
+        target_folder = imd.composite_filter_csvs_dir + f'/{groupID}_filter_csvs/'
+        print(f'Converting {target_folder} to sedpy format, for group {groupID}')
+        convert_filters_to_sedpy(target_folder, groupID)
 
 
 def get_filt_list(target_folder):

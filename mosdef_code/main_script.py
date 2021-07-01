@@ -11,6 +11,7 @@ from fit_emission import fit_all_emission
 from generate_cluster_plots import generate_all_cluster_plots
 from interpolate import gen_all_mock_composites
 from uvj_clusters import observe_all_uvj
+from convert_filter_to_sedpy import convert_all_folders_to_sedpy
 
 '''Starting point: One folder ('cluster_folder') that contains: 
 -folders labeled '0', '1', ..., 'N' where N is the number of clusters-1. These will be the cluster "groups"
@@ -21,8 +22,10 @@ from uvj_clusters import observe_all_uvj
 
 # Set the total number of clusters
 n_clusters = 29
+
+# # Begin running all the functions
 # print('Generating composite seds...')
-get_all_composite_seds(n_clusters, run_filters=True)
+# get_all_composite_seds(n_clusters, run_filters=True)
 # print('Generating composite spectra...')
 # stack_all_spectra(n_clusters, 'cluster_norm')
 # print('Fitting emission lines...')
@@ -35,5 +38,9 @@ get_all_composite_seds(n_clusters, run_filters=True)
 # observe_all_uvj(n_clusters, individual_gals=False, composite_uvjs=True)
  
 # generate_all_cluster_plots(n_clusters)
+
+# Prepare for prospector:
+convert_all_folders_to_sedpy(n_clusters)
+
 
 
