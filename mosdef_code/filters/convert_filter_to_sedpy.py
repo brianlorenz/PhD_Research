@@ -1,18 +1,10 @@
 # run convert_filter_to_sedpy.py
 # '/Users/brianlorenz/mosdef/composite_sed_csvs/composite_filter_csvs/0_filter_csvs/'
 
-import sys
 import os
-import string
 import numpy as np
-from numpy.lib.npyio import save
-import pandas as pd
 from astropy.io import ascii
-from astropy.io import fits
-from read_data import mosdef_df
-from mosdef_obj_data_funcs import get_mosdef_obj, read_sed
-import matplotlib.pyplot as plt
-from sedpy import observate
+import pandas as pd
 import initialize_mosdef_dirs as imd
 
 
@@ -20,43 +12,38 @@ import initialize_mosdef_dirs as imd
 # '/Users/brianlorenz/mosdef/composite_sed_csvs/composite_filter_csvs/0_filter_csvs/'
 
 
-def find_median_redshift(groupID):
+def find_median_redshifts(n_clusters):
     """Finds the median redshift within a composite sed group
 
     Parameters:
-    groupID (int): number of the group to convert, used to find median z
+    n_clusters (int): total number of clusters
 
     Returns:
     median_z (float): median redshift in that group
 
     """
-    files_list = os.listdir(imd.cluster_dir + f'/{groupID}')
-    names_list = [file[:-9] for file in files_list]
-    z_list = []
-    for name in names_list:
-        try:
-            z = ascii.read(f'/Users/brianlorenz/mosdef/sed_csvs/{name}_sed.csv').to_pandas()['Z_MOSFIRE'].iloc[0]
-        except FileNotFoundError:
-            z = ascii.read(f'/Users/brianlorenz/mosdef/sed_csvs/{name}_3DHST_sed.csv').to_pandas()['Z_MOSFIRE'].iloc[0]
-        z_list.append(z)
-    median_z = np.median(z_list)
-    return median_z
+    median_zs = []
+    groupIDs = []
+    for groupID in range(n_clusters):
+        files_list = os.listdir(imd.cluster_dir + f'/{groupID}')
+        names_list = [file[:-9] for file in files_list]
+        z_list = []
+        for name in names_list:
+            try:
+                z = ascii.read(
+                    f'/Users/brianlorenz/mosdef/sed_csvs/{name}_sed.csv').to_pandas()['Z_MOSFIRE'].iloc[0]
+            except FileNotFoundError:
+                z = ascii.read(
+                    f'/Users/brianlorenz/mosdef/sed_csvs/{name}_3DHST_sed.csv').to_pandas()['Z_MOSFIRE'].iloc[0]
+            z_list.append(z)
+        median_z = np.median(z_list)
+        median_zs.append(median_z)
+        groupIDs.append(groupID)
 
-
-def to_median_redshift(wavelength, median_z):
-    """Converts wavelength array to the median redshift of the sample
-
-    Parameters:
-    wavelength (array): wavelength values to convert
-    median_z (int): redshift to change the wavelength by
-
-    Returns:
-    wavelength_red (array): redshifted wavelength
-
-    """
-
-    wavelength_red = wavelength * (1 + median_z)
-    return wavelength_red
+    median_z_df = pd.DataFrame(zip(groupIDs, median_zs), columns=[
+                               'groupID', 'median_z'])
+    median_z_df.to_csv(imd.composite_seds_dir + '/median_zs.csv', index=False)
+    return
 
 
 def de_median_redshift(wavelength, median_z):
@@ -129,23 +116,11 @@ def convert_all_folders_to_sedpy(n_clusters):
         n_clusters(int): Number of clusters
     """
     for groupID in range(n_clusters):
-        target_folder = imd.composite_filter_csvs_dir + f'/{groupID}_filter_csvs/'
-        print(f'Converting {target_folder} to sedpy format, for group {groupID}')
+        target_folder = imd.composite_filter_csvs_dir + \
+            f'/{groupID}_filter_csvs/'
+        print(
+            f'Converting {target_folder} to sedpy format, for group {groupID}')
         convert_filters_to_sedpy(target_folder, groupID)
-
-
-def get_filt_list(target_folder):
-    """Uses sedpy to read in a list of filters when given a folder that contains them
-
-    Parameters:
-    target_folder (str) - location of folder containing sedpy filter .par files
-
-    """
-    filt_files = [file.replace('.par', '') for file in os.listdir(
-        target_folder) if '_red.par' in file]
-    filt_files.sort()
-    filt_list = observate.load_filters(filt_files, directory=target_folder)
-    return filt_list
 
 
 def append_zeros_to_filtname(filtname):
