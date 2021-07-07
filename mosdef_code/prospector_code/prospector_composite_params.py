@@ -7,8 +7,7 @@ from prospect.sources import CSPSpecBasis, FastStepBasis
 from prospect import prospect_args
 from prospect.fitting import fit_model
 from prospect.io import write_results as writer
-from sedpy.observate import load_filters
-import sedpy
+from sedpy import observate
 from astropy.io import fits
 from scipy import signal
 import dynesty
@@ -22,17 +21,28 @@ from prospect.likelihood import NoiseModel
 from prospect.likelihood.kernels import Uncorrelated
 import glob
 from astropy.cosmology import z_at_value
-from convert_filter_to_sedpy import get_filt_list, find_median_redshift, to_median_redshift, de_median_redshift
 from astropy.io import ascii
 from astropy.io import fits
 import initialize_mosdef_dirs as imd
 
-
-### SET THE GROUP HERE ###
-groupID = '1'
+### How to pass gorupID????
 
 
-# %run prospector_dynesty.py --param_file='prospector_composite_params.py' --outfile='composite_group1'
+# Directory locations on savio
+composite_sed_csvs_dir = '/global/scratch/brianlorenz/composite_sed_csvs'
+composite_filter_sedpy_dir = '/global/scratch/brianlorenz/sedpy_par_files'
+median_zs_file = '/global/scratch/brianlorenz/median_zs.csv'
+
+# Directory locations on home
+# composite_sed_csvs_dir = imd.composite_sed_csvs_dir
+# composite_filter_sedpy_dir = imd.composite_filter_sedpy_dir
+# median_zs_file = imd.composite_seds_dir + '/median_zs.csv'
+
+
+# Must set the groupID as part of the command, immediately after calling the script
+# groupID = sys.argv[1]
+
+# %run prospector_dynesty.py 1 --param_file='prospector_composite_params.py' --outfile='composite_group1'
 
 # set up cosmology
 cosmo = FlatLambdaCDM(H0=70, Om0=.3)
@@ -68,6 +78,7 @@ run_params = {'verbose': True,
               'add_duste': True,
               # SPS parameters
               'zcontinuous': 1,
+              'groupID': -1,
               }
 
 # --------------
@@ -75,34 +86,15 @@ run_params = {'verbose': True,
 # --------------
 
 
-def build_obs(groupID=groupID, **kwargs):
-    """Load an SDSS spectrum.
-
-
-    groupID (str): Number of the composite SED group
-
-             Load photometry from an ascii file.  Assumes the following columns:
-    `objid`, `filterset`, [`mag0`,....,`magN`] where N >= 11.  The User should
-    modify this function (including adding keyword arguments) to read in their
-    particular data format and put it in the required dictionary.
-
-    :param objid:
-        The object id for the row of the photomotery file to use.  Integer.
-        Requires that there be an `objid` column in the ascii file.
-
-    :param phottable:
-        Name (and path) of the ascii file containing the photometry.
-
-    :param luminosity_distance: (optional)
-        The Johnson 2013 data are given as AB absolute magnitudes.  They can be
-        turned into apparent magnitudes by supplying a luminosity distance.
-
+def build_obs(**kwargs):
+    """Load the obs dict
+    
     :returns obs:
         Dictionary of observational data.
     """
-
-    sed_file = imd.composite_sed_csvs_dir + f'/{groupID}_sed.csv'
-    filt_folder = imd.composite_filter_sedpy_dir + f'/{groupID}_sedpy_pars'
+    groupID = run_params['groupID']
+    sed_file = composite_sed_csvs_dir + f'/{groupID}_sed.csv'
+    filt_folder = composite_filter_sedpy_dir + f'/{groupID}_sedpy_pars'
 
     # test
     print(f'Loading object {groupID}')
@@ -110,7 +102,8 @@ def build_obs(groupID=groupID, **kwargs):
     # set up obs dict
     obs = {}
 
-    obs['z'] = find_median_redshift(groupID)
+    zs_df = ascii.read(median_zs_file).to_pandas()
+    obs['z'] = zs_df[zs_df['groupID']==groupID]['median_z'].iloc[0]
 
     # load photometric filters
     obs["filters"] = get_filt_list(filt_folder)
@@ -164,6 +157,8 @@ def build_model(object_redshift=0.0, fixed_metallicity=None, add_duste=True,
     from prospect.models.templates import TemplateLibrary
     from prospect.models import priors, sedmodel
 
+    groupID = run_params['groupID']
+
     # --- Get a basic delay-tau SFH parameter set. ---
     # This has 5 free parameters:
     #   "mass", "logzsol", "dust2", "tage", "tau"
@@ -207,7 +202,10 @@ def build_model(object_redshift=0.0, fixed_metallicity=None, add_duste=True,
 
     # Set to fit at median redshift
     model_params["zred"]['isfree'] = False
-    model_params["zred"]['init'] = find_median_redshift(groupID)
+
+    zs_df = ascii.read(median_zs_file).to_pandas()
+    median_z = zs_df[zs_df['groupID']==groupID]['median_z'].iloc[0]
+    model_params["zred"]['init'] = median_z
 
     if add_duste:
         # Add dust emission (with fixed dust SED parameters)
@@ -256,3 +254,33 @@ def build_all(**kwargs):
 def to_dust1(dust1_fraction=None, dust1=None, dust2=None, **extras):
     return dust1_fraction * dust2
 
+
+
+def to_median_redshift(wavelength, median_z):
+    """Converts wavelength array to the median redshift of the sample
+
+    Parameters:
+    wavelength (array): wavelength values to convert
+    median_z (int): redshift to change the wavelength by
+
+    Returns:
+    wavelength_red (array): redshifted wavelength
+
+    """
+
+    wavelength_red = wavelength * (1 + median_z)
+    return wavelength_red
+
+
+def get_filt_list(target_folder):
+    """Uses sedpy to read in a list of filters when given a folder that contains them
+
+    Parameters:
+    target_folder (str) - location of folder containing sedpy filter .par files
+
+    """
+    filt_files = [file.replace('.par', '') for file in os.listdir(
+        target_folder) if '_red.par' in file]
+    filt_files.sort()
+    filt_list = observate.load_filters(filt_files, directory=target_folder)
+    return filt_list
