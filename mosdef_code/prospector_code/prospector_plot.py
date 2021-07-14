@@ -10,13 +10,31 @@ from emission_measurements import read_emission_df
 import matplotlib.pyplot as plt
 import matplotlib.transforms as transforms
 from bpt_clusters import plot_bpt
-import initialize_mosdef_dirs as imd
 import cluster_data_funcs as cdf
 from emission_measurements import read_emission_df
 from prospector_composite_params import get_filt_list
 from convert_flux_to_maggies import prospector_maggies_to_flux, prospector_maggies_to_flux_spec
 from plot_mass_sfr import plot_mass_sfr_cluster, read_sfr_df, get_all_sfrs_masses
 from cosmology_calcs import luminosity_to_flux
+
+
+# Directory locations on savio
+savio_prospect_out_dir = '/global/scratch/brianlorenz/prospector_h5s'
+prospector_plot_dir = '/global/scratch/brianlorenz/prospector_plots'
+composite_sed_csvs_dir = '/global/scratch/brianlorenz/composite_sed_csvs'
+composite_filter_sedpy_dir = '/global/scratch/brianlorenz/sedpy_par_files'
+median_zs_file = '/global/scratch/brianlorenz/median_zs.csv'
+mosdef_elines_file = '/global/scratch/brianlorenz/mosdef_elines.txt'
+
+
+# Directory locations on home
+# import initialize_mosdef_dirs as imd
+# savio_prospect_out_dir = imd.prospector_h5_dir
+# composite_sed_csvs_dir = imd.composite_sed_csvs_dir
+# composite_filter_sedpy_dir = imd.composite_filter_sedpy_dir
+# median_zs_file = imd.composite_seds_dir + '/median_zs.csv'
+# prospector_plot_dir = imd.prospector_plot_dir
+# mosdef_elines_file = imd.loc_mosdef_elines
 
 def read_output(file, get_sps=True):
     """Reads the results and gets the sps model for the fit
@@ -37,7 +55,7 @@ def read_output(file, get_sps=True):
     print(f'Reading from {file}')
     res, obs, mod = reader.results_from(file)
 
-    filt_folder = imd.composite_filter_sedpy_dir + f'/{obs["groupID"]}_sedpy_pars'
+    filt_folder = composite_filter_sedpy_dir + f'/{obs["groupID"]}_sedpy_pars'
 
     print(f'Setting obs["filters"] to sedpy filters from {filt_folder}')
     obs["filters"] = get_filt_list(filt_folder)
@@ -106,14 +124,14 @@ def make_plots(res, obs, mod, sps, all_spec, all_phot, all_line_fluxes, all_line
     savename (str): Set to the name you want to save the file under
 
     """
-    save_dir = imd.prospector_plot_dir
+    save_dir = prospector_plot_dir
     if savename == 'False':
         savename = file[:-19]
 
     groupID = int(obs["groupID"])
 
     # Read in nebular emission lines from mosdef
-    lines_df = ascii.read(imd.loc_mosdef_elines).to_pandas()
+    lines_df = ascii.read(mosdef_elines_file).to_pandas()
 
     # Make tfig and cfig
     if p_plots == True:
@@ -152,9 +170,9 @@ def make_plots(res, obs, mod, sps, all_spec, all_phot, all_line_fluxes, all_line
                             for i in range(all_line_fluxes_erg.shape[0])])
     lines84_erg = np.array([quantile(all_line_fluxes_erg[i, :], 84, weights=weights[idx_high_weights])
                             for i in range(all_line_fluxes_erg.shape[0])])
-    # lines16_erg = (lines16_erg / 1000) * ((1 + obs['z'])**2)
-    # lines50_erg = (lines50_erg / 1000) * ((1 + obs['z'])**2)
-    # lines84_erg = (lines84_erg / 1000) * ((1 + obs['z'])**2)
+    # lines16_erg = (lines16_erg) * ((1 + obs['z'])**2)
+    # lines50_erg = (lines50_erg) * ((1 + obs['z'])**2)
+    # lines84_erg = (lines84_erg) * ((1 + obs['z'])**2)
 
     parnames = np.array(res.get('theta_labels', mod.theta_labels()))
 
@@ -353,10 +371,10 @@ def make_plots(res, obs, mod, sps, all_spec, all_phot, all_line_fluxes, all_line
                                   'rest_wavelength', 'flux'])
 
     # Output the merged spectra and lines
-    output_dir = imd.prospector_fit_csvs_dir
-    spec_df = pd.DataFrame(zip(z0_spec_wavelength, (spec16_flambda / 1000) * ((1 + obs['z'])**2), (spec50_flambda / 1000) * ((1 + obs['z'])**2), (spec84_flambda / 1000) * ((1 + obs['z'])**2)), columns=[
+    output_dir = prospector_plot_dir
+    spec_df = pd.DataFrame(zip(z0_spec_wavelength, (spec16_flambda) * ((1 + obs['z'])**2), (spec50_flambda) * ((1 + obs['z'])**2), (spec84_flambda) * ((1 + obs['z'])**2)), columns=[
                            'rest_wavelength', 'spec16_flambda', 'spec50_flambda', 'spec84_flambda'])
-    phot_df = pd.DataFrame(zip(z0_phot_wavelength, (phot16_flambda / 1000) * ((1 + obs['z'])**2), (phot50_flambda / 1000) * ((1 + obs['z'])**2), (phot84_flambda / 1000) * ((1 + obs['z'])**2)), columns=[
+    phot_df = pd.DataFrame(zip(z0_phot_wavelength, (phot16_flambda) * ((1 + obs['z'])**2), (phot50_flambda) * ((1 + obs['z'])**2), (phot84_flambda) * ((1 + obs['z'])**2)), columns=[
                            'rest_wavelength', 'phot16_flambda', 'phot50_flambda', 'phot84_flambda'])
     spec_df.to_csv(output_dir + savename + '_model_spec.csv', index=False)
     phot_df.to_csv(output_dir + savename + '_model_phot.csv', index=False)
@@ -453,4 +471,9 @@ def gen_continuum_spec(file, mask=False):
 
 
 
-read_and_make_plot('/Users/brianlorenz/code/mosdef_code/prospector_code/composite_group1_1625165594_mcmc.h5')
+# Run with sys.argv when called 
+groupID = sys.argv[1]
+all_files = os.listdir(savio_prospect_out_dir)
+target_file = [file for file in all_files if f'composite_group{groupID}_' in file]
+print(f'found {target_file}')
+read_and_make_plot(savio_prospect_out_dir + '/' + target_file[0])

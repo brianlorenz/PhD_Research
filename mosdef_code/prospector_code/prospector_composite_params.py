@@ -23,9 +23,6 @@ import glob
 from astropy.cosmology import z_at_value
 from astropy.io import ascii
 from astropy.io import fits
-# import initialize_mosdef_dirs as imd
-
-# How to pass gorupID????
 
 
 # Directory locations on savio
@@ -34,15 +31,12 @@ composite_filter_sedpy_dir = '/global/scratch/brianlorenz/sedpy_par_files'
 median_zs_file = '/global/scratch/brianlorenz/median_zs.csv'
 
 # Directory locations on home
+# import initialize_mosdef_dirs as imd
 # composite_sed_csvs_dir = imd.composite_sed_csvs_dir
 # composite_filter_sedpy_dir = imd.composite_filter_sedpy_dir
 # median_zs_file = imd.composite_seds_dir + '/median_zs.csv'
 
-
-# Must set the groupID as part of the command, immediately after calling the script
-# groupID = sys.argv[1]
-
-# %run prospector_dynesty.py 1 --param_file='prospector_composite_params.py' --outfile='composite_group1'
+# %run prospector_dynesty.py --param_file='prospector_composite_params.py' --outfile='composite_group1'
 
 # set up cosmology
 cosmo = FlatLambdaCDM(H0=70, Om0=.3)
@@ -78,7 +72,7 @@ run_params = {'verbose': True,
               'add_duste': True,
               # SPS parameters
               'zcontinuous': 1,
-              'groupID': -1,
+              'groupID': 1,
               }
 
 # --------------

@@ -48,6 +48,7 @@ cluster_overview_dir = cluster_plot_dir + '/overviews'
 # Prospector Outputs
 prospector_output_dir = cluster_dir + '/prospector_outputs'
 prospector_plot_dir = prospector_output_dir + '/prospector_plots'
+prospector_h5_dir = prospector_output_dir + '/prospector_h5s'
 prospector_fit_csvs_dir = prospector_output_dir + '/prospector_csvs'
 
 
