@@ -23,9 +23,9 @@ import glob
 from astropy.cosmology import z_at_value
 from astropy.io import ascii
 from astropy.io import fits
-import initialize_mosdef_dirs as imd
+# import initialize_mosdef_dirs as imd
 
-### How to pass gorupID????
+# How to pass gorupID????
 
 
 # Directory locations on savio
@@ -88,7 +88,7 @@ run_params = {'verbose': True,
 
 def build_obs(**kwargs):
     """Load the obs dict
-    
+
     :returns obs:
         Dictionary of observational data.
     """
@@ -103,7 +103,7 @@ def build_obs(**kwargs):
     obs = {}
 
     zs_df = ascii.read(median_zs_file).to_pandas()
-    obs['z'] = zs_df[zs_df['groupID']==groupID]['median_z'].iloc[0]
+    obs['z'] = zs_df[zs_df['groupID'] == groupID]['median_z'].iloc[0]
 
     # load photometric filters
     obs["filters"] = get_filt_list(filt_folder)
@@ -112,14 +112,13 @@ def build_obs(**kwargs):
     sed_data = ascii.read(sed_file).to_pandas()
     obs["phot_wave"] = to_median_redshift(
         sed_data['rest_wavelength'], obs['z']).to_numpy()
-    obs['maggies'] = (sed_data['f_maggies'] * 1000).to_numpy()
-    #obs['maggies_unc'] = (sed_data['err_f_maggies_avg'] * 1000).to_numpy()
+    obs['maggies'] = (sed_data['f_maggies']).to_numpy()
+    #obs['maggies_unc'] = (sed_data['err_f_maggies_avg']).to_numpy()
     # Add 5 percent in quadrature to errors
-    data_05p = (sed_data['f_maggies'] * 1000) * 0.05
+    data_05p = (sed_data['f_maggies']) * 0.05
     obs['maggies_unc'] = (
-        np.sqrt(data_05p**2 + (sed_data['err_f_maggies_avg'] * 1000)**2)).to_numpy()
+        np.sqrt(data_05p**2 + (sed_data['err_f_maggies_avg'])**2)).to_numpy()
     obs["phot_mask"] = np.array([m > 0 for m in obs['maggies']])
-
 
     # Add unessential bonus info.  This will be stored in output
     obs['groupID'] = groupID
@@ -186,7 +185,6 @@ def build_model(object_redshift=0.0, fixed_metallicity=None, add_duste=True,
     model_params["tage"]["init"] = 13.
     model_params["mass"]["init"] = 1e8
 
-
     # adjust priors
     model_params["dust2"]["prior"] = priors.TopHat(mini=0.0, maxi=4.0)
     model_params["dust1_fraction"]["prior"] = priors.TopHat(mini=0.0, maxi=2.0)
@@ -204,7 +202,7 @@ def build_model(object_redshift=0.0, fixed_metallicity=None, add_duste=True,
     model_params["zred"]['isfree'] = False
 
     zs_df = ascii.read(median_zs_file).to_pandas()
-    median_z = zs_df[zs_df['groupID']==groupID]['median_z'].iloc[0]
+    median_z = zs_df[zs_df['groupID'] == groupID]['median_z'].iloc[0]
     model_params["zred"]['init'] = median_z
 
     if add_duste:
@@ -253,7 +251,6 @@ def build_all(**kwargs):
 
 def to_dust1(dust1_fraction=None, dust1=None, dust2=None, **extras):
     return dust1_fraction * dust2
-
 
 
 def to_median_redshift(wavelength, median_z):

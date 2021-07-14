@@ -45,6 +45,10 @@ cluster_similarity_plots_dir = cluster_plot_dir + '/similarities'
 cluster_similarity_composite_dir = cluster_similarity_plots_dir + '/similarity_to_composite'
 cluster_overview_dir = cluster_plot_dir + '/overviews'
 
+# Prospector Outputs
+prospector_output_dir = cluster_dir + '/prospector_outputs'
+prospector_plot_dir = prospector_output_dir + '/prospector_plots'
+prospector_fit_csvs_dir = prospector_output_dir + '/prospector_csvs'
 
 
 # Folders to store UVJ measurements
@@ -59,6 +63,7 @@ loc_linemeas = mosdef_dir + '/Mosdef_cats/linemeas_latest.csv'
 loc_uvj = mosdef_dir + '/Mosdef_cats/uvj_latest.dat'
 loc_mosdef0d = mosdef_dir + '/Mosdef_cats/mosdef_0d_latest.fits'
 loc_sfrs_latest = mosdef_dir + '/Mosdef_cats/mosdef_sfrs_latest.fits'
+loc_mosdef_elines = mosdef_dir + '/Catalogs/Nebular_Emission/mosdef_elines.txt' # This is a file that I generated
 
 
 
@@ -69,7 +74,7 @@ mosdef_filter_translate = home_dir + '/code/mosdef_code/filters/catalog_filters/
 mosdef_filter_overview = home_dir + '/code/mosdef_code/filters/catalog_filters/overview'
 
 
-all_dirs = [composite_filter_sedpy_dir, cluster_plot_dir, mock_composite_sed_images_dir, mock_composite_sed_csvs_dir, cluster_similarity_plots_dir, cluster_similarity_composite_dir, composite_uvj_dir, uvj_dir, cluster_plot_dir, cluster_uvj_plots_dir, cluster_bpt_plots_dir, cluster_sfr_plots_dir, emission_fit_dir, emission_fit_csvs_dir, emission_fit_images_dir, composite_spec_dir, composite_seds_dir, composite_filters_dir, composite_filter_images_dir, composite_filter_csvs_dir, composite_sed_images_dir, composite_sed_csvs_dir, cluster_dir, spectra_dir, sed_csvs_dir, norm_sed_csvs_dir, mock_sed_csvs_dir, composite_seds_dir]
+all_dirs = [prospector_plot_dir, prospector_fit_csvs_dir, composite_filter_sedpy_dir, cluster_plot_dir, mock_composite_sed_images_dir, mock_composite_sed_csvs_dir, cluster_similarity_plots_dir, cluster_similarity_composite_dir, composite_uvj_dir, uvj_dir, cluster_plot_dir, cluster_uvj_plots_dir, cluster_bpt_plots_dir, cluster_sfr_plots_dir, emission_fit_dir, emission_fit_csvs_dir, emission_fit_images_dir, composite_spec_dir, composite_seds_dir, composite_filters_dir, composite_filter_images_dir, composite_filter_csvs_dir, composite_sed_images_dir, composite_sed_csvs_dir, cluster_dir, spectra_dir, sed_csvs_dir, norm_sed_csvs_dir, mock_sed_csvs_dir, composite_seds_dir]
 
 def setup_cluster_dirs(all_dirs):
     for dir in all_dirs:

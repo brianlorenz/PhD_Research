@@ -1,32 +1,22 @@
 import prospect.io.read_results as reader
 import sys
 import os
-import string
 import numpy as np
 import pandas as pd
 from astropy.io import ascii
-from astropy.io import fits
 from read_data import mosdef_df
 from uvj_clusters import plot_uvj_cluster
-from mosdef_obj_data_funcs import read_sed, read_mock_sed, get_mosdef_obj, read_composite_sed, setup_get_AV, get_AV, setup_get_ssfr, merge_ar_ssfr
-from filter_response import lines, overview, get_index, get_filter_response
 from emission_measurements import read_emission_df
 import matplotlib.pyplot as plt
 import matplotlib.transforms as transforms
-from bpt_clusters import plot_bpt, calc_log_ratio
-from scipy import interpolate
-import scipy.integrate as integrate
-from query_funcs import get_zobjs
+from bpt_clusters import plot_bpt
 import initialize_mosdef_dirs as imd
 import cluster_data_funcs as cdf
-from axis_ratio_funcs import read_axis_ratio, read_interp_axis_ratio
-from emission_measurements import read_emission_df, get_emission_measurements
-from astropy.table import Table
-from convert_filter_to_sedpy import get_filt_list
+from emission_measurements import read_emission_df
+from prospector_composite_params import get_filt_list
 from convert_flux_to_maggies import prospector_maggies_to_flux, prospector_maggies_to_flux_spec
-from plot_mass_sfr import plot_mass_sfr_cluter
+from plot_mass_sfr import plot_mass_sfr_cluster, read_sfr_df, get_all_sfrs_masses
 from cosmology_calcs import luminosity_to_flux
-
 
 def read_output(file, get_sps=True):
     """Reads the results and gets the sps model for the fit
@@ -47,7 +37,7 @@ def read_output(file, get_sps=True):
     print(f'Reading from {file}')
     res, obs, mod = reader.results_from(file)
 
-    filt_folder = f'/Users/brianlorenz/mosdef/composite_sed_csvs/composite_filter_csvs/{obs["objname"]}_filter_csvs'
+    filt_folder = imd.composite_filter_sedpy_dir + f'/{obs["groupID"]}_sedpy_pars'
 
     print(f'Setting obs["filters"] to sedpy filters from {filt_folder}')
     obs["filters"] = get_filt_list(filt_folder)
@@ -116,13 +106,14 @@ def make_plots(res, obs, mod, sps, all_spec, all_phot, all_line_fluxes, all_line
     savename (str): Set to the name you want to save the file under
 
     """
-    save_dir = '/Users/brianlorenz/mosdef/Prospector_Plots/'
+    save_dir = imd.prospector_plot_dir
     if savename == 'False':
         savename = file[:-19]
 
+    groupID = int(obs["groupID"])
+
     # Read in nebular emission lines from mosdef
-    lines_df = ascii.read(
-        '/Users/brianlorenz/mosdef/Catalogs/Nebular_Emission/mosdef_elines.txt').to_pandas()
+    lines_df = ascii.read(imd.loc_mosdef_elines).to_pandas()
 
     # Make tfig and cfig
     if p_plots == True:
@@ -176,7 +167,7 @@ def make_plots(res, obs, mod, sps, all_spec, all_phot, all_line_fluxes, all_line
 
     # Plot the UVJ diagram
     ax_UVJ = fig.add_axes([0.76, 0.08, 0.20, 0.25])
-    plot_uvj_cluster(int(obs["objname"]), ax_UVJ)
+    plot_uvj_cluster(groupID, ax_UVJ)
     ax_UVJ.set_xlabel('V-J')
     ax_UVJ.set_ylabel('U-V')
 
@@ -185,7 +176,9 @@ def make_plots(res, obs, mod, sps, all_spec, all_phot, all_line_fluxes, all_line
 
     # Plot the SFR/Mass Diagram
     ax_SFR = fig.add_axes([0.52, 0.08, 0.20, 0.25])
-    plot_mass_sfr_cluter(int(obs["objname"]), ax_SFR)
+    sfr_df = read_sfr_df()
+    all_sfrs_res = get_all_sfrs_masses(sfr_df)
+    plot_mass_sfr_cluster(groupID, all_sfrs_res, axis_obj=ax_SFR)
     ax_SFR.set_xlabel('log(Stellar Mass) (M_sun)')
     ax_SFR.set_ylabel('log(SFR) (M_sun/yr)')
 
@@ -246,7 +239,7 @@ def make_plots(res, obs, mod, sps, all_spec, all_phot, all_line_fluxes, all_line
     # Read in the emission for cluster galaxies
     emission_df = read_emission_df()
     # Find the names and ids of cluster galaxies
-    cluster_names, fields_ids = cdf.get_cluster_fields_ids(int(obs["objname"]))
+    cluster_names, fields_ids = cdf.get_cluster_fields_ids(groupID)
     fields_ids = [(obj[0], int(obj[1])) for obj in fields_ids]
     plot_bpt(emission_df, fields_ids, axis_obj=ax_BPT,
              composite_bpt_point=composite_bpt_point, composite_bpt_errs=composite_bpt_errs)
@@ -360,7 +353,7 @@ def make_plots(res, obs, mod, sps, all_spec, all_phot, all_line_fluxes, all_line
                                   'rest_wavelength', 'flux'])
 
     # Output the merged spectra and lines
-    output_dir = '/Users/brianlorenz/mosdef/Prospector_Outs/'
+    output_dir = imd.prospector_fit_csvs_dir
     spec_df = pd.DataFrame(zip(z0_spec_wavelength, (spec16_flambda / 1000) * ((1 + obs['z'])**2), (spec50_flambda / 1000) * ((1 + obs['z'])**2), (spec84_flambda / 1000) * ((1 + obs['z'])**2)), columns=[
                            'rest_wavelength', 'spec16_flambda', 'spec50_flambda', 'spec84_flambda'])
     phot_df = pd.DataFrame(zip(z0_phot_wavelength, (phot16_flambda / 1000) * ((1 + obs['z'])**2), (phot50_flambda / 1000) * ((1 + obs['z'])**2), (phot84_flambda / 1000) * ((1 + obs['z'])**2)), columns=[
@@ -457,3 +450,7 @@ def gen_continuum_spec(file, mask=False):
         res, obs, mod, sps)
     make_plots(res, obs, mod, sps, all_spec, all_phot, all_line_fluxes, all_line_fluxes_erg, line_waves,
                weights, idx_high_weights, file, p_plots=False, mask=mask, savename=savename)
+
+
+
+read_and_make_plot('/Users/brianlorenz/code/mosdef_code/prospector_code/composite_group1_1625165594_mcmc.h5')
