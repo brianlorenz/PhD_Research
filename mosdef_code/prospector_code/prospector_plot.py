@@ -4,7 +4,6 @@ import os
 import numpy as np
 import pandas as pd
 from astropy.io import ascii
-from read_data import mosdef_df
 from uvj_clusters import plot_uvj_cluster
 from emission_measurements import read_emission_df
 import matplotlib.pyplot as plt
@@ -387,61 +386,9 @@ def make_plots(res, obs, mod, sps, all_spec, all_phot, all_line_fluxes, all_line
     plt.close('all')
 
 
-# function from tom to get theta values for different percentiles
-def quantile(data, percents, weights=None):
-    '''
-    Parameters:
-    data (prospector): The obs object from the run
-    percents (array): in unuits of 1%
-    weights (sps): The photometry from the sps generation of the model
 
 
-     percents in units of 1%
-    weights specifies the frequency (count) of data.
-    '''
-    if weights is None:
-        return np.percentile(data, percents)
-    ind = np.argsort(data)
-    d = data[ind]
-    w = weights[ind]
-    p = 1. * w.cumsum() / w.sum() * 100
-    y = np.interp(percents, p, d)
-    return y
 
-
-def get_percentiles(res, mod, ptile=[16, 50, 84], start=0.0, thin=1, **extras):
-    """Get get percentiles of the marginalized posterior for each parameter.
-
-    :param res:
-        A results dictionary, containing a "chain" and "theta_labels" keys.
-
-    :param ptile: (optional, default: [16, 50, 84])
-       A list of percentiles (integers 0 to 100) to return for each parameter.
-
-    :param start: (optional)
-       How much of the beginning of chains to throw away before calculating
-       percentiles, expressed as a fraction of the total number of iterations.
-
-    :param thin: (optional)
-       Only use every ``thin`` iteration when calculating percentiles.
-
-    :returns pcts:
-       Dictionary with keys giving the parameter names and values giving the
-       requested percentiles for that parameter.
-    """
-
-    parnames = np.array(res.get('theta_labels', mod.theta_labels()))
-    niter = res['chain'].shape[-2]
-    start_index = np.floor(start * (niter - 1)).astype(int)
-    if res["chain"].ndim > 2:
-        flatchain = res['chain'][:, start_index::thin, :]
-        dims = flatchain.shape
-        flatchain = flatchain.reshape(dims[0] * dims[1], dims[2])
-    elif res["chain"].ndim == 2:
-        flatchain = res["chain"][start_index::thin, :]
-    pct = np.array([quantile(p, ptile, weights=res.get("weights", None))
-                    for p in flatchain.T])
-    return dict(zip(parnames, pct))
 
 
 def read_and_make_plot(file, savename='False', mask=False):
@@ -471,9 +418,3 @@ def gen_continuum_spec(file, mask=False):
 
 
 
-# Run with sys.argv when called 
-groupID = sys.argv[1]
-all_files = os.listdir(savio_prospect_out_dir)
-target_file = [file for file in all_files if f'composite_group{groupID}_' in file]
-print(f'found {target_file}')
-read_and_make_plot(savio_prospect_out_dir + '/' + target_file[0])
