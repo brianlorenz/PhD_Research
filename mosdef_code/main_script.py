@@ -14,6 +14,7 @@ from interpolate import gen_all_mock_composites
 from uvj_clusters import observe_all_uvj
 from convert_filter_to_sedpy import convert_all_folders_to_sedpy, find_median_redshifts
 from convert_flux_to_maggies import convert_folder_to_maggies
+from plot_scaled_comps import plot_scaled_composites
 
 '''Starting point: One folder ('cluster_folder') that contains: 
 -folders labeled '0', '1', ..., 'N' where N is the number of clusters-1. These will be the cluster "groups"
@@ -50,6 +51,7 @@ convert_all_folders_to_sedpy(n_clusters)
 find_median_redshifts(n_clusters)
 convert_folder_to_maggies(imd.composite_sed_csvs_dir)
 
-
+# Plot of all of the scaled composites, must be run after convert_folder_to_maggies
+plot_scaled_composites(n_clusters)
 
 
