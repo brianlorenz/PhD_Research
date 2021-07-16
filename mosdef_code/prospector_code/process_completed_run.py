@@ -179,21 +179,16 @@ def compute_quantiles(res, obs, mod, sps, all_spec, all_phot, all_mfrac, all_lin
     phot_df = pd.DataFrame(zip(z0_phot_wavelength, phot16, phot50, phot84, phot16_flambda, phot50_flambda, phot84_flambda), columns=['rest_wavelength', 'phot16', 'phot50', 'phot84', 'phot16_flambda', 'phot50_flambda', 'phot84_flambda'])
     spec_df = pd.DataFrame(zip(spec_wavelength, spec16, spec50, spec84, spec16_flambda, spec50_flambda, spec84_flambda), columns=['rest_wavelength', 'spec16', 'spec50', 'spec84', 'spec16_flambda', 'spec50_flambda', 'spec84_flambda'])
     line_df = pd.DataFrame(zip(line_waves, lines16, lines50, lines84, lines16_erg, lines50_erg, lines84_erg), columns=['rest_wavelength', 'lines16', 'lines50', 'lines84', 'lines16_erg', 'lines50_erg', 'lines84_erg'])
-    phot_df.to_csv(prospector_csvs_dir + f'/{groupID}_phot.csv')
-    spec_df.to_csv(prospector_csvs_dir + f'/{groupID}_spec.csv')
-    line_df.to_csv(prospector_csvs_dir + f'/{groupID}_lines.csv')
+    phot_df.to_csv(prospector_csvs_dir + f'/{groupID}_phot.csv', index=False)
+    spec_df.to_csv(prospector_csvs_dir + f'/{groupID}_spec.csv', index=False)
+    line_df.to_csv(prospector_csvs_dir + f'/{groupID}_lines.csv', index=False)
 
     def save_obj(obj, name):
         with open(prospector_csvs_dir + '/' + name + '.pkl', 'wb+') as f:
             pickle.dump(obj, f, pickle.HIGHEST_PROTOCOL)
 
-    def load_obj(name):
-        with open(prospector_csvs_dir + '/' + name + '.pkl', 'rb') as f:
-            return pickle.load(f)
-
     save_obj(obs, f'{groupID}_obs')
     save_obj(res, f'{groupID}_res')
-    save_obj(mod, f'{groupID}_mod')
 
 # function from tom to get theta values for different percentiles
 def quantile(data, percents, weights=None):
