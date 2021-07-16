@@ -1,6 +1,6 @@
 '''Codes that should be run on Savio immediately after the run finishes, putting the data in an easy format for plotting'''
 
-from prospector_composite_params_0 import get_filt_list
+from prospector_composite_params_group0 import get_filt_list
 from cosmology_calcs import luminosity_to_flux
 from convert_flux_to_maggies import prospector_maggies_to_flux, prospector_maggies_to_flux_spec
 import prospect.io.read_results as reader
