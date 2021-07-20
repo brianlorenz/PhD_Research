@@ -1,8 +1,8 @@
 '''Funcitons for plotting after prospector has run'''
 
 import prospect.io.read_results as reader
-import sys
 import os
+import pickle
 import numpy as np
 import pandas as pd
 from astropy.io import ascii
@@ -13,12 +13,8 @@ import matplotlib.transforms as transforms
 from bpt_clusters import plot_bpt
 import cluster_data_funcs as cdf
 from emission_measurements import read_emission_df
-from prospector_composite_params import get_filt_list
-from convert_flux_to_maggies import prospector_maggies_to_flux, prospector_maggies_to_flux_spec
 from plot_mass_sfr import plot_mass_sfr_cluster, read_sfr_df, get_all_sfrs_masses
-from cosmology_calcs import luminosity_to_flux
 import initialize_mosdef_dirs as imd
-
 
 
 def load_obj(name):
@@ -36,13 +32,15 @@ def make_plots(groupID, p_plots=False, mask=False, savename='False'):
     savename (str): Set to the name you want to save the file under
 
     """
-    res = load_obj(f'{groupID}_res')
+    # res = load_obj(f'{groupID}_res')
     obs = load_obj(f'{groupID}_obs')
 
-    spec_df = ascii.read(imd.prospector_fit_csvs_dir + f'/{groupID}_spec.csv').to_pandas()
-    phot_df = ascii.read(imd.prospector_fit_csvs_dir + f'/{groupID}_phot.csv').to_pandas()
-    lines_df = ascii.read(imd.prospector_fit_csvs_dir + f'/{groupID}_lines.csv').to_pandas()
-
+    spec_df = ascii.read(imd.prospector_fit_csvs_dir +
+                         f'/{groupID}_spec.csv').to_pandas()
+    phot_df = ascii.read(imd.prospector_fit_csvs_dir +
+                         f'/{groupID}_phot.csv').to_pandas()
+    lines_df = ascii.read(imd.prospector_fit_csvs_dir +
+                          f'/{groupID}_lines.csv').to_pandas()
 
     save_dir = imd.prospector_plot_dir
     if savename == 'False':
@@ -57,7 +55,6 @@ def make_plots(groupID, p_plots=False, mask=False, savename='False'):
         tfig.savefig(save_dir + savename + '_tfig.pdf')
         cfig = reader.subcorner(res)
         cfig.savefig(save_dir + savename + '_cfig.pdf')
-
 
     # Figure setup
     fig = plt.figure(figsize=(14, 8))
@@ -87,10 +84,10 @@ def make_plots(groupID, p_plots=False, mask=False, savename='False'):
     ax_residual = fig.add_axes([0.04, 0.08, 0.44, 0.25])
 
     # Set the wavelength limits
-    start_spec = phot_df['rest_wavelength'][0]
-    end_spec = phot_df['rest_wavelength'][-1]
-    spec_idxs = np.logical_and(spec_df['rest_wavelength'] > start_spec, spec_df['rest_wavelength'] < end_spec)
-
+    start_spec = phot_df['rest_wavelength'].iloc[0]
+    end_spec = phot_df['rest_wavelength'].iloc[-1]
+    spec_idxs = np.logical_and(
+        spec_df['rest_wavelength'] > start_spec, spec_df['rest_wavelength'] < end_spec)
 
     # Plot the BPT diagram:
     bpt_lines = [6585, 6563, 5008, 4861]
@@ -101,10 +98,10 @@ def make_plots(groupID, p_plots=False, mask=False, savename='False'):
     for bpt_line in bpt_lines:
         # Find the nearest line in cloudy:
         idx_nearest = np.argmin(np.abs(lines_df['rest_wavelength'] - bpt_line))
-        line_wave = lines_df['rest_wavelength'][idx_nearest]
-        line_flux = lines_df['lines50'][idx_nearest]
-        line_errs_pct = (((line_flux - lines_df['lines16'][idx_nearest]) / line_flux),
-                         ((lines_df['lines84'][idx_nearest] - line_flux) / line_flux))
+        line_wave = lines_df['rest_wavelength'].iloc[idx_nearest]
+        line_flux = lines_df['lines50'].iloc[idx_nearest]
+        line_errs_pct = (((line_flux - lines_df['lines16'].iloc[idx_nearest]) / line_flux),
+                         ((lines_df['lines84'].iloc[idx_nearest] - line_flux) / line_flux))
         bpt_fluxes.append(line_flux)
         bpt_errs_pct.append(line_errs_pct)
     # Calculate the bpt points
@@ -143,7 +140,8 @@ def make_plots(groupID, p_plots=False, mask=False, savename='False'):
         ax.errorbar(phot_df['rest_wavelength'], phot_df['rest_wavelength'] * obs['f_lambda'], color='black', yerr=phot_df['rest_wavelength'] * obs[
                     'err_f_lambda'], ls='-', marker='o', label='Observations', zorder=1)
 
-        y_model = np.array(phot_df['rest_wavelength'] * phot_df['phot50_flambda'])
+        y_model = np.array(phot_df['rest_wavelength']
+                           * phot_df['phot50_flambda'])
         y_model_16 = phot_df['rest_wavelength'] * phot_df['phot16_flambda']
         y_model_84 = phot_df['rest_wavelength'] * phot_df['phot84_flambda']
         model_errs = np.vstack((y_model - y_model_16, y_model_84 - y_model))
@@ -171,12 +169,13 @@ def make_plots(groupID, p_plots=False, mask=False, savename='False'):
                 continue
 
             # Find the nearest line in cloudy:
-            idx_nearest = np.argmin(np.abs(lines_df['rest_wavelength'] - line_rest_wave))
-            line_wave = lines_df['rest_wavelength'][idx_nearest]
-            line_flux = lines_df['lines50'][idx_nearest]
+            idx_nearest = np.argmin(
+                np.abs(lines_df['rest_wavelength'] - line_rest_wave))
+            line_wave = lines_df['rest_wavelength'].iloc[idx_nearest]
+            line_flux = lines_df['lines50'].iloc[idx_nearest]
             # Plot a green line where it is
             ax.axvline(line_wave, ls='--', color='mediumseagreen')
-            
+
             # Add a label
             trans = transforms.blended_transform_factory(
                 ax.transData, ax.transAxes)
@@ -205,8 +204,8 @@ def make_plots(groupID, p_plots=False, mask=False, savename='False'):
     # 1.1 * np.percentile(z0_spec_wavelength[spec_idxs] * spectrum, 99))
     ax_main.set_ylim(0.8 * np.percentile(spec_df['rest_wavelength'][spec_idxs] * spec_df['spec50_flambda'][spec_idxs], 1),
                      1.1 * np.percentile(spec_df['rest_wavelength'][spec_idxs] * spec_df['spec50_flambda'][spec_idxs], 99))
-    ax_main.set_xlim(spec_df['rest_wavelength'][spec_idxs][
-                     0] - 30, spec_df['rest_wavelength'][spec_idxs][-1] + 3000)
+    ax_main.set_xlim(spec_df['rest_wavelength'][spec_idxs].iloc[0] -
+                     30, spec_df['rest_wavelength'][spec_idxs].iloc[-1] + 3000)
 
     ax_zoomHa.set_xlim(Ha_range[0], Ha_range[1])
     ax_zoomHb.set_xlim(Hb_range[0], Hb_range[1])
@@ -226,37 +225,22 @@ def make_plots(groupID, p_plots=False, mask=False, savename='False'):
         ax_main.axvspan(4500, 5300, facecolor='r', alpha=0.5, label="Mask")
         ax_main.axvspan(6100, 6900, facecolor='r', alpha=0.5)
 
-
     # Save the plot
     ax_main.legend()
-    fig.savefig(save_dir + savename + '_fit.pdf')
+    fig.savefig(save_dir + '/' + savename + '_fit.pdf')
     plt.close('all')
-
-
-
-
 
 
 def make_all_prospector_plots(n_clusters):
     '''Makes the plots from the outputs of the prospector run on Savio
 
     '''
-    for groupID in range(n_clusters): 
+    for groupID in range(n_clusters):
         if os.path.exists(imd.prospector_fit_csvs_dir + f'/{groupID}_phot.csv'):
-            make_plots(groupID, p_plots=True)
-
-
-# def gen_continuum_spec(file, mask=False):
-#     ''' Will run through and make a plot and save the spectrum of the continuum, WITHOUT any nebular emission lines
-
-#     '''
-#     savename = file[:-19] + '_CONT'
-#     res, obs, mod, sps, file = read_output(file)
-#     mod.params['add_neb_emission'] = np.array([False])
-#     all_spec, all_phot, all_mfrac, all_line_fluxes, all_line_fluxes_erg, line_waves, weights, idx_high_weights = gen_phot(
-#         res, obs, mod, sps)
-#     make_plots(res, obs, mod, sps, all_spec, all_phot, all_line_fluxes, all_line_fluxes_erg, line_waves,
-#                weights, idx_high_weights, file, p_plots=False, mask=mask, savename=savename)
+            print(f'Making plot for group {groupID}')
+            make_plots(groupID, p_plots=False)
 
 
 
+
+make_all_prospector_plots(29)
