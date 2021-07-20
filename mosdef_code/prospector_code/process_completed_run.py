@@ -49,6 +49,12 @@ def main_process(groupID):
     res, obs, mod, sps, file = read_output(savio_prospect_out_dir + '/' + target_file[0])
     all_spec, all_phot, all_mfrac, all_line_fluxes, all_line_fluxes_erg, line_waves, weights, idx_high_weights = gen_phot(res, obs, mod, sps)
     compute_quantiles(res, obs, mod, sps, all_spec, all_phot, all_mfrac, all_line_fluxes, all_line_fluxes_erg, line_waves, weights, idx_high_weights, groupID)
+    
+    # Now repeat but just with the continuum
+    mod.params['add_neb_emission'] = np.array([False])
+    all_spec, all_phot, all_mfrac, all_line_fluxes, all_line_fluxes_erg, line_waves, weights, idx_high_weights = gen_phot(
+        res, obs, mod, sps)
+    compute_quantiles(res, obs, mod, sps, all_spec, all_phot, all_mfrac, all_line_fluxes, all_line_fluxes_erg, line_waves, weights, idx_high_weights, groupID, cont=True)
 
 
 def read_output(file, get_sps=True):
@@ -125,7 +131,7 @@ def gen_phot(res, obs, mod, sps):
     return all_spec, all_phot, all_mfrac, all_line_fluxes, all_line_fluxes_erg, line_waves, weights, idx_high_weights
 
 
-def compute_quantiles(res, obs, mod, sps, all_spec, all_phot, all_mfrac, all_line_fluxes, all_line_fluxes_erg, line_waves, weights, idx_high_weights, groupID):
+def compute_quantiles(res, obs, mod, sps, all_spec, all_phot, all_mfrac, all_line_fluxes, all_line_fluxes_erg, line_waves, weights, idx_high_weights, groupID, cont=False):
     # Find the mean photometery, spectra
     phot16 = np.array([quantile(all_phot[i, :], 16, weights=weights[idx_high_weights])
                        for i in range(all_phot.shape[0])])
@@ -174,21 +180,28 @@ def compute_quantiles(res, obs, mod, sps, all_spec, all_phot, all_mfrac, all_lin
         spec_wavelength, spec50)
     spec84_flambda = prospector_maggies_to_flux_spec(
         spec_wavelength, spec84)
-
-    # what happens with 1_z ^2??? How do the various de-redshifted photometries and spectra relate???
+    
     phot_df = pd.DataFrame(zip(z0_phot_wavelength, phot16, phot50, phot84, phot16_flambda, phot50_flambda, phot84_flambda), columns=['rest_wavelength', 'phot16', 'phot50', 'phot84', 'phot16_flambda', 'phot50_flambda', 'phot84_flambda'])
     spec_df = pd.DataFrame(zip(spec_wavelength, spec16, spec50, spec84, spec16_flambda, spec50_flambda, spec84_flambda), columns=['rest_wavelength', 'spec16', 'spec50', 'spec84', 'spec16_flambda', 'spec50_flambda', 'spec84_flambda'])
     line_df = pd.DataFrame(zip(line_waves, lines16, lines50, lines84, lines16_erg, lines50_erg, lines84_erg), columns=['rest_wavelength', 'lines16', 'lines50', 'lines84', 'lines16_erg', 'lines50_erg', 'lines84_erg'])
-    phot_df.to_csv(prospector_csvs_dir + f'/{groupID}_phot.csv', index=False)
-    spec_df.to_csv(prospector_csvs_dir + f'/{groupID}_spec.csv', index=False)
-    line_df.to_csv(prospector_csvs_dir + f'/{groupID}_lines.csv', index=False)
+    
 
-    def save_obj(obj, name):
-        with open(prospector_csvs_dir + '/' + name + '.pkl', 'wb+') as f:
-            pickle.dump(obj, f, pickle.HIGHEST_PROTOCOL)
+    if cont==False:
+        phot_df.to_csv(prospector_csvs_dir + f'/{groupID}_phot.csv', index=False)
+        spec_df.to_csv(prospector_csvs_dir + f'/{groupID}_spec.csv', index=False)
+        line_df.to_csv(prospector_csvs_dir + f'/{groupID}_lines.csv', index=False)
 
-    save_obj(obs, f'{groupID}_obs')
-    save_obj(res, f'{groupID}_res')
+        def save_obj(obj, name):
+            with open(prospector_csvs_dir + '/' + name + '.pkl', 'wb+') as f:
+                pickle.dump(obj, f, pickle.HIGHEST_PROTOCOL)
+
+        save_obj(obs, f'{groupID}_obs')
+        save_obj(res, f'{groupID}_res')
+    
+    else:
+        phot_df.to_csv(prospector_csvs_dir + f'/{groupID}_cont_phot.csv', index=False)
+        spec_df.to_csv(prospector_csvs_dir + f'/{groupID}_cont_spec.csv', index=False)
+
 
 # function from tom to get theta values for different percentiles
 def quantile(data, percents, weights=None):
