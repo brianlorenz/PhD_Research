@@ -22,13 +22,12 @@ def load_obj(name):
         return pickle.load(f)
 
 
-def make_plots(groupID, run_name, p_plots=False, mask=False, savename='False'):
+def make_plots(groupID, run_name, mask=False, savename='False'):
     """Plots the observations vs the sps model
 
     Parameters:
     groupID (int): Number of the group to plot
     run_name (str): Name of the current run, used to sort folders
-    p_plots(boolean): Set to True to make Prospector plots tfig and cfig, False to skip
     mask(boolean): Set to True if there was a mask
     savename (str): Set to the name you want to save the file under
 
@@ -36,14 +35,14 @@ def make_plots(groupID, run_name, p_plots=False, mask=False, savename='False'):
     # res = load_obj(f'{groupID}_res')
     obs = load_obj(f'{groupID}_obs')
 
-    spec_df = ascii.read(imd.prospector_fit_csvs_dir + f'/{run_name}' + 
+    spec_df = ascii.read(imd.prospector_fit_csvs_dir + f'/{run_name}_csvs' + 
                          f'/{groupID}_spec.csv').to_pandas()
-    phot_df = ascii.read(imd.prospector_fit_csvs_dir + f'/{run_name}' +
+    phot_df = ascii.read(imd.prospector_fit_csvs_dir + f'/{run_name}_csvs' +
                          f'/{groupID}_phot.csv').to_pandas()
-    lines_df = ascii.read(imd.prospector_fit_csvs_dir + f'/{run_name}' +
+    lines_df = ascii.read(imd.prospector_fit_csvs_dir + f'/{run_name}_csvs' +
                           f'/{groupID}_lines.csv').to_pandas()
 
-    save_dir = imd.prospector_plot_dir + f'/{run_name}/'
+    save_dir = imd.prospector_plot_dir + f'/{run_name}_plots/'
     if savename == 'False':
         savename = f'group{groupID}'
 
@@ -237,7 +236,7 @@ def make_all_prospector_plots(n_clusters, run_name):
     for groupID in range(n_clusters):
         if os.path.exists(imd.prospector_fit_csvs_dir + f'/{groupID}_phot.csv'):
             print(f'Making plot for group {groupID}')
-            make_plots(groupID, run_name, p_plots=False)
+            make_plots(groupID, run_name)
 
 
 
