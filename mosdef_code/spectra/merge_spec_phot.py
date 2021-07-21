@@ -17,16 +17,23 @@ from scipy.optimize import curve_fit
 # Main
 # -------------------
 
-def main(groupID):
+def main(groupID, run_name):
+    '''Runs all the functions in this code, taking the output of prospector, merging the photometry with spectra, then saving
+
+    Parameters:
+    groupID (int): ID of the group to run
+    run_name (str): Name of the run on prospector
+    '''
+
     spec, phot, phot_filters, phot_filter_keys = prepare_data_for_merge(
         groupID)
     phot_merged, scale, target_fluxes, opt_point_fluxes, phot_waves, model_phot_df, flux_difference_scale, sum_lines_scale, integral_range = merge_spec_phot(
-        groupID, spec, phot, phot_filters, phot_filter_keys)
-    merge_plot(groupID, phot_merged, phot, spec,
+        groupID, run_name, spec, phot, phot_filters, phot_filter_keys)
+    merge_plot(groupID, run_name, phot_merged, phot, spec,
                scale, target_fluxes, opt_point_fluxes, phot_waves, model_phot_df, flux_difference_scale, sum_lines_scale, integral_range)
 
 
-def merge_spec_phot(groupID, spec, phot, phot_filters, phot_filter_keys, keep_range=7):
+def merge_spec_phot(groupID, run_name, spec, phot, phot_filters, phot_filter_keys, keep_range=7):
     '''
     keep_range (int): Number of angstroms on either side of the line to keep
     '''
@@ -79,8 +86,8 @@ def merge_spec_phot(groupID, spec, phot, phot_filters, phot_filter_keys, keep_ra
     # Read in the continuum from prospector
     
     print(f'Reading Continuum from prospector file {files}')
-    model_phot_df  = ascii.read(imd.prospector_fit_csvs_dir + f'/{groupID}_cont_phot.csv').to_pandas()
-    model_spec_df = ascii.read(imd.prospector_fit_csvs_dir + f'/{groupID}_cont_spec.csv').to_pandas()
+    model_phot_df  = ascii.read(imd.prospector_fit_csvs_dir + f'/{run_name}' + f'/{groupID}_cont_phot.csv').to_pandas()
+    model_spec_df = ascii.read(imd.prospector_fit_csvs_dir + f'/{run_name}' + f'/{groupID}_cont_spec.csv').to_pandas()
      
 
     # Old method with the spectrum is at the end of the .py file, now using
@@ -109,7 +116,7 @@ def merge_spec_phot(groupID, spec, phot, phot_filters, phot_filter_keys, keep_ra
 
     # Sum the lines method - assume prospector got the total flux in the lines
     # right, but not the ratio
-    model_lines_df = ascii.read(imd.prospector_fit_csvs_dir + f'/{groupID}_lines.csv').to_pandas()
+    model_lines_df = ascii.read(imd.prospector_fit_csvs_dir + f'/{run_name}' + f'/{groupID}_lines.csv').to_pandas()
     mosdef_lines = hb_lines + ha_lines
     mosdef_line_fluxes = []
     for line_wave in mosdef_lines:
@@ -297,7 +304,7 @@ def find_line_flux(fit_df, phot, phot_filters, phot_filter_keys, groupID, model_
 # Plotting
 # -------------------
 
-def merge_plot(groupID, phot_merged, phot, spec, scale, target_fluxes, opt_point_fluxes, phot_waves, model_phot_df, flux_difference_scale, sum_lines_scale, integral_range):
+def merge_plot(groupID, run_name, phot_merged, phot, spec, scale, target_fluxes, opt_point_fluxes, phot_waves, model_phot_df, flux_difference_scale, sum_lines_scale, integral_range):
     """Plots merging process
 
     Parameters:
@@ -366,7 +373,7 @@ def merge_plot(groupID, phot_merged, phot, spec, scale, target_fluxes, opt_point
     ax_final.fill_between(waves, obs_interp(
         waves), model_phot_interp(waves), color='r', alpha=0.5)
 
-    fig.savefig(imd.composite_seds_spec_images_dir  + f'/{groupID}_sed_spec.pdf')
+    fig.savefig(imd.composite_seds_spec_images_dir + + f'/{run_name}' + f'/{groupID}_sed_spec.pdf')
 
 
 # -------------------

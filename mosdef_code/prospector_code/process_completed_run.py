@@ -33,7 +33,7 @@ prospector_csvs_dir = '/global/scratch/brianlorenz/prospector_csvs'
 # mosdef_elines_file = imd.loc_mosdef_elines
 
 
-def main_process(groupID):
+def main_process(groupID, run_name):
     """Runs all of the functions needed to process the prospector outputs
 
     Parameters:
@@ -43,10 +43,10 @@ def main_process(groupID):
  
 
     """
-    all_files = os.listdir(savio_prospect_out_dir)
+    all_files = os.listdir(savio_prospect_out_dir + f'/{run_name}')
     target_file = [file for file in all_files if f'composite_group{groupID}_' in file]
     print(f'found {target_file}')
-    res, obs, mod, sps, file = read_output(savio_prospect_out_dir + '/' + target_file[0])
+    res, obs, mod, sps, file = read_output(savio_prospect_out_dir + f'/{run_name}' + '/' + target_file[0])
     all_spec, all_phot, all_mfrac, all_line_fluxes, all_line_fluxes_erg, line_waves, weights, idx_high_weights = gen_phot(res, obs, mod, sps)
     compute_quantiles(res, obs, mod, sps, all_spec, all_phot, all_mfrac, all_line_fluxes, all_line_fluxes_erg, line_waves, weights, idx_high_weights, groupID)
     
@@ -188,12 +188,12 @@ def compute_quantiles(res, obs, mod, sps, all_spec, all_phot, all_mfrac, all_lin
     
 
     if cont==False:
-        phot_df.to_csv(prospector_csvs_dir + f'/{groupID}_phot.csv', index=False)
-        spec_df.to_csv(prospector_csvs_dir + f'/{groupID}_spec.csv', index=False)
-        line_df.to_csv(prospector_csvs_dir + f'/{groupID}_lines.csv', index=False)
+        phot_df.to_csv(prospector_csvs_dir + f'/{run_name}' + f'/{groupID}_phot.csv', index=False)
+        spec_df.to_csv(prospector_csvs_dir + f'/{run_name}' + f'/{groupID}_spec.csv', index=False)
+        line_df.to_csv(prospector_csvs_dir + f'/{run_name}' + f'/{groupID}_lines.csv', index=False)
 
         def save_obj(obj, name):
-            with open(prospector_csvs_dir + '/' + name + '.pkl', 'wb+') as f:
+            with open(prospector_csvs_dir + f'/{run_name}' + '/' + name + '.pkl', 'wb+') as f:
                 pickle.dump(obj, f, pickle.HIGHEST_PROTOCOL)
 
         try:
@@ -210,8 +210,8 @@ def compute_quantiles(res, obs, mod, sps, all_spec, all_phot, all_mfrac, all_lin
             print('Could not pickle mod')
     
     else:
-        phot_df.to_csv(prospector_csvs_dir + f'/{groupID}_cont_phot.csv', index=False)
-        spec_df.to_csv(prospector_csvs_dir + f'/{groupID}_cont_spec.csv', index=False)
+        phot_df.to_csv(prospector_csvs_dir + f'/{run_name}' + f'/{groupID}_cont_phot.csv', index=False)
+        spec_df.to_csv(prospector_csvs_dir + f'/{run_name}' + f'/{groupID}_cont_spec.csv', index=False)
 
 
 # function from tom to get theta values for different percentiles
@@ -238,4 +238,5 @@ def quantile(data, percents, weights=None):
 
 # Run with sys.argv when called 
 groupID = sys.argv[1]
-main_process(groupID)
+run_name = sys.argv[2]
+main_process(groupID, run_name)
