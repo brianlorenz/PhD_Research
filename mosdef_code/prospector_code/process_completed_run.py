@@ -22,6 +22,7 @@ mosdef_elines_file = '/global/scratch/brianlorenz/mosdef_elines.txt'
 
 # For saving
 prospector_csvs_dir = '/global/scratch/brianlorenz/prospector_csvs'
+prospector_plots_dir = '/global/scratch/brianlorenz/prospector_plots'
 
 # Directory locations on home
 # import initialize_mosdef_dirs as imd
@@ -47,6 +48,12 @@ def main_process(groupID, run_name):
     target_file = [file for file in all_files if f'composite_group{groupID}_' in file]
     print(f'found {target_file}')
     res, obs, mod, sps, file = read_output(savio_prospect_out_dir + f'/{run_name}' + '/' + target_file[0])
+
+    tfig = reader.traceplot(res)
+    tfig.savefig(prospector_plots_dir + f'/{run_name}' + f'/group{groupID}_tfig.pdf')
+    cfig = reader.subcorner(res)
+    cfig.savefig(prospector_plots_dir + f'/{run_name}' + f'/group{groupID}_cfig.pdf')
+
     all_spec, all_phot, all_mfrac, all_line_fluxes, all_line_fluxes_erg, line_waves, weights, idx_high_weights = gen_phot(res, obs, mod, sps)
     compute_quantiles(res, obs, mod, sps, all_spec, all_phot, all_mfrac, all_line_fluxes, all_line_fluxes_erg, line_waves, weights, idx_high_weights, groupID)
     
