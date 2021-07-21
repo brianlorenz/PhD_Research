@@ -52,6 +52,12 @@ prospector_h5_dir = prospector_output_dir + '/prospector_h5s'
 prospector_fit_csvs_dir = prospector_output_dir + '/prospector_csvs'
 
 
+# Composite seds with spectra merged
+composite_seds_spec_dir = cluster_dir + '/composite_sed_and_spec'
+composite_seds_spec_csvs_dir = composite_seds_spec_dir + '/composite_sed_and_spec_csvs'
+composite_seds_spec_images_dir = composite_seds_spec_dir + '/composite_sed_and_spec_images'
+
+
 # Folders to store UVJ measurements
 uvj_dir = mosdef_dir + '/UVJ_Colors'
 composite_uvj_dir = cluster_dir + '/UVJ_Colors_composite'
@@ -75,7 +81,7 @@ mosdef_filter_translate = home_dir + '/code/mosdef_code/filters/catalog_filters/
 mosdef_filter_overview = home_dir + '/code/mosdef_code/filters/catalog_filters/overview'
 
 
-all_dirs = [prospector_plot_dir, prospector_fit_csvs_dir, composite_filter_sedpy_dir, cluster_plot_dir, mock_composite_sed_images_dir, mock_composite_sed_csvs_dir, cluster_similarity_plots_dir, cluster_similarity_composite_dir, composite_uvj_dir, uvj_dir, cluster_plot_dir, cluster_uvj_plots_dir, cluster_bpt_plots_dir, cluster_sfr_plots_dir, emission_fit_dir, emission_fit_csvs_dir, emission_fit_images_dir, composite_spec_dir, composite_seds_dir, composite_filters_dir, composite_filter_images_dir, composite_filter_csvs_dir, composite_sed_images_dir, composite_sed_csvs_dir, cluster_dir, spectra_dir, sed_csvs_dir, norm_sed_csvs_dir, mock_sed_csvs_dir, composite_seds_dir]
+all_dirs = [composite_seds_spec_dir, composite_seds_spec_csvs_dir, composite_seds_spec_images_dir, prospector_plot_dir, prospector_fit_csvs_dir, composite_filter_sedpy_dir, cluster_plot_dir, mock_composite_sed_images_dir, mock_composite_sed_csvs_dir, cluster_similarity_plots_dir, cluster_similarity_composite_dir, composite_uvj_dir, uvj_dir, cluster_plot_dir, cluster_uvj_plots_dir, cluster_bpt_plots_dir, cluster_sfr_plots_dir, emission_fit_dir, emission_fit_csvs_dir, emission_fit_images_dir, composite_spec_dir, composite_seds_dir, composite_filters_dir, composite_filter_images_dir, composite_filter_csvs_dir, composite_sed_images_dir, composite_sed_csvs_dir, cluster_dir, spectra_dir, sed_csvs_dir, norm_sed_csvs_dir, mock_sed_csvs_dir, composite_seds_dir]
 
 def setup_cluster_dirs(all_dirs):
     for dir in all_dirs:

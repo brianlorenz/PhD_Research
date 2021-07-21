@@ -52,6 +52,7 @@ def main_process(groupID):
     
     # Now repeat but just with the continuum
     mod.params['add_neb_emission'] = np.array([False])
+    print('Set neb emission to false, computing continuum')
     all_spec, all_phot, all_mfrac, all_line_fluxes, all_line_fluxes_erg, line_waves, weights, idx_high_weights = gen_phot(
         res, obs, mod, sps)
     compute_quantiles(res, obs, mod, sps, all_spec, all_phot, all_mfrac, all_line_fluxes, all_line_fluxes_erg, line_waves, weights, idx_high_weights, groupID, cont=True)
@@ -195,8 +196,18 @@ def compute_quantiles(res, obs, mod, sps, all_spec, all_phot, all_mfrac, all_lin
             with open(prospector_csvs_dir + '/' + name + '.pkl', 'wb+') as f:
                 pickle.dump(obj, f, pickle.HIGHEST_PROTOCOL)
 
-        save_obj(obs, f'{groupID}_obs')
-        save_obj(res, f'{groupID}_res')
+        try:
+            save_obj(obs, f'{groupID}_obs')
+        except:
+            print('Could not pickle obs')
+        try:
+            save_obj(res, f'{groupID}_res')
+        except:
+            print('Could not pickle res')        
+        try:
+            save_obj(mod, f'{groupID}_mod')
+        except:
+            print('Could not pickle mod')
     
     else:
         phot_df.to_csv(prospector_csvs_dir + f'/{groupID}_cont_phot.csv', index=False)

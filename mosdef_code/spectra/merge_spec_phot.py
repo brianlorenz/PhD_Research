@@ -1,34 +1,16 @@
 # Combines the spectra and photometry to get one composite where the
 # spectra of the lines are on the photometry
 
-import prospect.io.read_results as reader
-import sys
 import os
-import string
 import numpy as np
 import pandas as pd
 from astropy.io import ascii
-from astropy.io import fits
 from read_data import mosdef_df
-from uvj_clusters import plot_uvj_cluster
-from mosdef_obj_data_funcs import read_sed, read_mock_sed, get_mosdef_obj, read_composite_sed, setup_get_AV, get_AV, setup_get_ssfr, merge_ar_ssfr
-from filter_response import lines, overview, get_index, get_filter_response
-from emission_measurements import read_emission_df
 import matplotlib.pyplot as plt
-import matplotlib.transforms as transforms
-from bpt_clusters import plot_bpt, calc_log_ratio
 from scipy import interpolate
 import scipy.integrate as integrate
-from query_funcs import get_zobjs
 import initialize_mosdef_dirs as imd
-import cluster_data_funcs as cdf
-from axis_ratio_funcs import read_axis_ratio, read_interp_axis_ratio
-from emission_measurements import read_emission_df, get_emission_measurements
-from astropy.table import Table
-from plot_mass_sfr import plot_mass_sfr_cluter
 from scipy.optimize import curve_fit
-from prospector_plot import read_output, gen_phot, quantile
-from convert_flux_to_maggies import prospector_maggies_to_flux, prospector_maggies_to_flux_spec
 
 
 # -------------------
@@ -95,12 +77,11 @@ def merge_spec_phot(groupID, spec, phot, phot_filters, phot_filter_keys, keep_ra
     # Scale the spectrum to match that flux value
 
     # Read in the continuum from prospector
-    prospector_dir = '/Users/brianlorenz/mosdef/Prospector_Outs/'
-    prospector_files = os.listdir(prospector_dir)
-    files = [name for name in prospector_files if f'group{groupID}' in name and 'dust1' in name and 'CONT' in name]
+    
     print(f'Reading Continuum from prospector file {files}')
-    model_phot_df, model_spec_df = read_prospector_continuum(
-        prospector_dir, files)
+    model_phot_df  = ascii.read(imd.prospector_fit_csvs_dir + f'/{groupID}_cont_phot.csv').to_pandas()
+    model_spec_df = ascii.read(imd.prospector_fit_csvs_dir + f'/{groupID}_cont_spec.csv').to_pandas()
+     
 
     # Old method with the spectrum is at the end of the .py file, now using
     # photometry from model without emission
@@ -121,15 +102,14 @@ def merge_spec_phot(groupID, spec, phot, phot_filters, phot_filter_keys, keep_ra
     flux_difference = integrated_obs[0] - integrated_model_phot[0]
 
     # Read in the emission line fits
-    fit_df = ascii.read(imd.cluster_dir + f'/emission_fitting/{groupID}_emission_fits.csv').to_pandas()
+    fit_df = ascii.read(imd.emission_fit_csvs_dir + f'/{groupID}_emission_fits.csv').to_pandas()
     total_line_flux = np.sum(fit_df['flux'])
     flux_difference_scale = flux_difference / total_line_flux
     print(f'Flux difference method would give a scale of {flux_difference_scale}')
 
     # Sum the lines method - assume prospector got the total flux in the lines
     # right, but not the ratio
-    lines_file = [name for name in prospector_files if f'group{groupID}' in name and 'dust1' in name and 'lines' in name and 'CONT' not in name]
-    model_lines_df = ascii.read(prospector_dir + lines_file[0]).to_pandas()
+    model_lines_df = ascii.read(imd.prospector_fit_csvs_dir + f'/{groupID}_lines.csv').to_pandas()
     mosdef_lines = hb_lines + ha_lines
     mosdef_line_fluxes = []
     for line_wave in mosdef_lines:
@@ -167,15 +147,15 @@ def merge_spec_phot(groupID, spec, phot, phot_filters, phot_filter_keys, keep_ra
     # Merge the dataframes
     phot_merged = pd.concat([phot, merge_spec_df])
 
-    # Save the merged dataframe
     return phot_merged, scale, target_fluxes, opt_point_fluxes, phot_waves, model_phot_df, flux_difference_scale, sum_lines_scale, integral_range
 
 
-def prepare_data_for_merge(groupID):
+def prepare_data_for_merge(groupID, norm_method='cluster_norm'):
     """Prepares and reads the data for the main function
 
     Parameters:
     groupID (int): ID of the group to merge
+    norm_method (str): Method used to normalize the composite spectra
 
 
 
@@ -187,10 +167,10 @@ def prepare_data_for_merge(groupID):
     """
     # Read in spectrum and photometry from their corresponding folders
     print(f'Reading spectrum {groupID}...')
-    spec = ascii.read(imd.cluster_dir + f'/composite_spectra/cluster_norm/{groupID}_spectrum.csv').to_pandas()
+    spec = ascii.read(imd.composite_spec_dir + f'/{norm_method}_csvs/{groupID}_spectrum.csv').to_pandas()
     print(f'Reading photometry {groupID}...')
-    phot = ascii.read(imd.mosdef_dir + f'/composite_sed_csvs/{groupID}_sed.csv').to_pandas()
-    filt_folder = imd.mosdef_dir + f'/composite_sed_csvs/composite_filter_csvs/{groupID}_filter_csvs/'
+    phot = ascii.read(imd.composite_sed_csvs_dir + f'/{groupID}_sed.csv').to_pandas()
+    filt_folder = imd.composite_filter_csvs_dir + f'/{groupID}_filter_csvs/'
     filt_files = [file for file in os.listdir(filt_folder) if '.csv' in file]
     phot_filters = {}
     phot_filter_keys = []
@@ -313,31 +293,6 @@ def find_line_flux(fit_df, phot, phot_filters, phot_filter_keys, groupID, model_
     return opt_scale, target_fluxes, opt_point_fluxes, phot_waves
 
 
-# --------------------
-# Prospector interface
-# --------------------
-
-def read_prospector_continuum(prospector_dir, files):
-    """Reads the dataframes output by the prospector_plot.py code
-
-    Parameters:
-    prospector_dir (str): Where the files are stored
-    file (list of str): name of the files to read
-
-
-    Returns:
-    phot_df (pd.DataFrame): Dataframe containing model photometry
-    spec_df (pd.DataFrame): Dataframe containing model spectroscopy
-    """
-    spec_file = [file for file in files if 'spec' in file][0]
-    phot_file = [file for file in files if 'phot' in file][0]
-
-    phot_df = ascii.read(prospector_dir + phot_file).to_pandas()
-    spec_df = ascii.read(prospector_dir + spec_file).to_pandas()
-
-    return phot_df, spec_df
-
-
 # -------------------
 # Plotting
 # -------------------
@@ -411,7 +366,7 @@ def merge_plot(groupID, phot_merged, phot, spec, scale, target_fluxes, opt_point
     ax_final.fill_between(waves, obs_interp(
         waves), model_phot_interp(waves), color='r', alpha=0.5)
 
-    fig.savefig(imd.cluster_dir + f'/composite_seds/composite_seds_w_spec/{groupID}_sed_spec.pdf')
+    fig.savefig(imd.composite_seds_spec_images_dir  + f'/{groupID}_sed_spec.pdf')
 
 
 # -------------------
