@@ -49,13 +49,7 @@ def make_plots(groupID, run_name, p_plots=False, mask=False, savename='False'):
 
     # Read in nebular emission lines from mosdef
     mosdef_lines_df = ascii.read(imd.loc_mosdef_elines).to_pandas()
-
-    # Make tfig and cfig
-    if p_plots == True:
-        tfig = reader.traceplot(res)
-        tfig.savefig(save_dir + f'/{run_name}' + savename + '_tfig.pdf')
-        cfig = reader.subcorner(res)
-        cfig.savefig(save_dir + f'/{run_name}' + savename + '_cfig.pdf')
+        
 
     # Figure setup
     fig = plt.figure(figsize=(14, 8))
