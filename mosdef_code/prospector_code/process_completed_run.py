@@ -11,7 +11,6 @@ import pandas as pd
 import pickle
 
 
-
 # Directory locations on savio
 savio_prospect_out_dir = '/global/scratch/brianlorenz/prospector_h5s'
 prospector_plot_dir = '/global/scratch/brianlorenz/prospector_plots'

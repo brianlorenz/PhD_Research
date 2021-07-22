@@ -32,7 +32,7 @@ line_list = [
 line_centers_rest = [line_list[i][1] for i in range(len(line_list))]
 
 
-def fit_emission(groupID, norm_method, constrain_O3=False, axis_group=-1, save_name=''):
+def fit_emission(groupID, norm_method, constrain_O3=False, axis_group=-1, save_name='', scaled='False'):
     """Given a groupID, fit the emission lines in that composite spectrum
 
     Parameters:
@@ -41,6 +41,7 @@ def fit_emission(groupID, norm_method, constrain_O3=False, axis_group=-1, save_n
     save_name(str): Folder of where to save and where spectra are located.
     constrain_O3 (boolean): Set to True to constrain the fitting of O3 to have a flux ratio of 2.97
     axis_group (int): Set to the number of the axis ratio group to fit that instead
+    scaled (str): Set to 'True' if fitting the scaled spectra
 
     Returns:
     Saves a csv of the fits for all of the lines
@@ -48,19 +49,27 @@ def fit_emission(groupID, norm_method, constrain_O3=False, axis_group=-1, save_n
 
     if axis_group > -1:
         composite_spectrum_df = read_axis_ratio_spectrum(axis_group, save_name)
+    elif scaled == 'True':
+        composite_spectrum_df = read_composite_spectrum(
+            groupID, norm_method, scaled='True')
     else:
         composite_spectrum_df = read_composite_spectrum(groupID, norm_method)
 
     line_names = [line_list[i][0] for i in range(len(line_list))]
 
     # Scale factor to make fitting more robust
-    scale_factor = 10**18
+    if scaled == 'True':
+        scale_factor = 10**15
+    else:
+        scale_factor = 10**18
 
     # Build the initial guesses
     guess = []
     bounds_low = []
     bounds_high = []
     amp_guess = 10**-18  # flux units
+    if scaled == 'True':
+        amp_guess = 10**-14  # flux units
     velocity_guess = 200  # km/s
     z_offset_guess = 0  # Angstrom
     # continuum_offset_guess = 10**-20  # flux untis,
@@ -84,21 +93,32 @@ def fit_emission(groupID, norm_method, constrain_O3=False, axis_group=-1, save_n
         #         continue
         guess.append(scale_factor * amp_guess)
         bounds_low.append(0)
-        bounds_high.append(scale_factor * 10**-16)
+        if scaled == 'True':
+            bounds_high.append(scale_factor * 10**-12)
+        else:
+            bounds_high.append(scale_factor * 10**-16)
     bounds = (np.array(bounds_low), np.array(bounds_high))
 
     n_loops = 1000
     wavelength = composite_spectrum_df[
         'wavelength']
-    continuum = composite_spectrum_df[
-        'cont_f_lambda']
+    if scaled == 'True':
+        continuum = composite_spectrum_df[
+            'cont_f_lambda_scaled']
+    else:
+        continuum = composite_spectrum_df[
+            'cont_f_lambda']
     full_cut = get_fit_range(wavelength)
     wavelength_cut = wavelength[full_cut]
     continuum_cut = continuum[full_cut]
     # print(bounds)
     # print(guess)
-    popt, arr_popt, cont_scale_out = monte_carlo_fit(multi_gaussian, wavelength_cut, scale_factor * continuum_cut, scale_factor * composite_spectrum_df[full_cut][
-        'f_lambda'], scale_factor * composite_spectrum_df[full_cut]['err_f_lambda'], np.array(guess), bounds, n_loops)
+    if scaled == 'True':
+        popt, arr_popt, cont_scale_out = monte_carlo_fit(multi_gaussian, wavelength_cut, scale_factor * continuum_cut, scale_factor * composite_spectrum_df[full_cut][
+            'f_lambda_scaled'], scale_factor * composite_spectrum_df[full_cut]['err_f_lambda_scaled'], np.array(guess), bounds, n_loops)
+    else:    
+        popt, arr_popt, cont_scale_out = monte_carlo_fit(multi_gaussian, wavelength_cut, scale_factor * continuum_cut, scale_factor * composite_spectrum_df[full_cut][
+            'f_lambda'], scale_factor * composite_spectrum_df[full_cut]['err_f_lambda'], np.array(guess), bounds, n_loops)
     err_popt = np.std(arr_popt, axis=0)
     # popt, pcov = curve_fit(multi_gaussian, composite_spectrum_df[
     #     'wavelength'], composite_spectrum_df['f_lambda'], guess)
@@ -155,6 +175,10 @@ def fit_emission(groupID, norm_method, constrain_O3=False, axis_group=-1, save_n
             imd.cluster_dir + f'/emission_fitting/axis_ratio_clusters{save_name}/{axis_group}_emission_fits.csv', index=False)
         plot_emission_fit(groupID, norm_method,
                           axis_group=axis_group, save_name=save_name)
+    elif scaled == 'True':
+        fit_df.to_csv(imd.emission_fit_csvs_dir +
+                      f'/{groupID}_emission_fits_scaled.csv', index=False)
+        plot_emission_fit(groupID, norm_method, scaled='True')
     else:
         fit_df.to_csv(imd.emission_fit_csvs_dir +
                       f'/{groupID}_emission_fits.csv', index=False)
@@ -162,26 +186,28 @@ def fit_emission(groupID, norm_method, constrain_O3=False, axis_group=-1, save_n
     return
 
 
-def fit_all_emission(n_clusters, norm_method):
+def fit_all_emission(n_clusters, norm_method, scaled='False'):
     """Runs the stack_spectra() function on every cluster
 
     Parameters:
     n_clusters (int): Number of clusters
     norm_method (str): method of normalizing
+    scaled (str): Set to 'True' if fitting the scaled spectra instead
 
     Returns:
     """
     for i in range(n_clusters):
-        fit_emission(i, norm_method)
+        fit_emission(i, norm_method, scaled=scaled)
 
 
-def plot_emission_fit(groupID, norm_method, axis_group=-1, save_name=''):
+def plot_emission_fit(groupID, norm_method, axis_group=-1, save_name='', scaled='False'):
     """Plots the fit to each emission line
 
     Parameters:
     groupID (int): Number of the cluster to fit
     norm_methd (str): Method used for normalization, points to the folder where spectra are stored
     axis_group (int): Set to the number of the axis ratio group to fit that instead
+    scaled (str): Set to true if plotting the scaled fits
 
     Returns:
     Saves a pdf of the fits for all of the lines
@@ -197,6 +223,10 @@ def plot_emission_fit(groupID, norm_method, axis_group=-1, save_name=''):
         fit_df = ascii.read(
             imd.cluster_dir + f'/emission_fitting/axis_ratio_clusters{save_name}/{axis_group}_emission_fits.csv').to_pandas()
         total_spec_df = read_axis_ratio_spectrum(axis_group, save_name)
+    elif scaled == 'True':
+        fit_df = ascii.read(imd.emission_fit_csvs_dir +
+                            f'/{groupID}_emission_fits_scaled.csv').to_pandas()
+        total_spec_df = read_composite_spectrum(groupID, norm_method, scaled = 'True')
     else:
         fit_df = ascii.read(imd.emission_fit_csvs_dir +
                             f'/{groupID}_emission_fits.csv').to_pandas()
@@ -220,11 +250,16 @@ def plot_emission_fit(groupID, norm_method, axis_group=-1, save_name=''):
     ax_Hb.spines['right'].set_color(Hb_zoom_box_color)
     ax_Hb.spines['left'].set_color(Hb_zoom_box_color)
 
-    spectrum = total_spec_df['f_lambda']
+    if scaled == 'True':
+        spectrum = total_spec_df['f_lambda_scaled']
+        continuum = total_spec_df['cont_f_lambda_scaled']
+    else:
+        spectrum = total_spec_df['f_lambda']
+        continuum = total_spec_df['cont_f_lambda']
     wavelength = total_spec_df['wavelength']
     n_galaxies = total_spec_df['n_galaxies']
     norm_value_summed = total_spec_df['norm_value_summed']
-    continuum = total_spec_df['cont_f_lambda']
+    
 
     too_low_gals, plot_cut, not_plot_cut, n_gals_in_group, cutoff, cutoff_low, cutoff_high = get_too_low_gals(
         groupID, norm_method, save_name, axis_group=axis_group)
@@ -308,6 +343,10 @@ def plot_emission_fit(groupID, norm_method, axis_group=-1, save_name=''):
     if axis_group > -1:
         fig.savefig(
             imd.cluster_dir + f'/emission_fitting/axis_ratio_clusters{save_name}/{axis_group}_emission_fit.pdf')
+    elif scaled == 'True':
+        fig.savefig(imd.emission_fit_images_dir +
+                    f'/{groupID}_emission_fit_scaled.pdf')
+    
     else:
         fig.savefig(imd.emission_fit_images_dir +
                     f'/{groupID}_emission_fit.pdf')
@@ -604,4 +643,3 @@ def get_cuts(wavelength_cut_section, width=7):
     cuts = np.prod(cuts, axis=0)
     cut = [bool(i) for i in cuts]
     return cut
-

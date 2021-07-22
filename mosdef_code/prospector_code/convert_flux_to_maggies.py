@@ -7,6 +7,7 @@ from scipy import interpolate
 
 
 
+
 def convert_flux_to_maggies(target_file):
     """Adds a new column in a file that converts the flux to maggies, the unit needed by Prospector
 
@@ -45,6 +46,7 @@ def normalize_flux_5000(sed_df):
     sed_df['f_lambda_scaled'] = sed_df['f_lambda']*scale
     sed_df['err_f_lambda_u_scaled'] = sed_df['err_f_lambda_u']*scale
     sed_df['err_f_lambda_d_scaled'] = sed_df['err_f_lambda_d']*scale
+
     return sed_df
     
 

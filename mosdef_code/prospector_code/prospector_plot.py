@@ -1,10 +1,8 @@
 '''Funcitons for plotting after prospector has run'''
 
-import prospect.io.read_results as reader
 import os
 import pickle
 import numpy as np
-import pandas as pd
 from astropy.io import ascii
 from uvj_clusters import plot_uvj_cluster
 from emission_measurements import read_emission_df
