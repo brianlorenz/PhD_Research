@@ -117,15 +117,16 @@ def merge_spec_phot(groupID, run_name, spec, phot, obs, keep_range=7):
     # Sum the lines method - assume prospector got the total flux in the lines
     # right, but not the ratio
     # This uses prospector's version of the lines - I should be fitting them myself
-    # model_lines_df = ascii.read(imd.prospector_fit_csvs_dir + f'/{run_name}_csvs' + f'/{groupID}_lines.csv').to_pandas()
-    # mosdef_lines = hb_lines + ha_lines
-    # mosdef_line_fluxes = []
-    # for line_wave in mosdef_lines:
-    #     line_idx = np.argmin(
-    #         np.abs(model_lines_df['rest_wavelength'] - line_wave))
-    #     mosdef_line_fluxes.append(model_lines_df.iloc[line_idx]['lines50_erg'])
-    # sum_mosdef_line_fluxes = np.sum(mosdef_line_fluxes)
-    # sum_lines_scale = sum_mosdef_line_fluxes / total_line_flux
+    model_lines_df = ascii.read(imd.prospector_fit_csvs_dir + f'/{run_name}_csvs' + f'/{groupID}_lines.csv').to_pandas()
+    mosdef_lines = hb_lines + ha_lines
+    mosdef_line_fluxes = []
+    for line_wave in mosdef_lines:
+        line_idx = np.argmin(
+            np.abs(model_lines_df['rest_wavelength'] - line_wave))
+        mosdef_line_fluxes.append(model_lines_df.iloc[line_idx]['lines50_erg'])
+    sum_mosdef_line_fluxes = np.sum(mosdef_line_fluxes)
+    sum_lines_scale = sum_mosdef_line_fluxes / total_line_flux
+    print(f'Using prospector fits, sum lines gives {sum_lines_scale * np.sqrt(redshift_cor)}')
 
     # Read in the lines that were fit in the same way as the mosdef spectra
     model_lines_df = ascii.read(imd.prospector_emission_fits_dir + f'/{run_name}_emission_fits/{groupID}_emission_fits.csv').to_pandas()
@@ -523,5 +524,5 @@ print(f'Integrating flux between observations and model spectrum')
     flux_difference = integrated_obs[0] - integrated_model_spec[0]
     '''
 
-for i in np.arange(19, 29, 1):
-    main(i, 'first_savio')
+for groupID in np.arange(0, 10, 1):
+    main(groupID, 'first_savio')
