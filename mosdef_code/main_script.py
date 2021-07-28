@@ -16,6 +16,7 @@ from convert_filter_to_sedpy import convert_all_folders_to_sedpy, find_median_re
 from convert_flux_to_maggies import convert_folder_to_maggies
 from plot_scaled_comps import plot_scaled_composites
 from scale_spectra import scale_all_spectra
+from fit_prospector_emission import setup_all_prospector_fit_csvs, fit_all_prospector_emission
 
 '''Starting point: One folder ('cluster_folder') that contains: 
 -folders labeled '0', '1', ..., 'N' where N is the number of clusters-1. These will be the cluster "groups"
@@ -28,6 +29,8 @@ Specify the directories in initialize_mosdef_dirs
 
 # Set the total number of clusters
 n_clusters = 29
+# Set the name of the prospector run
+run_name = 'first_savio'
 
 # Begin running all the functions
 print('Generating composite seds...')
@@ -56,5 +59,7 @@ convert_folder_to_maggies(imd.composite_sed_csvs_dir)
 plot_scaled_composites(n_clusters)
 # Scale and re-fit the spectra using the scale that was used for the composites
 scale_all_spectra(n_clusters)
-
+# Re-fit the prospector spectra in the same way that we fit the mosdef ones:
+setup_all_prospector_fit_csvs(29, run_name)
+fit_all_prospector_emission(29, run_name)
 

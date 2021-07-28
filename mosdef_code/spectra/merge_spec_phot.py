@@ -5,12 +5,12 @@ import os
 import numpy as np
 import pandas as pd
 from astropy.io import ascii
-from read_data import mosdef_df
 import matplotlib.pyplot as plt
 from scipy import interpolate
 import scipy.integrate as integrate
 import initialize_mosdef_dirs as imd
 from scipy.optimize import curve_fit
+from prospector_plot import load_obj
 
 
 # -------------------
@@ -25,15 +25,15 @@ def main(groupID, run_name):
     run_name (str): Name of the run on prospector
     '''
 
-    spec, phot, phot_filters, phot_filter_keys = prepare_data_for_merge(
-        groupID)
-    phot_merged, model_phot_df, flux_difference_scale, sum_lines_scale, integral_range = merge_spec_phot(
-        groupID, run_name, spec, phot, phot_filters, phot_filter_keys)
+    spec, phot, obs = prepare_data_for_merge(
+        groupID, run_name)
+    phot_merged, model_phot_df, flux_difference_scale, sum_lines_scale, integral_range, redshift_cor = merge_spec_phot(
+        groupID, run_name, spec, phot, obs)
     merge_plot(groupID, run_name, phot_merged, phot, spec,
-               model_phot_df, flux_difference_scale, sum_lines_scale, integral_range)
+               model_phot_df, flux_difference_scale, sum_lines_scale, integral_range, redshift_cor)
 
 
-def merge_spec_phot(groupID, run_name, spec, phot, phot_filters, phot_filter_keys, keep_range=7):
+def merge_spec_phot(groupID, run_name, spec, phot, obs, keep_range=7):
     '''
     keep_range (int): Number of angstroms on either side of the line to keep
     '''
@@ -88,14 +88,14 @@ def merge_spec_phot(groupID, run_name, spec, phot, phot_filters, phot_filter_key
     print(f'Reading Continuum from prospector file')
     model_phot_df  = ascii.read(imd.prospector_fit_csvs_dir + f'/{run_name}_csvs' + f'/{groupID}_cont_phot.csv').to_pandas()
     model_spec_df = ascii.read(imd.prospector_fit_csvs_dir + f'/{run_name}_csvs' + f'/{groupID}_cont_spec.csv').to_pandas()
-     
+    redshift_cor = (1+obs['z'])**2
 
     # Old method with the spectrum is at the end of the .py file, now using
     # photometry from model without emission
     print(f'Integrating flux between observations and model photometry')
     # Interpolate the model and observations for easy comparison
     model_phot_interp = interpolate.interp1d(
-        model_phot_df['rest_wavelength'], model_phot_df['phot50_flambda'], bounds_error=False, fill_value=0)
+        model_phot_df['rest_wavelength'], model_phot_df['phot50_flambda']*redshift_cor, bounds_error=False, fill_value=0)
     obs_interp = interpolate.interp1d(
         phot['rest_wavelength'], phot['f_lambda_scaled'])
     # integrate to find the total difference btween spectum and photometry
@@ -116,15 +116,22 @@ def merge_spec_phot(groupID, run_name, spec, phot, phot_filters, phot_filter_key
 
     # Sum the lines method - assume prospector got the total flux in the lines
     # right, but not the ratio
-    model_lines_df = ascii.read(imd.prospector_fit_csvs_dir + f'/{run_name}_csvs' + f'/{groupID}_lines.csv').to_pandas()
-    mosdef_lines = hb_lines + ha_lines
-    mosdef_line_fluxes = []
-    for line_wave in mosdef_lines:
-        line_idx = np.argmin(
-            np.abs(model_lines_df['rest_wavelength'] - line_wave))
-        mosdef_line_fluxes.append(model_lines_df.iloc[line_idx]['lines50_erg'])
-    sum_mosdef_line_fluxes = np.sum(mosdef_line_fluxes)
-    sum_lines_scale = sum_mosdef_line_fluxes / total_line_flux
+    # This uses prospector's version of the lines - I should be fitting them myself
+    # model_lines_df = ascii.read(imd.prospector_fit_csvs_dir + f'/{run_name}_csvs' + f'/{groupID}_lines.csv').to_pandas()
+    # mosdef_lines = hb_lines + ha_lines
+    # mosdef_line_fluxes = []
+    # for line_wave in mosdef_lines:
+    #     line_idx = np.argmin(
+    #         np.abs(model_lines_df['rest_wavelength'] - line_wave))
+    #     mosdef_line_fluxes.append(model_lines_df.iloc[line_idx]['lines50_erg'])
+    # sum_mosdef_line_fluxes = np.sum(mosdef_line_fluxes)
+    # sum_lines_scale = sum_mosdef_line_fluxes / total_line_flux
+
+    # Read in the lines that were fit in the same way as the mosdef spectra
+    model_lines_df = ascii.read(imd.prospector_emission_fits_dir + f'/{run_name}_emission_fits/{groupID}_emission_fits.csv').to_pandas()
+    total_model_line_flux = np.sum(model_lines_df['flux'])
+    sum_lines_scale = total_model_line_flux / total_line_flux
+
     print(f'Sum lines method would give a scale of {sum_lines_scale}')
 
     # print('Finding optimal scale for the spectrum')
@@ -145,19 +152,22 @@ def merge_spec_phot(groupID, run_name, spec, phot, phot_filters, phot_filter_key
 
     # This contains just the rows around the lines
     merge_spec_df = spec.iloc[keep_idxs][
-        ['wavelength', 'f_lambda', 'err_f_lambda']]
-    merge_spec_df['f_lambda'] = flux_difference_scale * merge_spec_df['f_lambda']
+        ['wavelength', 'f_lambda_scaled', 'err_f_lambda_scaled']]
+    merge_spec_df['f_lambda'] = flux_difference_scale * merge_spec_df['f_lambda_scaled']
     merge_spec_df = merge_spec_df.rename(
-        columns={'wavelength': 'rest_wavelength', 'err_f_lambda': 'err_f_lambda_d'})
+        columns={'wavelength': 'rest_wavelength', 'err_f_lambda_scaled': 'err_f_lambda_d'})
     merge_spec_df['err_f_lambda_u'] = merge_spec_df['err_f_lambda_d']
 
+    merge_phot_df = phot[['rest_wavelength', 'f_lambda_scaled', 'err_f_lambda_u_scaled', 'err_f_lambda_d_scaled']]
+    merge_phot_df = merge_phot_df.rename(columns={'f_lambda_scaled': 'f_lambda', 'err_f_lambda_u_scaled': 'err_f_lambda_u', 'err_f_lambda_d_scaled': 'err_f_lambda_d'})
+
     # Merge the dataframes
-    phot_merged = pd.concat([phot, merge_spec_df])
+    phot_merged = pd.concat([merge_phot_df, merge_spec_df]) 
 
-    return phot_merged, model_phot_df, flux_difference_scale, sum_lines_scale, integral_range
+    return phot_merged, model_phot_df, flux_difference_scale, sum_lines_scale, integral_range, redshift_cor
 
 
-def prepare_data_for_merge(groupID, norm_method='cluster_norm'):
+def prepare_data_for_merge(groupID, run_name, norm_method='cluster_norm'):
     """Prepares and reads the data for the main function
 
     Parameters:
@@ -172,23 +182,26 @@ def prepare_data_for_merge(groupID, norm_method='cluster_norm'):
     phot_filters (dict): Dict that contains dataframes for the filters, accessed by calling the nearest integer point
     phot_filter_keys (list): List of points as strings that can be used to call the phot_filters dict
     """
+    obs = load_obj(f'{groupID}_obs', run_name)
+
     # Read in spectrum and photometry from their corresponding folders
     print(f'Reading spectrum {groupID}...')
-    spec = ascii.read(imd.composite_spec_dir + f'/{norm_method}_csvs/{groupID}_spectrum.csv').to_pandas()
+    spec = ascii.read(imd.composite_spec_dir + f'/{norm_method}_csvs/{groupID}_spectrum_scaled.csv').to_pandas()
     print(f'Reading photometry {groupID}...')
     phot = ascii.read(imd.composite_sed_csvs_dir + f'/{groupID}_sed.csv').to_pandas()
-    filt_folder = imd.composite_filter_csvs_dir + f'/{groupID}_filter_csvs/'
-    filt_files = [file for file in os.listdir(filt_folder) if '.csv' in file]
-    phot_filters = {}
-    phot_filter_keys = []
-    for i in range(len(filt_files)):
-        filt_file = filt_files[i]
-        point = filt_file.split('.')[0].split('_')[1]
-        print(f'Reading in filter for point {point}...')
-        phot_filters[point] = ascii.read(filt_folder + filt_file).to_pandas()
-        phot_filter_keys.append(point)
+    # filt_folder = imd.composite_filter_csvs_dir + f'/{groupID}_filter_csvs/'
+    # filt_files = [file for file in os.listdir(filt_folder) if '.csv' in file]
+    # phot_filters = {}
+    # phot_filter_keys = []
+    # for i in range(len(filt_files)):
+    #     filt_file = filt_files[i]
+    #     point = filt_file.split('.')[0].split('_')[1]
+    #     print(f'Reading in filter for point {point}...')
+    #     phot_filters[point] = ascii.read(filt_folder + filt_file).to_pandas()
+    #     phot_filter_keys.append(point)
+    
 
-    return spec, phot, phot_filters, phot_filter_keys
+    return spec, phot, obs
 
 
 # -------------------
@@ -274,8 +287,8 @@ def find_line_flux(fit_df, phot, phot_filters, phot_filter_keys, groupID, model_
         phot_idx = np.argmin(
             np.abs(phot_wave - np.array(phot['rest_wavelength'])))
         target_flux = integrated_transmission[
-            0] * (phot.iloc[phot_idx]['f_lambda'] - model_phot_df.iloc[phot_idx]['phot50_flambda'])
-        target_flux = (phot.iloc[phot_idx]['f_lambda'] -
+            0] * (phot.iloc[phot_idx]['f_lambda_scaled'] - model_phot_df.iloc[phot_idx]['phot50_flambda'])
+        target_flux = (phot.iloc[phot_idx]['f_lambda_scaled'] -
                        model_phot_df.iloc[phot_idx]['phot50_flambda']) * integrated_transmission[0]
 
         return target_flux
@@ -304,7 +317,7 @@ def find_line_flux(fit_df, phot, phot_filters, phot_filter_keys, groupID, model_
 # Plotting
 # -------------------
 
-def merge_plot(groupID, run_name, phot_merged, phot, spec, model_phot_df, flux_difference_scale, sum_lines_scale, integral_range):
+def merge_plot(groupID, run_name, phot_merged, phot, spec, model_phot_df, flux_difference_scale, sum_lines_scale, integral_range, redshift_cor):
     """Plots merging process
 
     Parameters:
@@ -333,7 +346,7 @@ def merge_plot(groupID, run_name, phot_merged, phot, spec, model_phot_df, flux_d
                 ls='', marker='o', color='orange', label='Photometry')
         ax.set_ylabel("$\lambda$ F$_\lambda$")
         ax.set_xlabel("Wavelength ($\AA$)")
-        ax.plot(model_phot_df['rest_wavelength'], model_phot_df['rest_wavelength'] * model_phot_df['phot50_flambda'],
+        ax.plot(model_phot_df['rest_wavelength'], model_phot_df['rest_wavelength'] * model_phot_df['phot50_flambda']*redshift_cor,
                 ls='', marker='o', color='blue', label='Continuum Photometry')
 
     ax_final.legend()
@@ -358,20 +371,19 @@ def merge_plot(groupID, run_name, phot_merged, phot, spec, model_phot_df, flux_d
     # ax_scale_offsets.set_xlabel("Wavelength ($\AA$)")
     # ax_scale_offsets.set_ylabel("Target flux / Transmitted Line flux")
 
-    fig.text(0.1, 0.9, f'Scale = {round(scale[0], 3)}', transform=ax_final.transAxes)
-    fig.text(0.1, 0.85, f'Flux Diff Scale = {round(flux_difference_scale, 3)}', transform=ax_final.transAxes)
-    fig.text(0.1, 0.80, f'Sum Lines Scale = {round(sum_lines_scale, 3)}', transform=ax_final.transAxes)
+    # fig.text(0.1, 0.9, f'Scale = {round(scale[0], 3)}', transform=ax_final.transAxes)
+    fig.text(0.1, 0.15, f'Flux Diff Scale = {round(flux_difference_scale, 3)}', transform=ax_final.transAxes)
+    fig.text(0.1, 0.10, f'Sum Lines Scale = {round(sum_lines_scale, 3)}', transform=ax_final.transAxes)
 
     # Color in the region we are integrating over for clarity
     # Need the indices of wavelength that are between the integral values
     model_phot_interp = interpolate.interp1d(
-        model_phot_df['rest_wavelength'], model_phot_df['rest_wavelength'] * model_phot_df['phot50_flambda'], bounds_error=False, fill_value=0)
+        model_phot_df['rest_wavelength'], model_phot_df['rest_wavelength'] * model_phot_df['phot50_flambda']*redshift_cor, bounds_error=False, fill_value=0)
     obs_interp = interpolate.interp1d(
         phot['rest_wavelength'], phot['rest_wavelength'] * phot[
-            'f_lambda'])
+            'f_lambda_scaled'])
     waves = np.arange(integral_range[0], integral_range[1], 1)
-    ax_final.fill_between(waves, obs_interp(
-        waves), model_phot_interp(waves), color='r', alpha=0.5)
+    ax_final.fill_between(waves, obs_interp(waves), model_phot_interp(waves), color='r', alpha=0.5)
 
     imd.check_and_make_dir(imd.composite_seds_spec_images_dir + f'/{run_name}_images')
     fig.savefig(imd.composite_seds_spec_images_dir + f'/{run_name}_images' + f'/{groupID}_sed_spec.pdf')
@@ -403,8 +415,8 @@ def remove_continuum(spec, line_locs, width=10):
         mask = mask & mask_line
 
     spec_cont = spec[mask]
-    median_cont = np.median(spec_cont['f_lambda'])
-    spec['f_lambda_sub'] = spec['f_lambda'] - median_cont
+    median_cont = np.median(spec_cont['f_lambda_scaled'])
+    spec['f_lambda_sub'] = spec['f_lambda_scaled'] - median_cont
     return spec
 
 
@@ -441,7 +453,7 @@ def compute_flux_fraction(phot, phot_filters, phot_filter_keys, line_range):
         line_transmission = np.sum(filter_curve[line_idxs]['transmission'])
         transmission_fraction = line_transmission / total_transmission
         # Compute the fraction of flux that is from this range
-        flux_fraction = transmission_fraction * phot.iloc[i]['f_lambda']
+        flux_fraction = transmission_fraction * phot.iloc[i]['f_lambda_scaled']
         flux_fractions.append(flux_fraction)
         print(f'{phot_filter_keys[i]} fraction: {transmission_fraction}')
 
@@ -465,7 +477,7 @@ def compute_phot_flux(phot, line_range):
     total_flux (float): Integrated flux value over the line region
     """
     phot_interp = interpolate.interp1d(
-        phot['rest_wavelength'], phot['f_lambda'])
+        phot['rest_wavelength'], phot['f_lambda_scaled'])
     total_flux = integrate.quad(phot_interp, line_range[0], line_range[1])
     return total_flux
 
@@ -511,5 +523,5 @@ print(f'Integrating flux between observations and model spectrum')
     flux_difference = integrated_obs[0] - integrated_model_spec[0]
     '''
 
-
-main(0, 'first_savio')
+for i in np.arange(19, 29, 1):
+    main(i, 'first_savio')

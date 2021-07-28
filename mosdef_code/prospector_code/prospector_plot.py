@@ -15,8 +15,8 @@ from plot_mass_sfr import plot_mass_sfr_cluster, read_sfr_df, get_all_sfrs_masse
 import initialize_mosdef_dirs as imd
 
 
-def load_obj(name):
-    with open(imd.prospector_fit_csvs_dir + '/' + name + '.pkl', 'rb') as f:
+def load_obj(name, run_name):
+    with open(imd.prospector_fit_csvs_dir + f'/{run_name}_csvs' + '/' + name + '.pkl', 'rb') as f:
         return pickle.load(f)
 
 
@@ -31,7 +31,7 @@ def make_plots(groupID, run_name, mask=False, savename='False'):
 
     """
     # res = load_obj(f'{groupID}_res')
-    obs = load_obj(f'{groupID}_obs')
+    obs = load_obj(f'{groupID}_obs', run_name)
 
     spec_df = ascii.read(imd.prospector_fit_csvs_dir + f'/{run_name}_csvs' + 
                          f'/{groupID}_spec.csv').to_pandas()

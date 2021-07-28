@@ -32,7 +32,7 @@ line_list = [
 line_centers_rest = [line_list[i][1] for i in range(len(line_list))]
 
 
-def fit_emission(groupID, norm_method, constrain_O3=False, axis_group=-1, save_name='', scaled='False'):
+def fit_emission(groupID, norm_method, constrain_O3=False, axis_group=-1, save_name='', scaled='False', run_name='False'):
     """Given a groupID, fit the emission lines in that composite spectrum
 
     Parameters:
@@ -42,6 +42,7 @@ def fit_emission(groupID, norm_method, constrain_O3=False, axis_group=-1, save_n
     constrain_O3 (boolean): Set to True to constrain the fitting of O3 to have a flux ratio of 2.97
     axis_group (int): Set to the number of the axis ratio group to fit that instead
     scaled (str): Set to 'True' if fitting the scaled spectra
+    run_name (str): Set to the prospector run_name if fitting prospector spectra
 
     Returns:
     Saves a csv of the fits for all of the lines
@@ -52,6 +53,10 @@ def fit_emission(groupID, norm_method, constrain_O3=False, axis_group=-1, save_n
     elif scaled == 'True':
         composite_spectrum_df = read_composite_spectrum(
             groupID, norm_method, scaled='True')
+    elif run_name != 'False':
+        composite_spectrum_df = ascii.read(imd.prospector_fit_csvs_dir + f'/{run_name}_csvs/{groupID}_merged_spec.csv').to_pandas()
+        composite_spectrum_df['err_f_lambda'] = (composite_spectrum_df['err_f_lambda_u'] + composite_spectrum_df['err_f_lambda_d'])/2   
+        composite_spectrum_df['wavelength'] = composite_spectrum_df['rest_wavelength']
     else:
         composite_spectrum_df = read_composite_spectrum(groupID, norm_method)
 
@@ -70,6 +75,8 @@ def fit_emission(groupID, norm_method, constrain_O3=False, axis_group=-1, save_n
     amp_guess = 10**-18  # flux units
     if scaled == 'True':
         amp_guess = 10**-14  # flux units
+    if run_name != 'False':
+        amp_guess = 10**-15  # flux units
     velocity_guess = 200  # km/s
     z_offset_guess = 0  # Angstrom
     # continuum_offset_guess = 10**-20  # flux untis,
@@ -95,11 +102,13 @@ def fit_emission(groupID, norm_method, constrain_O3=False, axis_group=-1, save_n
         bounds_low.append(0)
         if scaled == 'True':
             bounds_high.append(scale_factor * 10**-12)
+        elif run_name != 'False':
+            bounds_high.append(scale_factor * 10**-12)
         else:
             bounds_high.append(scale_factor * 10**-16)
     bounds = (np.array(bounds_low), np.array(bounds_high))
 
-    n_loops = 1000
+    n_loops = 10
     wavelength = composite_spectrum_df[
         'wavelength']
     if scaled == 'True':
@@ -179,6 +188,10 @@ def fit_emission(groupID, norm_method, constrain_O3=False, axis_group=-1, save_n
         fit_df.to_csv(imd.emission_fit_csvs_dir +
                       f'/{groupID}_emission_fits_scaled.csv', index=False)
         plot_emission_fit(groupID, norm_method, scaled='True')
+    elif run_name != 'False':
+        imd.check_and_make_dir(imd.prospector_emission_fits_dir + f'/{run_name}_emission_fits')
+        fit_df.to_csv(imd.prospector_emission_fits_dir + f'/{run_name}_emission_fits/{groupID}_emission_fits.csv', index=False)
+        plot_emission_fit(groupID, norm_method, run_name=run_name)
     else:
         fit_df.to_csv(imd.emission_fit_csvs_dir +
                       f'/{groupID}_emission_fits.csv', index=False)
@@ -200,7 +213,7 @@ def fit_all_emission(n_clusters, norm_method, scaled='False'):
         fit_emission(i, norm_method, scaled=scaled)
 
 
-def plot_emission_fit(groupID, norm_method, axis_group=-1, save_name='', scaled='False'):
+def plot_emission_fit(groupID, norm_method, axis_group=-1, save_name='', scaled='False', run_name='False'):
     """Plots the fit to each emission line
 
     Parameters:
@@ -208,6 +221,7 @@ def plot_emission_fit(groupID, norm_method, axis_group=-1, save_name='', scaled=
     norm_methd (str): Method used for normalization, points to the folder where spectra are stored
     axis_group (int): Set to the number of the axis ratio group to fit that instead
     scaled (str): Set to true if plotting the scaled fits
+    run_name (str): Set to name of prospector run to fit with those
 
     Returns:
     Saves a pdf of the fits for all of the lines
@@ -227,6 +241,11 @@ def plot_emission_fit(groupID, norm_method, axis_group=-1, save_name='', scaled=
         fit_df = ascii.read(imd.emission_fit_csvs_dir +
                             f'/{groupID}_emission_fits_scaled.csv').to_pandas()
         total_spec_df = read_composite_spectrum(groupID, norm_method, scaled = 'True')
+    elif run_name != 'False':
+        fit_df = ascii.read(imd.prospector_emission_fits_dir + f'/{run_name}_emission_fits/{groupID}_emission_fits.csv').to_pandas()
+        total_spec_df = ascii.read(imd.prospector_fit_csvs_dir + f'/{run_name}_csvs/{groupID}_merged_spec.csv').to_pandas()
+        total_spec_df['err_f_lambda'] = (total_spec_df['err_f_lambda_u'] + total_spec_df['err_f_lambda_d'])/2   
+        total_spec_df['wavelength'] = total_spec_df['rest_wavelength']
     else:
         fit_df = ascii.read(imd.emission_fit_csvs_dir +
                             f'/{groupID}_emission_fits.csv').to_pandas()
@@ -257,8 +276,8 @@ def plot_emission_fit(groupID, norm_method, axis_group=-1, save_name='', scaled=
         spectrum = total_spec_df['f_lambda']
         continuum = total_spec_df['cont_f_lambda']
     wavelength = total_spec_df['wavelength']
-    n_galaxies = total_spec_df['n_galaxies']
-    norm_value_summed = total_spec_df['norm_value_summed']
+    # n_galaxies = total_spec_df['n_galaxies']
+    # norm_value_summed = total_spec_df['norm_value_summed']
     
 
     too_low_gals, plot_cut, not_plot_cut, n_gals_in_group, cutoff, cutoff_low, cutoff_high = get_too_low_gals(
@@ -346,6 +365,11 @@ def plot_emission_fit(groupID, norm_method, axis_group=-1, save_name='', scaled=
     elif scaled == 'True':
         fig.savefig(imd.emission_fit_images_dir +
                     f'/{groupID}_emission_fit_scaled.pdf')
+    elif run_name != 'False':
+        imd.check_and_make_dir(imd.prospector_emission_fits_dir +
+                    f'/{run_name}_emission_plots')
+        fig.savefig(imd.prospector_emission_fits_dir +
+                    f'/{run_name}_emission_plots/{groupID}_emission_fit.pdf')
     
     else:
         fig.savefig(imd.emission_fit_images_dir +

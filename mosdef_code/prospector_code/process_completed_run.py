@@ -198,20 +198,20 @@ def compute_quantiles(res, obs, mod, sps, all_spec, all_phot, all_mfrac, all_lin
         spec_df.to_csv(prospector_csvs_dir + f'/{run_name}_csvs' + f'/{groupID}_spec.csv', index=False)
         line_df.to_csv(prospector_csvs_dir + f'/{run_name}_csvs' + f'/{groupID}_lines.csv', index=False)
 
-        def save_obj(obj, name):
+        def save_obj(obj, name, run_name):
             with open(prospector_csvs_dir + f'/{run_name}_csvs' + '/' + name + '.pkl', 'wb+') as f:
                 pickle.dump(obj, f, pickle.HIGHEST_PROTOCOL)
 
         try:
-            save_obj(obs, f'{groupID}_obs')
+            save_obj(obs, f'{groupID}_obs', run_name)
         except:
             print('Could not pickle obs')
         try:
-            save_obj(res, f'{groupID}_res')
+            save_obj(res, f'{groupID}_res', run_name)
         except:
             print('Could not pickle res')        
         try:
-            save_obj(mod, f'{groupID}_mod')
+            save_obj(mod, f'{groupID}_mod', run_name)
         except:
             print('Could not pickle mod')
     
