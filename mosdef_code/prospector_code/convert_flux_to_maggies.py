@@ -2,14 +2,27 @@
 # '/Users/brianlorenz/mosdef/composite_sed_csvs/0_sed.csv'
 
 import os
+from tokenize import group
 from astropy.io import ascii
+from astropy.utils import data
+from numpy.lib.function_base import median
 from scipy import interpolate
 
 
 
 def redshift_f_lambda(data_df, groupID):
-
-    data_df['f_lambda_scaled_red'] = data_df['f_lambda_scaled']
+    """Since this script is also run on prospector, we only import imd here
+    
+    """
+    import initialize_mosdef_dirs as imd 
+    
+    zs_df = ascii.read(imd.median_zs_file).to_pandas()
+    median_z = zs_df[zs_df['groupID'] == groupID]['median_z'].iloc[0]
+    data_df['f_lambda_scaled_red'] = data_df['f_lambda_scaled'] / (1+median_z)
+    data_df['err_f_lambda_u_scaled_red'] = data_df['err_f_lambda_u_scaled'] / (1+median_z)
+    data_df['err_f_lambda_d_scaled_red'] = data_df['err_f_lambda_d_scaled'] / (1+median_z)
+    data_df['redshifted_wavelength'] = data_df['rest_wavelength'] * (1+median_z)
+    return data_df
 
 
 def convert_flux_to_maggies(target_file):
@@ -19,23 +32,27 @@ def convert_flux_to_maggies(target_file):
     target_file (str) - location of file containing composite SED points
 
     """
-    data = ascii.read(target_file).to_pandas()
+    groupID = int(target_file.split('/')[-1][:-8])
+    print(groupID)
 
-    data = normalize_flux_5000(data)
+    data_df = ascii.read(target_file).to_pandas()
 
-    f_nu = data['f_lambda_scaled'] * (data['rest_wavelength']**2) * 3.34 * 10**(-19)
+    data_df = normalize_flux_5000(data_df)
+    data_df = redshift_f_lambda(data_df, groupID)
+
+    f_nu = data_df['f_lambda_scaled_red'] * (data_df['redshifted_wavelength']**2) * 3.34 * 10**(-19)
     f_jy = f_nu * (10**23)
     maggies = f_jy / 3631
-    erru = data['err_f_lambda_u_scaled'] * \
-        ((data['rest_wavelength']**2) * 3.34 * 10**(-19)) * (10**23) / 3631
-    errd = data['err_f_lambda_d_scaled'] * \
-        ((data['rest_wavelength']**2) * 3.34 * 10**(-19)) * (10**23) / 3631
-    data['f_maggies'] = maggies
-    data['err_f_maggies_u'] = erru
-    data['err_f_maggies_d'] = errd
-    data['err_f_maggies_avg'] = (erru + errd) / 2
+    erru = data_df['err_f_lambda_u_scaled_red'] * \
+        ((data_df['rest_wavelength']**2) * 3.34 * 10**(-19)) * (10**23) / 3631
+    errd = data_df['err_f_lambda_d_scaled_red'] * \
+        ((data_df['rest_wavelength']**2) * 3.34 * 10**(-19)) * (10**23) / 3631
+    data_df['f_maggies_red'] = maggies
+    data_df['err_f_maggies_u_red'] = erru
+    data_df['err_f_maggies_d_red'] = errd
+    data_df['err_f_maggies_avg_red'] = (erru + errd) / 2
 
-    data.to_csv(target_file, index=False)
+    data_df.to_csv(target_file, index=False)
     return
 
 
@@ -123,4 +140,5 @@ def prospector_maggies_to_flux_spec(spec_wave, spec):
 
 
 
-
+import initialize_mosdef_dirs as imd 
+convert_folder_to_maggies(imd.composite_sed_csvs_dir)

@@ -88,7 +88,7 @@ def build_obs(**kwargs):
     """
     groupID = run_params['groupID']
     sed_file = composite_sed_csvs_dir + f'/{groupID}_sed.csv'
-    filt_folder = composite_filter_sedpy_di r + f'/{groupID}_sedpy_pars'
+    filt_folder = composite_filter_sedpy_dir + f'/{groupID}_sedpy_pars'
 
     # test
     print(f'Loading object {groupID}')
@@ -104,14 +104,12 @@ def build_obs(**kwargs):
 
     # load photometry
     sed_data = ascii.read(sed_file).to_pandas()
-    obs["phot_wave"] = to_median_redshift(
-        sed_data['rest_wavelength'], obs['z']).to_numpy()
-    obs['maggies'] = (sed_data['f_maggies']).to_numpy()
+    obs["phot_wave"] = sed_data['redshifted_wavelength'].to_numpy()
+    obs['maggies'] = (sed_data['f_maggies_red']).to_numpy()
     #obs['maggies_unc'] = (sed_data['err_f_maggies_avg']).to_numpy()
     # Add 5 percent in quadrature to errors
-    data_05p = (sed_data['f_maggies']) * 0.05
-    obs['maggies_unc'] = (
-        np.sqrt(data_05p**2 + (sed_data['err_f_maggies_avg'])**2)).to_numpy()
+    data_05p = (sed_data['f_maggies_red']) * 0.05
+    obs['maggies_unc'] = (np.sqrt(data_05p**2 + (sed_data['err_f_maggies_avg_red'])**2)).to_numpy()
     obs["phot_mask"] = np.array([m > 0 for m in obs['maggies']])
 
     # Add unessential bonus info.  This will be stored in output
