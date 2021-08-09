@@ -39,9 +39,7 @@ def check_for_all_agn(n_clusters):
     
     # Save the dataframe into the cluster_dir
     agn_count_df = pd.DataFrame(zip(groupIDs, num_agn_in_group, n_gals_in_group, percent_agn_in_group), columns=['groupID', 'n_agn', 'n_gals', 'percent_agn'])
-    agn_count_df.to_csv(imd.cluster_dir + '/number_agn.csv', index=False)
+    agn_count_df.to_csv(imd.number_agn_file, index=False)
     tot_agn = np.sum(agn_count_df['n_agn'])
     print(f'Total number of AGN: {tot_agn}')
 
-
-check_for_all_agn(29)

@@ -73,6 +73,8 @@ loc_mosdef0d = mosdef_dir + '/Mosdef_cats/mosdef_0d_latest.fits'
 loc_sfrs_latest = mosdef_dir + '/Mosdef_cats/mosdef_sfrs_latest.fits'
 loc_mosdef_elines = mosdef_dir + '/Catalogs/Nebular_Emission/mosdef_elines.txt' # This is a file that I generated
 median_zs_file = composite_seds_dir + '/median_zs.csv' # Also generated
+number_agn_file = cluster_dir + '/number_agn.csv'
+bad_groups_file = cluster_dir + '/bad_groups.csv'
 
 
 

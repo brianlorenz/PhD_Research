@@ -17,6 +17,8 @@ from convert_flux_to_maggies import convert_folder_to_maggies
 from plot_scaled_comps import plot_scaled_composites
 from scale_spectra import scale_all_spectra
 from fit_prospector_emission import setup_all_prospector_fit_csvs, fit_all_prospector_emission
+from check_for_agn import check_for_all_agn
+from filter_groups import generate_skip_file
 
 '''Starting point: One folder ('cluster_folder') that contains: 
 -folders labeled '0', '1', ..., 'N' where N is the number of clusters-1. These will be the cluster "groups"
@@ -38,6 +40,11 @@ get_all_composite_seds(n_clusters, run_filters=True)
 print('Generating composite spectra...')
 stack_all_spectra(n_clusters, 'cluster_norm')
 print('Fitting emission lines...')
+
+#Check for agn and list which groups do not have enough galaxies
+check_for_all_agn(n_clusters)
+generate_skip_file()
+
 
 # Will break here if one of the spectra is so bad that it can't fit
 fit_all_emission(n_clusters, 'cluster_norm')
