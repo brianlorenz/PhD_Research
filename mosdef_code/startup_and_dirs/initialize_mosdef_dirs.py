@@ -72,6 +72,8 @@ loc_uvj = mosdef_dir + '/Mosdef_cats/uvj_latest.dat'
 loc_mosdef0d = mosdef_dir + '/Mosdef_cats/mosdef_0d_latest.fits'
 loc_sfrs_latest = mosdef_dir + '/Mosdef_cats/mosdef_sfrs_latest.fits'
 loc_mosdef_elines = mosdef_dir + '/Catalogs/Nebular_Emission/mosdef_elines.txt' # This is a file that I generated
+median_zs_file = composite_seds_dir + '/median_zs.csv' # Also generated
+
 
 
 

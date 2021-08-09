@@ -7,6 +7,10 @@ from scipy import interpolate
 
 
 
+def redshift_f_lambda(data_df, groupID):
+
+    data_df['f_lambda_scaled_red'] = data_df['f_lambda_scaled']
+
 
 def convert_flux_to_maggies(target_file):
     """Adds a new column in a file that converts the flux to maggies, the unit needed by Prospector
