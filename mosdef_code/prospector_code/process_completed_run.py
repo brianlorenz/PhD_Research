@@ -152,9 +152,6 @@ def compute_quantiles(res, obs, mod, sps, all_spec, all_phot, all_mfrac, all_lin
                        for i in range(all_spec.shape[0])])
     spec84 = np.array([quantile(all_spec[i, :], 84, weights=weights[idx_high_weights])
                        for i in range(all_spec.shape[0])])
-    spec16 = spec16 / ((1 + obs['z'])**2)
-    spec50 = spec50 / ((1 + obs['z'])**2)
-    spec84 = spec84 / ((1 + obs['z'])**2)
 
     lines16 = np.array([quantile(all_line_fluxes[i, :], 16, weights=weights[idx_high_weights])
                         for i in range(all_line_fluxes.shape[0])])

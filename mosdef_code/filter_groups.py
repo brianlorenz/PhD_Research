@@ -10,8 +10,6 @@ def generate_skip_file():
     
     """
     n_agn_df = ascii.read(imd.number_agn_file).to_pandas()
-    bad_groups_arr =  n_agn_df[n_agn_df['n_gals']<=10]['groupID'].to_numpy()     
-    f = open(imd.bad_groups_file, "w")
-    for i in range(len(bad_groups_arr)):
-        f.write(f"{bad_groups_arr[i]}\n")
-    f.close()
+    bad_groups_df =  n_agn_df[n_agn_df['n_gals']<=10]['groupID']
+    bad_groups_df.to_csv(imd.bad_groups_file, index=False)
+
