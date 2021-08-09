@@ -6,6 +6,7 @@ import numpy as np
 from astropy.io import ascii
 import pandas as pd
 import initialize_mosdef_dirs as imd
+from prospector_composite_params import to_median_redshift
 
 
 # e.g. target_folder =
@@ -100,7 +101,8 @@ def convert_filters_to_sedpy(target_folder, groupID):
         #             index=False, sep=' ', header=False)
 
         # Redshift to the medain redshift of the group
-        median_z = find_median_redshift(groupID)
+        zs_df = ascii.read(imd.median_zs_file).to_pandas()
+        median_z = zs_df[zs_df['groupID'] == groupID]['median_z'].iloc[0]
         data['rest_wavelength'] = to_median_redshift(
             data['rest_wavelength'], median_z)
         save_folder = imd.composite_filter_sedpy_dir + f'/{groupID}_sedpy_pars'

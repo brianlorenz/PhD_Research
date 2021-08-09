@@ -88,7 +88,7 @@ def build_obs(**kwargs):
     """
     groupID = run_params['groupID']
     sed_file = composite_sed_csvs_dir + f'/{groupID}_sed.csv'
-    filt_folder = composite_filter_sedpy_dir + f'/{groupID}_sedpy_pars'
+    filt_folder = composite_filter_sedpy_di r + f'/{groupID}_sedpy_pars'
 
     # test
     print(f'Loading object {groupID}')
