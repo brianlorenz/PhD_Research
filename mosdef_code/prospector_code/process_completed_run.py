@@ -192,9 +192,9 @@ def compute_quantiles(res, obs, mod, sps, all_spec, all_phot, all_mfrac, all_lin
         spec_wavelength, spec50)
     spec84_flambda = prospector_maggies_to_flux_spec(
         spec_wavelength, spec84)
-    spec16_flambda_rest = spec16_flambda / ((1 + obs['z'])**2)
-    spec50_flambda_rest = spec50_flambda / ((1 + obs['z'])**2)
-    spec84_flambda_rest = spec84_flambda / ((1 + obs['z'])**2)
+    spec16_flambda_rest = spec16_flambda / (1 + obs['z'])
+    spec50_flambda_rest = spec50_flambda / (1 + obs['z'])
+    spec84_flambda_rest = spec84_flambda / (1 + obs['z'])
     # Did not redshift, convert, and then redshift back. An equivalent way is to convert and then divide by (1+z)^2
     
     

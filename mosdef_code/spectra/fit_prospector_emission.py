@@ -17,7 +17,7 @@ def setup_prospector_fit_csv(groupID, run_name):
     
     '''
     obs = load_obj(f'{groupID}_obs', run_name)
-    redshift_cor = (1+obs['z'])**2
+    redshift_cor = (1+obs['z'])
 
     spec_df = ascii.read(imd.prospector_fit_csvs_dir + f'/{run_name}_csvs/{groupID}_spec.csv').to_pandas()
     spec_df = spec_df.rename(columns = {'spec50_flambda' : 'f_lambda'})
@@ -70,5 +70,5 @@ def fit_all_prospector_emission(n_clusters, run_name):
         except:
             pass
     
-setup_all_prospector_fit_csvs(29, 'first_savio')
-fit_all_prospector_emission(29, 'first_savio')
+setup_all_prospector_fit_csvs(29, 'redshift_maggies')
+fit_all_prospector_emission(29, 'redshift_maggies')

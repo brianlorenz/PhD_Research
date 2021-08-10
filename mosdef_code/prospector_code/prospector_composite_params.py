@@ -72,7 +72,7 @@ run_params = {'verbose': True,
               'add_duste': True,
               # SPS parameters
               'zcontinuous': 1,
-              'groupID': 1,
+              'groupID': -1,
               }
 
 # --------------

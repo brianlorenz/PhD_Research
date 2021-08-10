@@ -125,12 +125,15 @@ def make_plots(groupID, run_name, mask=False, savename='False'):
 
     ax_ranges = [[start_spec, end_spec], Ha_range, Hb_range]
 
+    redshift_cor = obs['z']+1
+
     for j in range(len(spectra_axes)):
         ax = spectra_axes[j]
         ax_range = ax_ranges[j]
         # Plot photometry
-        ax.errorbar(phot_df['rest_wavelength'], phot_df['rest_wavelength'] * obs['f_lambda'], color='black', yerr=phot_df['rest_wavelength'] * obs[
-                    'err_f_lambda'], ls='-', marker='o', label='Observations', zorder=1)
+        rest_frame_original_phot = obs['f_lambda']*(1+obs['z'])
+        rest_frame_original_phot_errs = obs['err_f_lambda']*(1+obs['z'])
+        ax.errorbar(phot_df['rest_wavelength'], phot_df['rest_wavelength'] * rest_frame_original_phot, color='black', yerr=phot_df['rest_wavelength'] * rest_frame_original_phot_errs, ls='-', marker='o', label='Observations', zorder=1)
 
         y_model = np.array(phot_df['rest_wavelength']
                            * phot_df['phot50_flambda'])
@@ -141,7 +144,7 @@ def make_plots(groupID, run_name, mask=False, savename='False'):
                     ls='-', marker='o', yerr=model_errs, color='blue', label='Model')
 
         # Plot spectrum
-        ax.plot(spec_df['rest_wavelength'][spec_idxs], spec_df['rest_wavelength'][spec_idxs] * spec_df['spec50_flambda'][spec_idxs], '-',
+        ax.plot(spec_df['rest_wavelength'][spec_idxs], spec_df['rest_wavelength'][spec_idxs] * spec_df['spec50_flambda'][spec_idxs] * redshift_cor, '-',
                 color='orange', label='Model spectrum', zorder=3)
 
         # Plot Emission line and labels - plots all from CLOUDY
@@ -194,8 +197,8 @@ def make_plots(groupID, run_name, mask=False, savename='False'):
     ax_main.set_xscale('log')
     # ax_main.set_ylim(0.8 * np.percentile(z0_spec_wavelength[spec_idxs] * spectrum, 1),
     # 1.1 * np.percentile(z0_spec_wavelength[spec_idxs] * spectrum, 99))
-    ax_main.set_ylim(0.8 * np.percentile(spec_df['rest_wavelength'][spec_idxs] * spec_df['spec50_flambda'][spec_idxs], 1),
-                     1.1 * np.percentile(spec_df['rest_wavelength'][spec_idxs] * spec_df['spec50_flambda'][spec_idxs], 99))
+    ax_main.set_ylim(0.8 * np.percentile(spec_df['rest_wavelength'][spec_idxs] * spec_df['spec50_flambda'][spec_idxs] * redshift_cor, 1),
+                     1.1 * np.percentile(spec_df['rest_wavelength'][spec_idxs] * spec_df['spec50_flambda'][spec_idxs] * redshift_cor, 99))
     ax_main.set_xlim(spec_df['rest_wavelength'][spec_idxs].iloc[0] -
                      30, spec_df['rest_wavelength'][spec_idxs].iloc[-1] + 3000)
 
@@ -232,11 +235,11 @@ def make_all_prospector_plots(n_clusters, run_name):
 
     '''
     for groupID in range(n_clusters):
-        if os.path.exists(imd.prospector_fit_csvs_dir + f'/{groupID}_phot.csv'):
+        if os.path.exists(imd.prospector_fit_csvs_dir + f'/{run_name}_csvs/{groupID}_phot.csv'):
             print(f'Making plot for group {groupID}')
             make_plots(groupID, run_name)
 
 
 
-make_plots(0, 'redshift_maggies')
+# make_all_prospector_plots(29, 'redshift_maggies')
 
