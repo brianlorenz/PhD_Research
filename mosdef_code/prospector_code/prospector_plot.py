@@ -40,7 +40,7 @@ def make_plots(groupID, run_name, mask=False, savename='False'):
     lines_df = ascii.read(imd.prospector_fit_csvs_dir + f'/{run_name}_csvs' +
                           f'/{groupID}_lines.csv').to_pandas()
 
-    save_dir = imd.prospector_plot_dir + f'/{run_name}_plots/'
+    save_dir = imd.prospector_plot_dir + f'/{run_name}_plots'
     if savename == 'False':
         savename = f'group{groupID}'
 
@@ -237,4 +237,6 @@ def make_all_prospector_plots(n_clusters, run_name):
             make_plots(groupID, run_name)
 
 
+
+make_plots(0, 'redshift_maggies')
 

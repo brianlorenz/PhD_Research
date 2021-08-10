@@ -178,15 +178,28 @@ def compute_quantiles(res, obs, mod, sps, all_spec, all_phot, all_mfrac, all_lin
     obs, phot16_flambda = prospector_maggies_to_flux(obs, phot16)
     obs, phot50_flambda = prospector_maggies_to_flux(obs, phot50)
     obs, phot84_flambda = prospector_maggies_to_flux(obs, phot84)
+
+    # The f_lambda fluxes are in the redshifted frame, to bring them to rest we have to mulitply by 1+z
+    phot16_flambda_rest = phot16_flambda * (1 + obs['z'])
+    phot50_flambda_rest = phot50_flambda * (1 + obs['z'])
+    phot84_flambda_rest = phot84_flambda * (1 + obs['z'])
+
+
+
     spec16_flambda = prospector_maggies_to_flux_spec(
         spec_wavelength, spec16)
     spec50_flambda = prospector_maggies_to_flux_spec(
         spec_wavelength, spec50)
     spec84_flambda = prospector_maggies_to_flux_spec(
         spec_wavelength, spec84)
+    spec16_flambda_rest = spec16_flambda / ((1 + obs['z'])**2)
+    spec50_flambda_rest = spec50_flambda / ((1 + obs['z'])**2)
+    spec84_flambda_rest = spec84_flambda / ((1 + obs['z'])**2)
+    # Did not redshift, convert, and then redshift back. An equivalent way is to convert and then divide by (1+z)^2
     
-    phot_df = pd.DataFrame(zip(z0_phot_wavelength, phot16, phot50, phot84, phot16_flambda, phot50_flambda, phot84_flambda), columns=['rest_wavelength', 'phot16', 'phot50', 'phot84', 'phot16_flambda', 'phot50_flambda', 'phot84_flambda'])
-    spec_df = pd.DataFrame(zip(spec_wavelength, spec16, spec50, spec84, spec16_flambda, spec50_flambda, spec84_flambda), columns=['rest_wavelength', 'spec16', 'spec50', 'spec84', 'spec16_flambda', 'spec50_flambda', 'spec84_flambda'])
+    
+    phot_df = pd.DataFrame(zip(z0_phot_wavelength, phot16_flambda_rest, phot50_flambda_rest, phot84_flambda_rest), columns=['rest_wavelength', 'phot16_flambda', 'phot50_flambda', 'phot84_flambda'])
+    spec_df = pd.DataFrame(zip(spec_wavelength, spec16_flambda_rest, spec50_flambda_rest, spec84_flambda_rest), columns=['rest_wavelength', 'spec16_flambda', 'spec50_flambda', 'spec84_flambda'])
     line_df = pd.DataFrame(zip(line_waves, lines16, lines50, lines84, lines16_erg, lines50_erg, lines84_erg), columns=['rest_wavelength', 'lines16', 'lines50', 'lines84', 'lines16_erg', 'lines50_erg', 'lines84_erg'])
     
 

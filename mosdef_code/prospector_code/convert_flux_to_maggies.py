@@ -14,7 +14,7 @@ def redshift_f_lambda(data_df, groupID):
     """Since this script is also run on prospector, we only import imd here
     
     """
-    import initialize_mosdef_dirs as imd 
+    # import initialize_mosdef_dirs as imd 
     
     zs_df = ascii.read(imd.median_zs_file).to_pandas()
     median_z = zs_df[zs_df['groupID'] == groupID]['median_z'].iloc[0]
@@ -138,7 +138,3 @@ def prospector_maggies_to_flux_spec(spec_wave, spec):
     return f_lambda_spec
 
 
-
-
-import initialize_mosdef_dirs as imd 
-convert_folder_to_maggies(imd.composite_sed_csvs_dir)
