@@ -17,7 +17,8 @@ def setup_prospector_fit_csv(groupID, run_name):
     
     '''
     obs = load_obj(f'{groupID}_obs', run_name)
-    redshift_cor = (1+obs['z'])
+    # redshift_cor = (1+obs['z'])
+    redshift_cor = 1 # hopefully fixed this so that a redshift correction is no longer needed in this code
 
     spec_df = ascii.read(imd.prospector_fit_csvs_dir + f'/{run_name}_csvs/{groupID}_spec.csv').to_pandas()
     spec_df = spec_df.rename(columns = {'spec50_flambda' : 'f_lambda'})

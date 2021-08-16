@@ -195,12 +195,18 @@ def compute_quantiles(res, obs, mod, sps, all_spec, all_phot, all_mfrac, all_lin
     spec16_flambda_rest = spec16_flambda / (1 + obs['z'])
     spec50_flambda_rest = spec50_flambda / (1 + obs['z'])
     spec84_flambda_rest = spec84_flambda / (1 + obs['z'])
-    # Did not redshift, convert, and then redshift back. An equivalent way is to convert and then divide by (1+z)^2
+    # Did not redshift, convert, and then redshift back. An equivalent way is to convert and then divide by (1+z)^2 - why is it 1+z and not 1+z^2
     
+
+    # Whatever is done to the spectra, should also be done to the lines
+    lines16_erg = lines16_erg / (1+obs['z'])
+    lines50_erg = lines50_erg / (1+obs['z'])
+    lines84_erg = lines84_erg / (1+obs['z'])
+
     
     phot_df = pd.DataFrame(zip(z0_phot_wavelength, phot16_flambda_rest, phot50_flambda_rest, phot84_flambda_rest), columns=['rest_wavelength', 'phot16_flambda', 'phot50_flambda', 'phot84_flambda'])
     spec_df = pd.DataFrame(zip(spec_wavelength, spec16_flambda_rest, spec50_flambda_rest, spec84_flambda_rest), columns=['rest_wavelength', 'spec16_flambda', 'spec50_flambda', 'spec84_flambda'])
-    line_df = pd.DataFrame(zip(line_waves, lines16, lines50, lines84, lines16_erg, lines50_erg, lines84_erg), columns=['rest_wavelength', 'lines16', 'lines50', 'lines84', 'lines16_erg', 'lines50_erg', 'lines84_erg'])
+    line_df = pd.DataFrame(zip(line_waves, lines16_erg, lines50_erg, lines84_erg), columns=['rest_wavelength', 'lines16_erg', 'lines50_erg', 'lines84_erg'])
     
 
     if cont==False:

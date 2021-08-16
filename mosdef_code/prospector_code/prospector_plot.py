@@ -125,7 +125,7 @@ def make_plots(groupID, run_name, mask=False, savename='False'):
 
     ax_ranges = [[start_spec, end_spec], Ha_range, Hb_range]
 
-    redshift_cor = obs['z']+1
+    # redshift_cor = obs['z']+1
 
     for j in range(len(spectra_axes)):
         ax = spectra_axes[j]
@@ -144,7 +144,7 @@ def make_plots(groupID, run_name, mask=False, savename='False'):
                     ls='-', marker='o', yerr=model_errs, color='blue', label='Model')
 
         # Plot spectrum
-        ax.plot(spec_df['rest_wavelength'][spec_idxs], spec_df['rest_wavelength'][spec_idxs] * spec_df['spec50_flambda'][spec_idxs] * redshift_cor, '-',
+        ax.plot(spec_df['rest_wavelength'][spec_idxs], spec_df['rest_wavelength'][spec_idxs] * spec_df['spec50_flambda'][spec_idxs], '-',
                 color='orange', label='Model spectrum', zorder=3)
 
         # Plot Emission line and labels - plots all from CLOUDY
@@ -182,7 +182,7 @@ def make_plots(groupID, run_name, mask=False, savename='False'):
         ax.set_xlabel("Wavelength ($\AA$)")
 
     # Plot residuals
-    ax_residual.plot(phot_df['rest_wavelength'], (phot_df['rest_wavelength'] * obs['f_lambda']) - (phot_df['rest_wavelength'] * phot_df['phot50_flambda']),
+    ax_residual.plot(phot_df['rest_wavelength'], (phot_df['rest_wavelength'] * rest_frame_original_phot) - (phot_df['rest_wavelength'] * phot_df['phot50_flambda']),
                      '-o', color='black')
     ax_residual.plot(phot_df['rest_wavelength'], np.zeros(
         len(phot_df['rest_wavelength'])), '--', color='grey')
@@ -197,8 +197,8 @@ def make_plots(groupID, run_name, mask=False, savename='False'):
     ax_main.set_xscale('log')
     # ax_main.set_ylim(0.8 * np.percentile(z0_spec_wavelength[spec_idxs] * spectrum, 1),
     # 1.1 * np.percentile(z0_spec_wavelength[spec_idxs] * spectrum, 99))
-    ax_main.set_ylim(0.8 * np.percentile(spec_df['rest_wavelength'][spec_idxs] * spec_df['spec50_flambda'][spec_idxs] * redshift_cor, 1),
-                     1.1 * np.percentile(spec_df['rest_wavelength'][spec_idxs] * spec_df['spec50_flambda'][spec_idxs] * redshift_cor, 99))
+    ax_main.set_ylim(0.8 * np.percentile(spec_df['rest_wavelength'][spec_idxs] * spec_df['spec50_flambda'][spec_idxs], 1),
+                     1.1 * np.percentile(spec_df['rest_wavelength'][spec_idxs] * spec_df['spec50_flambda'][spec_idxs], 99))
     ax_main.set_xlim(spec_df['rest_wavelength'][spec_idxs].iloc[0] -
                      30, spec_df['rest_wavelength'][spec_idxs].iloc[-1] + 3000)
 

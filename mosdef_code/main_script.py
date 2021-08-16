@@ -32,7 +32,7 @@ Specify the directories in initialize_mosdef_dirs
 # Set the total number of clusters
 n_clusters = 29
 # Set the name of the prospector run
-run_name = 'first_savio'
+run_name = 'redshift_maggies'
 
 # Begin running all the functions
 print('Generating composite seds...')
@@ -67,6 +67,8 @@ plot_scaled_composites(n_clusters)
 # Scale and re-fit the spectra using the scale that was used for the composites
 scale_all_spectra(n_clusters)
 # Re-fit the prospector spectra in the same way that we fit the mosdef ones:
+
+
 setup_all_prospector_fit_csvs(29, run_name)
 fit_all_prospector_emission(29, run_name)
 

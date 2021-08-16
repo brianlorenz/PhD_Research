@@ -524,5 +524,8 @@ print(f'Integrating flux between observations and model spectrum')
     flux_difference = integrated_obs[0] - integrated_model_spec[0]
     '''
 
-for groupID in np.arange(0, 10, 1):
-    main(groupID, 'first_savio')
+for groupID in range(29):
+    try:
+        main(groupID, 'redshift_maggies')
+    except:
+        pass
