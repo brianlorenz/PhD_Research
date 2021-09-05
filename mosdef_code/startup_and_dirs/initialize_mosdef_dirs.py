@@ -58,6 +58,11 @@ composite_seds_spec_dir = cluster_dir + '/composite_sed_and_spec'
 composite_seds_spec_csvs_dir = composite_seds_spec_dir + '/composite_sed_and_spec_csvs'
 composite_seds_spec_images_dir = composite_seds_spec_dir + '/composite_sed_and_spec_images'
 
+# Line widths
+line_widths_dir = cluster_dir + '/line_widths'
+line_width_csvs_dir = line_widths_dir + '/line_width_csvs'
+line_width_images_dir = line_widths_dir + '/line_width_images'
+
 
 # Folders to store UVJ measurements
 uvj_dir = mosdef_dir + '/UVJ_Colors'

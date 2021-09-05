@@ -198,10 +198,7 @@ def compute_quantiles(res, obs, mod, sps, all_spec, all_phot, all_mfrac, all_lin
     # Did not redshift, convert, and then redshift back. An equivalent way is to convert and then divide by (1+z)^2 - why is it 1+z and not 1+z^2
     
 
-    # Whatever is done to the spectra, should also be done to the lines
-    lines16_erg = lines16_erg / (1+obs['z'])
-    lines50_erg = lines50_erg / (1+obs['z'])
-    lines84_erg = lines84_erg / (1+obs['z'])
+    # Don't need to copy what is done to the spectra to the lines, since they are in different units
 
     
     phot_df = pd.DataFrame(zip(z0_phot_wavelength, phot16_flambda_rest, phot50_flambda_rest, phot84_flambda_rest), columns=['rest_wavelength', 'phot16_flambda', 'phot50_flambda', 'phot84_flambda'])

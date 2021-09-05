@@ -27,10 +27,10 @@ def main(groupID, run_name):
 
     spec, phot, obs = prepare_data_for_merge(
         groupID, run_name)
-    phot_merged, model_phot_df, flux_difference_scale, sum_lines_scale, integral_range, redshift_cor = merge_spec_phot(
+    phot_merged, model_phot_df, flux_difference_scale, sum_lines_scale, integral_range_both, flux_difference_scale_ha, flux_difference_scale_hb, sum_lines_scale_ha, sum_lines_scale_hb = merge_spec_phot(
         groupID, run_name, spec, phot, obs)
     merge_plot(groupID, run_name, phot_merged, phot, spec,
-               model_phot_df, flux_difference_scale, sum_lines_scale, integral_range, redshift_cor)
+               model_phot_df, flux_difference_scale, sum_lines_scale, integral_range_both, flux_difference_scale_ha, flux_difference_scale_hb, sum_lines_scale_ha, sum_lines_scale_hb)
 
 
 def merge_spec_phot(groupID, run_name, spec, phot, obs, keep_range=7):
@@ -39,12 +39,15 @@ def merge_spec_phot(groupID, run_name, spec, phot, obs, keep_range=7):
     '''
 
     # Separate the spectrum into just the line regions that we want to use
-    ha_range = [6450, 6650]
+    group_bounds_df = ascii.read(imd.line_widths_dir + f'/{groupID}_bounds.csv').to_pandas()
+    ha_row = group_bounds_df['rest_wavelength'] == 6563
+    hb_row = group_bounds_df['rest_wavelength'] == 5007
+    ha_range = [group_bounds_df[ha_row].iloc[0]['min_bound'], group_bounds_df[ha_row].iloc[0]['max_bound']]
     ha_lines = [6548, 6563, 6583]
     spec_ha = spec[np.logical_and(spec['wavelength'] > ha_range[
                                   0], spec['wavelength'] < ha_range[1])]
 
-    hb_range = [4750, 5100]
+    hb_range = [group_bounds_df[hb_row].iloc[0]['min_bound'], group_bounds_df[hb_row].iloc[0]['max_bound']]
     hb_lines = [4861, 4960, 5008]
     spec_hb = spec[np.logical_and(spec['wavelength'] > hb_range[
                                   0], spec['wavelength'] < hb_range[1])]
@@ -83,50 +86,97 @@ def merge_spec_phot(groupID, run_name, spec, phot, obs, keep_range=7):
     # Take the line over the filter curve of all the points, and try to fit what the best height would be to match the observations
     # Scale the spectrum to match that flux value
 
+    # Checking the method - compute the scaling for the ha range and hb range separately
+
     # Read in the continuum from prospector
     
     print(f'Reading Continuum from prospector file')
     model_phot_df  = ascii.read(imd.prospector_fit_csvs_dir + f'/{run_name}_csvs' + f'/{groupID}_cont_phot.csv').to_pandas()
     model_spec_df = ascii.read(imd.prospector_fit_csvs_dir + f'/{run_name}_csvs' + f'/{groupID}_cont_spec.csv').to_pandas()
-    redshift_cor = (1+obs['z'])**2
 
     # Old method with the spectrum is at the end of the .py file, now using
     # photometry from model without emission
     print(f'Integrating flux between observations and model photometry')
     # Interpolate the model and observations for easy comparison
     model_phot_interp = interpolate.interp1d(
-        model_phot_df['rest_wavelength'], model_phot_df['phot50_flambda']*redshift_cor, bounds_error=False, fill_value=0)
+        model_phot_df['rest_wavelength'], model_phot_df['phot50_flambda'], bounds_error=False, fill_value=0)
     obs_interp = interpolate.interp1d(
         phot['rest_wavelength'], phot['f_lambda_scaled'])
     # integrate to find the total difference btween spectum and photometry
     # (one possible method, then scale the liens to contain this flux
     # difference)
-    integral_range = (4100, 10000)
-    integrated_model_phot = integrate.quad(
-        model_phot_interp, integral_range[0], integral_range[1])
-    integrated_obs = integrate.quad(
-        obs_interp, integral_range[0], integral_range[1])
-    flux_difference = integrated_obs[0] - integrated_model_phot[0]
+
+    def integrate_flux_difference(integral_range):
+        """Integrate the flux between the prospector model and observed continuum seds, then subtract them
+        """
+        integrated_model_phot = integrate.quad(
+            model_phot_interp, integral_range[0], integral_range[1])
+        integrated_obs = integrate.quad(
+            obs_interp, integral_range[0], integral_range[1])
+        flux_difference = integrated_obs[0] - integrated_model_phot[0]
+        return flux_difference
+    integral_range_both = (4100, 10000)
+    flux_difference_both = integrate_flux_difference(integral_range_both)
+    # flux_difference_ha = integrate_flux_difference(ha_range)
+    # flux_difference_hb = integrate_flux_difference(hb_range)
+    flux_difference_ha = integrate_flux_difference([integral_range_both[0],5200])
+    flux_difference_hb = integrate_flux_difference([5200,integral_range_both[1]])
 
     # Read in the emission line fits 
     fit_df = ascii.read(imd.emission_fit_csvs_dir + f'/{groupID}_emission_fits_scaled.csv').to_pandas()
     total_line_flux = np.sum(fit_df['flux'])
-    flux_difference_scale = flux_difference / total_line_flux
+    flux_difference_scale = flux_difference_both / total_line_flux
     print(f'Flux difference method would give a scale of {flux_difference_scale}')
+    
+    # Now compute just around Ha and Hb
+    def find_flux_scale(lines, diff):
+        """Give the wavelengths of the line, and it returns the scale
+        
+        Parameters:
+        lines (list): Wavelengths of the lines
+        diff (float): Flux difference between the model in the line region and photometery
+        """
+        line_fluxes = []
+        for line_wave in lines:
+            line_idx = np.argmin(np.abs(fit_df['line_center_rest'] - line_wave))
+            line_flux = fit_df.iloc[line_idx]['flux']
+            line_fluxes.append(line_flux)
+        tot_line_fluxes = np.sum(line_fluxes)
+        diff_scale = diff / tot_line_fluxes
+        return diff_scale, tot_line_fluxes
+    flux_difference_scale_ha, total_line_flux_ha = find_flux_scale(ha_lines, flux_difference_ha)
+    flux_difference_scale_hb, total_line_flux_hb = find_flux_scale(hb_lines, flux_difference_hb)
+    print(f'For Ha, flux difference method would give a scale of {flux_difference_scale_ha}')
+    print(f'For Hb, flux difference method would give a scale of {flux_difference_scale_hb}')
+
+
 
     # Sum the lines method - assume prospector got the total flux in the lines
     # right, but not the ratio
     # This uses prospector's version of the lines - I should be fitting them myself
     model_lines_df = ascii.read(imd.prospector_fit_csvs_dir + f'/{run_name}_csvs' + f'/{groupID}_lines.csv').to_pandas()
     mosdef_lines = hb_lines + ha_lines
-    mosdef_line_fluxes = []
-    for line_wave in mosdef_lines:
-        line_idx = np.argmin(
-            np.abs(model_lines_df['rest_wavelength'] - line_wave))
-        mosdef_line_fluxes.append(model_lines_df.iloc[line_idx]['lines50_erg'])
-    sum_mosdef_line_fluxes = np.sum(mosdef_line_fluxes)
-    sum_lines_scale = sum_mosdef_line_fluxes / total_line_flux
-    print(f'Using prospector fits, sum lines gives {sum_lines_scale * np.sqrt(redshift_cor)}')
+
+    def find_sum_lines_scale(lines, total_flux):
+        """ Computes the scale comparing the strenght of the lines bewteen the data and model
+        
+        lines (list): Wavelenghts of the lines to compare
+        """
+        line_fluxes = []
+        for line_wave in lines:
+            line_idx = np.argmin(
+                np.abs(model_lines_df['rest_wavelength'] - line_wave))
+            line_fluxes.append(model_lines_df.iloc[line_idx]['lines50_erg'])
+        sum_line_fluxes = np.sum(line_fluxes)
+        sum_lines_scale = sum_line_fluxes / total_flux
+        return sum_lines_scale
+    
+    sum_lines_scale = find_sum_lines_scale(mosdef_lines, total_line_flux)
+    sum_lines_scale_ha = find_sum_lines_scale(ha_lines, total_line_flux_ha)
+    sum_lines_scale_hb = find_sum_lines_scale(hb_lines, total_line_flux_hb)
+    print(f'Using prospector fits, sum lines gives {sum_lines_scale}')
+    print(f'Using prospector fits for Ha, sum lines gives {sum_lines_scale_ha}')
+    print(f'Using prospector fits for Hb, sum lines gives {sum_lines_scale_hb}')
 
     # Read in the lines that were fit in the same way as the mosdef spectra
     model_lines_df = ascii.read(imd.prospector_emission_fits_dir + f'/{run_name}_emission_fits/{groupID}_emission_fits.csv').to_pandas()
@@ -165,7 +215,7 @@ def merge_spec_phot(groupID, run_name, spec, phot, obs, keep_range=7):
     # Merge the dataframes
     phot_merged = pd.concat([merge_phot_df, merge_spec_df]) 
 
-    return phot_merged, model_phot_df, flux_difference_scale, sum_lines_scale, integral_range, redshift_cor
+    return phot_merged, model_phot_df, flux_difference_scale, sum_lines_scale, integral_range_both, flux_difference_scale_ha, flux_difference_scale_hb, sum_lines_scale_ha, sum_lines_scale_hb
 
 
 def prepare_data_for_merge(groupID, run_name, norm_method='cluster_norm'):
@@ -318,7 +368,7 @@ def find_line_flux(fit_df, phot, phot_filters, phot_filter_keys, groupID, model_
 # Plotting
 # -------------------
 
-def merge_plot(groupID, run_name, phot_merged, phot, spec, model_phot_df, flux_difference_scale, sum_lines_scale, integral_range, redshift_cor):
+def merge_plot(groupID, run_name, phot_merged, phot, spec, model_phot_df, flux_difference_scale, sum_lines_scale, integral_range_both, flux_difference_scale_ha, flux_difference_scale_hb, sum_lines_scale_ha, sum_lines_scale_hb):
     """Plots merging process
 
     Parameters:
@@ -341,19 +391,21 @@ def merge_plot(groupID, run_name, phot_merged, phot, spec, model_phot_df, flux_d
     ax_arr = [ax_final, ax_ha, ax_hb]
 
     for ax in ax_arr:
-        ax.plot(phot_merged['rest_wavelength'], phot_merged['rest_wavelength'] * phot_merged[
-            'f_lambda'], ls='', marker='o', color='black', label='Phot + Spec')
         ax.plot(phot['rest_wavelength'], phot['rest_wavelength'] * phot['f_lambda_scaled'],
                 ls='', marker='o', color='orange', label='Photometry')
         ax.set_ylabel("$\lambda$ F$_\lambda$")
         ax.set_xlabel("Wavelength ($\AA$)")
-        ax.plot(model_phot_df['rest_wavelength'], model_phot_df['rest_wavelength'] * model_phot_df['phot50_flambda']*redshift_cor,
+        ax.plot(model_phot_df['rest_wavelength'], model_phot_df['rest_wavelength'] * model_phot_df['phot50_flambda'],
                 ls='', marker='o', color='blue', label='Continuum Photometry')
+    ax_ha.plot(phot_merged['rest_wavelength'], phot_merged['rest_wavelength'] * phot_merged[
+            'f_lambda'], ls='', marker='o', color='black', label='Phot + Spec')
+    ax_hb.plot(phot_merged['rest_wavelength'], phot_merged['rest_wavelength'] * phot_merged[
+            'f_lambda'], ls='', marker='o', color='black', label='Phot + Spec')
 
     ax_final.legend()
 
-    ax_final.set_ylim(0.8 * np.percentile(phot_merged['rest_wavelength'] * phot_merged['f_lambda'], 1),
-                      1.1 * np.percentile(phot_merged['rest_wavelength'] * phot_merged['f_lambda'], 80))
+    # ax_final.set_ylim(0.6 * np.percentile(model_phot_df['rest_wavelength'] * model_phot_df['f_lambda'], 1),
+    #                   1.4 * np.percentile(model_phot_df['rest_wavelength'] * model_phot_df['f_lambda'], 80))
 
     ax_ha.set_xlim(6540, 6590)
     ax_hb.set_xlim(4800, 5050)
@@ -372,19 +424,37 @@ def merge_plot(groupID, run_name, phot_merged, phot, spec, model_phot_df, flux_d
     # ax_scale_offsets.set_xlabel("Wavelength ($\AA$)")
     # ax_scale_offsets.set_ylabel("Target flux / Transmitted Line flux")
 
+    flux_diff_color = 'red'
+    ha_color = 'green'
+    hb_color = 'purple'
+
     # fig.text(0.1, 0.9, f'Scale = {round(scale[0], 3)}', transform=ax_final.transAxes)
-    fig.text(0.1, 0.15, f'Flux Diff Scale = {round(flux_difference_scale, 3)}', transform=ax_final.transAxes)
+    fig.text(0.1, 0.24, f'Flux Diff Scale = {round(flux_difference_scale, 3)}', transform=ax_final.transAxes, color = flux_diff_color)
+    fig.text(0.1, 0.21, f'Flux Diff Scale Hb = {round(flux_difference_scale_hb, 3)}', transform=ax_final.transAxes, color=hb_color)
+    fig.text(0.1, 0.18, f'Flux Diff Scale Ha = {round(flux_difference_scale_ha, 3)}', transform=ax_final.transAxes, color=ha_color)
     fig.text(0.1, 0.10, f'Sum Lines Scale = {round(sum_lines_scale, 3)}', transform=ax_final.transAxes)
+    fig.text(0.1, 0.07, f'Sum Lines Scale Hb = {round(sum_lines_scale_hb, 3)}', transform=ax_final.transAxes, color=hb_color)
+    fig.text(0.1, 0.04, f'Sum Lines Scale Ha = {round(sum_lines_scale_ha, 3)}', transform=ax_final.transAxes, color=ha_color)
 
     # Color in the region we are integrating over for clarity
     # Need the indices of wavelength that are between the integral values
     model_phot_interp = interpolate.interp1d(
-        model_phot_df['rest_wavelength'], model_phot_df['rest_wavelength'] * model_phot_df['phot50_flambda']*redshift_cor, bounds_error=False, fill_value=0)
+        model_phot_df['rest_wavelength'], model_phot_df['rest_wavelength'] * model_phot_df['phot50_flambda'], bounds_error=False, fill_value=0)
     obs_interp = interpolate.interp1d(
         phot['rest_wavelength'], phot['rest_wavelength'] * phot[
             'f_lambda_scaled'])
-    waves = np.arange(integral_range[0], integral_range[1], 1)
-    ax_final.fill_between(waves, obs_interp(waves), model_phot_interp(waves), color='r', alpha=0.5)
+    waves = np.arange(integral_range_both[0], integral_range_both[1], 1)
+    ax_final.fill_between(waves, obs_interp(waves), model_phot_interp(waves), color=flux_diff_color, alpha=0.5)
+
+
+    group_bounds_df = ascii.read(imd.line_widths_dir + f'/{groupID}_bounds.csv').to_pandas()
+    ha_row = group_bounds_df['rest_wavelength'] == 6563
+    hb_row = group_bounds_df['rest_wavelength'] == 5007
+    ha_waves = np.arange(group_bounds_df[ha_row].iloc[0]['min_bound'], group_bounds_df[ha_row].iloc[0]['max_bound'], 1)
+    hb_waves = np.arange(group_bounds_df[hb_row].iloc[0]['min_bound'], group_bounds_df[hb_row].iloc[0]['max_bound'], 1)
+    ax_final.fill_between(ha_waves, obs_interp(ha_waves), model_phot_interp(ha_waves), color=ha_color, alpha=0.5)
+    ax_final.fill_between(hb_waves, obs_interp(hb_waves), model_phot_interp(hb_waves), color=hb_color, alpha=0.5)
+    
 
     imd.check_and_make_dir(imd.composite_seds_spec_images_dir + f'/{run_name}_images')
     fig.savefig(imd.composite_seds_spec_images_dir + f'/{run_name}_images' + f'/{groupID}_sed_spec.pdf')
@@ -524,7 +594,7 @@ print(f'Integrating flux between observations and model spectrum')
     flux_difference = integrated_obs[0] - integrated_model_spec[0]
     '''
 
-for groupID in range(29):
+for groupID in np.arange(0,29):
     try:
         main(groupID, 'redshift_maggies')
     except:
