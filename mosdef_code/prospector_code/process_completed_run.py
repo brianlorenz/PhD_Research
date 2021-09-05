@@ -12,16 +12,16 @@ import pickle
 
 
 # Directory locations on savio
-savio_prospect_out_dir = '/global/scratch/brianlorenz/prospector_h5s'
-prospector_plot_dir = '/global/scratch/brianlorenz/prospector_plots'
-composite_sed_csvs_dir = '/global/scratch/brianlorenz/composite_sed_csvs'
-composite_filter_sedpy_dir = '/global/scratch/brianlorenz/sedpy_par_files'
-median_zs_file = '/global/scratch/brianlorenz/median_zs.csv'
-mosdef_elines_file = '/global/scratch/brianlorenz/mosdef_elines.txt'
+savio_prospect_out_dir = '/global/scratch/users/brianlorenz/prospector_h5s'
+prospector_plot_dir = '/global/scratch/users/brianlorenz/prospector_plots'
+composite_sed_csvs_dir = '/global/scratch/users/brianlorenz/composite_sed_csvs'
+composite_filter_sedpy_dir = '/global/scratch/users/brianlorenz/sedpy_par_files'
+median_zs_file = '/global/scratch/users/brianlorenz/median_zs.csv'
+mosdef_elines_file = '/global/scratch/users/brianlorenz/mosdef_elines.txt'
 
 # For saving
-prospector_csvs_dir = '/global/scratch/brianlorenz/prospector_csvs'
-prospector_plots_dir = '/global/scratch/brianlorenz/prospector_plots'
+prospector_csvs_dir = '/global/scratch/users/brianlorenz/prospector_csvs'
+prospector_plots_dir = '/global/scratch/users/brianlorenz/prospector_plots'
 
 # Directory locations on home
 # import initialize_mosdef_dirs as imd
