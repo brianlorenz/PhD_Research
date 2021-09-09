@@ -70,6 +70,7 @@ run_params = {'verbose': True,
               # Model parameters
               'add_neb': True,
               'add_duste': True,
+              'dust_type': 4,
               # SPS parameters
               'zcontinuous': 1,
               'groupID': -1,
@@ -177,7 +178,7 @@ def build_model(object_redshift=0.0, fixed_metallicity=None, add_duste=True,
     model_params["tage"]["init"] = 13.
     model_params["mass"]["init"] = 1e8
 
-    model_params["dust_type"] = 4
+    # model_params["dust_type"] = 4
 
     # adjust priors
     model_params["dust2"]["prior"] = priors.TopHat(mini=0.0, maxi=4.0)
