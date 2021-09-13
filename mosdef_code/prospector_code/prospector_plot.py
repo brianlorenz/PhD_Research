@@ -91,9 +91,9 @@ def make_plots(groupID, run_name, mask=False, savename='False'):
         # Find the nearest line in cloudy:
         idx_nearest = np.argmin(np.abs(lines_df['rest_wavelength'] - bpt_line))
         line_wave = lines_df['rest_wavelength'].iloc[idx_nearest]
-        line_flux = lines_df['lines50'].iloc[idx_nearest]
-        line_errs_pct = (((line_flux - lines_df['lines16'].iloc[idx_nearest]) / line_flux),
-                         ((lines_df['lines84'].iloc[idx_nearest] - line_flux) / line_flux))
+        line_flux = lines_df['lines50_erg'].iloc[idx_nearest]
+        line_errs_pct = (((line_flux - lines_df['lines16_erg'].iloc[idx_nearest]) / line_flux),
+                         ((lines_df['lines84_erg'].iloc[idx_nearest] - line_flux) / line_flux))
         bpt_fluxes.append(line_flux)
         bpt_errs_pct.append(line_errs_pct)
     # Calculate the bpt points
@@ -167,7 +167,7 @@ def make_plots(groupID, run_name, mask=False, savename='False'):
             idx_nearest = np.argmin(
                 np.abs(lines_df['rest_wavelength'] - line_rest_wave))
             line_wave = lines_df['rest_wavelength'].iloc[idx_nearest]
-            line_flux = lines_df['lines50'].iloc[idx_nearest]
+            line_flux = lines_df['lines50_erg'].iloc[idx_nearest]
             # Plot a green line where it is
             ax.axvline(line_wave, ls='--', color='mediumseagreen')
 
@@ -241,5 +241,5 @@ def make_all_prospector_plots(n_clusters, run_name):
 
 
 
-# make_all_prospector_plots(29, 'redshift_maggies')
+make_all_prospector_plots(29, 'dust_type4')
 

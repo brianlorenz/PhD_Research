@@ -68,11 +68,14 @@ run_params = {'verbose': True,
               'objid': 0,
               'zred': 0.0,
               # Model parameters
-              'add_neb': True,
-              'add_duste': True,
+              'add_neb': False,
+              'add_duste': False,
               'dust_type': 4,
               # SPS parameters
               'zcontinuous': 1,
+              'add_agb_dust_model': False,
+              'add_igm_absorption': True,
+              'add_neb_emission': True,
               'groupID': -1,
               }
 
@@ -177,6 +180,7 @@ def build_model(object_redshift=0.0, fixed_metallicity=None, add_duste=True,
     model_params["logzsol"]["init"] = 0
     model_params["tage"]["init"] = 13.
     model_params["mass"]["init"] = 1e8
+    model_params['gas_logz'] = {'N': 1, 'isfree': True, 'init': 0.0}
 
     # model_params["dust_type"] = 4
 
@@ -185,6 +189,8 @@ def build_model(object_redshift=0.0, fixed_metallicity=None, add_duste=True,
     model_params["dust1_fraction"]["prior"] = priors.TopHat(mini=0.0, maxi=2.0)
     model_params["tau"]["prior"] = priors.LogUniform(mini=1e-1, maxi=10)
     model_params["mass"]["prior"] = priors.LogUniform(mini=1e6, maxi=1e13)
+    model_params["gas_logz"]["prior"] = priors.TopHat(mini=-3.0, maxi=0.0)
+    
 
     # Change the model parameter specifications based on some keyword arguments
     if fixed_metallicity is not None:
