@@ -1,7 +1,7 @@
 import numpy as np
 from prospect.models import priors, SedModel
 from prospect.models.sedmodel import PolySedModel
-from prospect.models.templates import TemplateLibrary
+from prospect.models.templates import TemplateLibrary, describe
 from prospect.sources import CSPSpecBasis, FastStepBasis
 
 from prospect import prospect_args
@@ -73,12 +73,6 @@ run_params = {'verbose': True,
               'dust_type': 4,
               # SPS parameters
               'zcontinuous': 1,
-              'add_agb_dust_model': False,
-              'add_igm_absorption': True,
-              'add_neb_emission': True,
-              'add_neb_continuum': True,
-              'nebemlineinspec': True,
-              'add_dust_emission': True,
               'groupID': 0,
               }
 
@@ -174,6 +168,17 @@ def build_model(object_redshift=0.0, fixed_metallicity=None, add_duste=True,
     # if luminosity_distance > 0:
     #     model_params["lumdist"] = {"N": 1, "isfree": False,
     #                                "init": luminosity_distance, "units": "Mpc"}
+
+    # model_params['dust_type'] = 4
+    true_param = {'N': 1, 'isfree': False, 'init': True}
+    false_param = {'N': 1, 'isfree': False, 'init': False}
+
+    model_params['add_agb_dust_model'] = false_param
+    model_params['add_igm_absorption'] = true_param
+    model_params['add_neb_emission'] = true_param
+    model_params['add_neb_continuum'] = true_param
+    model_params['nebemlineinspec'] = true_param
+    model_params['add_dust_emission'] = true_param
 
     # Adjust model initial values (only important for optimization or emcee)
     model_params["dust2"]["init"] = 0.1
