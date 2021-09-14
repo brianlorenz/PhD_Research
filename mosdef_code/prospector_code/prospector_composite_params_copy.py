@@ -26,15 +26,15 @@ from astropy.io import fits
 
 
 # Directory locations on savio
-composite_sed_csvs_dir = '/global/scratch/users/brianlorenz/composite_sed_csvs'
-composite_filter_sedpy_dir = '/global/scratch/users/brianlorenz/sedpy_par_files'
-median_zs_file = '/global/scratch/users/brianlorenz/median_zs.csv'
+# composite_sed_csvs_dir = '/global/scratch/users/brianlorenz/composite_sed_csvs'
+# composite_filter_sedpy_dir = '/global/scratch/users/brianlorenz/sedpy_par_files'
+# median_zs_file = '/global/scratch/users/brianlorenz/median_zs.csv'
 
 # Directory locations on home
-# import initialize_mosdef_dirs as imd
-# composite_sed_csvs_dir = imd.composite_sed_csvs_dir
-# composite_filter_sedpy_dir = imd.composite_filter_sedpy_dir
-# median_zs_file = imd.composite_seds_dir + '/median_zs.csv'
+import initialize_mosdef_dirs as imd
+composite_sed_csvs_dir = imd.composite_sed_csvs_dir
+composite_filter_sedpy_dir = imd.composite_filter_sedpy_dir
+median_zs_file = imd.composite_seds_dir + '/median_zs.csv'
 
 # %run prospector_dynesty.py --param_file='prospector_composite_params_copy.py' --outfile='composite_group0' --debug=True
 
@@ -79,7 +79,7 @@ run_params = {'verbose': True,
               'add_neb_continuum': True,
               'nebemlineinspec': True,
               'add_dust_emission': True,
-              'groupID': -1,
+              'groupID': 0,
               }
 
 # --------------
