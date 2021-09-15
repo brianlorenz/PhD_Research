@@ -24,12 +24,6 @@ from astropy.cosmology import z_at_value
 from astropy.io import ascii
 from astropy.io import fits
 
-
-# Directory locations on savio
-# composite_sed_csvs_dir = '/global/scratch/users/brianlorenz/composite_sed_csvs'
-# composite_filter_sedpy_dir = '/global/scratch/users/brianlorenz/sedpy_par_files'
-# median_zs_file = '/global/scratch/users/brianlorenz/median_zs.csv'
-
 # Directory locations on home
 import initialize_mosdef_dirs as imd
 composite_sed_csvs_dir = imd.composite_sed_csvs_dir
@@ -70,10 +64,9 @@ run_params = {'verbose': True,
               # Model parameters
               'add_neb': False,
               'add_duste': False,
-              'dust_type': 4,
               # SPS parameters
               'zcontinuous': 1,
-              'groupID': 0,
+              'groupID': 1,
               }
 
 # --------------
@@ -169,9 +162,9 @@ def build_model(object_redshift=0.0, fixed_metallicity=None, add_duste=True,
     #     model_params["lumdist"] = {"N": 1, "isfree": False,
     #                                "init": luminosity_distance, "units": "Mpc"}
 
-    # model_params['dust_type'] = 4
     true_param = {'N': 1, 'isfree': False, 'init': True}
     false_param = {'N': 1, 'isfree': False, 'init': False}
+    sfh_param = {'N': 1, 'isfree': False, 'init': 1}
 
     model_params['add_agb_dust_model'] = false_param
     model_params['add_igm_absorption'] = true_param
@@ -179,6 +172,7 @@ def build_model(object_redshift=0.0, fixed_metallicity=None, add_duste=True,
     model_params['add_neb_continuum'] = true_param
     model_params['nebemlineinspec'] = true_param
     model_params['add_dust_emission'] = true_param
+    model_params['sfh'] = sfh_param
 
     # Adjust model initial values (only important for optimization or emcee)
     model_params["dust2"]["init"] = 0.1

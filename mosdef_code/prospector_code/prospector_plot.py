@@ -241,5 +241,5 @@ def make_all_prospector_plots(n_clusters, run_name):
 
 
 
-make_all_prospector_plots(29, 'gas_logz_free')
+make_all_prospector_plots(29, 'gas_logz_free2')
 
