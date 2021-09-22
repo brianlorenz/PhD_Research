@@ -158,7 +158,11 @@ def build_model(object_redshift=0.0, fixed_metallicity=None, add_duste=True,
     # See the python-FSPS documentation for details about most of these
     # parameters.  Also, look at `TemplateLibrary.describe("parametric_sfh")` to
     # view the parameters, their initial values, and the priors in detail.
-    model_params = TemplateLibrary["parametric_sfh"]
+    
+    
+    # Updated to be non-parametric
+    #  model_params = TemplateLibrary["parametric_sfh"]
+    model_params = TemplateLibrary["continuity_flex_sfh"]
     # model_params["dust1"] = {"name": "dust1", "N": 1, "isfree": True,
     #                          "init": 0.1, "units": "optical depth at 5500AA", "prior": priors.TopHat(mini=0.0, maxi=4.0)}
 
@@ -168,9 +172,11 @@ def build_model(object_redshift=0.0, fixed_metallicity=None, add_duste=True,
     #     model_params["lumdist"] = {"N": 1, "isfree": False,
     #                                "init": luminosity_distance, "units": "Mpc"}
 
+    
+
     true_param = {'N': 1, 'isfree': False, 'init': True}
     false_param = {'N': 1, 'isfree': False, 'init': False}
-    sfh_param = {'N': 1, 'isfree': False, 'init': 1}
+    # sfh_param = {'N': 1, 'isfree': False, 'init': 1}
 
     model_params['add_agb_dust_model'] = false_param
     model_params['add_igm_absorption'] = true_param
@@ -178,7 +184,7 @@ def build_model(object_redshift=0.0, fixed_metallicity=None, add_duste=True,
     model_params['add_neb_continuum'] = true_param
     model_params['nebemlineinspec'] = true_param
     model_params['add_dust_emission'] = true_param
-    model_params['sfh'] = sfh_param
+    # model_params['sfh'] = sfh_param
 
     # Adjust model initial values (only important for optimization or emcee)
     model_params["dust2"]["init"] = 0.1
@@ -186,7 +192,7 @@ def build_model(object_redshift=0.0, fixed_metallicity=None, add_duste=True,
                              'depends_on': to_dust1, 'init': 1.0}
     model_params['dust1_fraction'] = {'N': 1, 'isfree': True, 'init': 1.0}
     model_params["logzsol"]["init"] = 0
-    model_params["tage"]["init"] = 13.
+    # model_params["tage"]["init"] = 13.
     model_params["mass"]["init"] = 1e8
     model_params['gas_logz'] = {'N': 1, 'isfree': True, 'init': 0.0}
 
@@ -195,7 +201,7 @@ def build_model(object_redshift=0.0, fixed_metallicity=None, add_duste=True,
     # adjust priors
     model_params["dust2"]["prior"] = priors.TopHat(mini=0.0, maxi=4.0)
     model_params["dust1_fraction"]["prior"] = priors.TopHat(mini=0.0, maxi=2.0)
-    model_params["tau"]["prior"] = priors.LogUniform(mini=1e-1, maxi=10)
+    # model_params["tau"]["prior"] = priors.LogUniform(mini=1e-1, maxi=10)
     model_params["mass"]["prior"] = priors.LogUniform(mini=1e6, maxi=1e13)
     model_params["gas_logz"]["prior"] = priors.TopHat(mini=-3.0, maxi=0.0)
     
@@ -222,6 +228,9 @@ def build_model(object_redshift=0.0, fixed_metallicity=None, add_duste=True,
         # Add nebular emission (with fixed parameters)
         model_params.update(TemplateLibrary["nebular"])
 
+    
+   
+
     # Now instantiate the model using this new dictionary of parameter
     # specifications
     model = sedmodel.SedModel(model_params)
@@ -235,7 +244,7 @@ def build_model(object_redshift=0.0, fixed_metallicity=None, add_duste=True,
 
 def build_sps(zcontinuous=1, compute_vega_mags=False, **extras):
     from prospect.sources import CSPSpecBasis
-    sps = CSPSpecBasis(zcontinuous=zcontinuous,
+    sps = FastStepBasis(zcontinuous=zcontinuous,
                        compute_vega_mags=compute_vega_mags)
     return sps
 

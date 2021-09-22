@@ -68,6 +68,12 @@ line_width_images_dir = line_widths_dir + '/line_width_images'
 uvj_dir = mosdef_dir + '/UVJ_Colors'
 composite_uvj_dir = cluster_dir + '/UVJ_Colors_composite'
 
+# Axis ratios
+loc_axis_ratio_cat = mosdef_dir + '/axis_ratio_data/Merged_catalogs/mosdef_all_cats_v2.csv'
+axis_output_dir = mosdef_dir + '/axis_ratio_outputs'
+axis_figure_dir = axis_output_dir + '/axis_ratio_figures'
+
+
 
 # Misc mosdef files
 loc_3DHST = home_dir + '/mosdef/Surveys/3DHST/v4.1/'
@@ -80,6 +86,8 @@ loc_mosdef_elines = mosdef_dir + '/Catalogs/Nebular_Emission/mosdef_elines.txt' 
 median_zs_file = composite_seds_dir + '/median_zs.csv' # Also generated
 number_agn_file = cluster_dir + '/number_agn.csv'
 bad_groups_file = cluster_dir + '/bad_groups.csv'
+
+
 
 
 
