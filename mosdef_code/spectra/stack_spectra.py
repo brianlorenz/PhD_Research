@@ -81,10 +81,27 @@ def stack_spectra(groupID, norm_method, re_observe=False, mask_negatives=False, 
         z_spec = mosdef_obj['Z_MOSFIRE']
         field = mosdef_obj['FIELD_STR']
         v4id = mosdef_obj['V4ID']
+
         norm_sed = read_sed(field, v4id, norm=True)
+        
         # print(f'Reading Spectra for {field} {v4id}, z={z_spec:.3f}')
         # Check to see if the galaxy includes all emission lines
-        covered = check_line_coverage(mosdef_obj)
+
+        coverage_list = [
+            ('Halpha', 6564.61),
+            ('Hbeta', 4862.68),
+            ('O3_5008', 5008.24),
+            ('O3_4960', 4960.295),
+            ('N2_6585', 6585.27)
+        ]
+
+        if axis_stack:
+            coverage_list = [
+                ('Halpha', 6564.61),
+                ('Hbeta', 4862.68)
+            ]
+
+        covered = check_line_coverage(mosdef_obj, coverage_list)
         if covered == False:
             continue
         # Find all the spectra files corresponding to this object
@@ -279,7 +296,7 @@ def stack_spectra(groupID, norm_method, re_observe=False, mask_negatives=False, 
     if axis_stack:
         median_ratio = np.median(axis_ratio_df['use_ratio'])
         total_spec_df.to_csv(
-            imd.cluster_dir + f'/composite_spectra/axis_stack{save_name}/{axis_group}_spectrum.csv', index=False)
+            imd.axis_cluster_data_dir + f'/{save_name}/{save_name}_spectra/{axis_group}_spectrum.csv', index=False)
         plot_spec(groupID, norm_method,
                   axis_group=axis_group, save_name=save_name)
 
@@ -399,8 +416,8 @@ def plot_spec(groupID, norm_method, mask_negatives=False, thresh=0.1, axis_group
     
     ax_contribute.tick_params(labelsize=ticksize, size=ticks)
     if axis_group > -1:
-        ax.text
-        fig.savefig(imd.cluster_dir + f'/composite_spectra/axis_stack{save_name}/{axis_group}_spectrum.pdf')
+        # ax.text
+        fig.savefig(imd.axis_cluster_data_dir + f'/{save_name}/{save_name}_spectra_images/{axis_group}_spectrum.pdf')
     else:
         save_dir = imd.composite_spec_dir + f'/{norm_method}_images'
         imd.check_and_make_dir(save_dir)
@@ -537,15 +554,17 @@ def stack_axis_mass_ssfr(save_name='_constant_ssfr_mass'):
         axis_group += 1
 
 
-def stack_axis_ratio(n_bins=10, l_mass_cutoff=0, l_ssfr_cutoff=0, l_mass_bins=0, l_ssfr_bins=0, scale_ha=0):
+def stack_axis_ratio(n_bins, mass_width, ssfr_width, starting_points, ratio_bins):
     """Stacks galaxies in groups by axis ratio
+
+    old params: , l_mass_cutoff=0, l_ssfr_cutoff=0, l_mass_bins=0, l_ssfr_bins=0, scale_ha=0
 
     Parameters:
     n_bins (int): Number of bins to divide galaxies into
-    l_mass_cutoff (int): Splits into 2 mass bins in each group - those above mass of cutoff, and those below
-    l_ssfr_cutoff (int): Splits into 2 ssfr bins in each group - those above ssfr of cutoff, and those below
-    l_mass_bins (list): [min, mid, max] - Splits into 2 mass bins in each group - from min to mid, and from mid to max
-    l_ssfr_bins (list): [min, mid, max] - Splits into 2 ssfr bins in each group - from min to mid, and from mid to max
+    mass_width (float): How big the mass bins are
+    ssfr_width (float): How wide the ssfr bins are
+    starting_points (list of tuples): Where to start the ssfr bins in (mass, ssfr) coordinates
+    ratio_bins (tuple): Where to cut the axis ratio bins e.g. (0.4, 0.7)
 
     Returns:
     """
@@ -554,100 +573,150 @@ def stack_axis_ratio(n_bins=10, l_mass_cutoff=0, l_ssfr_cutoff=0, l_mass_bins=0,
     # Remove objects with greater than 0.1 error
     ar_df = ar_df[ar_df['err_use_ratio'] < 0.1]
 
-    # Add ssfrs if needed:
-    if l_ssfr_cutoff != 0 or l_ssfr_bins != 0:
-        ssfr_mosdef_merge_no_dups = setup_get_ssfr()
-        ar_df = merge_ar_ssfr(ar_df, ssfr_mosdef_merge_no_dups)
+    # Remove objects wiithout ha/hb detections
+    ar_df = ar_df[ar_df['ha_flux'] > -0.1]
+    ar_df = ar_df[ar_df['hb_flux'] > -0.1]
 
-    # Add line emission if needed
-    if scale_ha > 0:
-        ar_df = merge_emission(ar_df)
 
-    # Sort, so we can easily split by axis ratio
-    ar_df_sorted = ar_df.sort_values('use_ratio')
+    #Already incorperated ssfrs into V2 of the catalog
+    # # Add ssfrs if needed:
+    # if l_ssfr_cutoff != 0 or l_ssfr_bins != 0:
+    #     ssfr_mosdef_merge_no_dups = setup_get_ssfr()
+    #     ar_df = merge_ar_ssfr(ar_df, ssfr_mosdef_merge_no_dups)
 
-    # Add masses
-    l_masses = [get_mosdef_obj(ar_df_sorted.iloc[i]['field'], ar_df_sorted.iloc[i]['v4id'])[
-        'LMASS'] for i in range(len(ar_df))]
-    ar_df_sorted['LMASS'] = l_masses
+    # # Add line emission if needed
+    # if scale_ha > 0:
+    #     ar_df = merge_emission(ar_df)
+
+
+    # Add a column for ssfr
+    ar_df['log_ssfr'] = np.log10((10**ar_df['log_sfr'])/(10**ar_df['log_mass']))
+
+    # # Add masses
+    # l_masses = [get_mosdef_obj(ar_df_sorted.iloc[i]['field'], ar_df_sorted.iloc[i]['v4id'])[
+    #     'LMASS'] for i in range(len(ar_df))]
+    # ar_df_sorted['LMASS'] = l_masses
 
     # Split into n_bins groups
     axis_group = 0
-    ar_dfs = np.array_split(ar_df_sorted, n_bins)
+    cluster_name = 'mass_ssfr'
+    # ar_dfs = np.array_split(ar_df_sorted, n_bins)
+    
+    ar_df_low = ar_df[ar_df['use_ratio']<ratio_bins[0]]
+    ar_df_mid = ar_df[np.logical_and(ar_df['use_ratio']>=ratio_bins[0],ar_df['use_ratio']<=ratio_bins[1])]
+    ar_df_high = ar_df[ar_df['use_ratio']>ratio_bins[1]]
+    
+    ar_dfs = [ar_df_low, ar_df_mid, ar_df_high]
     for i in range(len(ar_dfs)):
         df = ar_dfs[i]
-        if l_mass_cutoff > 0:
-            df_low = df[df['LMASS'] < l_mass_cutoff]
-            df_high = df[df['LMASS'] >= l_mass_cutoff]
-            dfs = [df_low, df_high]
-            save_name = '_mass'
-        elif l_ssfr_cutoff != 0:
-            # Remove anything without a measured ssfr
-            df = df[df['SSFR'] > 0]
-            df['LSSFR'] = np.log10(df['SSFR'])
-            df_low = df[df['LSSFR'] < l_ssfr_cutoff]
-            df_high = df[df['LSSFR'] >= l_ssfr_cutoff]
-            dfs = [df_low, df_high]
-            save_name = '_ssfr'
-        elif l_mass_bins != 0:
-            mass_min, mass_mid, mass_max = l_mass_bins
-            df_low_idx = np.logical_and(
-                df['LMASS'] <= mass_mid, df['LMASS'] >= mass_min)
-            df_low = df[df_low_idx]
-            df_high_idx = np.logical_and(
-                df['LMASS'] > mass_mid, df['LMASS'] < mass_max)
-            df_high = df[df_high_idx]
-            dfs = [df_low, df_high]
-            save_name = '_mass_bins'
-        elif l_ssfr_bins != 0:
-            # Remove anything without a measured ssfr
-            df = df[df['SSFR'] > 0]
 
-            ssfr_min, ssfr_mid, ssfr_max = l_ssfr_bins
-            df_low_idx = np.logical_and(
-                df['LSSFR'] <= ssfr_mid, df['LSSFR'] >= ssfr_min)
-            df_low = df[df_low_idx]
-            df_high_idx = np.logical_and(
-                df['LSSFR'] > ssfr_mid, df['LSSFR'] < ssfr_max)
-            df_high = df[df_high_idx]
-            dfs = [df_low, df_high]
-            save_name = '_ssfr_bins'
-        if scale_ha > 0:
-            # Drops any negative fluxes/non-detections
-            df = df[df['HA6565_FLUX'] > 0]
-            # Take only the inner standard deviation:
-            ha_low, ha_high = np.percentile(df['HA6565_FLUX'], [16, 84])
-            keep_ha = np.logical_and(df['HA6565_FLUX'] >= ha_low, df[
-                'HA6565_FLUX'] <= ha_high)
-            df = df[keep_ha]
-            # Find the max of the now-shorter df
-            max_ha = np.max(df['HA6565_FLUX'])
-            # Find the scale factor for each row
-            scales = [max_ha / df.iloc[i]['HA6565_FLUX']
-                      for i in range(len(df))]
-            df['ha_scale_factor'] = scales
-            dfs = [df]
-            save_name = '_scale_ha'
-        else:
-            dfs = [df]
-            save_name = ''
+        # Remove anything without a measured sfr or mass
+        df = df[df['log_sfr'] > 0]
+        df = df[df['log_mass'] > 0]
+
+
+        dfs = []
+
+        for j in range(len(starting_points)):
+            mass_start = starting_points[j][0]
+            ssfr_start = starting_points[j][1]
+            mass_idx = np.logical_and(df['log_mass']>mass_start, df['log_mass']<=mass_start+mass_width)
+            ssfr_idx = np.logical_and(df['log_ssfr']>ssfr_start, df['log_ssfr']<=ssfr_start+ssfr_width) 
+            bin_idx = np.logical_and(mass_idx, ssfr_idx)
+            dfs.append(df[bin_idx])
+
         for df in dfs:
             # For each group, get a median and scatter of the axis ratios
             median_ratio = np.median(df['use_ratio'])
             scatter_ratio = np.std(df['use_ratio'])
-            # print(f'Median: {median_ratio} \nScatter: {scatter_ratio}')
+            print(f'Median: {median_ratio} \nScatter: {scatter_ratio}')
             # Save the dataframe for the group
             df.to_csv(
-                (imd.cluster_dir + f'/composite_spectra/axis_stack{save_name}/{axis_group}_df.csv'), index=False)
-            if scale_ha > 0:
-                # print(df['ha_scale_factor'])
-                stack_spectra(0, 'manual', axis_ratio_df=df,
-                              axis_group=axis_group, save_name=save_name, scale_factors=df['ha_scale_factor'])
-            else:
-                # Within each group, start stacking the spectra
-                stack_spectra(0, 'cluster_norm', axis_ratio_df=df,
-                              axis_group=axis_group, save_name=save_name)
+                (imd.axis_cluster_data_dir + f'/{cluster_name}/{cluster_name}_group_dfs/{axis_group}_df.csv'), index=False)
+            # Within each group, start stacking the spectra
+            stack_spectra(0, 'cluster_norm', axis_ratio_df=df,
+                        axis_group=axis_group, save_name=cluster_name)
             axis_group = axis_group + 1
+
+
+
+
+    # Old way of splitting everything
+
+    # for i in range(len(ar_dfs)):
+    #     df = ar_dfs[i]
+    #     if l_mass_cutoff > 0:
+    #         df_low = df[df['LMASS'] < l_mass_cutoff]
+    #         df_high = df[df['LMASS'] >= l_mass_cutoff]
+    #         dfs = [df_low, df_high]
+    #         save_name = '_mass'
+    #     elif l_ssfr_cutoff != 0:
+    #         # Remove anything without a measured ssfr
+    #         df = df[df['SSFR'] > 0]
+    #         df['LSSFR'] = np.log10(df['SSFR'])
+    #         df_low = df[df['LSSFR'] < l_ssfr_cutoff]
+    #         df_high = df[df['LSSFR'] >= l_ssfr_cutoff]
+    #         dfs = [df_low, df_high]
+    #         save_name = '_ssfr'
+    #     elif l_mass_bins != 0:
+    #         mass_min, mass_mid, mass_max = l_mass_bins
+    #         df_low_idx = np.logical_and(
+    #             df['LMASS'] <= mass_mid, df['LMASS'] >= mass_min)
+    #         df_low = df[df_low_idx]
+    #         df_high_idx = np.logical_and(
+    #             df['LMASS'] > mass_mid, df['LMASS'] < mass_max)
+    #         df_high = df[df_high_idx]
+    #         dfs = [df_low, df_high]
+    #         save_name = '_mass_bins'
+    #     elif l_ssfr_bins != 0:
+    #         # Remove anything without a measured ssfr
+    #         df = df[df['SSFR'] > 0]
+
+    #         ssfr_min, ssfr_mid, ssfr_max = l_ssfr_bins
+    #         df_low_idx = np.logical_and(
+    #             df['LSSFR'] <= ssfr_mid, df['LSSFR'] >= ssfr_min)
+    #         df_low = df[df_low_idx]
+    #         df_high_idx = np.logical_and(
+    #             df['LSSFR'] > ssfr_mid, df['LSSFR'] < ssfr_max)
+    #         df_high = df[df_high_idx]
+    #         dfs = [df_low, df_high]
+    #         save_name = '_ssfr_bins'
+    #     if scale_ha > 0:
+    #         # Drops any negative fluxes/non-detections
+    #         df = df[df['HA6565_FLUX'] > 0]
+    #         # Take only the inner standard deviation:
+    #         ha_low, ha_high = np.percentile(df['HA6565_FLUX'], [16, 84])
+    #         keep_ha = np.logical_and(df['HA6565_FLUX'] >= ha_low, df[
+    #             'HA6565_FLUX'] <= ha_high)
+    #         df = df[keep_ha]
+    #         # Find the max of the now-shorter df
+    #         max_ha = np.max(df['HA6565_FLUX'])
+    #         # Find the scale factor for each row
+    #         scales = [max_ha / df.iloc[i]['HA6565_FLUX']
+    #                   for i in range(len(df))]
+    #         df['ha_scale_factor'] = scales
+    #         dfs = [df]
+    #         save_name = '_scale_ha'
+    #     else:
+    #         dfs = [df]
+    #         save_name = ''
+    #     for df in dfs:
+    #         # For each group, get a median and scatter of the axis ratios
+    #         median_ratio = np.median(df['use_ratio'])
+    #         scatter_ratio = np.std(df['use_ratio'])
+    #         # print(f'Median: {median_ratio} \nScatter: {scatter_ratio}')
+    #         # Save the dataframe for the group
+    #         df.to_csv(
+    #             (imd.cluster_dir + f'/composite_spectra/axis_stack{save_name}/{axis_group}_df.csv'), index=False)
+    #         if scale_ha > 0:
+    #             # print(df['ha_scale_factor'])
+    #             stack_spectra(0, 'manual', axis_ratio_df=df,
+    #                           axis_group=axis_group, save_name=save_name, scale_factors=df['ha_scale_factor'])
+    #         else:
+    #             # Within each group, start stacking the spectra
+    #             stack_spectra(0, 'cluster_norm', axis_ratio_df=df,
+    #                           axis_group=axis_group, save_name=save_name)
+    #         axis_group = axis_group + 1
 
 
 def add_trues(df):

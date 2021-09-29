@@ -73,6 +73,7 @@ loc_axis_ratio_cat = mosdef_dir + '/axis_ratio_data/Merged_catalogs/mosdef_all_c
 axis_output_dir = mosdef_dir + '/axis_ratio_outputs'
 axis_figure_dir = axis_output_dir + '/axis_ratio_figures'
 
+axis_cluster_data_dir = mosdef_dir + '/axis_ratio_data_clustered'
 
 
 # Misc mosdef files

@@ -159,5 +159,5 @@ def interpolate_axis_ratio():
 
 def read_interp_axis_ratio():
     merged_ar_df = ascii.read(imd.mosdef_dir +
-                              '/axis_ratio_data/Merged_catalogs/mosdef_all_cats.csv').to_pandas()
+                              '/axis_ratio_data/Merged_catalogs/mosdef_all_cats_v2.csv').to_pandas()
     return merged_ar_df

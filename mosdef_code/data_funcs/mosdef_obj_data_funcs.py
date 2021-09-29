@@ -49,10 +49,13 @@ def read_sed(field, v4id, norm=False):
     Returns:
     """
     sed_location = imd.sed_csvs_dir + f'/{field}_{v4id}_sed.csv'
-    if norm:
-        sed_location = imd.norm_sed_csvs_dir + f'/{field}_{v4id}_norm.csv'
     if not os.path.exists(sed_location):
         sed_location = imd.sed_csvs_dir + f'/{field}_{v4id}_3DHST_sed.csv'
+    if norm:
+        sed_location = imd.norm_sed_csvs_dir + f'/{field}_{v4id}_norm.csv'
+        if not os.path.exists(sed_location):
+            sed_location = imd.norm_sed_csvs_dir + f'/{field}_{v4id}_3DHST_sed.csv'
+   
     sed = ascii.read(sed_location).to_pandas()
     return sed
 

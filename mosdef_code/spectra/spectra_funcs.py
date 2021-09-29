@@ -166,8 +166,7 @@ def read_axis_ratio_spectrum(axis_group, save_name):
     Returns:
     spectrum_df (pd.DataFrame): Dataframe containing wavelength and fluxes for the spectrum
     """
-    spectrum_df = ascii.read(
-        imd.cluster_dir + f'/composite_spectra/axis_stack{save_name}/{axis_group}_spectrum.csv').to_pandas()
+    spectrum_df = ascii.read(imd.axis_cluster_data_dir + f'/{save_name}/{save_name}_spectra/{axis_group}_spectrum.csv').to_pandas()
 
     return spectrum_df
 
@@ -246,7 +245,7 @@ def get_too_low_gals(groupID, norm_method, save_name, thresh=0.15, axis_group=-1
         total_spec_df = read_axis_ratio_spectrum(
             axis_group, save_name=save_name)
         ar_df = ascii.read(
-            imd.cluster_dir + f'/composite_spectra/axis_stack{save_name}/{axis_group}_df.csv').to_pandas()
+            imd.axis_cluster_data_dir + f'/{save_name}/{save_name}_group_dfs/{axis_group}_df.csv').to_pandas()
         n_gals_in_group = len(ar_df)
     else:
         n_gals_in_group = len(os.listdir(imd.cluster_dir + '/' + str(groupID)))
@@ -456,11 +455,12 @@ def read_spectrum(mosdef_obj, spectrum_file):
     return spectrum_df
 
 
-def check_line_coverage(mosdef_obj, plot=False):
+def check_line_coverage(mosdef_obj, line_list, plot=False):
     """Checks to see if all five emission lines fall within the spectra for this object
 
     Parameters:
     mosdef_obj (pd.DataFrame): From get_mosdef_obj(field, v4id)
+    line_list (list of tuples): Which lines to check in the form (name, peak_wave (in AA) )
     plot (boolean): Set to True if you want to plot the spectra and emission lines
 
     Returns:
@@ -469,13 +469,6 @@ def check_line_coverage(mosdef_obj, plot=False):
     # side
     check_range = 4
 
-    line_list = [
-        ('Halpha', 6564.61),
-        ('Hbeta', 4862.68),
-        ('O3_5008', 5008.24),
-        ('O3_4960', 4960.295),
-        ('N2_6585', 6585.27)
-    ]
     spectra_files = get_spectra_files(mosdef_obj)
     spectrum_dfs = []
     for file in spectra_files:
