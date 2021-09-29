@@ -21,6 +21,9 @@ def main():
         fit_emission(0, 'cluster_norm', constrain_O3=False, axis_group=axis_group, save_name='mass_ssfr', scaled='False', run_name='False')
     plot_sample_split()
 
+
+
+
 def plot_sample_split(n_groups = 12, save_name = 'mass_ssfr'):
     """Plots the way that the sample has been divided in mass/ssfr space"""
 
@@ -40,7 +43,7 @@ def plot_sample_split(n_groups = 12, save_name = 'mass_ssfr'):
     mass_medians = []
     ssfr_medians = []
 
-
+    # Figure 1 - Showing how the sample gets cut
     for axis_group in range(n_groups):
         axis_ratio_df = ascii.read(imd.axis_cluster_data_dir + f'/{save_name}/{save_name}_group_dfs/{axis_group}_df.csv').to_pandas()
 
@@ -113,7 +116,6 @@ def plot_sample_split(n_groups = 12, save_name = 'mass_ssfr'):
     fig.savefig(imd.axis_cluster_data_dir + f'/{save_name}/sample_cut.pdf')
 
 
-
 def plot_balmer_dec(save_name):
     '''Makes the balmer decrement plots'''
     
@@ -136,7 +138,6 @@ def plot_balmer_dec(save_name):
     summary_df = summary_df.merge(balmer_df, left_on='axis_group', right_on='axis_group')
 
     # Figure 1 - all the balmer decs in axis ratio vs balmer dec space
-
     fig, ax = plt.subplots(figsize=(8,8))
 
     for i in range(len(summary_df)):
@@ -149,6 +150,8 @@ def plot_balmer_dec(save_name):
     ax.tick_params(labelsize=12)
     ax.set_ylim(0, 6)
     ax.set_xlim(-0.05, 1.05)
+    ax.text(-0.07, -0.6, 'Edge-on', fontsize=14, zorder=100)
+    ax.text(0.95, -0.6, 'Face-on', fontsize=14, zorder=100)
     fig.savefig(imd.axis_cluster_data_dir + f'/{save_name}/balmer_vs_ar.pdf')
 
 
@@ -172,5 +175,7 @@ def plot_balmer_dec(save_name):
     ax.set_xlim(9.25, 10.75)
     fig.savefig(imd.axis_cluster_data_dir + f'/{save_name}/balmer_vs_mass.pdf')
 
+
+    
 
 plot_balmer_dec('mass_ssfr')

@@ -87,6 +87,7 @@ loc_mosdef_elines = mosdef_dir + '/Catalogs/Nebular_Emission/mosdef_elines.txt' 
 median_zs_file = composite_seds_dir + '/median_zs.csv' # Also generated
 number_agn_file = cluster_dir + '/number_agn.csv'
 bad_groups_file = cluster_dir + '/bad_groups.csv'
+loc_galaxy_uvjs = mosdef_dir + '/UVJ_Colors/galaxy_uvjs.csv'
 
 
 
