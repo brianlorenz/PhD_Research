@@ -44,6 +44,23 @@ def plot_sample_split(n_groups = 12, save_name = 'mass_ssfr'):
     ssfr_medians = []
 
     # Figure 1 - Showing how the sample gets cut
+    # Plot grey points for galaxies not included
+    all_axis_ratio_df = ascii.read(imd.loc_axis_ratio_cat).to_pandas()
+    all_axis_ratio_df['log_ssfr'] = np.log10((10**all_axis_ratio_df['log_sfr']) / (10**all_axis_ratio_df['log_mass']))
+
+    # Check if each galaxy was included - if not, drop it from the dataframe
+    drop_idx = []
+    for i in range(len(all_axis_ratio_df)):
+        mosdef_obj = get_mosdef_obj(all_axis_ratio_df.iloc[i]['field'], all_axis_ratio_df.iloc[i]['v4id'])
+        
+        covered = check_line_coverage(mosdef_obj, coverage_list)
+        if covered == False:
+            drop_idx.append(False)
+        else:
+            drop_idx.append(True)
+    all_axis_ratio_df = all_axis_ratio_df[drop_idx]
+    ax.plot(all_axis_ratio_df['log_mass'], all_axis_ratio_df['log_ssfr'], color = 'grey', ls='None', marker='o')
+
     for axis_group in range(n_groups):
         axis_ratio_df = ascii.read(imd.axis_cluster_data_dir + f'/{save_name}/{save_name}_group_dfs/{axis_group}_df.csv').to_pandas()
 
@@ -178,4 +195,4 @@ def plot_balmer_dec(save_name):
 
     
 
-plot_balmer_dec('mass_ssfr')
+plot_sample_split()
