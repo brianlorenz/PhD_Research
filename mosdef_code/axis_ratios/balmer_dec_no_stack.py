@@ -4,6 +4,8 @@ from sys import builtin_module_names
 import numpy as np
 import pandas as pd
 from astropy.io import ascii
+from astropy.io import fits
+from astropy.table import Table
 import matplotlib.pyplot as plt
 import initialize_mosdef_dirs as imd
 import cluster_data_funcs as cdf
@@ -25,8 +27,7 @@ def add_balmer_dec():
     err_l_masses = []
     err_h_masses = []
     sfrs = []
-    err_l_sfrs = []
-    err_h_sfrs = []
+    err_sfrs = []
     res = []
     err_res = []
     
@@ -36,7 +37,10 @@ def add_balmer_dec():
     ha_errs = []
     
 
-    
+    # Add the sfrs from the sfr_latest catalog
+    dat = Table.read(imd.loc_sfrs_latest, format='fits')
+    sfrs_df = dat.to_pandas()
+    sfrs_df['FIELD_STR'] = [sfrs_df.iloc[i]['FIELD'].decode("utf-8").rstrip() for i in range(len(sfrs_df))]
 
 
     #Loop through the catalog and find the ha and hb value for each galaxy
@@ -53,21 +57,30 @@ def add_balmer_dec():
         masses.append(obj['LMASS'])
         err_l_masses.append(obj['L68_LMASS'])
         err_h_masses.append(obj['U68_LMASS'])
-        sfrs.append(obj['LSFR'])
-        err_l_sfrs.append(obj['L68_LSFR'])
-        err_h_sfrs.append(obj['U68_LSFR'])
         res.append(obj['RE'])
         err_res.append(obj['DRE'])
 
         linemeas_slice = np.logical_and(linemeas_df['ID']==cat_id, linemeas_df['FIELD_STR']==field)
+        sfrs_slice = np.logical_and(sfrs_df['ID']==cat_id, sfrs_df['FIELD_STR']==field)
         
         hb_values.append(linemeas_df[linemeas_slice].iloc[0]['HB4863_FLUX'])
         hb_errs.append(linemeas_df[linemeas_slice].iloc[0]['HB4863_FLUX_ERR'])
         ha_values.append(linemeas_df[linemeas_slice].iloc[0]['HA6565_FLUX'])
         ha_errs.append(linemeas_df[linemeas_slice].iloc[0]['HA6565_FLUX_ERR'])
-        
 
-    to_merge_df = pd.DataFrame(zip(fields, v4ids, agn_flags, masses, err_l_masses, err_h_masses, sfrs, err_l_sfrs, err_h_sfrs, res, err_res, hb_values, hb_errs, ha_values, ha_errs), columns=['field', 'v4id', 'agn_flag', 'log_mass', 'err_log_mass_d', 'err_log_mass_u', 'log_sfr', 'err_log_sfr_d', 'err_log_sfr_u', 'half_light', 'err_half_light', 'hb_flux', 'err_hb_flux', 'ha_flux', 'err_ha_flux'])
+
+        # USE SFR2 or SFR_CORR?
+        sfrs.append(sfrs_df[sfrs_slice].iloc[0]['SFR2'])
+        err_sfrs.append(sfrs_df[sfrs_slice].iloc[0]['SFRERR2'])
+    
+
+    
+
+
+
+
+
+    to_merge_df = pd.DataFrame(zip(fields, v4ids, agn_flags, masses, err_l_masses, err_h_masses, sfrs, err_sfrs, res, err_res, hb_values, hb_errs, ha_values, ha_errs), columns=['field', 'v4id', 'agn_flag', 'log_mass', 'err_log_mass_d', 'err_log_mass_u', 'sfr', 'err_sfr', 'half_light', 'err_half_light', 'hb_flux', 'err_hb_flux', 'ha_flux', 'err_ha_flux'])
     merged_all_cats = all_cats_df.merge(to_merge_df, left_on=['v4id', 'field'], right_on=['v4id', 'field'])
     merged_all_cats.to_csv(imd.loc_axis_ratio_cat, index=False)
 
@@ -153,14 +166,14 @@ def plot_balmer_vs_mass():
                 balmer_decs.append(row['ha_flux']/row['hb_flux'])
                 balmer_errs.append((row['ha_flux']/row['hb_flux'])*(row['err_ha_flux']/row['ha_flux'] + row['err_hb_flux']/row['hb_flux']))
                 masses.append(row['log_mass'])
-                sfrs.append(row['log_sfr'])
+                sfrs.append(row['sfr'])
                 res.append(row['half_light'])
         else:
             skipped += 1
             continue
 
-    plot_df = pd.DataFrame(zip(axis_ratios, balmer_decs, balmer_errs, masses, res, sfrs), columns=['axis_ratio', 'balmer_dec', 'err_balmer_dec', 'log_mass', 'half_light', 'log_sfr'])
-    plot_df['log_ssfr'] = np.log10((10**plot_df['log_sfr']) / (10**plot_df['log_mass']))
+    plot_df = pd.DataFrame(zip(axis_ratios, balmer_decs, balmer_errs, masses, res, sfrs), columns=['axis_ratio', 'balmer_dec', 'err_balmer_dec', 'log_mass', 'half_light', 'sfr'])
+    plot_df['log_ssfr'] = np.log10((plot_df['sfr']) / (10**plot_df['log_mass']))
     
 
     def plot_mass_ssfr(mass_width, ssfr_width, starting_points):
@@ -173,7 +186,10 @@ def plot_balmer_vs_mass():
         """
         # Full sample mass/sfr
         fig, ax = plt.subplots(figsize=(8,8))
-        ax.plot(plot_df['log_mass'], plot_df['log_sfr'], color = 'black', ls='None', marker='o')
+
+        # Make sure it is greater than zero
+        filter_sfr = plot_df['sfr'] > 0
+        ax.plot(plot_df[filter_sfr]['log_mass'], np.log10(plot_df[filter_sfr]['sfr']), color = 'black', ls='None', marker='o')
         ax.set_xlabel('log(Stellar Mass)', fontsize=14)
         ax.set_ylabel('log(sfr)', fontsize=14)
         ax.tick_params(labelsize=12)
@@ -279,5 +295,5 @@ def plot_balmer_vs_mass():
     plot_cut('axis_ratio', [0, 0.4, 0.7, 1], 'balmer_vs_re', key='size')
     plot_cut('log_mass', [0, 9.5, 10, 10.5, 13], 'balmer_vs_ar_mass_cut')
     
-
+# add_balmer_dec()
 plot_balmer_vs_mass()
