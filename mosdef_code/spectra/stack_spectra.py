@@ -24,6 +24,8 @@ from itertools import *
 from astropy.table import Table
 from matplotlib import patches
 
+axis_ratio_catalog = ascii.read(imd.loc_axis_ratio_cat).to_pandas()
+
 
 def stack_spectra(groupID, norm_method, re_observe=False, mask_negatives=False, ignore_low_spectra=False, axis_ratio_df=[], axis_group=0, save_name='', scale_factors=0):
     """Stack all the spectra for every object in a given group
@@ -182,6 +184,12 @@ def stack_spectra(groupID, norm_method, re_observe=False, mask_negatives=False, 
             # If stacking in axis ratio groups, do NOT normalize
             if axis_stack:
                 norm_factor = 1.
+
+            # New method - when staking axis ratio groups, normalize by halpha
+            if axis_stack:
+                axis_idx = np.logical_and(axis_ratio_catalog['field'] == field, axis_ratio_catalog['v4id'] == v4id)
+                ha_flux = axis_ratio_catalog[axis_idx].iloc[0]['ha_flux']
+                norm_factor = 1e-17 / ha_flux
 
             # Override all else if it's manual
             if norm_method == 'manual':
@@ -577,20 +585,14 @@ def stack_axis_ratio(n_bins, mass_width, ssfr_width, starting_points, ratio_bins
     ar_df = ar_df[ar_df['ha_flux'] > -0.1]
     ar_df = ar_df[ar_df['hb_flux'] > -0.1]
 
-
-    #Already incorperated ssfrs into V2 of the catalog
-    # # Add ssfrs if needed:
-    # if l_ssfr_cutoff != 0 or l_ssfr_bins != 0:
-    #     ssfr_mosdef_merge_no_dups = setup_get_ssfr()
-    #     ar_df = merge_ar_ssfr(ar_df, ssfr_mosdef_merge_no_dups)
-
-    # # Add line emission if needed
-    # if scale_ha > 0:
-    #     ar_df = merge_emission(ar_df)
+    # Add filtering for Halpha S/N, removing AGN, and the z_qual flag
+    ar_df = ar_df[(ar_df['ha_flux'] / ar_df['err_ha_flux']) > 3]
+    ar_df = ar_df[ar_df['agn_flag'] == 0]
+    ar_df = ar_df[ar_df['z_qual_flag'] == 7]
 
 
     # Add a column for ssfr
-    ar_df['log_ssfr'] = np.log10((10**ar_df['log_sfr'])/(10**ar_df['log_mass']))
+    ar_df['log_ssfr'] = np.log10((ar_df['sfr'])/(10**ar_df['log_mass']))
 
     # # Add masses
     # l_masses = [get_mosdef_obj(ar_df_sorted.iloc[i]['field'], ar_df_sorted.iloc[i]['v4id'])[
@@ -599,7 +601,7 @@ def stack_axis_ratio(n_bins, mass_width, ssfr_width, starting_points, ratio_bins
 
     # Split into n_bins groups
     axis_group = 0
-    cluster_name = 'mass_ssfr'
+    cluster_name = 'halpha_norm'
     # ar_dfs = np.array_split(ar_df_sorted, n_bins)
     
     ar_df_low = ar_df[ar_df['use_ratio']<ratio_bins[0]]
@@ -611,7 +613,7 @@ def stack_axis_ratio(n_bins, mass_width, ssfr_width, starting_points, ratio_bins
         df = ar_dfs[i]
 
         # Remove anything without a measured sfr or mass
-        df = df[df['log_sfr'] > 0]
+        df = df[df['sfr'] > 0]
         df = df[df['log_mass'] > 0]
 
 
