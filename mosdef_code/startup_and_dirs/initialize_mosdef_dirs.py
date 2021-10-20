@@ -96,6 +96,8 @@ loc_eazy_uvj_cat = mosdef_dir + '/Mosdef_cats/mosdef_eazy_uvj_latest.csv'
 
 
 
+# FAST outputs
+FAST_dir = mosdef_dir + '/FAST'
 
 
 

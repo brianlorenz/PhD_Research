@@ -10,7 +10,7 @@ starting_points = [(9.3, -9.1), (9.3, -8.6), (10.1, -9.1), (10.1, -8.6), (9.3, -
 ratio_bins = [0.4, 0.7]
 
 
-shapes = {'low': '^', 'mid': 'o', 'high': 'x'}
+shapes = {'low': '|', 'mid': 'd', 'high': 'o'}
 colors = {'lowm_lows': 'red', 'lowm_highs': 'blue', 'highm_lows': 'orange', 'highm_highs': 'mediumseagreen', 'lowest_lows': 'lightskyblue', 'lowest_highs': 'darkviolet'}
 
 
@@ -198,7 +198,7 @@ def plot_balmer_dec(save_name, n_groups):
     ax.set_xlabel('Axis Ratio', fontsize=14) 
     ax.set_ylabel('Balmer Decrement', fontsize=14)
     ax.tick_params(labelsize=12)
-    ax.set_ylim(0, 6)
+    ax.set_ylim(2, 7)
     ax.set_xlim(-0.05, 1.05)
     ax.text(-0.07, -0.6, 'Edge-on', fontsize=14, zorder=100)
     ax.text(0.95, -0.6, 'Face-on', fontsize=14, zorder=100)
@@ -221,12 +221,13 @@ def plot_balmer_dec(save_name, n_groups):
     ax.set_xlabel('log(Stellar Mass)', fontsize=14) 
     ax.set_ylabel('Balmer Decrement', fontsize=14)
     ax.tick_params(labelsize=12)
-    ax.set_ylim(0, 6)
+    ax.set_ylim(2, 7)
     ax.set_xlim(9.25, 10.75)
     fig.savefig(imd.axis_cluster_data_dir + f'/{save_name}/balmer_vs_mass.pdf')
 
 
+stack_axis_ratio(3, mass_width, ssfr_width, starting_points, ratio_bins)
     
-main()
+# main()
 # plot_sample_split()
-# plot_balmer_dec('mass_ssfr', 18)
+# plot_balmer_dec('halpha_norm', 18)

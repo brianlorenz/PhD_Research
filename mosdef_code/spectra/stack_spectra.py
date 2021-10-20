@@ -23,6 +23,7 @@ from operator import itemgetter
 from itertools import *
 from astropy.table import Table
 from matplotlib import patches
+from read_FAST_spec import read_FAST_file
 
 axis_ratio_catalog = ascii.read(imd.loc_axis_ratio_cat).to_pandas()
 
@@ -190,6 +191,16 @@ def stack_spectra(groupID, norm_method, re_observe=False, mask_negatives=False, 
                 axis_idx = np.logical_and(axis_ratio_catalog['field'] == field, axis_ratio_catalog['v4id'] == v4id)
                 ha_flux = axis_ratio_catalog[axis_idx].iloc[0]['ha_flux']
                 norm_factor = 1e-17 / ha_flux
+
+                # Also, grab the FAST continuum and normalize it in the same way, will be used later
+                fast_file_df = read_FAST_file(field, v4id)
+                # Convert to rest wavelength
+                fast_file_df['rest_wavelength'] = fast_file_df['wavelength'] / (1+z_spec)
+                fast_file_df['f_lambda_norm'] = fast_file_df['f_lambda']*norm_factor
+                imd.check_and_make_dir(imd.axis_cluster_data_dir + f'/{save_name}/{save_name}_conts/{axis_group}_conts/')
+                fast_file_df.to_csv(imd.axis_cluster_data_dir + f'/{save_name}/{save_name}_conts/{axis_group}_conts/{v4id}_cont.csv', index=False)
+                
+
 
             # Override all else if it's manual
             if norm_method == 'manual':

@@ -9,7 +9,7 @@ import matplotlib.patheffects as path_effects
 from matplotlib.gridspec import GridSpec
 from brokenaxes import brokenaxes
 
-def plot_overlaid_spectra(savename='mass_ssfr'):
+def plot_overlaid_spectra(savename='halpha_norm'):
     """Make the plot
     
     """
