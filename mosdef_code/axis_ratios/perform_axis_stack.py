@@ -10,7 +10,7 @@ starting_points = [(9.3, -9.1), (9.3, -8.6), (10.1, -9.1), (10.1, -8.6), (9.3, -
 ratio_bins = [0.4, 0.7]
 
 
-shapes = {'low': '|', 'mid': 'd', 'high': 'o'}
+shapes = {'low': '_', 'mid': 'd', 'high': 'o'}
 colors = {'lowm_lows': 'red', 'lowm_highs': 'blue', 'highm_lows': 'orange', 'highm_highs': 'mediumseagreen', 'lowest_lows': 'lightskyblue', 'lowest_highs': 'darkviolet'}
 
 
@@ -226,7 +226,7 @@ def plot_balmer_dec(save_name, n_groups):
     fig.savefig(imd.axis_cluster_data_dir + f'/{save_name}/balmer_vs_mass.pdf')
 
 
-stack_axis_ratio(3, mass_width, ssfr_width, starting_points, ratio_bins)
+# stack_axis_ratio(3, mass_width, ssfr_width, starting_points, ratio_bins)
     
 # main()
 # plot_sample_split()

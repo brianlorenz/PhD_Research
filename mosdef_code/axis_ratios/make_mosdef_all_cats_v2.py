@@ -7,6 +7,9 @@ import matplotlib.pyplot as plt
 import initialize_mosdef_dirs as imd
 import cluster_data_funcs as cdf
 from mosdef_obj_data_funcs import get_mosdef_obj
+from mosdef_obj_data_funcs import setup_get_AV, get_AV
+from read_data import read_file                                                                   
+
 
 def make_mosdef_all_cats_2():
     '''Adds measurement of balmer decrement to the mosdef_all_cats.csv file generated in axis ratio funcs
@@ -35,6 +38,10 @@ def make_mosdef_all_cats_2():
 
     zs = []
     z_quals = []
+
+    avs = []
+
+    betas = []
     
 
     # Add the sfrs from the sfr_latest catalog
@@ -42,7 +49,19 @@ def make_mosdef_all_cats_2():
     sfrs_df = dat.to_pandas()
     sfrs_df['FIELD_STR'] = [sfrs_df.iloc[i]['FIELD'].decode("utf-8").rstrip() for i in range(len(sfrs_df))]
 
-        
+    betas_df = read_file(imd.mosdef_dir + '/Mosdef_cats/mosdef_sfrs_v0.5_calz_beta.fits')
+    betas_df['FIELD_STR'] = [betas_df.iloc[i]['FIELD'].decode("utf-8").rstrip() for i in range(len(betas_df))]
+
+
+    #### Sidenote, some objects are missing
+    # np.sum((sfrs_df['ID'] - betas_df['ID']) != 0)    
+    # sfrs_df[(sfrs_df['ID'] - betas_df['ID']) != 0]
+    # Currently just skipping beta for these objects
+    skip_beta_ids = sfrs_df[(sfrs_df['ID'] - betas_df['ID']) != 0]['ID']
+    skip_beta_ids = [skip_beta_ids.iloc[i] for i in range(len(skip_beta_ids))]
+
+
+    fields, av_dfs = setup_get_AV() # Prepares to search for AV value
 
 
     #Loop through the catalog and find the ha and hb value for each galaxy
@@ -66,12 +85,20 @@ def make_mosdef_all_cats_2():
 
         linemeas_slice = np.logical_and(linemeas_df['ID']==cat_id, linemeas_df['FIELD_STR']==field)
         sfrs_slice = np.logical_and(sfrs_df['ID']==cat_id, sfrs_df['FIELD_STR']==field)
+        betas_slice = np.logical_and(betas_df['ID']==cat_id, betas_df['FIELD_STR']==field)
         
         hb_values.append(linemeas_df[linemeas_slice].iloc[0]['HB4863_FLUX'])
         hb_errs.append(linemeas_df[linemeas_slice].iloc[0]['HB4863_FLUX_ERR'])
         ha_values.append(linemeas_df[linemeas_slice].iloc[0]['HA6565_FLUX'])
         ha_errs.append(linemeas_df[linemeas_slice].iloc[0]['HA6565_FLUX_ERR'])
 
+        avs.append(get_AV(fields, av_dfs, obj))
+        
+        if cat_id in skip_beta_ids:
+            betas.append(-999)
+        else:
+            betas.append(betas_df[betas_slice].iloc[0]['BETAPHOT'])
+        
 
         # USE SFR2 or SFR_CORR?
         sfrs.append(sfrs_df[sfrs_slice].iloc[0]['SFR2'])
@@ -81,7 +108,7 @@ def make_mosdef_all_cats_2():
 
 
 
-    to_merge_df = pd.DataFrame(zip(fields, v4ids, agn_flags, masses, err_l_masses, err_h_masses, sfrs, err_sfrs, res, err_res, zs, z_quals, hb_values, hb_errs, ha_values, ha_errs), columns=['field', 'v4id', 'agn_flag', 'log_mass', 'err_log_mass_d', 'err_log_mass_u', 'sfr', 'err_sfr', 'half_light', 'err_half_light', 'z', 'z_qual_flag', 'hb_flux', 'err_hb_flux', 'ha_flux', 'err_ha_flux'])
+    to_merge_df = pd.DataFrame(zip(fields, v4ids, agn_flags, masses, err_l_masses, err_h_masses, sfrs, err_sfrs, res, err_res, zs, z_quals, avs, betas, hb_values, hb_errs, ha_values, ha_errs), columns=['field', 'v4id', 'agn_flag', 'log_mass', 'err_log_mass_d', 'err_log_mass_u', 'sfr', 'err_sfr', 'half_light', 'err_half_light', 'z', 'z_qual_flag', 'AV', 'beta', 'hb_flux', 'err_hb_flux', 'ha_flux', 'err_ha_flux'])
     merged_all_cats = all_cats_df.merge(to_merge_df, left_on=['v4id', 'field'], right_on=['v4id', 'field'])
     merged_all_cats.to_csv(imd.loc_axis_ratio_cat, index=False)
 
