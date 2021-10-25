@@ -2,7 +2,7 @@ from matplotlib.pyplot import axis
 from stack_spectra import *
 from fit_emission import fit_emission
 import matplotlib as mpl
-
+from matplotlib.patches import Ellipse
 
 mass_width = 0.8
 ssfr_width = 0.5
@@ -10,7 +10,7 @@ starting_points = [(9.3, -9.1), (9.3, -8.6), (10.1, -9.1), (10.1, -8.6), (9.3, -
 ratio_bins = [0.4, 0.7]
 
 
-shapes = {'low': '_', 'mid': 'd', 'high': 'o'}
+shapes = {'low': '+', 'mid': 'd', 'high': 'o'}
 colors = {'lowm_lows': 'red', 'lowm_highs': 'blue', 'highm_lows': 'orange', 'highm_highs': 'mediumseagreen', 'lowest_lows': 'lightskyblue', 'lowest_highs': 'darkviolet'}
 
 
@@ -40,6 +40,8 @@ def plot_sample_split(n_groups = 18, save_name = 'halpha_norm'):
     axis_medians = []
     mass_medians = []
     ssfr_medians = []
+    av_medians = []
+    beta_medians = []
     keys = []
 
     # Figure 1 - Showing how the sample gets cut
@@ -86,6 +88,8 @@ def plot_sample_split(n_groups = 18, save_name = 'halpha_norm'):
         axis_median = np.median(axis_ratio_df['use_ratio'])
         mass_median = np.median(axis_ratio_df['log_mass'])
         ssfr_median = np.median(axis_ratio_df['log_ssfr'])
+        av_median = np.median(axis_ratio_df['AV'])
+        beta_median = np.median(axis_ratio_df['beta'])
 
         # Figure out what axis ratio bin
         if axis_median < ratio_bins[0]:
@@ -131,6 +135,8 @@ def plot_sample_split(n_groups = 18, save_name = 'halpha_norm'):
         axis_medians.append(axis_median)
         mass_medians.append(mass_median)
         ssfr_medians.append(ssfr_median)
+        av_medians.append(av_median)
+        beta_medians.append(beta_median)
         keys.append(key)
 
         # plot a black point at the median
@@ -152,7 +158,7 @@ def plot_sample_split(n_groups = 18, save_name = 'halpha_norm'):
 
 
 
-    summary_df = pd.DataFrame(zip(group_num, axis_medians, mass_medians, ssfr_medians, shapes_list, color_list, keys), columns=['axis_group','use_ratio_median', 'log_mass_median', 'log_ssfr_median', 'shape', 'color', 'key'])
+    summary_df = pd.DataFrame(zip(group_num, axis_medians, mass_medians, ssfr_medians, av_medians, beta_medians, shapes_list, color_list, keys), columns=['axis_group','use_ratio_median', 'log_mass_median', 'log_ssfr_median', 'av_median', 'beta_median', 'shape', 'color', 'key'])
     summary_df.to_csv(imd.axis_cluster_data_dir + f'/{save_name}/summary.csv', index=False)
 
 
@@ -166,8 +172,30 @@ def plot_sample_split(n_groups = 18, save_name = 'halpha_norm'):
     fig.savefig(imd.axis_cluster_data_dir + f'/{save_name}/sample_cut.pdf')
 
 
-def plot_balmer_dec(save_name, n_groups):
-    '''Makes the balmer decrement plots'''
+def plot_balmer_dec(save_name, n_groups, y_var = 'balmer_dec'):
+    '''Makes the balmer decrement plots. Now can also do AV and Beta instead of balmer dec on the y-axis
+
+    Parameters:
+    save_name (str): Folder to pull data from and save to
+    n_groups (int): Number of axis ratio groups
+    y_var (str): What to plot on the y-axis - either "balmer_dec", "av", or "beta"
+
+    '''
+
+    # Fontsizes
+    axis_fontsize = 14
+    default_size = 7
+    larger_size = 12
+
+    # ssfr color map
+    cmap = mpl.cm.inferno 
+    norm = mpl.colors.Normalize(vmin=-9.3, vmax=-8.1) 
+
+
+    #Ellipse properties
+    ellipse_width = 0.03 # Width of the ellipse, in axes coords
+    ellipse_fracs = [0.3, 0.5, 1] 
+    
     
     summary_df = ascii.read(imd.axis_cluster_data_dir + f'/{save_name}/summary.csv').to_pandas()
 
@@ -188,46 +216,111 @@ def plot_balmer_dec(save_name, n_groups):
     summary_df = summary_df.merge(balmer_df, left_on='axis_group', right_on='axis_group')
 
     # Figure 1 - all the balmer decs in axis ratio vs balmer dec space
-    fig, ax = plt.subplots(figsize=(8,8))
+    fig, axarr = plt.subplots(1, 2, figsize=(20,8))
+    ax_low_mass = axarr[0]
+    ax_high_mass = axarr[1]
 
     for i in range(len(summary_df)):
         row = summary_df.iloc[i]
-        ax.errorbar(row['use_ratio_median'], row['balmer_dec'], yerr=np.array(row['err_balmer_dec_low'], row['err_balmer_dec_high']), marker=row['shape'], color=row['color'])
+
+        # Scale up the + to account for its small size
+        if row['shape'] == '+':
+            ellipse_frac = ellipse_fracs[0]
+        elif row['shape'] == 'd':
+            ellipse_frac = ellipse_fracs[1]
+        elif row['shape'] == 'o':
+            ellipse_frac = ellipse_fracs[2]
+
+        # Set up the colormap on ssfr
+        rgba = cmap(norm(row['log_ssfr_median']))
+
+        # Split into mass groups
+        if row['log_mass_median'] < 10:
+            ax = ax_low_mass
+        elif row['log_mass_median'] >= 10:
+            ax = ax_high_mass
 
 
-    ax.set_xlabel('Axis Ratio', fontsize=14) 
-    ax.set_ylabel('Balmer Decrement', fontsize=14)
-    ax.tick_params(labelsize=12)
-    ax.set_ylim(2, 7)
-    ax.set_xlim(-0.05, 1.05)
-    ax.text(-0.07, -0.6, 'Edge-on', fontsize=14, zorder=100)
-    ax.text(0.95, -0.6, 'Face-on', fontsize=14, zorder=100)
-    fig.savefig(imd.axis_cluster_data_dir + f'/{save_name}/balmer_vs_ar.pdf')
+        if y_var == 'balmer_dec':
+            ax.set_ylim(2, 7)
+            x_cord = row['use_ratio_median']
+            y_cord = row['balmer_dec']
+            y_height_factor = (ellipse_width/1.1) * 5
+            ax.errorbar(x_cord, y_cord, yerr=np.array(row['err_balmer_dec_low'], row['err_balmer_dec_high']), marker='None', color=rgba)
+            ax.add_artist(Ellipse((x_cord, y_cord), ellipse_width, y_height_factor*ellipse_frac, facecolor=rgba))
+            ax.set_ylabel('Balmer Decrement', fontsize=axis_fontsize)
+        elif y_var == 'av':
+            ax.plot(row['use_ratio_median'], row['av_median'], marker=row['shape'], color=rgba, markersize=6)
+            ax.set_ylabel('FAST AV', fontsize=axis_fontsize)
+        elif y_var == 'beta':
+            ax.plot(row['use_ratio_median'], row['beta_median'], marker=row['shape'], color=rgba, markersize=6)
+            ax.set_ylabel('Betaphot', fontsize=axis_fontsize)
+    
+    for ax in axarr:
+        ax.set_xlabel('Axis Ratio', fontsize=axis_fontsize) 
+        ax.tick_params(labelsize=12)
+        ax.set_xlim(-0.05, 1.05)
+        if y_var == 'balmer_dec':
+            ax.text(-0.07, 1.6, 'Edge-on', fontsize=14, zorder=100)
+            ax.text(0.95, 1.6, 'Face-on', fontsize=14, zorder=100)
+    
+    ax_low_mass.set_title('log(Stellar Mass) < 10', fontsize=axis_fontsize)
+    ax_high_mass.set_title('log(Stellar Mass) > 10', fontsize=axis_fontsize)
+    cbar = fig.colorbar(mpl.cm.ScalarMappable(norm=norm, cmap=cmap), ax=axarr)
+    cbar.set_label('log(ssfr)', fontsize=axis_fontsize)
+    
+    fig.savefig(imd.axis_cluster_data_dir + f'/{save_name}/{y_var}_vs_ar.pdf', bbox_inches='tight')
+
 
 
     # Figure 2 - Decrement vs mass
     fig, ax = plt.subplots(figsize=(9,8))
 
-    cmap = mpl.cm.viridis 
-    norm = mpl.colors.Normalize(vmin=-9.4, vmax=-8) 
 
     for i in range(len(summary_df)):
         row = summary_df.iloc[i]
+
+        # Scale up the + to account for its small size
+        if row['shape'] == '+':
+            ellipse_frac = ellipse_fracs[0]
+        elif row['shape'] == 'd':
+            ellipse_frac = ellipse_fracs[1]
+        elif row['shape'] == 'o':
+            ellipse_frac = ellipse_fracs[2]
+
+        # Set up the colormap on ssfr
         rgba = cmap(norm(row['log_ssfr_median']))
-        ax.errorbar(row['log_mass_median'], row['balmer_dec'], yerr=np.array(row['err_balmer_dec_low'], row['err_balmer_dec_high']), marker=row['shape'], color=rgba)
+
+
+        if y_var == 'balmer_dec':
+            ax.set_ylim(2, 7)
+            x_cord = row['log_mass_median']
+            y_cord = row['balmer_dec']
+            y_height_factor = (ellipse_width/1.5) * 5
+            ax.errorbar(x_cord, y_cord, yerr=np.array(row['err_balmer_dec_low'], row['err_balmer_dec_high']), marker='None', color=rgba)
+            ax.add_artist(Ellipse((x_cord, y_cord), ellipse_width, y_height_factor*ellipse_frac, facecolor=rgba))
+        elif y_var == 'av':
+            ax.plot(row['log_mass_median'], row['av_median'], marker=row['shape'], color=rgba, markersize=6)
+            ax.set_ylabel('FAST AV', fontsize=axis_fontsize)
+        elif y_var == 'beta':
+            ax.plot(row['log_mass_median'], row['beta_median'], marker=row['shape'], color=rgba, markersize=6)
+            ax.set_ylabel('Betaphot', fontsize=axis_fontsize)
+
+
 
     cbar = fig.colorbar(mpl.cm.ScalarMappable(norm=norm, cmap=cmap), ax=ax)
-    cbar.set_label('log(ssfr)', fontsize=14)
-    ax.set_xlabel('log(Stellar Mass)', fontsize=14) 
-    ax.set_ylabel('Balmer Decrement', fontsize=14)
+    cbar.set_label('log(ssfr)', fontsize=axis_fontsize)
+    ax.set_xlabel('log(Stellar Mass)', fontsize=axis_fontsize) 
+    
     ax.tick_params(labelsize=12)
-    ax.set_ylim(2, 7)
     ax.set_xlim(9.25, 10.75)
-    fig.savefig(imd.axis_cluster_data_dir + f'/{save_name}/balmer_vs_mass.pdf')
+    fig.savefig(imd.axis_cluster_data_dir + f'/{save_name}/{y_var}_vs_mass.pdf')
 
 
 # stack_axis_ratio(3, mass_width, ssfr_width, starting_points, ratio_bins)
     
 # main()
 # plot_sample_split()
-# plot_balmer_dec('halpha_norm', 18)
+plot_balmer_dec('halpha_norm', 18, y_var='balmer_dec')
+plot_balmer_dec('halpha_norm', 18, y_var='av')
+plot_balmer_dec('halpha_norm', 18, y_var='beta')

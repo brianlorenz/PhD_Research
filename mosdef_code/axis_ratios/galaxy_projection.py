@@ -186,14 +186,14 @@ def remove_ellipse_point(point, width, height, phi):
     return in_ellipse
     
 
-def iterate_remove_points(points, n_iter):
+def iterate_remove_points(points, n_iter, show_plots=False):
     '''Function that will iteratively generate ellipses then remove points within the ellipse
     
     Parameters:
     n_iter (int): Number of times to iterate
     '''
     for n in range(n_iter):
-        axis_ratio, center, width, height, phi = plot_points(points, show_plots=False)
+        axis_ratio, center, width, height, phi = plot_points(points, show_plots=show_plots)
         remove_arr = [remove_ellipse_point(point, width, height, phi) for point in points]
         remove_arr_idx = [idx for idx, true_val in enumerate(remove_arr) if not true_val] # Which indices we want to keep
         points = [points[index] for index in remove_arr_idx]
@@ -270,7 +270,7 @@ def generate_oneplot(height=0.0001):
     
     points = make_shape(height=height)
     points = rotate_cylinder(points)
-    points = iterate_remove_points(points, 3)
+    points = iterate_remove_points(points, 3, show_plots=True)
     axis_ratio, center, width, height, phi = plot_points(points, show_plots=True)
 
         
@@ -318,8 +318,8 @@ def test_ellipse():
 
 
 
-generate_mixedheight_distribution()
+# generate_mixedheight_distribution()
 
-# generate_oneplot(height=0.4)
+generate_oneplot(height=0.4)
 # test_ellipse()
 
