@@ -3,6 +3,7 @@ from stack_spectra import *
 from fit_emission import fit_emission
 import matplotlib as mpl
 from matplotlib.patches import Ellipse
+from ellipses_for_plotting import get_ellipse_shapes
 
 mass_width = 0.8
 ssfr_width = 0.5
@@ -192,10 +193,12 @@ def plot_balmer_dec(save_name, n_groups, y_var = 'balmer_dec'):
     norm = mpl.colors.Normalize(vmin=-9.3, vmax=-8.1) 
 
 
-    #Ellipse properties
-    ellipse_width = 0.03 # Width of the ellipse, in axes coords
-    ellipse_fracs = [0.3, 0.5, 1] 
-    
+    # Axis limits
+    ylims = {
+        'balmer_dec': (2, 7),
+        'av': (0.25, 1.1),
+        'beta': (-1.75, -1.05)
+    }
     
     summary_df = ascii.read(imd.axis_cluster_data_dir + f'/{save_name}/summary.csv').to_pandas()
 
@@ -215,6 +218,9 @@ def plot_balmer_dec(save_name, n_groups, y_var = 'balmer_dec'):
 
     summary_df = summary_df.merge(balmer_df, left_on='axis_group', right_on='axis_group')
 
+    # Get the length of the y-axis
+    y_axis_len = ylims[y_var][1] - ylims[y_var][0]
+
     # Figure 1 - all the balmer decs in axis ratio vs balmer dec space
     fig, axarr = plt.subplots(1, 2, figsize=(20,8))
     ax_low_mass = axarr[0]
@@ -222,14 +228,6 @@ def plot_balmer_dec(save_name, n_groups, y_var = 'balmer_dec'):
 
     for i in range(len(summary_df)):
         row = summary_df.iloc[i]
-
-        # Scale up the + to account for its small size
-        if row['shape'] == '+':
-            ellipse_frac = ellipse_fracs[0]
-        elif row['shape'] == 'd':
-            ellipse_frac = ellipse_fracs[1]
-        elif row['shape'] == 'o':
-            ellipse_frac = ellipse_fracs[2]
 
         # Set up the colormap on ssfr
         rgba = cmap(norm(row['log_ssfr_median']))
@@ -242,24 +240,30 @@ def plot_balmer_dec(save_name, n_groups, y_var = 'balmer_dec'):
 
 
         if y_var == 'balmer_dec':
-            ax.set_ylim(2, 7)
             x_cord = row['use_ratio_median']
             y_cord = row['balmer_dec']
-            y_height_factor = (ellipse_width/1.1) * 5
+            
+            ellipse_width, ellipse_height = get_ellipse_shapes(1.1, y_axis_len, row['shape'])
+
             ax.errorbar(x_cord, y_cord, yerr=np.array(row['err_balmer_dec_low'], row['err_balmer_dec_high']), marker='None', color=rgba)
-            ax.add_artist(Ellipse((x_cord, y_cord), ellipse_width, y_height_factor*ellipse_frac, facecolor=rgba))
+            ax.add_artist(Ellipse((x_cord, y_cord), ellipse_width, ellipse_height, facecolor=rgba))
             ax.set_ylabel('Balmer Decrement', fontsize=axis_fontsize)
         elif y_var == 'av':
-            ax.plot(row['use_ratio_median'], row['av_median'], marker=row['shape'], color=rgba, markersize=6)
+            ellipse_width, ellipse_height = get_ellipse_shapes(1.1, y_axis_len, row['shape'])
+
+            ax.add_artist(Ellipse((row['use_ratio_median'], row['av_median']), ellipse_width, ellipse_height, facecolor=rgba))
             ax.set_ylabel('FAST AV', fontsize=axis_fontsize)
         elif y_var == 'beta':
-            ax.plot(row['use_ratio_median'], row['beta_median'], marker=row['shape'], color=rgba, markersize=6)
+            ellipse_width, ellipse_height = get_ellipse_shapes(1.1, y_axis_len, row['shape'])
+
+            ax.add_artist(Ellipse((row['use_ratio_median'], row['beta_median']), ellipse_width, ellipse_height, facecolor=rgba))
             ax.set_ylabel('Betaphot', fontsize=axis_fontsize)
     
     for ax in axarr:
         ax.set_xlabel('Axis Ratio', fontsize=axis_fontsize) 
         ax.tick_params(labelsize=12)
         ax.set_xlim(-0.05, 1.05)
+        ax.set_ylim(ylims[y_var])
         if y_var == 'balmer_dec':
             ax.text(-0.07, 1.6, 'Edge-on', fontsize=14, zorder=100)
             ax.text(0.95, 1.6, 'Face-on', fontsize=14, zorder=100)
@@ -280,30 +284,27 @@ def plot_balmer_dec(save_name, n_groups, y_var = 'balmer_dec'):
     for i in range(len(summary_df)):
         row = summary_df.iloc[i]
 
-        # Scale up the + to account for its small size
-        if row['shape'] == '+':
-            ellipse_frac = ellipse_fracs[0]
-        elif row['shape'] == 'd':
-            ellipse_frac = ellipse_fracs[1]
-        elif row['shape'] == 'o':
-            ellipse_frac = ellipse_fracs[2]
-
         # Set up the colormap on ssfr
         rgba = cmap(norm(row['log_ssfr_median']))
 
 
         if y_var == 'balmer_dec':
-            ax.set_ylim(2, 7)
             x_cord = row['log_mass_median']
             y_cord = row['balmer_dec']
-            y_height_factor = (ellipse_width/1.5) * 5
+            
+            ellipse_width, ellipse_height = get_ellipse_shapes(1.5, y_axis_len, row['shape'])
+            
             ax.errorbar(x_cord, y_cord, yerr=np.array(row['err_balmer_dec_low'], row['err_balmer_dec_high']), marker='None', color=rgba)
-            ax.add_artist(Ellipse((x_cord, y_cord), ellipse_width, y_height_factor*ellipse_frac, facecolor=rgba))
+            ax.add_artist(Ellipse((x_cord, y_cord), ellipse_width, ellipse_height, facecolor=rgba))
         elif y_var == 'av':
-            ax.plot(row['log_mass_median'], row['av_median'], marker=row['shape'], color=rgba, markersize=6)
+            ellipse_width, ellipse_height = get_ellipse_shapes(1.5, y_axis_len, row['shape'])
+
+            ax.add_artist(Ellipse((row['log_mass_median'], row['av_median']), ellipse_width, ellipse_height, facecolor=rgba))
             ax.set_ylabel('FAST AV', fontsize=axis_fontsize)
         elif y_var == 'beta':
-            ax.plot(row['log_mass_median'], row['beta_median'], marker=row['shape'], color=rgba, markersize=6)
+            ellipse_width, ellipse_height = get_ellipse_shapes(1.5, y_axis_len, row['shape'])
+            
+            ax.add_artist(Ellipse((row['log_mass_median'], row['beta_median']), ellipse_width, ellipse_height, facecolor=rgba))
             ax.set_ylabel('Betaphot', fontsize=axis_fontsize)
 
 
@@ -314,6 +315,7 @@ def plot_balmer_dec(save_name, n_groups, y_var = 'balmer_dec'):
     
     ax.tick_params(labelsize=12)
     ax.set_xlim(9.25, 10.75)
+    ax.set_ylim(ylims[y_var])
     fig.savefig(imd.axis_cluster_data_dir + f'/{save_name}/{y_var}_vs_mass.pdf')
 
 
