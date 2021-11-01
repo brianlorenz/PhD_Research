@@ -61,7 +61,7 @@ def plot_sample_split(n_groups = 18, save_name = 'halpha_norm'):
         else:
             drop_idx.append(True)
     all_axis_ratio_df = all_axis_ratio_df[drop_idx]
-    ax.plot(all_axis_ratio_df['log_mass'], all_axis_ratio_df['log_ssfr'], color = 'grey', ls='None', marker='o')
+    ax.plot(all_axis_ratio_df['log_mass'], all_axis_ratio_df['log_ssfr'], color = 'grey', ls='None', marker='o', zorder=1)
 
     cmap = mpl.cm.viridis 
     norm = mpl.colors.Normalize(vmin=2, vmax=7) 
@@ -140,8 +140,20 @@ def plot_sample_split(n_groups = 18, save_name = 'halpha_norm'):
         beta_medians.append(beta_median)
         keys.append(key)
 
+
+
+        # Set the axis limits
+        xlims = (9.0, 11.0)
+        ylims = (-9.7, -8)
+        ax.set_ylim(ylims)
+        ax.set_xlim(xlims)
+
+        # Get the ellipse shapes for plotting
+        ellipse_width, ellipse_height = get_ellipse_shapes(xlims[1]-xlims[0], np.abs(ylims[1]-ylims[0]), shape)
+
         # plot a black point at the median
-        ax.plot(mass_median, ssfr_median, ls='None', marker=shape, color='black', zorder=100)
+        # ax.plot(mass_median, ssfr_median, ls='None', marker=shape, color='black', zorder=100)
+        ax.add_artist(Ellipse((mass_median, ssfr_median), ellipse_width, ellipse_height, facecolor='black', zorder=3))
 
         
 
@@ -149,7 +161,9 @@ def plot_sample_split(n_groups = 18, save_name = 'halpha_norm'):
         for i in range(len(axis_ratio_df)):
             row = axis_ratio_df.iloc[i]
             rgba = cmap(norm(row['balmer_dec']))
-            ax.plot(row['log_mass'], row['log_ssfr'], color = rgba, ls='None', marker=shape)
+            # ax.plot(row['log_mass'], row['log_ssfr'], color = rgba, ls='None', marker=shape)
+        
+            ax.add_artist(Ellipse((row['log_mass'], row['log_ssfr']), ellipse_width, ellipse_height, facecolor=rgba, zorder=2))
 
         # Plot the rest of the points
         # ax.plot(axis_ratio_df['log_mass'], axis_ratio_df['log_ssfr'], color = color, ls='None', marker=shape)
@@ -166,8 +180,6 @@ def plot_sample_split(n_groups = 18, save_name = 'halpha_norm'):
     ax.set_xlabel('log(Stellar Mass)', fontsize=14) 
     ax.set_ylabel('log(ssfr)', fontsize=14)
     ax.tick_params(labelsize=12)
-    ax.set_ylim(-9.7, -8)
-    ax.set_xlim(9.0, 11.0)
     cbar = fig.colorbar(mpl.cm.ScalarMappable(norm=norm, cmap=cmap), ax=ax)
     cbar.set_label('Balmer Decrement', fontsize=14)
     fig.savefig(imd.axis_cluster_data_dir + f'/{save_name}/sample_cut.pdf')
@@ -303,7 +315,6 @@ def plot_balmer_dec(save_name, n_groups, y_var = 'balmer_dec'):
             ax.set_ylabel('FAST AV', fontsize=axis_fontsize)
         elif y_var == 'beta':
             ellipse_width, ellipse_height = get_ellipse_shapes(1.5, y_axis_len, row['shape'])
-            
             ax.add_artist(Ellipse((row['log_mass_median'], row['beta_median']), ellipse_width, ellipse_height, facecolor=rgba))
             ax.set_ylabel('Betaphot', fontsize=axis_fontsize)
 
@@ -322,7 +333,7 @@ def plot_balmer_dec(save_name, n_groups, y_var = 'balmer_dec'):
 # stack_axis_ratio(3, mass_width, ssfr_width, starting_points, ratio_bins)
     
 # main()
-# plot_sample_split()
+plot_sample_split()
 plot_balmer_dec('halpha_norm', 18, y_var='balmer_dec')
 plot_balmer_dec('halpha_norm', 18, y_var='av')
 plot_balmer_dec('halpha_norm', 18, y_var='beta')

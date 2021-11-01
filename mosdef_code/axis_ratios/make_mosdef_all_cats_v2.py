@@ -28,6 +28,9 @@ def make_mosdef_all_cats_2():
     err_h_masses = []
     sfrs = []
     err_sfrs = []
+    sfrs_corrs = []
+    ha_det_sfrs = []
+    hb_det_sfrs = []
     res = []
     err_res = []
     
@@ -42,6 +45,11 @@ def make_mosdef_all_cats_2():
     avs = []
 
     betas = []
+
+    logoh_pps = []
+    logoh_pps_ulims = []
+    logoh_pps_llims = []
+    n2_lim_flag = []
     
 
     # Add the sfrs from the sfr_latest catalog
@@ -51,6 +59,9 @@ def make_mosdef_all_cats_2():
 
     betas_df = read_file(imd.mosdef_dir + '/Mosdef_cats/mosdef_sfrs_v0.5_calz_beta.fits')
     betas_df['FIELD_STR'] = [betas_df.iloc[i]['FIELD'].decode("utf-8").rstrip() for i in range(len(betas_df))]
+
+    metals_df = read_file(imd.mosdef_dir + '/Mosdef_cats/mosdef_metallicity_latest.fits')
+    metals_df['FIELD_STR'] = [metals_df.iloc[i]['FIELD'].decode("utf-8").rstrip() for i in range(len(metals_df))]
 
 
     #### Sidenote, some objects are missing
@@ -86,6 +97,7 @@ def make_mosdef_all_cats_2():
         linemeas_slice = np.logical_and(linemeas_df['ID']==cat_id, linemeas_df['FIELD_STR']==field)
         sfrs_slice = np.logical_and(sfrs_df['ID']==cat_id, sfrs_df['FIELD_STR']==field)
         betas_slice = np.logical_and(betas_df['ID']==cat_id, betas_df['FIELD_STR']==field)
+        metals_slice = np.logical_and(metals_df['ID']==cat_id, metals_df['FIELD_STR']==field)
         
         hb_values.append(linemeas_df[linemeas_slice].iloc[0]['HB4863_FLUX'])
         hb_errs.append(linemeas_df[linemeas_slice].iloc[0]['HB4863_FLUX_ERR'])
@@ -96,20 +108,35 @@ def make_mosdef_all_cats_2():
         
         if cat_id in skip_beta_ids:
             betas.append(-999)
+            logoh_pps.append(-999)
+            logoh_pps_ulims.append(-999)
+            logoh_pps_llims.append(-999)
+            n2_lim_flag.append(-999)
         else:
             betas.append(betas_df[betas_slice].iloc[0]['BETAPHOT'])
-        
+            
+            # Metallicities
+            logoh_pps.append(metals_df[metals_slice].iloc[0]['12LOGOH_PP04_N2'])
+            logoh_pps_ulims.append(metals_df[metals_slice].iloc[0]['U68_12LOGOH_PP04_N2'])
+            logoh_pps_llims.append(metals_df[metals_slice].iloc[0]['L68_12LOGOH_PP04_N2'])
+            n2_lim_flag.append(metals_df[metals_slice].iloc[0]['N2_LIMFLAG'])  # See readme for more info about columns
+            
 
         # USE SFR2 or SFR_CORR?
         sfrs.append(sfrs_df[sfrs_slice].iloc[0]['SFR2'])
         err_sfrs.append(sfrs_df[sfrs_slice].iloc[0]['SFRERR2'])
+        sfrs_corrs.append(sfrs_df[sfrs_slice].iloc[0]['SFR_CORR'])
+        ha_det_sfrs.append(sfrs_df[sfrs_slice].iloc[0]['HA6565_DETFLAG'])
+        hb_det_sfrs.append(sfrs_df[sfrs_slice].iloc[0]['HB4863_DETFLAG'])
+
+        
 
     
 
 
 
-    to_merge_df = pd.DataFrame(zip(fields, v4ids, agn_flags, masses, err_l_masses, err_h_masses, sfrs, err_sfrs, res, err_res, zs, z_quals, avs, betas, hb_values, hb_errs, ha_values, ha_errs), columns=['field', 'v4id', 'agn_flag', 'log_mass', 'err_log_mass_d', 'err_log_mass_u', 'sfr', 'err_sfr', 'half_light', 'err_half_light', 'z', 'z_qual_flag', 'AV', 'beta', 'hb_flux', 'err_hb_flux', 'ha_flux', 'err_ha_flux'])
-    merged_all_cats = all_cats_df.merge(to_merge_df, left_on=['v4id', 'field'], right_on=['v4id', 'field'])
+    to_merge_df = pd.DataFrame(zip(fields, v4ids, agn_flags, masses, err_l_masses, err_h_masses, sfrs, err_sfrs, sfrs_corrs, ha_det_sfrs, hb_det_sfrs, res, err_res, zs, z_quals, avs, betas, hb_values, hb_errs, ha_values, ha_errs, logoh_pps, logoh_pps_ulims, logoh_pps_llims, n2_lim_flag), columns=['field', 'v4id', 'agn_flag', 'log_mass', 'err_log_mass_d', 'err_log_mass_u', 'sfr', 'err_sfr', 'sfr_corr', 'ha_detflag_sfr', 'hb_detflag_sfr', 'half_light', 'err_half_light', 'z', 'z_qual_flag', 'AV', 'beta', 'hb_flux', 'err_hb_flux', 'ha_flux', 'err_ha_flux', 'logoh_pp_n2', 'u68_logoh_pp_n2', 'l68_logoh_pp_n2', 'n2flag_metals'])
+    merged_all_cats = all_cats_df.merge(to_merge_df, left_on=['v4id', 'field'], right_on=['v4id', 'field']) 
     merged_all_cats.to_csv(imd.loc_axis_ratio_cat, index=False)
 
 
