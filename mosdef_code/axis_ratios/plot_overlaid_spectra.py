@@ -59,13 +59,13 @@ def plot_overlaid_spectra(savename='halpha_norm'):
         spec_df = ascii.read(imd.axis_cluster_data_dir + f'/{savename}/{savename}_spectra/{axis_group}_spectrum.csv').to_pandas()
 
 
-        if row['shape'] == '^': 
+        if row['shape'] == '+': 
             color = 'red'
             label = 'Axis Ratio < 0.4'
-        if row['shape'] == 'o':
+        if row['shape'] == 'd':
             color = 'mediumseagreen'
             label = '0.4 < Axis Ratio < 0.7'
-        if row['shape'] == 'x':
+        if row['shape'] == 'o':
             color = 'blue'
             label = '0.7 < Axis Ratio'
 

@@ -330,10 +330,10 @@ def plot_balmer_dec(save_name, n_groups, y_var = 'balmer_dec'):
     fig.savefig(imd.axis_cluster_data_dir + f'/{save_name}/{y_var}_vs_mass.pdf')
 
 
-# stack_axis_ratio(3, mass_width, ssfr_width, starting_points, ratio_bins)
+stack_axis_ratio(3, mass_width, ssfr_width, starting_points, ratio_bins)
     
 # main()
-plot_sample_split()
-plot_balmer_dec('halpha_norm', 18, y_var='balmer_dec')
-plot_balmer_dec('halpha_norm', 18, y_var='av')
-plot_balmer_dec('halpha_norm', 18, y_var='beta')
+# plot_sample_split()
+# plot_balmer_dec('halpha_norm', 18, y_var='balmer_dec')
+# plot_balmer_dec('halpha_norm', 18, y_var='av')
+# plot_balmer_dec('halpha_norm', 18, y_var='beta')
