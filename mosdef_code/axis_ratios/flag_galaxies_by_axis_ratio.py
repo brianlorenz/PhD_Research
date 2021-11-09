@@ -18,14 +18,14 @@ def flag_axis_ratios():
 
     # Remove where either column is -999
     bad_gals = np.logical_or(ar_df['F160_axis_ratio']<-99, ar_df['F125_axis_ratio']<-99)
-    ar_df[~bad_gals]['axis_ratio_flag'] = -999
+    flag_idxs = ar_df[~bad_gals].index
+    ar_df.loc[flag_idxs, 'axis_ratio_flag'] = -999
     good_gals = ar_df[~bad_gals]
 
     # Compute the difference and standard devaition
     ar_diff = good_gals['F160_axis_ratio'] - good_gals['F125_axis_ratio']
     err_ar_diff = good_gals['F160_err_axis_ratio'] + good_gals['F125_err_axis_ratio']
     std_ar_diff = np.std(ar_diff)
-    print(std_ar_diff)
 
     # Flag the galaixes greater than 2 sigma
     above_sigma = ar_diff > 2*std_ar_diff
@@ -53,4 +53,4 @@ def flag_axis_ratios():
 
     ar_df.to_csv(imd.loc_axis_ratio_cat, index=False)
 
-# flag_axis_ratios()
+flag_axis_ratios()

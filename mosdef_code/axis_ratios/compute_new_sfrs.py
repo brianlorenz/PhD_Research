@@ -31,7 +31,7 @@ def convert_ha_to_sfr():
     # Append the new sfrs to the catalog
     # Save the catalog
     ar_df['halpha_sfrs'] = halpha_sfrs
-    ar_df.to_csv(imd.loc_axis_ratio_cat, index=False )
+    ar_df.to_csv(imd.loc_axis_ratio_cat, index=False)
 
 
 def read_ha_and_av():
@@ -127,8 +127,8 @@ def plot_sfrs():
 
 
 
-convert_ha_to_sfr()
-plot_sfrs()
+# convert_ha_to_sfr()
+# plot_sfrs()
 
 
 
