@@ -51,6 +51,20 @@ def plot_spec_with_cont(axis_group, save_name='halpha_norm'):
     ax.tick_params(labelsize=12)
 
     fig.savefig(imd.axis_cluster_data_dir + f'/{save_name}/{save_name}_conts/summed_conts/{axis_group}_cont_spec.pdf')
+
+    fig, ax = plt.subplots(figsize=(8,8))
+    ax.plot(spec_df['wavelength'], spec_df['f_lambda'], color = 'orange')
+    ax.plot(sum_cont_df['rest_wavelength'], sum_cont_df['f_lambda_scaled'], color = 'black')
+
+    ax.set_xlabel('Wavelength ($\AA$)', fontsize=14)
+    ax.set_ylabel('Flux', fontsize=14)
+    ax.set_xlim(6500, 6620)
+    ax.set_ylim(np.percentile(spec_df['f_lambda'], 2), np.percentile(spec_df['f_lambda'], 99.5))
+    ax.tick_params(labelsize=12)
+
+
+
+    fig.savefig(imd.axis_cluster_data_dir + f'/{save_name}/{save_name}_conts/summed_conts/{axis_group}_zoomha.pdf')
     plt.close('all')
 
 def plot_all_spec_with_cont(n_clusters, save_name='halpha_norm'):
@@ -96,6 +110,9 @@ def scale_continuum(spec_df, cont_df):
     a12, b12 = get_cross_cor(cont_df[middle_idxs][med_both_idx], spec_df[middle_idxs][med_both_idx])
     cont_df['f_lambda_scaled'] = cont_df['f_lambda']/a12
     print(f'Scale factor: {a12}')
+
+    # scale by the medians
+    cont_df['f_lambda_scaled'] = cont_df['f_lambda'] * np.median(spec_df[middle_idxs][med_both_idx]['f_lambda']) / np.median(cont_df[middle_idxs][med_both_idx]['f_lambda'])
     return spec_df, cont_df
 
 

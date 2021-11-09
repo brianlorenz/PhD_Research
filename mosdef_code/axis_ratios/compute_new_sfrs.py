@@ -45,7 +45,7 @@ def read_ha_and_av():
 
 def correct_av_for_dust(avs_stellar):
     """Find the formula in Reddy et al 2015"""
-    avs_balmer = avs_stellar + 1
+    avs_balmer = avs_stellar + 0
     return avs_balmer
 
 def apply_dust_law(avs_balmer, target_wave=6565, R_V=4.05):
@@ -105,12 +105,14 @@ def plot_sfrs():
     """Plots the old vs new sfrs"""
     ar_df, halpha_fluxes, avs_stellar, redshifts = read_ha_and_av()
 
+    ar_df = ar_df[ar_df['z']>2]
+
     hb_flag_filt = ar_df['hb_detflag_sfr'] == 1
     
     fig, ax = plt.subplots(figsize=(8,8))
 
-    ax.plot(ar_df['sfr'], ar_df['halpha_sfrs'], color='black', marker='o', ls='None', label = 'H$_\\beta$ > 3 sigma')
-    ax.plot(ar_df[hb_flag_filt]['sfr'], ar_df[hb_flag_filt]['halpha_sfrs'], color='orange', marker='o', ls='None', label = 'H$_\\beta$ < 3 sigma')
+    ax.plot(ar_df[~hb_flag_filt]['sfr'], ar_df[~hb_flag_filt]['halpha_sfrs'], color='black', marker='o', ls='None', label = 'H$_\\beta$ > 3 sigma')
+    #  ax.plot(ar_df[hb_flag_filt]['sfr'], ar_df[hb_flag_filt]['halpha_sfrs'], color='orange', marker='o', ls='None', label = 'H$_\\beta$ < 3 sigma')
     ax.plot((0.001, 10**5), (0.001, 10**5), ls='--', color='blue')
 
     ax.set_xscale('log')

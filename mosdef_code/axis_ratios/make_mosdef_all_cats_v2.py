@@ -8,7 +8,9 @@ import initialize_mosdef_dirs as imd
 import cluster_data_funcs as cdf
 from mosdef_obj_data_funcs import get_mosdef_obj
 from mosdef_obj_data_funcs import setup_get_AV, get_AV
-from read_data import read_file                                                                   
+from read_data import read_file       
+from flag_galaxies_by_axis_ratio import flag_axis_ratios    
+from compute_new_sfrs import convert_ha_to_sfr                                                        
 
 
 def make_mosdef_all_cats_2():
@@ -141,3 +143,5 @@ def make_mosdef_all_cats_2():
 
 
 make_mosdef_all_cats_2()
+flag_axis_ratios()
+convert_ha_to_sfr()
