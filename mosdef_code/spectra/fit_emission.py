@@ -51,7 +51,7 @@ def fit_emission(groupID, norm_method, constrain_O3=False, axis_group=-1, save_n
     if axis_group > -1:
         composite_spectrum_df = read_axis_ratio_spectrum(axis_group, save_name)
         fast_continuum_df = ascii.read(imd.axis_cluster_data_dir + f'/{save_name}/{save_name}_conts/summed_conts/{axis_group}_summed_cont.csv').to_pandas()
-        fast_continuum = fast_continuum_df['f_lambda']
+        fast_continuum = fast_continuum_df['f_lambda_scaled']
     elif scaled == 'True':
         composite_spectrum_df = read_composite_spectrum(
             groupID, norm_method, scaled='True')
@@ -129,9 +129,15 @@ def fit_emission(groupID, norm_method, constrain_O3=False, axis_group=-1, save_n
             'f_lambda_scaled'], scale_factor * composite_spectrum_df[full_cut]['err_f_lambda_scaled'], np.array(guess), bounds, n_loops)
     elif axis_group > -1:
         fast_continuum_cut = fast_continuum[full_cut]
-        popt, arr_popt, cont_scale_out, y_data_cont_sub = monte_carlo_fit(multi_gaussian, wavelength_cut, scale_factor * continuum_cut, scale_factor * composite_spectrum_df[full_cut][
-            'f_lambda'], scale_factor * composite_spectrum_df[full_cut]['err_f_lambda'], np.array(guess), bounds, n_loops, fit_axis_group=1, fast_continuum_cut=scale_factor*fast_continuum_cut
-            )
+
+        # Caveat for if the continuum is negative, then return to the old method
+        if np.median(fast_continuum_cut) < 0:
+            popt, arr_popt, cont_scale_out, y_data_cont_sub = monte_carlo_fit(multi_gaussian, wavelength_cut, scale_factor * continuum_cut, scale_factor * composite_spectrum_df[full_cut][
+                'f_lambda'], scale_factor * composite_spectrum_df[full_cut]['err_f_lambda'], np.array(guess), bounds, n_loops)
+        else:
+            popt, arr_popt, cont_scale_out, y_data_cont_sub = monte_carlo_fit(multi_gaussian, wavelength_cut, scale_factor * continuum_cut, scale_factor * composite_spectrum_df[full_cut][
+                'f_lambda'], scale_factor * composite_spectrum_df[full_cut]['err_f_lambda'], np.array(guess), bounds, n_loops, fit_axis_group=1, fast_continuum_cut=scale_factor*fast_continuum_cut
+                )
     
     else:    
         popt, arr_popt, cont_scale_out, y_data_cont_sub = monte_carlo_fit(multi_gaussian, wavelength_cut, scale_factor * continuum_cut, scale_factor * composite_spectrum_df[full_cut][
@@ -252,6 +258,8 @@ def plot_emission_fit(groupID, norm_method, axis_group=-1, save_name='', scaled=
         fit_df = ascii.read(
             imd.axis_cluster_data_dir + f'/{save_name}/{save_name}_emission_fits/{axis_group}_emission_fits.csv').to_pandas()
         total_spec_df = read_axis_ratio_spectrum(axis_group, save_name)
+        fast_continuum_df = ascii.read(imd.axis_cluster_data_dir + f'/{save_name}/{save_name}_conts/summed_conts/{axis_group}_summed_cont.csv').to_pandas()
+        fast_continuum = fast_continuum_df['f_lambda_scaled']
         cont_sub_df = ascii.read(imd.axis_cluster_data_dir + f'/{save_name}/{save_name}_cont_subs/{axis_group}_cont_sub.csv').to_pandas()
     elif scaled == 'True':
         fit_df = ascii.read(imd.emission_fit_csvs_dir +
@@ -323,6 +331,8 @@ def plot_emission_fit(groupID, norm_method, axis_group=-1, save_name='', scaled=
         axis.plot(wavelength, spectrum, color='black', lw=1, label='Spectrum')
         if axis_group > -1:
             axis.plot(cont_sub_df['wavelength_cut'], cont_sub_df['continuum_sub_ydata'], color='mediumseagreen', label='Continuum-Subtracted')
+            if np.median(fast_continuum)>0:
+                axis.plot(wavelength, fast_continuum, color='blue', label='Scaled FAST Cont')
         axis.plot(wavelength[full_cut][hb_range], gauss_fit[hb_range], color='orange',
                   lw=1, label='Gaussian Fit')
         axis.plot(wavelength[full_cut][~hb_range], gauss_fit[~hb_range], color='orange',

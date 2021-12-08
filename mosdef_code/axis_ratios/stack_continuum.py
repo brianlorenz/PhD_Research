@@ -37,8 +37,8 @@ def stack_all_continuum(n_clusters, save_name='halpha_norm'):
 def plot_spec_with_cont(axis_group, save_name='halpha_norm'):
     '''Plots the spectrum witht he continuum overlaid'''
 
-    sum_cont_df = ascii.read(imd.axis_cluster_data_dir + f'/{save_name}/{save_name}_conts/summed_conts/{axis_group}_summed_cont.csv')
-    spec_df = ascii.read(imd.axis_cluster_data_dir + f'/{save_name}/{save_name}_spectra/{axis_group}_spectrum.csv')
+    sum_cont_df = ascii.read(imd.axis_cluster_data_dir + f'/{save_name}/{save_name}_conts/summed_conts/{axis_group}_summed_cont.csv').to_pandas()
+    spec_df = ascii.read(imd.axis_cluster_data_dir + f'/{save_name}/{save_name}_spectra/{axis_group}_spectrum.csv').to_pandas()
 
     spec_df, sum_cont_df = scale_continuum(spec_df, sum_cont_df)
 
@@ -55,6 +55,8 @@ def plot_spec_with_cont(axis_group, save_name='halpha_norm'):
     fig, ax = plt.subplots(figsize=(8,8))
     ax.plot(spec_df['wavelength'], spec_df['f_lambda'], color = 'orange')
     ax.plot(sum_cont_df['rest_wavelength'], sum_cont_df['f_lambda_scaled'], color = 'black')
+
+    sum_cont_df.to_csv(imd.axis_cluster_data_dir + f'/{save_name}/{save_name}_conts/summed_conts/{axis_group}_summed_cont.csv', index=False)
 
     ax.set_xlabel('Wavelength ($\AA$)', fontsize=14)
     ax.set_ylabel('Flux', fontsize=14)
@@ -116,5 +118,5 @@ def scale_continuum(spec_df, cont_df):
     return spec_df, cont_df
 
 
-stack_all_continuum(18)
-plot_all_spec_with_cont(18)
+# stack_all_continuum(18)
+# plot_all_spec_with_cont(18)

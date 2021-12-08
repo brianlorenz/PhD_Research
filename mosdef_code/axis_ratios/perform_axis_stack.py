@@ -2,6 +2,7 @@ from re import A
 from matplotlib.pyplot import axis
 from stack_spectra import *
 from fit_emission import fit_emission
+from stack_continuum import stack_all_continuum
 import matplotlib as mpl
 from matplotlib.patches import Ellipse
 from ellipses_for_plotting import get_ellipse_shapes
@@ -22,7 +23,9 @@ colors = {'lowm_lows': 'red', 'lowm_highs': 'blue', 'highm_lows': 'orange', 'hig
 def main():
     '''performs all the steps to get this group plotted'''
     stack_axis_ratio(3, mass_width, ssfr_width, starting_points, ratio_bins)
+    stack_all_continuum(18, save_name='halpha_norm')
     for axis_group in range(18):
+
         fit_emission(0, 'cluster_norm', constrain_O3=False, axis_group=axis_group, save_name='halpha_norm', scaled='False', run_name='False')
 
 
@@ -386,5 +389,5 @@ def bootstrap_median(df):
 # plot_balmer_dec('halpha_norm', 18, y_var='av')
 # plot_balmer_dec('halpha_norm', 18, y_var='beta')
 
-for axis_group in range(10):
-    fit_emission(0, 'cluster_norm', constrain_O3=False, axis_group=axis_group, save_name='halpha_norm', scaled='False', run_name='False')
+# for axis_group in range(18):
+#     fit_emission(0, 'cluster_norm', constrain_O3=False, axis_group=axis_group, save_name='halpha_norm', scaled='False', run_name='False')
