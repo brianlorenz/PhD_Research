@@ -590,7 +590,10 @@ def stack_axis_ratio(n_bins, mass_width, ssfr_width, starting_points, ratio_bins
     ar_df = read_interp_axis_ratio()
 
     # Remove objects with greater than 0.1 error
-    ar_df = ar_df[ar_df['err_use_ratio'] < 0.1]
+    # ar_df = ar_df[ar_df['err_use_ratio'] < 0.1]
+
+    # Remove objects flagged for axis ratio inconsistencies (1 is F160-F125 > std, and -999 has measurements missing)
+    ar_df = ar_df[ar_df['axis_ratio_flag'] == 0]
 
     # Remove objects wiithout ha/hb detections
     ar_df = ar_df[ar_df['ha_flux'] > -0.1]

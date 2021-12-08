@@ -34,6 +34,30 @@ def convert_ha_to_sfr():
     ar_df.to_csv(imd.loc_axis_ratio_cat, index=False)
 
 
+def add_use_sfr():
+    """Adds the use_sfr column to the catalog, which will use the sfr_corr for most galaxies but the halpha_sfr for those without hbeta"""
+    ar_df = ascii.read(imd.loc_axis_ratio_cat).to_pandas()
+    
+    # Set the new column to a all -999s
+    ar_df['use_sfr'] = np.ones(len(ar_df)) * -999
+    
+    # Find where the Hbeta readings are good, use sfr_corr for that
+    halpha_good = ar_df['ha_detflag_sfr'] == 0
+    hbeta_good = ar_df['hb_detflag_sfr'] == 0
+    use_corr = np.logical_and(halpha_good, hbeta_good)
+    ar_df.loc[use_corr, 'use_sfr'] = ar_df[use_corr]['sfr_corr']
+
+    # Find where Halpha is good but Hbeta is not, and use the halpha sfrs for that
+    use_hasfr = np.logical_and(halpha_good, ~hbeta_good)
+    ar_df.loc[use_hasfr, 'use_sfr'] = ar_df[use_hasfr]['halpha_sfrs']
+
+    ar_df = ar_df.rename(columns={"sfr": "sfr2", "err_sfr": "err_sfr2"})
+    ar_df = ar_df.rename(columns={"use_sfr": "sfr"})
+
+    ar_df.to_csv(imd.loc_axis_ratio_cat, index=False)
+
+
+
 def read_ha_and_av():
     """Reads in the catalog"""
     ar_df = ascii.read(imd.loc_axis_ratio_cat).to_pandas()
@@ -42,6 +66,14 @@ def read_ha_and_av():
     redshifts = ar_df['z']
     return ar_df, halpha_fluxes, avs_stellar, redshifts
 
+def filter_ar_df(ar_df):
+    '''Cut the catalog down to only those galaxies that we are using'''
+    ar_df = ar_df[ar_df['agn_flag'] == 0]
+    ar_df = ar_df[ar_df['z_qual_flag'] == 7]
+    ar_df = ar_df[ar_df['ha_detflag_sfr'] == 0]
+    ar_df = ar_df[ar_df['hb_detflag_sfr'] == 0]
+
+    return ar_df
 
 def correct_av_for_dust(avs_stellar):
     """Find the formula in Reddy et al 2015"""
@@ -109,7 +141,7 @@ def plot_sfrs():
     """Plots the old vs new sfrs"""
     ar_df, halpha_fluxes, avs_stellar, redshifts = read_ha_and_av()
 
-    ar_df = ar_df[ar_df['z']>2]
+
 
     hb_flag_filt = ar_df['hb_detflag_sfr'] == 1
     
@@ -135,28 +167,36 @@ def plot_sfrs():
 
 
     # Figure similar to the one in Sedona's paper
-    fig, ax = plt.subplots(figsize=(9,8))
+    def sedona_plot(ar_df=ar_df):
+        fig, ax = plt.subplots(figsize=(9,8))
+        
+        ar_df = filter_ar_df(ar_df)
+        ar_df = ar_df[ar_df['z']>=1.7]
+        ar_df = ar_df[ar_df['z']<=2.4]
+        sfr_type = 'sfr_corr' #sfr_corr or sfr as strings
 
-    high_sfrs_bad =  ar_df[hb_flag_filt]['sfr'] > 100
+        high_sfrs_bad =  ar_df[hb_flag_filt][sfr_type] > 100
 
-    filter_999s = np.logical_and(ar_df[~hb_flag_filt]['halpha_sfrs'] > 0, ar_df[~hb_flag_filt]['sfr'] > 0)
+        filter_999s = np.logical_and(ar_df[~hb_flag_filt]['halpha_sfrs'] > 0, ar_df[~hb_flag_filt][sfr_type] > 0)
 
-    sfr_ratio = ar_df[~hb_flag_filt][filter_999s]['halpha_sfrs'] / ar_df[~hb_flag_filt][filter_999s]['sfr']
+        sfr_ratio = ar_df[~hb_flag_filt][filter_999s]['halpha_sfrs'] / ar_df[~hb_flag_filt][filter_999s][sfr_type]
 
-    color_map = plt.cm.get_cmap('RdYlBu') 
-    reversed_color_map = color_map.reversed() 
-    sc = ax.scatter(ar_df[~hb_flag_filt][filter_999s]['log_mass'], np.log10(sfr_ratio) , c=ar_df[~hb_flag_filt][filter_999s]['AV'], cmap = reversed_color_map, edgecolors='black', vmin=0, vmax=1.4)
-    cbar = plt.colorbar(sc)
-    ax.plot((8, 12), (0, 0), ls='--', color='black')
+        color_map = plt.cm.get_cmap('RdYlBu') 
+        reversed_color_map = color_map.reversed() 
+        sc = ax.scatter(ar_df[~hb_flag_filt][filter_999s]['log_mass'], np.log10(sfr_ratio) , c=ar_df[~hb_flag_filt][filter_999s]['AV'], cmap = reversed_color_map, edgecolors='black', vmin=0, vmax=1.4)
+        cbar = plt.colorbar(sc)
+        ax.plot((8, 12), (0, 0), ls='--', color='black')
 
-    ax.set_xlabel('Stellar Mass', fontsize=14)
-    ax.set_xlim(8.7, 11.6)
-    ax.set_ylim(-2.2, 1.3)
-    
-    ax.set_ylabel('log10(SFR H$_\\alpha$ / SFR Balmer)', fontsize=14)
-    cbar.set_label('FAST AV', fontsize=14)
-    ax.tick_params(labelsize=12)
-    fig.savefig(imd.axis_output_dir + '/sfr_diagnostics/sfr_comparison_vsmass.pdf')
+        ax.set_xlabel('Stellar Mass', fontsize=14)
+        ax.set_xlim(8.7, 11.6)
+        ax.set_ylim(-2.2, 1.3)
+        
+        ax.set_ylabel('log10(SFR H$_\\alpha$ / SFR Balmer)', fontsize=14)
+        cbar.set_label('FAST AV', fontsize=14)
+        ax.tick_params(labelsize=12)
+        fig.savefig(imd.axis_output_dir + '/sfr_diagnostics/sfr_comparison_vsmass.pdf')
+        return
+    sedona_plot()
 
     
 
@@ -243,7 +283,8 @@ def plot_sfrs():
 
 
 
-convert_ha_to_sfr()
+# convert_ha_to_sfr()
+# add_use_sfr()
 plot_sfrs()
 
 

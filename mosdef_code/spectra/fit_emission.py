@@ -50,6 +50,8 @@ def fit_emission(groupID, norm_method, constrain_O3=False, axis_group=-1, save_n
 
     if axis_group > -1:
         composite_spectrum_df = read_axis_ratio_spectrum(axis_group, save_name)
+        fast_continuum_df = ascii.read(imd.axis_cluster_data_dir + f'/{save_name}/{save_name}_conts/summed_conts/{axis_group}_summed_cont.csv').to_pandas()
+        fast_continuum = fast_continuum_df['f_lambda']
     elif scaled == 'True':
         composite_spectrum_df = read_composite_spectrum(
             groupID, norm_method, scaled='True')
@@ -123,14 +125,27 @@ def fit_emission(groupID, norm_method, constrain_O3=False, axis_group=-1, save_n
     # print(bounds)
     # print(guess)
     if scaled == 'True':
-        popt, arr_popt, cont_scale_out = monte_carlo_fit(multi_gaussian, wavelength_cut, scale_factor * continuum_cut, scale_factor * composite_spectrum_df[full_cut][
+        popt, arr_popt, cont_scale_out, y_data_cont_sub = monte_carlo_fit(multi_gaussian, wavelength_cut, scale_factor * continuum_cut, scale_factor * composite_spectrum_df[full_cut][
             'f_lambda_scaled'], scale_factor * composite_spectrum_df[full_cut]['err_f_lambda_scaled'], np.array(guess), bounds, n_loops)
+    elif axis_group > -1:
+        fast_continuum_cut = fast_continuum[full_cut]
+        popt, arr_popt, cont_scale_out, y_data_cont_sub = monte_carlo_fit(multi_gaussian, wavelength_cut, scale_factor * continuum_cut, scale_factor * composite_spectrum_df[full_cut][
+            'f_lambda'], scale_factor * composite_spectrum_df[full_cut]['err_f_lambda'], np.array(guess), bounds, n_loops, fit_axis_group=1, fast_continuum_cut=scale_factor*fast_continuum_cut
+            )
+    
     else:    
-        popt, arr_popt, cont_scale_out = monte_carlo_fit(multi_gaussian, wavelength_cut, scale_factor * continuum_cut, scale_factor * composite_spectrum_df[full_cut][
+        popt, arr_popt, cont_scale_out, y_data_cont_sub = monte_carlo_fit(multi_gaussian, wavelength_cut, scale_factor * continuum_cut, scale_factor * composite_spectrum_df[full_cut][
             'f_lambda'], scale_factor * composite_spectrum_df[full_cut]['err_f_lambda'], np.array(guess), bounds, n_loops)
     err_popt = np.std(arr_popt, axis=0)
     # popt, pcov = curve_fit(multi_gaussian, composite_spectrum_df[
     #     'wavelength'], composite_spectrum_df['f_lambda'], guess)
+
+    # Save the continuum-subtracted ydata
+    if axis_group > -1:
+        y_data_cont_sub = y_data_cont_sub / scale_factor
+        cont_sub_df = pd.DataFrame(zip(wavelength_cut, y_data_cont_sub), columns=['wavelength_cut','continuum_sub_ydata'])
+        cont_sub_df.to_csv(imd.axis_cluster_data_dir + f'/{save_name}/{save_name}_cont_subs/{axis_group}_cont_sub.csv', index=False)
+
 
     # Now, parse the results into a dataframe
     hb_scale, ha_scale, err_hb_scale, err_ha_scale = cont_scale_out
@@ -168,7 +183,7 @@ def fit_emission(groupID, norm_method, constrain_O3=False, axis_group=-1, save_n
                      for i in range(len(arr_popt))]
     all_hb_fluxes = [get_flux(hb_amps[i], hb_sigs[i])
                      for i in range(len(arr_popt))]
-    all_balmer_decs = [all_ha_fluxes[i] / all_hb_fluxes[i]
+    all_balmer_decs = [all_ha_fluxes[i][0] / all_hb_fluxes[i][0]
                        for i in range(len(arr_popt))]
     balmer_dec = [fluxes[ha_idx] / fluxes[hb_idx]
                   for i in range(len(line_list))]
@@ -237,6 +252,7 @@ def plot_emission_fit(groupID, norm_method, axis_group=-1, save_name='', scaled=
         fit_df = ascii.read(
             imd.axis_cluster_data_dir + f'/{save_name}/{save_name}_emission_fits/{axis_group}_emission_fits.csv').to_pandas()
         total_spec_df = read_axis_ratio_spectrum(axis_group, save_name)
+        cont_sub_df = ascii.read(imd.axis_cluster_data_dir + f'/{save_name}/{save_name}_cont_subs/{axis_group}_cont_sub.csv').to_pandas()
     elif scaled == 'True':
         fit_df = ascii.read(imd.emission_fit_csvs_dir +
                             f'/{groupID}_emission_fits_scaled.csv').to_pandas()
@@ -297,18 +313,21 @@ def plot_emission_fit(groupID, norm_method, axis_group=-1, save_name='', scaled=
     # We add back the continuum, scaled appropriately
     hb_cont = fit_df['hb_scale'].iloc[0] * \
         total_spec_df['cont_f_lambda'][full_cut][hb_range]
-    gauss_fit[hb_range] = gauss_fit[hb_range] + hb_cont
+    gauss_fit[hb_range] = gauss_fit[hb_range] #+ hb_cont
     ha_cont = fit_df['ha_scale'].iloc[0] * \
         total_spec_df['cont_f_lambda'][full_cut][~hb_range]
-    gauss_fit[~hb_range] = gauss_fit[~hb_range] + ha_cont
+    gauss_fit[~hb_range] = gauss_fit[~hb_range] #+ ha_cont
 
     # Plots the spectrum and fit on all axes
     for axis in axes_arr:
         axis.plot(wavelength, spectrum, color='black', lw=1, label='Spectrum')
+        if axis_group > -1:
+            axis.plot(cont_sub_df['wavelength_cut'], cont_sub_df['continuum_sub_ydata'], color='mediumseagreen', label='Continuum-Subtracted')
         axis.plot(wavelength[full_cut][hb_range], gauss_fit[hb_range], color='orange',
                   lw=1, label='Gaussian Fit')
         axis.plot(wavelength[full_cut][~hb_range], gauss_fit[~hb_range], color='orange',
                   lw=1)
+        
         if axis != ax:
             # Add text for each of the lines:
             for i in range(len(line_list)):
@@ -428,7 +447,7 @@ def gaussian_func(wavelength, peak_wavelength, amp, sig):
     return amp * np.exp(-(wavelength - peak_wavelength)**2 / (2 * sig**2))
 
 
-def monte_carlo_fit(func, wavelength_cut, continuum, y_data, y_err, guess, bounds, n_loops):
+def monte_carlo_fit(func, wavelength_cut, continuum, y_data, y_err, guess, bounds, n_loops, fit_axis_group=0, fast_continuum_cut=0):
     '''Fit the multi-gaussian to the data, use monte carlo to get uncertainties
 
     Parameters:
@@ -439,6 +458,8 @@ def monte_carlo_fit(func, wavelength_cut, continuum, y_data, y_err, guess, bound
     guess (list): list of guesses for the parameters of the fit
     bounds (tuple of array-like): bounds for the fit
     n_loops (int): Number of times to run the monte_carlo simulations
+    fit_axis_group (int): Set to 1 if fitting an axis group, and add fast_coontinuum cut
+    fast_continuum_cut (array): FAST conitnuum cut in the same way as y_data, only needed for fit_axis_group
 
     Returns:
     popt (list): List of the fit parameters
@@ -450,9 +471,11 @@ def monte_carlo_fit(func, wavelength_cut, continuum, y_data, y_err, guess, bound
 
     hb_cut = get_cuts(wavelength_cut[hb_half_idx])
     ha_cut = get_cuts(wavelength_cut[ha_half_idx])
-
-    y_data_cont_sub, hb_scale, ha_scale = scale_continuum(
-        y_data, continuum, hb_half_idx, ha_half_idx, hb_cut, ha_cut)
+    
+    if fit_axis_group == 1:
+        y_data_cont_sub, hb_scale, ha_scale = fast_continuum_subtract(y_data, fast_continuum_cut, hb_half_idx, ha_half_idx)
+    else:
+        y_data_cont_sub, hb_scale, ha_scale = scale_continuum(y_data, continuum, hb_half_idx, ha_half_idx, hb_cut, ha_cut)
 
     start = time.time()
 
@@ -470,8 +493,13 @@ def monte_carlo_fit(func, wavelength_cut, continuum, y_data, y_err, guess, bound
     new_y_data_dfs = [pd.DataFrame(new_y, columns=['flux']).set_index(
         y_data.index)['flux'] for new_y in new_y_datas]
     # Scale and subtract the continuum of of each
-    new_cont_tuples = [scale_continuum(
-        new_y_data_dfs[i], continuum, hb_half_idx, ha_half_idx, hb_cut, ha_cut) for i in range(len(new_y_data_dfs))]
+    
+    if fit_axis_group == 1:
+        new_cont_tuples = [fast_continuum_subtract(new_y_data_dfs[i], fast_continuum_cut, hb_half_idx, ha_half_idx) for i in range(len(new_y_data_dfs))]
+    else:
+        new_cont_tuples = [scale_continuum(new_y_data_dfs[i], continuum, hb_half_idx, ha_half_idx, hb_cut, ha_cut) for i in range(len(new_y_data_dfs))]
+
+    
     new_y_datas_cont_sub = [cont_tuple[0] for cont_tuple in new_cont_tuples]
     hb_scales = [cont_tuple[1] for cont_tuple in new_cont_tuples]
     ha_scales = [cont_tuple[2] for cont_tuple in new_cont_tuples]
@@ -484,7 +512,7 @@ def monte_carlo_fit(func, wavelength_cut, continuum, y_data, y_err, guess, bound
 
     end = time.time()
     print(f'Length of {n_loops} fits: {end-start}')
-    return popt, new_popts, cont_scale_out
+    return popt, new_popts, cont_scale_out, y_data_cont_sub
 
 
 def velocity_to_sig(line_center, velocity):
@@ -518,7 +546,7 @@ def get_flux(amp, sig, amp_err=0, sig_err=0):
         flux_err_pct = amp_err_pct + sig_err_pct
         flux_err = flux * flux_err_pct
         return (flux, flux_err)
-    return flux
+    return (flux, 0)
 
 
 def get_flux_integrate(gaussian, continuum, wavelength_range):
@@ -645,6 +673,27 @@ def scale_continuum(y_data_cut, continuum_cut, hb_half_idx, ha_half_idx, hb_cut,
         continuum_cut[hb_half_idx] * hb_scale
     y_data_cut[ha_half_idx] = y_data_cut[ha_half_idx] - \
         continuum_cut[ha_half_idx] * ha_scale
+
+    return (y_data_cut, hb_scale, ha_scale)
+
+def fast_continuum_subtract(y_data_cut, fast_continuum_cut, hb_half_idx, ha_half_idx):
+    """Uses the FAST continuum as the basis for subtraction, then returns the continuum subtacted data in just the ha and hb regions
+
+    Parameters:
+    y_data (array): flux/spectrum data, cut to only the h_alpha and h_beta regions
+    continuum (array): continuum values, cut similarly
+    hb_half_idx (array of booleans): idx of y_data and continuum_cut that correspond to h_beta. Opposite is ha_range
+    ha_half_idx (array): See above
+
+    Returns:
+    y_data_cont_sub (array): Continuum subtracted y_data, only in the regions around h_alpha and h_beta
+    """
+    hb_scale = 1
+    ha_scale = 1
+    y_data_cut[hb_half_idx] = y_data_cut[hb_half_idx] - \
+        fast_continuum_cut[hb_half_idx] * hb_scale
+    y_data_cut[ha_half_idx] = y_data_cut[ha_half_idx] - \
+        fast_continuum_cut[ha_half_idx] * ha_scale
 
     return (y_data_cut, hb_scale, ha_scale)
 

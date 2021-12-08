@@ -18,7 +18,7 @@ def flag_axis_ratios():
 
     # Remove where either column is -999
     bad_gals = np.logical_or(ar_df['F160_axis_ratio']<-99, ar_df['F125_axis_ratio']<-99)
-    flag_idxs = ar_df[~bad_gals].index
+    flag_idxs = ar_df[bad_gals].index
     ar_df.loc[flag_idxs, 'axis_ratio_flag'] = -999
     good_gals = ar_df[~bad_gals]
 

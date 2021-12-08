@@ -1,9 +1,13 @@
+from re import A
 from matplotlib.pyplot import axis
 from stack_spectra import *
 from fit_emission import fit_emission
 import matplotlib as mpl
 from matplotlib.patches import Ellipse
 from ellipses_for_plotting import get_ellipse_shapes
+import random
+
+random.seed(3284923)
 
 mass_width = 0.8
 ssfr_width = 0.5
@@ -42,7 +46,9 @@ def plot_sample_split(n_groups = 18, save_name = 'halpha_norm'):
     mass_medians = []
     ssfr_medians = []
     av_medians = []
+    err_av_medians = []
     beta_medians = []
+    err_beta_medians = []
     keys = []
 
     # Figure 1 - Showing how the sample gets cut
@@ -92,6 +98,11 @@ def plot_sample_split(n_groups = 18, save_name = 'halpha_norm'):
         av_median = np.median(axis_ratio_df['AV'])
         beta_median = np.median(axis_ratio_df['beta'])
 
+        # Bootstrap errors on the medians
+        err_av_median = bootstrap_median(axis_ratio_df['AV'])
+        err_beta_median = bootstrap_median(axis_ratio_df['beta'])
+
+
         # Figure out what axis ratio bin
         if axis_median < ratio_bins[0]:
             shape = shapes['low']
@@ -137,7 +148,9 @@ def plot_sample_split(n_groups = 18, save_name = 'halpha_norm'):
         mass_medians.append(mass_median)
         ssfr_medians.append(ssfr_median)
         av_medians.append(av_median)
+        err_av_medians.append(err_av_median)
         beta_medians.append(beta_median)
+        err_beta_medians.append(err_beta_median)
         keys.append(key)
 
 
@@ -173,7 +186,7 @@ def plot_sample_split(n_groups = 18, save_name = 'halpha_norm'):
 
 
 
-    summary_df = pd.DataFrame(zip(group_num, axis_medians, mass_medians, ssfr_medians, av_medians, beta_medians, shapes_list, color_list, keys), columns=['axis_group','use_ratio_median', 'log_mass_median', 'log_ssfr_median', 'av_median', 'beta_median', 'shape', 'color', 'key'])
+    summary_df = pd.DataFrame(zip(group_num, axis_medians, mass_medians, ssfr_medians, av_medians, err_av_medians, beta_medians, err_beta_medians, shapes_list, color_list, keys), columns=['axis_group','use_ratio_median', 'log_mass_median', 'log_ssfr_median', 'av_median', 'err_av_median', 'beta_median', 'err_beta_median', 'shape', 'color', 'key'])
     summary_df.to_csv(imd.axis_cluster_data_dir + f'/{save_name}/summary.csv', index=False)
 
 
@@ -209,7 +222,7 @@ def plot_balmer_dec(save_name, n_groups, y_var = 'balmer_dec'):
     ylims = {
         'balmer_dec': (2, 7),
         'av': (0.25, 1.1),
-        'beta': (-1.75, -1.05)
+        'beta': (-1.9, -0.95)
     }
     
     summary_df = ascii.read(imd.axis_cluster_data_dir + f'/{save_name}/summary.csv').to_pandas()
@@ -261,14 +274,22 @@ def plot_balmer_dec(save_name, n_groups, y_var = 'balmer_dec'):
             ax.add_artist(Ellipse((x_cord, y_cord), ellipse_width, ellipse_height, facecolor=rgba))
             ax.set_ylabel('Balmer Decrement', fontsize=axis_fontsize)
         elif y_var == 'av':
+            x_cord = row['use_ratio_median']
+            y_cord = row['av_median']
+
             ellipse_width, ellipse_height = get_ellipse_shapes(1.1, y_axis_len, row['shape'])
 
-            ax.add_artist(Ellipse((row['use_ratio_median'], row['av_median']), ellipse_width, ellipse_height, facecolor=rgba))
+            ax.errorbar(x_cord, y_cord, yerr=row['err_av_median'], marker='None', color=rgba)
+            ax.add_artist(Ellipse((x_cord, y_cord), ellipse_width, ellipse_height, facecolor=rgba))
             ax.set_ylabel('FAST AV', fontsize=axis_fontsize)
         elif y_var == 'beta':
+            x_cord = row['use_ratio_median']
+            y_cord = row['beta_median']
+
             ellipse_width, ellipse_height = get_ellipse_shapes(1.1, y_axis_len, row['shape'])
 
-            ax.add_artist(Ellipse((row['use_ratio_median'], row['beta_median']), ellipse_width, ellipse_height, facecolor=rgba))
+            ax.errorbar(x_cord, y_cord, yerr=row['err_beta_median'], marker='None', color=rgba)
+            ax.add_artist(Ellipse((x_cord, y_cord), ellipse_width, ellipse_height, facecolor=rgba))
             ax.set_ylabel('Betaphot', fontsize=axis_fontsize)
     
     for ax in axarr:
@@ -309,13 +330,22 @@ def plot_balmer_dec(save_name, n_groups, y_var = 'balmer_dec'):
             ax.errorbar(x_cord, y_cord, yerr=np.array(row['err_balmer_dec_low'], row['err_balmer_dec_high']), marker='None', color=rgba)
             ax.add_artist(Ellipse((x_cord, y_cord), ellipse_width, ellipse_height, facecolor=rgba))
         elif y_var == 'av':
+            x_cord = row['log_mass_median']
+            y_cord = row['av_median']
+
             ellipse_width, ellipse_height = get_ellipse_shapes(1.5, y_axis_len, row['shape'])
 
-            ax.add_artist(Ellipse((row['log_mass_median'], row['av_median']), ellipse_width, ellipse_height, facecolor=rgba))
+            ax.errorbar(x_cord, y_cord, yerr=row['err_av_median'], marker='None', color=rgba)
+            ax.add_artist(Ellipse((x_cord, y_cord), ellipse_width, ellipse_height, facecolor=rgba))
             ax.set_ylabel('FAST AV', fontsize=axis_fontsize)
         elif y_var == 'beta':
+            x_cord = row['log_mass_median']
+            y_cord = row['beta_median']
+            
             ellipse_width, ellipse_height = get_ellipse_shapes(1.5, y_axis_len, row['shape'])
-            ax.add_artist(Ellipse((row['log_mass_median'], row['beta_median']), ellipse_width, ellipse_height, facecolor=rgba))
+
+            ax.errorbar(x_cord, y_cord, yerr=row['err_beta_median'], marker='None', color=rgba)
+            ax.add_artist(Ellipse((x_cord, y_cord), ellipse_width, ellipse_height, facecolor=rgba))
             ax.set_ylabel('Betaphot', fontsize=axis_fontsize)
 
 
@@ -329,11 +359,32 @@ def plot_balmer_dec(save_name, n_groups, y_var = 'balmer_dec'):
     ax.set_ylim(ylims[y_var])
     fig.savefig(imd.axis_cluster_data_dir + f'/{save_name}/{y_var}_vs_mass.pdf')
 
+def bootstrap_median(df):
+    """Bootstrap an error on a median from a column of a pandas dataframe
+    
+    Parameters:
+    df (pd.DataFrame): One column of the dataframe
 
-stack_axis_ratio(3, mass_width, ssfr_width, starting_points, ratio_bins)
+    Returns
+    err_median (float): Bootstrapped median uncertainty
+    """
+    df = df[df>-999]
+    n_samples = 10000
+    samples = [np.random.choice(df, size=len(df)) for i in range(n_samples)]
+    medians = [np.median(sample) for sample in samples]
+    err_median = np.std(medians)
+    return err_median
+
+
+
+    
+
     
 # main()
 # plot_sample_split()
 # plot_balmer_dec('halpha_norm', 18, y_var='balmer_dec')
 # plot_balmer_dec('halpha_norm', 18, y_var='av')
 # plot_balmer_dec('halpha_norm', 18, y_var='beta')
+
+for axis_group in range(10):
+    fit_emission(0, 'cluster_norm', constrain_O3=False, axis_group=axis_group, save_name='halpha_norm', scaled='False', run_name='False')

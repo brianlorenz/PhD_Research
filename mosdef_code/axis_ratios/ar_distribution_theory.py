@@ -41,9 +41,9 @@ def compute_theory(q, q0=0.5):
     return f_q
 
 
-def make_plot(q0=0.5):
+def make_plot(q0=0.7):
     qs = np.arange(q0+0.01, 1, 0.01)
-    yvals = [compute_theory(q, q0=0.5) for q in qs]
+    yvals = [compute_theory(q, q0=q0) for q in qs]
     plt.plot(qs, yvals)
     plt.show()
 

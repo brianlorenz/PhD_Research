@@ -116,5 +116,5 @@ def scale_continuum(spec_df, cont_df):
     return spec_df, cont_df
 
 
-# stack_all_continuum(18)
+stack_all_continuum(18)
 plot_all_spec_with_cont(18)
