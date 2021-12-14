@@ -9,7 +9,7 @@ import matplotlib.patheffects as path_effects
 from matplotlib.gridspec import GridSpec
 from brokenaxes import brokenaxes
 
-def plot_overlaid_spectra(savename='halpha_norm'):
+def plot_overlaid_spectra(savename):
     """Make the plot
     
     """
@@ -88,4 +88,4 @@ def plot_overlaid_spectra(savename='halpha_norm'):
     fig.savefig(imd.axis_cluster_data_dir + f'/{savename}/overlaid_spectra.pdf')
 
 
-plot_overlaid_spectra()
+plot_overlaid_spectra('halpha_norm_oldsfr_newfit')

@@ -1,6 +1,7 @@
 # Functions taht deal with finding, reading, and modifying spectra
 
 import sys
+import time
 import os
 import string
 import numpy as np
@@ -518,7 +519,9 @@ def check_line_coverage(mosdef_obj, line_list, plot=False):
         print(f"{mosdef_obj['FIELD_STR']}, {mosdef_obj['V4ID']} has full coverage!")
     if plot:
         plot_coverage(spectrum_dfs, line_list, check_range, lines_ok)
+    
     return all_ok
+
 
 
 def divz(X, Y):

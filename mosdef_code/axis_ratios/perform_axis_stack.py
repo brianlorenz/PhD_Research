@@ -1,8 +1,10 @@
 from re import A
+from typing import AsyncContextManager
+from initialize_mosdef_dirs import check_and_make_dir
 from matplotlib.pyplot import axis
 from stack_spectra import *
 from fit_emission import fit_emission
-from stack_continuum import stack_all_continuum
+from stack_continuum import stack_all_continuum, plot_all_spec_with_cont
 import matplotlib as mpl
 from matplotlib.patches import Ellipse
 from ellipses_for_plotting import get_ellipse_shapes
@@ -10,27 +12,47 @@ import random
 
 random.seed(3284923)
 
+
+#18 bins, 2 mass 3 ssfr
+# mass_width = 0.8
+# ssfr_width = 0.5
+# starting_points = [(9.3, -9.1), (9.3, -8.6), (10.1, -9.1), (10.1, -8.6), (9.3, -9.6), (10.1, -9.6)]
+# ratio_bins = [0.4, 0.7]
+# nbins = 18
+
+# 6 bins, 2 mass 1 ssfr
 mass_width = 0.8
-ssfr_width = 0.5
-starting_points = [(9.3, -9.1), (9.3, -8.6), (10.1, -9.1), (10.1, -8.6), (9.3, -9.6), (10.1, -9.6)]
+ssfr_width = 4
+starting_points = [(9.3, -11), (10.1, -11)]
 ratio_bins = [0.4, 0.7]
+nbins = 6
 
 
 shapes = {'low': '+', 'mid': 'd', 'high': 'o'}
 colors = {'lowm_lows': 'red', 'lowm_highs': 'blue', 'highm_lows': 'orange', 'highm_highs': 'mediumseagreen', 'lowest_lows': 'lightskyblue', 'lowest_highs': 'darkviolet'}
 
 
-def main():
+def main(nbins, save_name):
     '''performs all the steps to get this group plotted'''
-    stack_axis_ratio(3, mass_width, ssfr_width, starting_points, ratio_bins)
-    stack_all_continuum(18, save_name='halpha_norm')
-    for axis_group in range(18):
+    stack_axis_ratio(mass_width, ssfr_width, starting_points, ratio_bins, save_name)
+    stack_all_continuum(nbins, save_name=save_name)
+    plot_all_spec_with_cont(nbins, save_name)
+    for axis_group in range(nbins):
+        fit_emission(0, 'cluster_norm', constrain_O3=False, axis_group=axis_group, save_name=save_name, scaled='False', run_name='False')
 
-        fit_emission(0, 'cluster_norm', constrain_O3=False, axis_group=axis_group, save_name='halpha_norm', scaled='False', run_name='False')
+
+def setup_new_stack_dir(save_name):
+    """Sets up the directory with all the necessary folders"""
+    check_and_make_dir(imd.axis_cluster_data_dir + f'/{save_name}')
+    sub_dirs = ['composite_images', 'composite_seds', 'cont_subs', 'conts', 'emission_fits', 'emission_images', 'spectra', 'spectra_images', 'group_dfs']
+    for name in sub_dirs:
+        check_and_make_dir(imd.axis_cluster_data_dir + f'/{save_name}/{save_name}_{name}')
+    check_and_make_dir(imd.axis_cluster_data_dir + f'/{save_name}/{save_name}_conts/summed_conts')    
+    return
 
 
 
-def plot_sample_split(n_groups = 18, save_name = 'halpha_norm'):
+def plot_sample_split(n_groups, save_name):
     """Plots the way that the sample has been divided in mass/ssfr space"""
 
     fig, ax = plt.subplots(figsize=(8,8))
@@ -121,23 +143,23 @@ def plot_sample_split(n_groups = 18, save_name = 'halpha_norm'):
                 key = "lowm_lows"
                 # Create a Rectangle patch
                 rect = patches.Rectangle((starting_points[0][0],  starting_points[0][1]), mass_width, ssfr_width, linestyle='--', linewidth=1, edgecolor=colors[key], facecolor='none')
-        if mass_median > starting_points[1][0] and mass_median < starting_points[1][0] + mass_width:
+        elif mass_median > starting_points[1][0] and mass_median < starting_points[1][0] + mass_width:
             if ssfr_median > starting_points[1][1] and ssfr_median < starting_points[1][1] + ssfr_width:
                 key = "lowm_highs"
                 rect = patches.Rectangle((starting_points[1][0],  starting_points[1][1]), mass_width, ssfr_width, linestyle='--', linewidth=1, edgecolor=colors[key], facecolor='none')
-        if mass_median > starting_points[2][0] and mass_median < starting_points[2][0] + mass_width:
+        elif mass_median > starting_points[2][0] and mass_median < starting_points[2][0] + mass_width:
             if ssfr_median > starting_points[2][1] and ssfr_median < starting_points[2][1] + ssfr_width:
                 key = "highm_lows"
                 rect = patches.Rectangle((starting_points[2][0],  starting_points[2][1]), mass_width, ssfr_width, linestyle='--', linewidth=1, edgecolor=colors[key], facecolor='none')
-        if mass_median > starting_points[3][0] and mass_median < starting_points[3][0] + mass_width:
+        elif mass_median > starting_points[3][0] and mass_median < starting_points[3][0] + mass_width:
             if ssfr_median > starting_points[3][1] and ssfr_median < starting_points[3][1] + ssfr_width:
                 key = "highm_highs"
                 rect = patches.Rectangle((starting_points[3][0],  starting_points[3][1]), mass_width, ssfr_width, linestyle='--', linewidth=1, edgecolor=colors[key], facecolor='none')
-        if mass_median > starting_points[4][0] and mass_median < starting_points[4][0] + mass_width:
+        elif mass_median > starting_points[4][0] and mass_median < starting_points[4][0] + mass_width:
             if ssfr_median > starting_points[4][1] and ssfr_median < starting_points[4][1] + ssfr_width:
                 key = "lowest_lows"
                 rect = patches.Rectangle((starting_points[4][0],  starting_points[4][1]), mass_width, ssfr_width, linestyle='--', linewidth=1, edgecolor=colors[key], facecolor='none')
-        if mass_median > starting_points[5][0] and mass_median < starting_points[5][0] + mass_width:
+        elif mass_median > starting_points[5][0] and mass_median < starting_points[5][0] + mass_width:
             if ssfr_median > starting_points[5][1] and ssfr_median < starting_points[5][1] + ssfr_width:
                 key = "lowest_highs"
                 rect = patches.Rectangle((starting_points[5][0],  starting_points[5][1]), mass_width, ssfr_width, linestyle='--', linewidth=1, edgecolor=colors[key], facecolor='none')
@@ -200,6 +222,38 @@ def plot_sample_split(n_groups = 18, save_name = 'halpha_norm'):
     cbar.set_label('Balmer Decrement', fontsize=14)
     fig.savefig(imd.axis_cluster_data_dir + f'/{save_name}/sample_cut.pdf')
 
+
+def plot_moved(n_groups=18, save_name='halpha_norm'):
+    fig, ax = plt.subplots(figsize=(8,8))
+    for axis_group in range(n_groups):
+        ar_df = ascii.read(imd.axis_cluster_data_dir + f'/{save_name}/{save_name}_group_dfs/{axis_group}_df.csv').to_pandas()
+        for i in range(len(ar_df)):
+            row = ar_df.iloc[i]
+            logssfr_old = np.log10(row['sfr2']/10**row['log_mass'])
+            logssfr_new = row['log_ssfr']
+            logmass = row['log_mass']
+            ax.plot(logmass, logssfr_old, color='grey', marker='o')
+            ax.plot(logmass, logssfr_new, color='red', marker='o')
+            ax.plot([logmass, logmass], [logssfr_old, logssfr_new], color='blue', marker='None', ls='-')
+    
+    xlims = (9.0, 11.0)
+    ylims = (-9.7, -8)
+    ax.set_ylim(ylims)
+    ax.set_xlim(xlims)
+
+    mass_width = 0.8
+    ssfr_width = 0.5
+    starting_points = [(9.3, -9.1), (9.3, -8.6), (10.1, -9.1), (10.1, -8.6), (9.3, -9.6), (10.1, -9.6)]
+
+    for j in range(6):
+        rect = patches.Rectangle((starting_points[j][0],  starting_points[j][1]), mass_width, ssfr_width, linestyle='--', linewidth=1, edgecolor='black', facecolor='none')
+        ax.add_patch(rect)
+
+    ax.set_xlabel('log(Stellar Mass)', fontsize=14)
+    ax.set_ylabel('log(ssfr)', fontsize=14)
+
+    fig.savefig(imd.axis_output_dir + '/old_new_sfr_comparison.pdf')
+    # plt.show()
 
 def plot_balmer_dec(save_name, n_groups, y_var = 'balmer_dec'):
     '''Makes the balmer decrement plots. Now can also do AV and Beta instead of balmer dec on the y-axis
@@ -382,12 +436,16 @@ def bootstrap_median(df):
 
     
 
-    
-# main()
-# plot_sample_split()
-# plot_balmer_dec('halpha_norm', 18, y_var='balmer_dec')
-# plot_balmer_dec('halpha_norm', 18, y_var='av')
-# plot_balmer_dec('halpha_norm', 18, y_var='beta')
+# stack_all_continuum(6, save_name='mass_2bin_median')  
+# main(6, 'mass_2bin_median')
+# plot_sample_split(6, 'mass_2bin_median')
+# plot_balmer_dec('mass_2bin_median', 6, y_var='balmer_dec')
+# plot_balmer_dec('mass_2bin_median', 6, y_var='av')
+# plot_balmer_dec('mass_2bin_median', 6, y_var='beta')
 
-# for axis_group in range(18):
-#     fit_emission(0, 'cluster_norm', constrain_O3=False, axis_group=axis_group, save_name='halpha_norm', scaled='False', run_name='False')
+# plot_all_spec_with_cont(6, 'mass_2bin_median')
+for axis_group in range(6):
+    fit_emission(0, 'cluster_norm', constrain_O3=False, axis_group=axis_group, save_name='mass_2bin_median', scaled='False', run_name='False')
+
+# setup_new_stack_dir('mass_2bin_median')
+# plot_moved()

@@ -47,14 +47,18 @@ def add_use_sfr():
     use_corr = np.logical_and(halpha_good, hbeta_good)
     ar_df.loc[use_corr, 'use_sfr'] = ar_df[use_corr]['sfr_corr']
 
+    print(len(ar_df[use_corr]))
+
     # Find where Halpha is good but Hbeta is not, and use the halpha sfrs for that
     use_hasfr = np.logical_and(halpha_good, ~hbeta_good)
     ar_df.loc[use_hasfr, 'use_sfr'] = ar_df[use_hasfr]['halpha_sfrs']
 
-    ar_df = ar_df.rename(columns={"sfr": "sfr2", "err_sfr": "err_sfr2"})
-    ar_df = ar_df.rename(columns={"use_sfr": "sfr"})
+    print(len(ar_df[use_hasfr]))
 
-    ar_df.to_csv(imd.loc_axis_ratio_cat, index=False)
+    # ar_df = ar_df.rename(columns={"sfr": "sfr2", "err_sfr": "err_sfr2"})
+    # ar_df = ar_df.rename(columns={"use_sfr": "sfr"})
+
+    # ar_df.to_csv(imd.loc_axis_ratio_cat, index=False)
 
 
 
@@ -149,9 +153,9 @@ def plot_sfrs():
 
     high_sfrs_bad =  ar_df[hb_flag_filt]['sfr'] > 100
 
-    ax.plot(ar_df[~hb_flag_filt]['sfr'], ar_df[~hb_flag_filt]['halpha_sfrs'], color='black', marker='o', ls='None', label = 'H$_\\beta$ > 3 sigma')
-    ax.plot(ar_df[hb_flag_filt]['sfr'], ar_df[hb_flag_filt]['halpha_sfrs'], color='orange', marker='o', ls='None', label = 'H$_\\beta$ < 3 sigma')
-    ax.plot(ar_df[hb_flag_filt][high_sfrs_bad]['sfr'], ar_df[hb_flag_filt][high_sfrs_bad]['halpha_sfrs'], color='mediumseagreen', marker='o', ls='None', label = 'H$_\\beta$ < 3 sigma')
+    ax.plot(ar_df[~hb_flag_filt]['sfr2'], ar_df[~hb_flag_filt]['halpha_sfrs'], color='black', marker='o', ls='None', label = 'H$_\\beta$ > 3 sigma')
+    ax.plot(ar_df[hb_flag_filt]['sfr2'], ar_df[hb_flag_filt]['halpha_sfrs'], color='orange', marker='o', ls='None', label = 'H$_\\beta$ < 3 sigma')
+    ax.plot(ar_df[hb_flag_filt][high_sfrs_bad]['sfr2'], ar_df[hb_flag_filt][high_sfrs_bad]['halpha_sfrs'], color='mediumseagreen', marker='o', ls='None', label = 'H$_\\beta$ < 3 sigma')
     ax.plot((0.001, 10**5), (0.001, 10**5), ls='--', color='blue')
 
     ax.set_xscale('log')
@@ -206,9 +210,9 @@ def plot_sfrs():
 
     
 
-    ax.hist(ar_df[~hb_flag_filt]['sfr'], bins=bins, color='black', label = 'H$_\\beta$ > 3 sigma')
-    ax.hist(ar_df[hb_flag_filt]['sfr'], bins=bins, color='orange', alpha=0.5, label = 'H$_\\beta$ < 3 sigma')
-    ax.hist(ar_df[hb_flag_filt][high_sfrs_bad]['sfr'], bins=bins, color='mediumseagreen', alpha=1, label = 'H$_\\beta$ < 3 sigma')
+    ax.hist(ar_df[~hb_flag_filt]['sfr2'], bins=bins, color='black', label = 'H$_\\beta$ > 3 sigma')
+    ax.hist(ar_df[hb_flag_filt]['sfr2'], bins=bins, color='orange', alpha=0.5, label = 'H$_\\beta$ < 3 sigma')
+    ax.hist(ar_df[hb_flag_filt][high_sfrs_bad]['sfr2'], bins=bins, color='mediumseagreen', alpha=1, label = 'H$_\\beta$ < 3 sigma')
     
     
     ax.set_xlabel('SFR2', fontsize=14)

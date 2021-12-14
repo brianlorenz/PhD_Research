@@ -330,7 +330,7 @@ def plot_emission_fit(groupID, norm_method, axis_group=-1, save_name='', scaled=
     for axis in axes_arr:
         axis.plot(wavelength, spectrum, color='black', lw=1, label='Spectrum')
         if axis_group > -1:
-            axis.plot(cont_sub_df['wavelength_cut'], cont_sub_df['continuum_sub_ydata'], color='mediumseagreen', label='Continuum-Subtracted')
+            axis.plot(cont_sub_df['wavelength_cut'], cont_sub_df['continuum_sub_ydata'], color='mediumseagreen', label='Continuum-Subtracted', marker='o', ls='None')
             if np.median(fast_continuum)>0:
                 axis.plot(wavelength, fast_continuum, color='blue', label='Scaled FAST Cont')
         axis.plot(wavelength[full_cut][hb_range], gauss_fit[hb_range], color='orange',
@@ -364,6 +364,8 @@ def plot_emission_fit(groupID, norm_method, axis_group=-1, save_name='', scaled=
 
     Ha_plot_range = (6530, 6600)  # Angstrom
     Hb_plot_range = (4840, 5030)
+    Hb_plot_range = (4845, 4875)
+    # Hb_plot_range = (4995, 5015)
 
     def set_plot_ranges(ax, axis, plot_range, box_color):
         lim_min = 0.9 * np.min(spectrum[np.logical_and(

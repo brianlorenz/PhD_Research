@@ -28,7 +28,7 @@ from read_FAST_spec import read_FAST_file
 axis_ratio_catalog = ascii.read(imd.loc_axis_ratio_cat).to_pandas()
 
 
-def stack_spectra(groupID, norm_method, re_observe=False, mask_negatives=False, ignore_low_spectra=False, axis_ratio_df=[], axis_group=0, save_name='', scale_factors=0):
+def stack_spectra(groupID, norm_method, re_observe=False, mask_negatives=False, ignore_low_spectra=False, axis_ratio_df=[], axis_group=0, save_name='', scale_factors=0, stack_type='median'):
     """Stack all the spectra for every object in a given group
 
     Parameters:
@@ -41,6 +41,7 @@ def stack_spectra(groupID, norm_method, re_observe=False, mask_negatives=False, 
     axis_group (int): Number of the axis ratio group
     save_name (str): location to save the files
     scale_factors (list): Set to a list to manually choose the normalization for each object - requires norm_method 'manual'
+    stack_type (str): either 'mean' or 'median' to choose whether to use the mean of each value or median for the stack
 
     Returns:
     """
@@ -139,7 +140,7 @@ def stack_spectra(groupID, norm_method, re_observe=False, mask_negatives=False, 
                     norm_factor, spec_correlate, used_points = norm_spec_sed(
                         composite_sed, spectrum_df)
                 except Exception as expt:
-                    print('Could nor normalize')
+                    print('Could not normalize')
                     print(expt)
             elif norm_method == 'composite_filter':
                 if re_observe == True:
@@ -282,7 +283,7 @@ def stack_spectra(groupID, norm_method, re_observe=False, mask_negatives=False, 
         sum_norms[i][nonzero_idxs[i]] = norm_factors[i]
     # This sum_norms variable is a list of arrays. Each array correponds to
     # one spectrum from one galaxy. In that array, every point for which this
-    # galaxy has a non-masked flux, there is it's normalization value. All
+    # galaxy has a non-masked flux, there is its normalization value. All
     # other points are zero
 
     # For each wavelength, counts the number of spectra that are nonzero
@@ -292,21 +293,57 @@ def stack_spectra(groupID, norm_method, re_observe=False, mask_negatives=False, 
     # USING
     norm_value_specs_by_wave = np.sum(sum_norms, axis=0)
 
-    # Add the spectrum
-    summed_spec = np.sum(norm_interp_specs, axis=0)
 
-    # Add the continuum
-    summed_cont = np.sum(norm_interp_conts, axis=0)
+    if stack_type == 'mean':
+        # Add the spectrum
+        summed_spec = np.sum(norm_interp_specs, axis=0)
 
-    # Add the errors in quadrature:
-    variances = [norm_interp_err**2 for norm_interp_err in norm_interp_errs]
-    err_in_sum = np.sqrt(np.sum(variances, axis=0))
+        # Add the continuum
+        summed_cont = np.sum(norm_interp_conts, axis=0)
 
-    # Have to use divz since lots of zeros
-    # total_spec = divz(summed_spec, norm_value_specs_by_wave)
-    total_spec = divz(summed_spec, number_specs_by_wave)
-    total_cont = divz(summed_cont, number_specs_by_wave)
-    total_errs = divz(err_in_sum, number_specs_by_wave)
+        # Add the errors in quadrature:
+        variances = [norm_interp_err**2 for norm_interp_err in norm_interp_errs]
+        err_in_sum = np.sqrt(np.sum(variances, axis=0))
+
+        # Have to use divz since lots of zeros
+        # total_spec = divz(summed_spec, norm_value_specs_by_wave)
+        total_spec = divz(summed_spec, number_specs_by_wave)
+        total_cont = divz(summed_cont, number_specs_by_wave)
+        total_errs = divz(err_in_sum, number_specs_by_wave)
+    
+    
+    if stack_type == 'median':
+        # Set up the spectra to fill
+        total_spec = []
+        total_cont = []
+        total_errs = []
+
+        # Loop through the number of spectra that contribute to each point
+        for i in range(len(number_specs_by_wave)):
+            
+            num_specs = number_specs_by_wave[i]
+            
+            # If there are no spectra contributing to that point, set it to zero
+            if num_specs == 0:
+                total_spec.append(0)
+                total_cont.append(0)
+                total_errs.append(0)
+                continue
+            
+            # Otherwise, find the nonzero spectra and median them
+            else:
+                nonzero_spec_values = [norm_interp_specs[j][i] for j in range(len(norm_interp_specs)) if norm_interp_specs[j][i] != 0]
+                nonzero_cont_values = [norm_interp_conts[j][i] for j in range(len(norm_interp_conts)) if norm_interp_conts[j][i] != 0]
+                nonzero_err_values = [norm_interp_errs[j][i] for j in range(len(norm_interp_errs)) if norm_interp_errs[j][i] != 0]
+                median_point = np.median(nonzero_spec_values)
+                median_cont = np.median(nonzero_cont_values)
+
+                ### HOW TO DO ERRORS ON THE MEDIAN?
+                median_cont = np.median(nonzero_err_values)
+                total_spec.append(median_point)
+                total_cont.append(median_cont)
+                total_errs.append(median_cont)
+
     # Now we have divided each point by the sum of the normalizations that
     # contributed to it.
     total_spec_df = pd.DataFrame(zip(spectrum_wavelength, total_spec, total_errs, total_cont, number_specs_by_wave, norm_value_specs_by_wave),
@@ -573,13 +610,12 @@ def stack_axis_mass_ssfr(save_name='_constant_ssfr_mass'):
         axis_group += 1
 
 
-def stack_axis_ratio(n_bins, mass_width, ssfr_width, starting_points, ratio_bins):
+def stack_axis_ratio(mass_width, ssfr_width, starting_points, ratio_bins, save_name):
     """Stacks galaxies in groups by axis ratio
 
     old params: , l_mass_cutoff=0, l_ssfr_cutoff=0, l_mass_bins=0, l_ssfr_bins=0, scale_ha=0
 
     Parameters:
-    n_bins (int): Number of bins to divide galaxies into
     mass_width (float): How big the mass bins are
     ssfr_width (float): How wide the ssfr bins are
     starting_points (list of tuples): Where to start the ssfr bins in (mass, ssfr) coordinates
@@ -615,7 +651,7 @@ def stack_axis_ratio(n_bins, mass_width, ssfr_width, starting_points, ratio_bins
 
     # Split into n_bins groups
     axis_group = 0
-    cluster_name = 'halpha_norm'
+    cluster_name = save_name
     # ar_dfs = np.array_split(ar_df_sorted, n_bins)
     
     ar_df_low = ar_df[ar_df['use_ratio']<ratio_bins[0]]

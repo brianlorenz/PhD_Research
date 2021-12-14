@@ -10,7 +10,7 @@ from cross_correlate import get_cross_cor
 
 
 
-def stack_continuum(axis_group, save_name='halpha_norm'):
+def stack_continuum(axis_group, save_name):
     '''Stacks all of the normalized continuum fast fits'''
 
     
@@ -27,14 +27,14 @@ def stack_continuum(axis_group, save_name='halpha_norm'):
     sum_cont_df = pd.DataFrame(zip(spectrum_wavelength, summed_flux), columns = ['rest_wavelength', 'f_lambda'])
     sum_cont_df.to_csv(imd.axis_cluster_data_dir + f'/{save_name}/{save_name}_conts/summed_conts/{axis_group}_summed_cont.csv', index=False)
 
-def stack_all_continuum(n_clusters, save_name='halpha_norm'):
+def stack_all_continuum(n_clusters, save_name):
     for axis_group in range(n_clusters):
         print(f'Stacking group {axis_group}')
-        stack_continuum(axis_group, save_name='halpha_norm')
+        stack_continuum(axis_group, save_name)
 
 
 
-def plot_spec_with_cont(axis_group, save_name='halpha_norm'):
+def plot_spec_with_cont(axis_group, save_name):
     '''Plots the spectrum witht he continuum overlaid'''
 
     sum_cont_df = ascii.read(imd.axis_cluster_data_dir + f'/{save_name}/{save_name}_conts/summed_conts/{axis_group}_summed_cont.csv').to_pandas()
@@ -69,10 +69,10 @@ def plot_spec_with_cont(axis_group, save_name='halpha_norm'):
     fig.savefig(imd.axis_cluster_data_dir + f'/{save_name}/{save_name}_conts/summed_conts/{axis_group}_zoomha.pdf')
     plt.close('all')
 
-def plot_all_spec_with_cont(n_clusters, save_name='halpha_norm'):
+def plot_all_spec_with_cont(n_clusters, save_name):
     for axis_group in range(n_clusters):
         print(f'Plotting group {axis_group}')
-        plot_spec_with_cont(axis_group, save_name=save_name)
+        plot_spec_with_cont(axis_group, save_name)
 
 
 def scale_continuum(spec_df, cont_df):
