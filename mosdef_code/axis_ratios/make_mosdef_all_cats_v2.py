@@ -19,7 +19,8 @@ def make_mosdef_all_cats_2():
     '''
     all_cats_df = ascii.read(imd.mosdef_dir + '/axis_ratio_data/Merged_catalogs/mosdef_all_cats.csv').to_pandas()
     linemeas_df = ascii.read(imd.loc_linemeas).to_pandas()
-    
+    line_eq_df = ascii.read(imd.loc_eqwidth_cat, header_start=0, data_start=1).to_pandas()
+
     
     fields = []
     v4ids = []
@@ -52,6 +53,11 @@ def make_mosdef_all_cats_2():
     logoh_pps_ulims = []
     logoh_pps_llims = []
     n2_lim_flag = []
+
+    eqwidth_has = []
+    err_eqwidth_has = []
+    eqwidth_hbs = []
+    err_eqwidth_hbs = []
     
 
     # Add the sfrs from the sfr_latest catalog
@@ -100,6 +106,7 @@ def make_mosdef_all_cats_2():
         sfrs_slice = np.logical_and(sfrs_df['ID']==cat_id, sfrs_df['FIELD_STR']==field)
         betas_slice = np.logical_and(betas_df['ID']==cat_id, betas_df['FIELD_STR']==field)
         metals_slice = np.logical_and(metals_df['ID']==cat_id, metals_df['FIELD_STR']==field)
+        line_eq_slice = np.logical_and(line_eq_df['ID']==cat_id, line_eq_df['FIELD']==field)
         
         hb_values.append(linemeas_df[linemeas_slice].iloc[0]['HB4863_FLUX'])
         hb_errs.append(linemeas_df[linemeas_slice].iloc[0]['HB4863_FLUX_ERR'])
@@ -124,12 +131,28 @@ def make_mosdef_all_cats_2():
             n2_lim_flag.append(metals_df[metals_slice].iloc[0]['N2_LIMFLAG'])  # See readme for more info about columns
             
 
-        # USE SFR2 or SFR_CORR?
+        # USE SFR2 or SFR_CORR? - SFR2 contains upper limits, SFR CORR has only hbeta detections that are good. See readme
         sfrs.append(sfrs_df[sfrs_slice].iloc[0]['SFR2'])
         err_sfrs.append(sfrs_df[sfrs_slice].iloc[0]['SFRERR2'])
         sfrs_corrs.append(sfrs_df[sfrs_slice].iloc[0]['SFR_CORR'])
         ha_det_sfrs.append(sfrs_df[sfrs_slice].iloc[0]['HA6565_DETFLAG'])
         hb_det_sfrs.append(sfrs_df[sfrs_slice].iloc[0]['HB4863_DETFLAG'])
+
+        # Equivalent Widths
+        # Catalog does not have all galaxies - input a -99 (instead of -999) when it is not in the catalog
+        if len(line_eq_df[line_eq_slice]) == 0:
+            eqwidth_has.append(-99)
+            err_eqwidth_has.append(-99)
+            eqwidth_hbs.append(-99)
+            err_eqwidth_hbs.append(-99)
+
+        else:
+            eqwidth_has.append(line_eq_df[line_eq_slice].iloc[0]['WHA'])
+            err_eqwidth_has.append(line_eq_df[line_eq_slice].iloc[0]['WHAERR'])
+            eqwidth_hbs.append(line_eq_df[line_eq_slice].iloc[0]['WHB'])
+            err_eqwidth_hbs.append(line_eq_df[line_eq_slice].iloc[0]['WHBERR'])
+        
+
 
         
 
@@ -137,7 +160,7 @@ def make_mosdef_all_cats_2():
 
 
 
-    to_merge_df = pd.DataFrame(zip(fields, v4ids, agn_flags, masses, err_l_masses, err_h_masses, sfrs, err_sfrs, sfrs_corrs, ha_det_sfrs, hb_det_sfrs, res, err_res, zs, z_quals, avs, betas, hb_values, hb_errs, ha_values, ha_errs, logoh_pps, logoh_pps_ulims, logoh_pps_llims, n2_lim_flag), columns=['field', 'v4id', 'agn_flag', 'log_mass', 'err_log_mass_d', 'err_log_mass_u', 'sfr', 'err_sfr', 'sfr_corr', 'ha_detflag_sfr', 'hb_detflag_sfr', 'half_light', 'err_half_light', 'z', 'z_qual_flag', 'AV', 'beta', 'hb_flux', 'err_hb_flux', 'ha_flux', 'err_ha_flux', 'logoh_pp_n2', 'u68_logoh_pp_n2', 'l68_logoh_pp_n2', 'n2flag_metals'])
+    to_merge_df = pd.DataFrame(zip(fields, v4ids, agn_flags, masses, err_l_masses, err_h_masses, sfrs, err_sfrs, sfrs_corrs, ha_det_sfrs, hb_det_sfrs, res, err_res, zs, z_quals, avs, betas, hb_values, hb_errs, ha_values, ha_errs, logoh_pps, logoh_pps_ulims, logoh_pps_llims, n2_lim_flag, eqwidth_has, err_eqwidth_has, eqwidth_hbs, err_eqwidth_hbs), columns=['field', 'v4id', 'agn_flag', 'log_mass', 'err_log_mass_d', 'err_log_mass_u', 'sfr', 'err_sfr', 'sfr_corr', 'ha_detflag_sfr', 'hb_detflag_sfr', 'half_light', 'err_half_light', 'z', 'z_qual_flag', 'AV', 'beta', 'hb_flux', 'err_hb_flux', 'ha_flux', 'err_ha_flux', 'logoh_pp_n2', 'u68_logoh_pp_n2', 'l68_logoh_pp_n2', 'n2flag_metals', 'eq_width_ha', 'err_eq_width_ha', 'eq_width_hb', 'err_eq_width_hb'])
     merged_all_cats = all_cats_df.merge(to_merge_df, left_on=['v4id', 'field'], right_on=['v4id', 'field']) 
     merged_all_cats.to_csv(imd.loc_axis_ratio_cat, index=False)
 
