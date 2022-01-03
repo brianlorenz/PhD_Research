@@ -161,3 +161,21 @@ def read_interp_axis_ratio():
     merged_ar_df = ascii.read(imd.mosdef_dir +
                               '/axis_ratio_data/Merged_catalogs/mosdef_all_cats_v2.csv').to_pandas()
     return merged_ar_df
+
+def filter_ar_df(ar_df):
+    """Removes any of the unwanted objects in our analysis, such as AGN or those with bad halpha detections"""
+    # Remove objects with greater than 0.1 error
+    # ar_df = ar_df[ar_df['err_use_ratio'] < 0.1]
+
+    # Remove objects flagged for axis ratio inconsistencies (1 is F160-F125 > std, and -999 has measurements missing)
+    ar_df = ar_df[ar_df['axis_ratio_flag'] == 0]
+
+    # Remove objects wiithout ha/hb detections
+    ar_df = ar_df[ar_df['ha_flux'] > -0.1]
+    ar_df = ar_df[ar_df['hb_flux'] > -0.1]
+
+    # Add filtering for Halpha S/N, removing AGN, and the z_qual flag
+    ar_df = ar_df[(ar_df['ha_flux'] / ar_df['err_ha_flux']) > 3]
+    ar_df = ar_df[ar_df['agn_flag'] == 0]
+    ar_df = ar_df[ar_df['z_qual_flag'] == 7]
+    return ar_df

@@ -2,6 +2,7 @@ from re import A
 from typing import AsyncContextManager
 from initialize_mosdef_dirs import check_and_make_dir
 from matplotlib.pyplot import axis
+from numpy.core.fromnumeric import var
 from stack_spectra import *
 from fit_emission import fit_emission
 from stack_continuum import stack_all_continuum, plot_all_spec_with_cont
@@ -19,27 +20,40 @@ random.seed(3284923)
 # starting_points = [(9.3, -9.1), (9.3, -8.6), (10.1, -9.1), (10.1, -8.6), (9.3, -9.6), (10.1, -9.6)]
 # ratio_bins = [0.4, 0.7]
 # nbins = 18
+# split_by = 'ssfr'
 
 # 6 bins, 2 mass 1 ssfr
+# mass_width = 0.8
+# ssfr_width = 4
+# starting_points = [(9.3, -11), (10.1, -11)]
+# ratio_bins = [0.4, 0.7]
+# nbins = 6
+# split_by = 'ssfr'
+
+# Equalivent width ha
 mass_width = 0.8
-ssfr_width = 4
-starting_points = [(9.3, -11), (10.1, -11)]
+ssfr_width = 300
+starting_points = [(9.3, 0), (10.1, 0), (9.3, 300), (10.1, 300)]
 ratio_bins = [0.4, 0.7]
-nbins = 6
+nbins = 12
+split_by = 'eq_width_ha'
 
 
 shapes = {'low': '+', 'mid': 'd', 'high': 'o'}
 colors = {'lowm_lows': 'red', 'lowm_highs': 'blue', 'highm_lows': 'orange', 'highm_highs': 'mediumseagreen', 'lowest_lows': 'lightskyblue', 'lowest_highs': 'darkviolet'}
 
 
-def main(nbins, save_name):
+def main(nbins, save_name, variable):
     '''performs all the steps to get this group plotted'''
-    stack_axis_ratio(mass_width, ssfr_width, starting_points, ratio_bins, save_name)
+    stack_axis_ratio(mass_width, ssfr_width, starting_points, ratio_bins, save_name, split_by='eq_width_ha')
     stack_all_continuum(nbins, save_name=save_name)
     plot_all_spec_with_cont(nbins, save_name)
     for axis_group in range(nbins):
         fit_emission(0, 'cluster_norm', constrain_O3=False, axis_group=axis_group, save_name=save_name, scaled='False', run_name='False')
-
+    plot_sample_split(nbins, save_name, variable=variable)
+    plot_balmer_dec(save_name, nbins, y_var='balmer_dec')
+    plot_balmer_dec(save_name, nbins, y_var='av')
+    plot_balmer_dec(save_name, nbins, y_var='beta')
 
 def setup_new_stack_dir(save_name):
     """Sets up the directory with all the necessary folders"""
@@ -52,8 +66,10 @@ def setup_new_stack_dir(save_name):
 
 
 
-def plot_sample_split(n_groups, save_name):
-    """Plots the way that the sample has been divided in mass/ssfr space"""
+def plot_sample_split(n_groups, save_name, variable='log_ssfr'):
+    """Plots the way that the sample has been divided in mass/ssfr space
+    
+    variable(str): Which variable to use for the y-axis"""
 
     fig, ax = plt.subplots(figsize=(8,8))
     
@@ -92,7 +108,7 @@ def plot_sample_split(n_groups, save_name):
         else:
             drop_idx.append(True)
     all_axis_ratio_df = all_axis_ratio_df[drop_idx]
-    ax.plot(all_axis_ratio_df['log_mass'], all_axis_ratio_df['log_ssfr'], color = 'grey', ls='None', marker='o', zorder=1)
+    ax.plot(all_axis_ratio_df['log_mass'], all_axis_ratio_df[variable], color = 'grey', ls='None', marker='o', zorder=1)
 
     cmap = mpl.cm.viridis 
     norm = mpl.colors.Normalize(vmin=2, vmax=7) 
@@ -119,7 +135,7 @@ def plot_sample_split(n_groups, save_name):
         # Determine what color and shape to plot with
         axis_median = np.median(axis_ratio_df['use_ratio'])
         mass_median = np.median(axis_ratio_df['log_mass'])
-        ssfr_median = np.median(axis_ratio_df['log_ssfr'])
+        ssfr_median = np.median(axis_ratio_df[variable])
         av_median = np.median(axis_ratio_df['AV'])
         beta_median = np.median(axis_ratio_df['beta'])
 
@@ -182,7 +198,10 @@ def plot_sample_split(n_groups, save_name):
 
         # Set the axis limits
         xlims = (9.0, 11.0)
-        ylims = (-9.7, -8)
+        if variable == 'log_ssfr':
+            ylims = (-9.7, -8)
+        elif variable == 'eq_width_ha':
+            ylims = (0, 600)
         ax.set_ylim(ylims)
         ax.set_xlim(xlims)
 
@@ -201,7 +220,7 @@ def plot_sample_split(n_groups, save_name):
             rgba = cmap(norm(row['balmer_dec']))
             # ax.plot(row['log_mass'], row['log_ssfr'], color = rgba, ls='None', marker=shape)
         
-            ax.add_artist(Ellipse((row['log_mass'], row['log_ssfr']), ellipse_width, ellipse_height, facecolor=rgba, zorder=2))
+            ax.add_artist(Ellipse((row['log_mass'], row[variable]), ellipse_width, ellipse_height, facecolor=rgba, zorder=2))
 
         # Plot the rest of the points
         # ax.plot(axis_ratio_df['log_mass'], axis_ratio_df['log_ssfr'], color = color, ls='None', marker=shape)
@@ -211,12 +230,12 @@ def plot_sample_split(n_groups, save_name):
 
 
 
-    summary_df = pd.DataFrame(zip(group_num, axis_medians, mass_medians, ssfr_medians, av_medians, err_av_medians, beta_medians, err_beta_medians, shapes_list, color_list, keys), columns=['axis_group','use_ratio_median', 'log_mass_median', 'log_ssfr_median', 'av_median', 'err_av_median', 'beta_median', 'err_beta_median', 'shape', 'color', 'key'])
+    summary_df = pd.DataFrame(zip(group_num, axis_medians, mass_medians, ssfr_medians, av_medians, err_av_medians, beta_medians, err_beta_medians, shapes_list, color_list, keys), columns=['axis_group','use_ratio_median', 'log_mass_median', variable+'_median', 'av_median', 'err_av_median', 'beta_median', 'err_beta_median', 'shape', 'color', 'key'])
     summary_df.to_csv(imd.axis_cluster_data_dir + f'/{save_name}/summary.csv', index=False)
 
 
     ax.set_xlabel('log(Stellar Mass)', fontsize=14) 
-    ax.set_ylabel('log(ssfr)', fontsize=14)
+    ax.set_ylabel(variable, fontsize=14)
     ax.tick_params(labelsize=12)
     cbar = fig.colorbar(mpl.cm.ScalarMappable(norm=norm, cmap=cmap), ax=ax)
     cbar.set_label('Balmer Decrement', fontsize=14)
@@ -255,7 +274,7 @@ def plot_moved(n_groups=18, save_name='halpha_norm'):
     fig.savefig(imd.axis_output_dir + '/old_new_sfr_comparison.pdf')
     # plt.show()
 
-def plot_balmer_dec(save_name, n_groups, y_var = 'balmer_dec'):
+def plot_balmer_dec(save_name, n_groups, y_var = 'balmer_dec', color_var='log_ssfr'):
     '''Makes the balmer decrement plots. Now can also do AV and Beta instead of balmer dec on the y-axis
 
     Parameters:
@@ -270,9 +289,14 @@ def plot_balmer_dec(save_name, n_groups, y_var = 'balmer_dec'):
     default_size = 7
     larger_size = 12
 
-    # ssfr color map
-    cmap = mpl.cm.inferno 
-    norm = mpl.colors.Normalize(vmin=-9.3, vmax=-8.1) 
+    if color_var=='log_ssfr':
+        # ssfr color map
+        cmap = mpl.cm.inferno 
+        norm = mpl.colors.Normalize(vmin=-9.3, vmax=-8.1) 
+    elif color_var=='eq_width_ha':
+        # eq color map
+        cmap = mpl.cm.inferno 
+        norm = mpl.colors.Normalize(vmin=100, vmax=500) 
 
 
     # Axis limits
@@ -312,7 +336,7 @@ def plot_balmer_dec(save_name, n_groups, y_var = 'balmer_dec'):
         row = summary_df.iloc[i]
 
         # Set up the colormap on ssfr
-        rgba = cmap(norm(row['log_ssfr_median']))
+        rgba = cmap(norm(row[color_var+'_median']))
 
         # Split into mass groups
         if row['log_mass_median'] < 10:
@@ -361,7 +385,7 @@ def plot_balmer_dec(save_name, n_groups, y_var = 'balmer_dec'):
     ax_low_mass.set_title('log(Stellar Mass) < 10', fontsize=axis_fontsize)
     ax_high_mass.set_title('log(Stellar Mass) > 10', fontsize=axis_fontsize)
     cbar = fig.colorbar(mpl.cm.ScalarMappable(norm=norm, cmap=cmap), ax=axarr)
-    cbar.set_label('log(ssfr)', fontsize=axis_fontsize)
+    cbar.set_label(color_var, fontsize=axis_fontsize)
     
     fig.savefig(imd.axis_cluster_data_dir + f'/{save_name}/{y_var}_vs_ar.pdf', bbox_inches='tight')
 
@@ -375,7 +399,7 @@ def plot_balmer_dec(save_name, n_groups, y_var = 'balmer_dec'):
         row = summary_df.iloc[i]
 
         # Set up the colormap on ssfr
-        rgba = cmap(norm(row['log_ssfr_median']))
+        rgba = cmap(norm(row[color_var+'_median']))
 
 
         if y_var == 'balmer_dec':
@@ -408,7 +432,7 @@ def plot_balmer_dec(save_name, n_groups, y_var = 'balmer_dec'):
 
 
     cbar = fig.colorbar(mpl.cm.ScalarMappable(norm=norm, cmap=cmap), ax=ax)
-    cbar.set_label('log(ssfr)', fontsize=axis_fontsize)
+    cbar.set_label(color_var, fontsize=axis_fontsize)
     ax.set_xlabel('log(Stellar Mass)', fontsize=axis_fontsize) 
     
     ax.tick_params(labelsize=12)
@@ -437,15 +461,15 @@ def bootstrap_median(df):
     
 
 # stack_all_continuum(6, save_name='mass_2bin_median')  
-# main(6, 'mass_2bin_median')
-# plot_sample_split(6, 'mass_2bin_median')
-# plot_balmer_dec('mass_2bin_median', 6, y_var='balmer_dec')
-# plot_balmer_dec('mass_2bin_median', 6, y_var='av')
-# plot_balmer_dec('mass_2bin_median', 6, y_var='beta')
+# main(12, 'eq_width_4bin')
+# plot_sample_split(12, 'eq_width_4bin', variable='eq_width_ha')
+plot_balmer_dec('eq_width_4bin', 12, y_var='balmer_dec', color_var='eq_width_ha')
+# plot_balmer_dec('eq_width_4bin', 12, y_var='av', color_var='eq_width_ha')
+# plot_balmer_dec('eq_width_4bin', 12, y_var='beta', color_var='eq_width_ha')
 
 # plot_all_spec_with_cont(6, 'mass_2bin_median')
-for axis_group in range(6):
-    fit_emission(0, 'cluster_norm', constrain_O3=False, axis_group=axis_group, save_name='mass_2bin_median', scaled='False', run_name='False')
+# for axis_group in range(6):
+#     fit_emission(0, 'cluster_norm', constrain_O3=False, axis_group=axis_group, save_name='mass_2bin_median', scaled='False', run_name='False')
 
-# setup_new_stack_dir('mass_2bin_median')
+# setup_new_stack_dir('eq_width_4bin')
 # plot_moved()

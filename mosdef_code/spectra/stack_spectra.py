@@ -18,7 +18,7 @@ import initialize_mosdef_dirs as imd
 import cluster_data_funcs as cdf
 from spectra_funcs import read_axis_ratio_spectrum, clip_skylines, check_line_coverage, get_spectra_files, median_bin_spec, read_spectrum, get_too_low_gals, norm_spec_sed, read_composite_spectrum, prepare_mock_observe_spectrum, mock_observe_spectrum
 import matplotlib.patches as patches
-from axis_ratio_funcs import read_interp_axis_ratio
+from axis_ratio_funcs import read_interp_axis_ratio, filter_ar_df
 from operator import itemgetter
 from itertools import *
 from astropy.table import Table
@@ -610,7 +610,7 @@ def stack_axis_mass_ssfr(save_name='_constant_ssfr_mass'):
         axis_group += 1
 
 
-def stack_axis_ratio(mass_width, ssfr_width, starting_points, ratio_bins, save_name):
+def stack_axis_ratio(mass_width, ssfr_width, starting_points, ratio_bins, save_name, split_by='ssfr'):
     """Stacks galaxies in groups by axis ratio
 
     old params: , l_mass_cutoff=0, l_ssfr_cutoff=0, l_mass_bins=0, l_ssfr_bins=0, scale_ha=0
@@ -620,26 +620,14 @@ def stack_axis_ratio(mass_width, ssfr_width, starting_points, ratio_bins, save_n
     ssfr_width (float): How wide the ssfr bins are
     starting_points (list of tuples): Where to start the ssfr bins in (mass, ssfr) coordinates
     ratio_bins (tuple): Where to cut the axis ratio bins e.g. (0.4, 0.7)
+    split_by (str): What column to use for the pslitting - ssfr, or eq_width_ha
 
     Returns:
     """
     ar_df = read_interp_axis_ratio()
 
-    # Remove objects with greater than 0.1 error
-    # ar_df = ar_df[ar_df['err_use_ratio'] < 0.1]
-
-    # Remove objects flagged for axis ratio inconsistencies (1 is F160-F125 > std, and -999 has measurements missing)
-    ar_df = ar_df[ar_df['axis_ratio_flag'] == 0]
-
-    # Remove objects wiithout ha/hb detections
-    ar_df = ar_df[ar_df['ha_flux'] > -0.1]
-    ar_df = ar_df[ar_df['hb_flux'] > -0.1]
-
-    # Add filtering for Halpha S/N, removing AGN, and the z_qual flag
-    ar_df = ar_df[(ar_df['ha_flux'] / ar_df['err_ha_flux']) > 3]
-    ar_df = ar_df[ar_df['agn_flag'] == 0]
-    ar_df = ar_df[ar_df['z_qual_flag'] == 7]
-
+    # Filters the ar_df, see filers in the code
+    ar_df = filter_ar_df(ar_df)
 
     # Add a column for ssfr
     ar_df['log_ssfr'] = np.log10((ar_df['sfr'])/(10**ar_df['log_mass']))
@@ -672,8 +660,12 @@ def stack_axis_ratio(mass_width, ssfr_width, starting_points, ratio_bins, save_n
         for j in range(len(starting_points)):
             mass_start = starting_points[j][0]
             ssfr_start = starting_points[j][1]
-            mass_idx = np.logical_and(df['log_mass']>mass_start, df['log_mass']<=mass_start+mass_width)
-            ssfr_idx = np.logical_and(df['log_ssfr']>ssfr_start, df['log_ssfr']<=ssfr_start+ssfr_width) 
+            if split_by=='ssfr':
+                mass_idx = np.logical_and(df['log_mass']>mass_start, df['log_mass']<=mass_start+mass_width)
+                ssfr_idx = np.logical_and(df['log_ssfr']>ssfr_start, df['log_ssfr']<=ssfr_start+ssfr_width)
+            elif split_by=='eq_width_ha':
+                mass_idx = np.logical_and(df['log_mass']>mass_start, df['log_mass']<=mass_start+mass_width)
+                ssfr_idx = np.logical_and(df['eq_width_ha']>ssfr_start, df['eq_width_ha']<=ssfr_start+ssfr_width)
             bin_idx = np.logical_and(mass_idx, ssfr_idx)
             dfs.append(df[bin_idx])
 
