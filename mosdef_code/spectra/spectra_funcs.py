@@ -457,7 +457,7 @@ def read_spectrum(mosdef_obj, spectrum_file):
 
 
 def check_line_coverage(mosdef_obj, line_list, plot=False):
-    """Checks to see if all five emission lines fall within the spectra for this object
+    """Checks to see if all emission lines fall within the spectra for this object
 
     Parameters:
     mosdef_obj (pd.DataFrame): From get_mosdef_obj(field, v4id)
