@@ -457,7 +457,7 @@ def read_spectrum(mosdef_obj, spectrum_file):
 
 
 def check_line_coverage(mosdef_obj, line_list, plot=False):
-    """Checks to see if all emission lines fall within the spectra for this object
+    """Checks to see if all five emission lines fall within the spectra for this object
 
     Parameters:
     mosdef_obj (pd.DataFrame): From get_mosdef_obj(field, v4id)
@@ -468,7 +468,7 @@ def check_line_coverage(mosdef_obj, line_list, plot=False):
     """
     # Number of angstroms around the line that need to not be masked on either
     # side
-    check_range = 4
+    check_range = 3
 
     spectra_files = get_spectra_files(mosdef_obj)
     spectrum_dfs = []
@@ -503,6 +503,7 @@ def check_line_coverage(mosdef_obj, line_list, plot=False):
                     line_ok = 1
                     # print(f'{line_name} is ok')
                 else:
+                    print(f'{line_name} has a bad pixel')
                     pass
                     # print(spectrum_df.iloc[low_idx:high_idx]['f_lambda_clip'])
                     # print(f'{line_name} has bad pixels nearby')

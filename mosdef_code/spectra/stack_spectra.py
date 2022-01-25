@@ -107,6 +107,7 @@ def stack_spectra(groupID, norm_method, re_observe=False, mask_negatives=False, 
 
         covered = check_line_coverage(mosdef_obj, coverage_list)
         if covered == False:
+            exit()
             continue
         # Find all the spectra files corresponding to this object
         spectra_files = get_spectra_files(mosdef_obj)
@@ -629,6 +630,18 @@ def stack_axis_ratio(mass_width, ssfr_width, starting_points, ratio_bins, save_n
     # Filters the ar_df, see filers in the code
     ar_df = filter_ar_df(ar_df)
 
+    # get all the mosdef objs, going to be used for checking coverage
+    mosdef_objs = [get_mosdef_obj(ar_df.iloc[i]['field'], ar_df.iloc[i]['v4id'])
+                       for i in range(len(ar_df))]
+
+    # Filter all galaxies to make sure that they have both emission lines covered
+    coverage_list = [
+        ('Halpha', 6564.61),
+        ('Hbeta', 4862.68)
+    ]
+
+    covered = [check_line_coverage(mosdef_obj, coverage_list) for mosdef_obj in mosdef_objs]
+
     # Add a column for ssfr
     ar_df['log_ssfr'] = np.log10((ar_df['sfr'])/(10**ar_df['log_mass']))
 
@@ -649,11 +662,6 @@ def stack_axis_ratio(mass_width, ssfr_width, starting_points, ratio_bins, save_n
     ar_dfs = [ar_df_low, ar_df_mid, ar_df_high]
     for i in range(len(ar_dfs)):
         df = ar_dfs[i]
-
-        # Remove anything without a measured sfr or mass
-        df = df[df['sfr'] > 0]
-        df = df[df['log_mass'] > 0]
-
 
         dfs = []
 

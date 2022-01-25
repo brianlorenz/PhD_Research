@@ -46,6 +46,7 @@ colors = {'lowm_lows': 'red', 'lowm_highs': 'blue', 'highm_lows': 'orange', 'hig
 def main(nbins, save_name, variable):
     '''performs all the steps to get this group plotted'''
     stack_axis_ratio(mass_width, ssfr_width, starting_points, ratio_bins, save_name, split_by='eq_width_ha')
+    exit()
     stack_all_continuum(nbins, save_name=save_name)
     plot_all_spec_with_cont(nbins, save_name)
     for axis_group in range(nbins):
@@ -461,9 +462,9 @@ def bootstrap_median(df):
     
 
 # stack_all_continuum(6, save_name='mass_2bin_median')  
-# main(12, 'eq_width_4bin')
+main(12, 'eq_width_4bin' ,'balmer_dec')
 # plot_sample_split(12, 'eq_width_4bin', variable='eq_width_ha')
-plot_balmer_dec('eq_width_4bin', 12, y_var='balmer_dec', color_var='eq_width_ha')
+# plot_balmer_dec('eq_width_4bin', 12, y_var='balmer_dec', color_var='eq_width_ha')
 # plot_balmer_dec('eq_width_4bin', 12, y_var='av', color_var='eq_width_ha')
 # plot_balmer_dec('eq_width_4bin', 12, y_var='beta', color_var='eq_width_ha')
 

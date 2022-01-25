@@ -77,6 +77,9 @@ axis_figure_dir = axis_output_dir + '/axis_ratio_figures'
 
 axis_cluster_data_dir = mosdef_dir + '/axis_ratio_data_clustered'
 
+# Folder for coutns at each step
+gal_counts_dir = mosdef_dir + '/galaxy_counts'
+
 
 # Misc mosdef files
 loc_3DHST = home_dir + '/mosdef/Surveys/3DHST/v4.1/'

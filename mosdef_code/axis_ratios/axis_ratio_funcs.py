@@ -16,6 +16,7 @@ import scipy.integrate as integrate
 from query_funcs import get_zobjs, get_zobjs_sort_nodup
 import initialize_mosdef_dirs as imd
 import cluster_data_funcs as cdf
+from save_counts import save_count
 
 
 def make_axis_ratio_catalogs():
@@ -167,15 +168,61 @@ def filter_ar_df(ar_df):
     # Remove objects with greater than 0.1 error
     # ar_df = ar_df[ar_df['err_use_ratio'] < 0.1]
 
+    #Count the total number of objects at the beginning and end
+    total_num_start = len(ar_df)
+    
+    #For counting purposes
+    non_det = ar_df['use_ratio'] == -999.0
+    save_count(ar_df[non_det], 'axis_ratio_no_measure', 'No measured Axis Ratio in F125 and F160')
+    too_diff_ar = ar_df['axis_ratio_flag'] == 1
+    save_count(ar_df[too_diff_ar], 'axis_ratio_ar_too_diff', 'F125 and F160 dont agree well')
+    bad_ar_flag = ar_df['axis_ratio_flag'] == -999
+    save_count(ar_df[bad_ar_flag], 'axis_ratio_bad_ar_flag', 'F125 or F160 is not detected')
     # Remove objects flagged for axis ratio inconsistencies (1 is F160-F125 > std, and -999 has measurements missing)
     ar_df = ar_df[ar_df['axis_ratio_flag'] == 0]
 
+    
+    #For counting purposes
+    ha_bad = ar_df['ha_flux'] <= -0.1
+    save_count(ar_df[ha_bad], 'ha_negative_flux', 'Halpha flux is negative')
+    hb_bad = ar_df['hb_flux'] <= -0.1
+    save_count(ar_df[hb_bad], 'hb_negative_flux', 'Hbeta flux is negative')
     # Remove objects wiithout ha/hb detections
     ar_df = ar_df[ar_df['ha_flux'] > -0.1]
     ar_df = ar_df[ar_df['hb_flux'] > -0.1]
 
-    # Add filtering for Halpha S/N, removing AGN, and the z_qual flag
+    #For counting purposes
+    ha_SN_low = (ar_df['ha_flux'] / ar_df['err_ha_flux']) <= 3
+    save_count(ar_df[ha_SN_low], 'ha_SN_low', 'Halpha Signal/Noise less or equal 3')
+    # Add filtering for Halpha S/N,
     ar_df = ar_df[(ar_df['ha_flux'] / ar_df['err_ha_flux']) > 3]
+    
+    #For counting purposes
+    AGN = ar_df['agn_flag'] != 0
+    save_count(ar_df[AGN], 'agn', 'AGN flag from mosdef')
+    # Remove AGN
     ar_df = ar_df[ar_df['agn_flag'] == 0]
+
+    #For counting purposes
+    z_qual_bad = ar_df['z_qual_flag'] != 7
+    save_count(ar_df[z_qual_bad], 'z_qual_bad', 'z_qual flag from mosdef')
+    #Remove low quality galaxies
     ar_df = ar_df[ar_df['z_qual_flag'] == 7]
+
+    #For counting purposes
+    sfr_bad = ar_df['sfr'] <= 0
+    save_count(ar_df[sfr_bad], 'sfr_bad', 'no measured sfr')
+    # Remove anything without a measured sfr 
+    ar_df = ar_df[ar_df['sfr'] > 0]
+
+    #For counting purposes
+    mass_bad = ar_df['log_mass'] <= 0
+    save_count(ar_df[mass_bad], 'mass_bad', 'no measured mass')
+    # Remove anything without a measured sfr 
+    ar_df = ar_df[ar_df['log_mass'] > 0]
+
+    total_num_end = len(ar_df)
+    total_removed = total_num_start - total_num_end
+    print(f'Removed {total_removed} galaxies in total')
+    print(f'There are {total_num_end} galaxies remaining')
     return ar_df
