@@ -46,7 +46,6 @@ colors = {'lowm_lows': 'red', 'lowm_highs': 'blue', 'highm_lows': 'orange', 'hig
 def main(nbins, save_name, variable):
     '''performs all the steps to get this group plotted'''
     stack_axis_ratio(mass_width, ssfr_width, starting_points, ratio_bins, save_name, split_by='eq_width_ha')
-    exit()
     stack_all_continuum(nbins, save_name=save_name)
     plot_all_spec_with_cont(nbins, save_name)
     for axis_group in range(nbins):

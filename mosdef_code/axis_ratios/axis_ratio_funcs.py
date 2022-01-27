@@ -17,6 +17,8 @@ from query_funcs import get_zobjs, get_zobjs_sort_nodup
 import initialize_mosdef_dirs as imd
 import cluster_data_funcs as cdf
 from save_counts import save_count
+from spectra_funcs import check_line_coverage
+
 
 
 def make_axis_ratio_catalogs():
@@ -220,6 +222,21 @@ def filter_ar_df(ar_df):
     save_count(ar_df[mass_bad], 'mass_bad', 'no measured mass')
     # Remove anything without a measured sfr 
     ar_df = ar_df[ar_df['log_mass'] > 0]
+
+
+    # get all the mosdef objs, going to be used for checking coverage
+    mosdef_objs = [get_mosdef_obj(ar_df.iloc[i]['field'], ar_df.iloc[i]['v4id'])
+                       for i in range(len(ar_df))]
+    # Filter all galaxies to make sure that they have both emission lines covered
+    before_cover = len(ar_df)
+    coverage_list = [
+        ('Halpha', 6564.61),
+        ('Hbeta', 4862.68)
+    ]
+    covered = [check_line_coverage(mosdef_obj, coverage_list) for mosdef_obj in mosdef_objs]
+    ar_df = ar_df[covered]
+    after_cover = len(ar_df)
+    print(f'Removed {after_cover-before_cover} galaxies from line coverage')
 
     total_num_end = len(ar_df)
     total_removed = total_num_start - total_num_end
