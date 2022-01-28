@@ -172,26 +172,38 @@ def filter_ar_df(ar_df):
 
     #Count the total number of objects at the beginning and end
     total_num_start = len(ar_df)
+
+    #For counting purposes
+    z_qual_bad = ar_df['z_qual_flag'] != 7
+    save_count(ar_df[z_qual_bad], 'z_qual_bad', 'z_qual flag from mosdef')
+    #Remove low quality galaxies
+    ar_df = ar_df[ar_df['z_qual_flag'] == 7]
     
     #For counting purposes
-    non_det = ar_df['use_ratio'] == -999.0
-    save_count(ar_df[non_det], 'axis_ratio_no_measure', 'No measured Axis Ratio in F125 and F160')
-    too_diff_ar = ar_df['axis_ratio_flag'] == 1
-    save_count(ar_df[too_diff_ar], 'axis_ratio_ar_too_diff', 'F125 and F160 dont agree well')
+    AGN = ar_df['agn_flag'] != 0
+    save_count(ar_df[AGN], 'agn', 'AGN flag from mosdef')
+    # Remove AGN
+    ar_df = ar_df[ar_df['agn_flag'] == 0]
+    
+    #For counting purposes
     bad_ar_flag = ar_df['axis_ratio_flag'] == -999
     save_count(ar_df[bad_ar_flag], 'axis_ratio_bad_ar_flag', 'F125 or F160 is not detected')
     # Remove objects flagged for axis ratio inconsistencies (1 is F160-F125 > std, and -999 has measurements missing)
-    ar_df = ar_df[ar_df['axis_ratio_flag'] == 0]
+    ar_df = ar_df[ar_df['axis_ratio_flag'] != -999]
+
+
+
 
     
     #For counting purposes
-    ha_bad = ar_df['ha_flux'] <= -0.1
-    save_count(ar_df[ha_bad], 'ha_negative_flux', 'Halpha flux is negative')
-    hb_bad = ar_df['hb_flux'] <= -0.1
-    save_count(ar_df[hb_bad], 'hb_negative_flux', 'Hbeta flux is negative')
+    ha_bad = ar_df['ha_detflag_sfr'] == -999
+    save_count(ar_df[ha_bad], 'ha_negative_flux', 'Halpha not covered')
+    ar_df = ar_df[ar_df['ha_detflag_sfr'] != -999]
+    
+    hb_bad = ar_df['hb_detflag_sfr'] == -999
+    save_count(ar_df[hb_bad], 'hb_negative_flux', 'Hbeta not covered')
     # Remove objects wiithout ha/hb detections
-    ar_df = ar_df[ar_df['ha_flux'] > -0.1]
-    ar_df = ar_df[ar_df['hb_flux'] > -0.1]
+    ar_df = ar_df[ar_df['hb_detflag_sfr']!= -999]
 
     #For counting purposes
     ha_SN_low = (ar_df['ha_flux'] / ar_df['err_ha_flux']) <= 3
@@ -199,17 +211,8 @@ def filter_ar_df(ar_df):
     # Add filtering for Halpha S/N,
     ar_df = ar_df[(ar_df['ha_flux'] / ar_df['err_ha_flux']) > 3]
     
-    #For counting purposes
-    AGN = ar_df['agn_flag'] != 0
-    save_count(ar_df[AGN], 'agn', 'AGN flag from mosdef')
-    # Remove AGN
-    ar_df = ar_df[ar_df['agn_flag'] == 0]
+   
 
-    #For counting purposes
-    z_qual_bad = ar_df['z_qual_flag'] != 7
-    save_count(ar_df[z_qual_bad], 'z_qual_bad', 'z_qual flag from mosdef')
-    #Remove low quality galaxies
-    ar_df = ar_df[ar_df['z_qual_flag'] == 7]
 
     #For counting purposes
     sfr_bad = ar_df['sfr'] <= 0
@@ -217,12 +220,29 @@ def filter_ar_df(ar_df):
     # Remove anything without a measured sfr 
     ar_df = ar_df[ar_df['sfr'] > 0]
 
+
     #For counting purposes
     mass_bad = ar_df['log_mass'] <= 0
     save_count(ar_df[mass_bad], 'mass_bad', 'no measured mass')
     # Remove anything without a measured sfr 
     ar_df = ar_df[ar_df['log_mass'] > 0]
 
+
+    # Compute the difference and standard devaition
+    ar_diff = ar_df['F160_axis_ratio'] - ar_df['F125_axis_ratio']
+    std_ar_diff = np.std(ar_diff)
+    # Flag the galaixes greater than 2 sigma
+    above_sigma = ar_diff > 2*std_ar_diff
+    below_sigma = ar_diff < -2*std_ar_diff
+    flagged_gals = np.logical_or(above_sigma, below_sigma)
+    idxs = ar_diff[flagged_gals].index
+    ar_df.loc[idxs, 'axis_ratio_flag'] = 2
+    
+    too_diff_ar = ar_df['axis_ratio_flag'] == 2
+    save_count(ar_df[too_diff_ar], 'axis_ratio_ar_too_diff', 'F125 and F160 dont agree well')
+    ar_df = ar_df['axis_ratio_flag'] != 2
+
+    breakpoint()
 
     # get all the mosdef objs, going to be used for checking coverage
     mosdef_objs = [get_mosdef_obj(ar_df.iloc[i]['field'], ar_df.iloc[i]['v4id'])
