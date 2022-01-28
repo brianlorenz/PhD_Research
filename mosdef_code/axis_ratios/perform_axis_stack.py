@@ -31,26 +31,40 @@ random.seed(3284923)
 # split_by = 'ssfr'
 
 # Equalivent width ha
+# mass_width = 0.8
+# ssfr_width = 300
+# starting_points = [(9.3, 0), (10.1, 0), (9.3, 300), (10.1, 300)]
+# ratio_bins = [0.4, 0.7]
+# nbins = 12
+# split_by = 'eq_width_ha'
+
+#12 bins, 2 mass 2 ssfr
 mass_width = 0.8
-ssfr_width = 300
-starting_points = [(9.3, 0), (10.1, 0), (9.3, 300), (10.1, 300)]
+ssfr_width = 0.75
+starting_points = [(9.3, -8.85), (10.1, -8.85), (9.3, -9.6), (10.1, -9.6)]
 ratio_bins = [0.4, 0.7]
 nbins = 12
-split_by = 'eq_width_ha'
+split_by = 'ssfr'
 
 
 shapes = {'low': '+', 'mid': 'd', 'high': 'o'}
 colors = {'lowm_lows': 'red', 'lowm_highs': 'blue', 'highm_lows': 'orange', 'highm_highs': 'mediumseagreen', 'lowest_lows': 'lightskyblue', 'lowest_highs': 'darkviolet'}
 
 
-def main(nbins, save_name, variable):
-    '''performs all the steps to get this group plotted'''
-    stack_axis_ratio(mass_width, ssfr_width, starting_points, ratio_bins, save_name, split_by='eq_width_ha')
+def main(nbins, save_name, split_by, use_ha_ssfr=0):
+    '''performs all the steps to get this group plotted
+    
+    Parameters:
+    nbins (int): Number of total bins, calculated as mass_bins*ssfr_bins*axis_ratio_bins
+    split_by (str): y-axis variable, typically either ssfr or eq_width_ha
+    '''
+    setup_new_stack_dir(save_name)
+    stack_axis_ratio(mass_width, ssfr_width, starting_points, ratio_bins, save_name, split_by=split_by, use_ha_ssfr=0)
     stack_all_continuum(nbins, save_name=save_name)
-    plot_all_spec_with_cont(nbins, save_name)
+    plot_all_spec_with_cont(nbins, save_name) # This is where the normalized cont is saved
     for axis_group in range(nbins):
         fit_emission(0, 'cluster_norm', constrain_O3=False, axis_group=axis_group, save_name=save_name, scaled='False', run_name='False')
-    plot_sample_split(nbins, save_name, variable=variable)
+    plot_sample_split(nbins, save_name, variable=split_by)
     plot_balmer_dec(save_name, nbins, y_var='balmer_dec')
     plot_balmer_dec(save_name, nbins, y_var='av')
     plot_balmer_dec(save_name, nbins, y_var='beta')
@@ -72,12 +86,10 @@ def plot_sample_split(n_groups, save_name, variable='log_ssfr'):
     variable(str): Which variable to use for the y-axis"""
 
     fig, ax = plt.subplots(figsize=(8,8))
-    
-    # Check to make sure lines were used, same coverage as when generating the spectrum
-    coverage_list = [
-                ('Halpha', 6564.61),
-                ('Hbeta', 4862.68)
-            ]
+
+    if variable == 'ssfr':
+        variable = 'log_ssfr'
+
     
     
     group_num = []
@@ -93,23 +105,6 @@ def plot_sample_split(n_groups, save_name, variable='log_ssfr'):
     keys = []
 
     # Figure 1 - Showing how the sample gets cut
-    # Plot grey points for galaxies not included
-    all_axis_ratio_df = ascii.read(imd.loc_axis_ratio_cat).to_pandas()
-    all_axis_ratio_df['log_ssfr'] = np.log10((all_axis_ratio_df['sfr']) / (10**all_axis_ratio_df['log_mass']))
-
-    # Check if each galaxy was included - if not, drop it from the dataframe
-    drop_idx = []
-    for i in range(len(all_axis_ratio_df)):
-        mosdef_obj = get_mosdef_obj(all_axis_ratio_df.iloc[i]['field'], all_axis_ratio_df.iloc[i]['v4id'])
-        
-        covered = check_line_coverage(mosdef_obj, coverage_list)
-        if covered == False:
-            drop_idx.append(False)
-        else:
-            drop_idx.append(True)
-    all_axis_ratio_df = all_axis_ratio_df[drop_idx]
-    ax.plot(all_axis_ratio_df['log_mass'], all_axis_ratio_df[variable], color = 'grey', ls='None', marker='o', zorder=1)
-
     cmap = mpl.cm.viridis 
     norm = mpl.colors.Normalize(vmin=2, vmax=7) 
 
@@ -117,19 +112,6 @@ def plot_sample_split(n_groups, save_name, variable='log_ssfr'):
         axis_ratio_df = ascii.read(imd.axis_cluster_data_dir + f'/{save_name}/{save_name}_group_dfs/{axis_group}_df.csv').to_pandas()
 
         axis_ratio_df['balmer_dec'] = (axis_ratio_df['ha_flux'] / axis_ratio_df['hb_flux'])
-
-
-        # Check if each galaxy was included - if not, drop it from the dataframe
-        drop_idx = []
-        for i in range(len(axis_ratio_df)):
-            mosdef_obj = get_mosdef_obj(axis_ratio_df.iloc[i]['field'], axis_ratio_df.iloc[i]['v4id'])
-            
-            covered = check_line_coverage(mosdef_obj, coverage_list)
-            if covered == False:
-                drop_idx.append(False)
-            else:
-                drop_idx.append(True)
-        axis_ratio_df = axis_ratio_df[drop_idx]
 
 
         # Determine what color and shape to plot with
@@ -152,6 +134,8 @@ def plot_sample_split(n_groups, save_name, variable='log_ssfr'):
         else:
             shape = shapes['mid']
 
+        print(f'Mass median: {mass_median}, SSFR median: {ssfr_median}')
+
         # Figure out which mass/ssfr bin
         color = 'purple'
         if mass_median > starting_points[0][0] and mass_median < starting_points[0][0] + mass_width:
@@ -159,26 +143,28 @@ def plot_sample_split(n_groups, save_name, variable='log_ssfr'):
                 key = "lowm_lows"
                 # Create a Rectangle patch
                 rect = patches.Rectangle((starting_points[0][0],  starting_points[0][1]), mass_width, ssfr_width, linestyle='--', linewidth=1, edgecolor=colors[key], facecolor='none')
-        elif mass_median > starting_points[1][0] and mass_median < starting_points[1][0] + mass_width:
+        if mass_median > starting_points[1][0] and mass_median < starting_points[1][0] + mass_width:
             if ssfr_median > starting_points[1][1] and ssfr_median < starting_points[1][1] + ssfr_width:
                 key = "lowm_highs"
                 rect = patches.Rectangle((starting_points[1][0],  starting_points[1][1]), mass_width, ssfr_width, linestyle='--', linewidth=1, edgecolor=colors[key], facecolor='none')
-        elif mass_median > starting_points[2][0] and mass_median < starting_points[2][0] + mass_width:
-            if ssfr_median > starting_points[2][1] and ssfr_median < starting_points[2][1] + ssfr_width:
-                key = "highm_lows"
-                rect = patches.Rectangle((starting_points[2][0],  starting_points[2][1]), mass_width, ssfr_width, linestyle='--', linewidth=1, edgecolor=colors[key], facecolor='none')
-        elif mass_median > starting_points[3][0] and mass_median < starting_points[3][0] + mass_width:
-            if ssfr_median > starting_points[3][1] and ssfr_median < starting_points[3][1] + ssfr_width:
-                key = "highm_highs"
-                rect = patches.Rectangle((starting_points[3][0],  starting_points[3][1]), mass_width, ssfr_width, linestyle='--', linewidth=1, edgecolor=colors[key], facecolor='none')
-        elif mass_median > starting_points[4][0] and mass_median < starting_points[4][0] + mass_width:
-            if ssfr_median > starting_points[4][1] and ssfr_median < starting_points[4][1] + ssfr_width:
-                key = "lowest_lows"
-                rect = patches.Rectangle((starting_points[4][0],  starting_points[4][1]), mass_width, ssfr_width, linestyle='--', linewidth=1, edgecolor=colors[key], facecolor='none')
-        elif mass_median > starting_points[5][0] and mass_median < starting_points[5][0] + mass_width:
-            if ssfr_median > starting_points[5][1] and ssfr_median < starting_points[5][1] + ssfr_width:
-                key = "lowest_highs"
-                rect = patches.Rectangle((starting_points[5][0],  starting_points[5][1]), mass_width, ssfr_width, linestyle='--', linewidth=1, edgecolor=colors[key], facecolor='none')
+        if nbins > 6:
+            if mass_median > starting_points[2][0] and mass_median < starting_points[2][0] + mass_width:
+                if ssfr_median > starting_points[2][1] and ssfr_median < starting_points[2][1] + ssfr_width:
+                    key = "highm_lows"
+                    rect = patches.Rectangle((starting_points[2][0],  starting_points[2][1]), mass_width, ssfr_width, linestyle='--', linewidth=1, edgecolor=colors[key], facecolor='none')
+            if mass_median > starting_points[3][0] and mass_median < starting_points[3][0] + mass_width:
+                if ssfr_median > starting_points[3][1] and ssfr_median < starting_points[3][1] + ssfr_width:
+                    key = "highm_highs"
+                    rect = patches.Rectangle((starting_points[3][0],  starting_points[3][1]), mass_width, ssfr_width, linestyle='--', linewidth=1, edgecolor=colors[key], facecolor='none')
+        if nbins > 12:
+            if mass_median > starting_points[4][0] and mass_median < starting_points[4][0] + mass_width:
+                if ssfr_median > starting_points[4][1] and ssfr_median < starting_points[4][1] + ssfr_width:
+                    key = "lowest_lows"
+                    rect = patches.Rectangle((starting_points[4][0],  starting_points[4][1]), mass_width, ssfr_width, linestyle='--', linewidth=1, edgecolor=colors[key], facecolor='none')
+            if mass_median > starting_points[5][0] and mass_median < starting_points[5][0] + mass_width:
+                if ssfr_median > starting_points[5][1] and ssfr_median < starting_points[5][1] + ssfr_width:
+                    key = "lowest_highs"
+                    rect = patches.Rectangle((starting_points[5][0],  starting_points[5][1]), mass_width, ssfr_width, linestyle='--', linewidth=1, edgecolor=colors[key], facecolor='none')
         color = colors[key]
 
         
@@ -461,7 +447,11 @@ def bootstrap_median(df):
     
 
 # stack_all_continuum(6, save_name='mass_2bin_median')  
-main(12, 'eq_width_4bin' ,'balmer_dec')
+# main(12, 'eq_width_4bin' ,'balmer_dec')
+# main(12, 'ssfr_4bin' ,'ssfr')
+
+# plot_sample_split(12, 'ssfr_4bin', variable='ssfr')
+main(12, 'halpha_ssfr_4bin', 'ssfr', use_ha_ssfr=0)
 # plot_sample_split(12, 'eq_width_4bin', variable='eq_width_ha')
 # plot_balmer_dec('eq_width_4bin', 12, y_var='balmer_dec', color_var='eq_width_ha')
 # plot_balmer_dec('eq_width_4bin', 12, y_var='av', color_var='eq_width_ha')

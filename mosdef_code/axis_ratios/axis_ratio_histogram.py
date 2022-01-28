@@ -1,4 +1,5 @@
 # Plot a histogram of the axis ratios of the galaxies being used
+from axis_ratio_funcs import filter_ar_df
 import numpy as np
 import pandas as pd
 from astropy.io import ascii
@@ -17,9 +18,7 @@ def plot_ar_hist(use_column = 'use_ratio',  mass_split='False'):
     '''
 
     ar_df = ascii.read(imd.loc_axis_ratio_cat).to_pandas()
-    ar_df = ar_df[ar_df['z_qual_flag'] == 7]
-    ar_df = ar_df[ar_df['agn_flag'] == 0]
-    ar_df = ar_df[ar_df[use_column]>-90]
+    ar_df = filter_ar_df(ar_df)
     bins = np.arange(0, 1, 0.05)
     
     if mass_split=='True':
@@ -35,10 +34,12 @@ def plot_ar_hist(use_column = 'use_ratio',  mass_split='False'):
     
     if mass_split=='AndSSFR':
         mass_cut = 10.1
-        ssfr_cut = -8.6
+        ssfr_cut = -8.85
 
         ar_df['log_ssfr'] = np.log10(ar_df['sfr']/(10**ar_df['log_mass']))
+        ar_df['log_halpha_ssfr'] = np.log10(ar_df['halpha_sfrs']/(10**ar_df['log_mass']))
         ar_df = ar_df[ar_df['log_ssfr']>-15]
+        ar_df = ar_df[ar_df['log_halpha_ssfr']>-15]
         print(f'Total gals = {len(ar_df)}')
 
         fig, axarr = plt.subplots(2, 2, figsize=(16,16))
@@ -49,13 +50,13 @@ def plot_ar_hist(use_column = 'use_ratio',  mass_split='False'):
         ax_highm_lows = axarr[3]
         low_mass = ar_df['log_mass'] < mass_cut
         high_mass = ~low_mass
-        lowm_lows = ar_df[low_mass][ar_df[low_mass]['log_ssfr'] <= ssfr_cut]
+        lowm_lows = ar_df[low_mass][ar_df[low_mass]['log_halpha_ssfr'] <= ssfr_cut]
         print(f'Lowm_low gals = {len(lowm_lows)}')
-        lowm_highs = ar_df[low_mass][ar_df[low_mass]['log_ssfr'] > ssfr_cut]
+        lowm_highs = ar_df[low_mass][ar_df[low_mass]['log_halpha_ssfr'] > ssfr_cut]
         print(f'Lowm_high gals = {len(lowm_highs)}')
-        highm_lows = ar_df[high_mass][ar_df[high_mass]['log_ssfr'] <= ssfr_cut]
+        highm_lows = ar_df[high_mass][ar_df[high_mass]['log_halpha_ssfr'] <= ssfr_cut]
         print(f'highm_low gals = {len(highm_lows)}')
-        highm_highs = ar_df[high_mass][ar_df[high_mass]['log_ssfr'] > ssfr_cut]
+        highm_highs = ar_df[high_mass][ar_df[high_mass]['log_halpha_ssfr'] > ssfr_cut]
         print(f'highm_high gals = {len(highm_highs)}')
         
         ax_lowm_highs.hist(lowm_highs[use_column], bins=bins, color='black')
@@ -66,7 +67,7 @@ def plot_ar_hist(use_column = 'use_ratio',  mass_split='False'):
         ax_lowm_lows.set_title(f'Mass <= {mass_cut}, log(ssfr) <= {ssfr_cut}')
         ax_highm_highs.set_title(f'Mass > {mass_cut}, log(ssfr) > {ssfr_cut}')
         ax_highm_lows.set_title(f'Mass > {mass_cut}, log(ssfr) <= {ssfr_cut}')
-        savename = '_bymass_ssfr'
+        savename = '_bymass_halpha_ssfr'
         ax_lowm_highs.set_ylim(0, 30)
         ax_lowm_lows.set_ylim(0, 30)
         ax_highm_highs.set_ylim(0, 30)
@@ -143,6 +144,7 @@ def compare_ar_measurements(col1, err_col1, col2, err_col2):
     ax.set_ylim(-0.05, 1.05)
     fig.savefig(imd.axis_output_dir + f'/ar_compare_{col1}_{col2}.pdf')
 
-compare_ar_measurements('F125_axis_ratio', 'F125_err_axis_ratio', 'F160_axis_ratio', 'F160_err_axis_ratio')
-compare_ar_measurements('use_ratio', 'err_use_ratio', 'F160_axis_ratio', 'F160_err_axis_ratio')
-compare_ar_measurements('use_ratio', 'err_use_ratio', 'F125_axis_ratio', 'F125_err_axis_ratio')
+# compare_ar_measurements('F125_axis_ratio', 'F125_err_axis_ratio', 'F160_axis_ratio', 'F160_err_axis_ratio')
+# compare_ar_measurements('use_ratio', 'err_use_ratio', 'F160_axis_ratio', 'F160_err_axis_ratio')
+# compare_ar_measurements('use_ratio', 'err_use_ratio', 'F125_axis_ratio', 'F125_err_axis_ratio')
+plot_ar_hist(use_column = 'use_ratio',  mass_split='AndSSFR')

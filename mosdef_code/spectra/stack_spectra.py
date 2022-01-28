@@ -606,7 +606,7 @@ def stack_axis_mass_ssfr(save_name='_constant_ssfr_mass'):
         axis_group += 1
 
 
-def stack_axis_ratio(mass_width, ssfr_width, starting_points, ratio_bins, save_name, split_by='ssfr'):
+def stack_axis_ratio(mass_width, ssfr_width, starting_points, ratio_bins, save_name, split_by='ssfr', use_ha_ssfr=0):
     """Stacks galaxies in groups by axis ratio
 
     old params: , l_mass_cutoff=0, l_ssfr_cutoff=0, l_mass_bins=0, l_ssfr_bins=0, scale_ha=0
@@ -617,6 +617,7 @@ def stack_axis_ratio(mass_width, ssfr_width, starting_points, ratio_bins, save_n
     starting_points (list of tuples): Where to start the ssfr bins in (mass, ssfr) coordinates
     ratio_bins (tuple): Where to cut the axis ratio bins e.g. (0.4, 0.7)
     split_by (str): What column to use for the pslitting - ssfr, or eq_width_ha
+    use_ha_ssfr (int): Set to 1 to use the halpha calculated ssfrs
 
     Returns:
     """
@@ -627,6 +628,7 @@ def stack_axis_ratio(mass_width, ssfr_width, starting_points, ratio_bins, save_n
 
     # Add a column for ssfr
     ar_df['log_ssfr'] = np.log10((ar_df['sfr'])/(10**ar_df['log_mass']))
+    ar_df['log_halpha_ssfr'] = np.log10((ar_df['halpha_sfrs'])/(10**ar_df['log_mass']))
 
     # Split into n_bins groups
     axis_group = 0
@@ -649,6 +651,8 @@ def stack_axis_ratio(mass_width, ssfr_width, starting_points, ratio_bins, save_n
             if split_by=='ssfr':
                 mass_idx = np.logical_and(df['log_mass']>mass_start, df['log_mass']<=mass_start+mass_width)
                 ssfr_idx = np.logical_and(df['log_ssfr']>ssfr_start, df['log_ssfr']<=ssfr_start+ssfr_width)
+                if use_ha_ssfr:
+                    ssfr_idx = np.logical_and(df['log_halpha_ssfr']>ssfr_start, df['log_halpha_ssfr']<=ssfr_start+ssfr_width)
             elif split_by=='eq_width_ha':
                 mass_idx = np.logical_and(df['log_mass']>mass_start, df['log_mass']<=mass_start+mass_width)
                 ssfr_idx = np.logical_and(df['eq_width_ha']>ssfr_start, df['eq_width_ha']<=ssfr_start+ssfr_width)
