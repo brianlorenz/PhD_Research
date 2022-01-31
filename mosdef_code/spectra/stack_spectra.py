@@ -497,6 +497,13 @@ def perform_stack(stack_type, interp_cluster_spectra_dfs, norm_factors):
     stack_type (str): Either "mean" or "median" to determine how to stack
     norm_interp_specs (list of dataframes): Spectra, errors, continuum, interpolated to the same wavelength range and normalized
     number_spects_by_wave (list): Number of galaixes that contribute to each point on the spectrum
+
+    Returns:
+    total_spec (array): Summed spectrum 
+    total_cont (array): Summed continuum 
+    total_errs (array): summed uncertainties 
+    number_specs_by_wave (array): At each pixel, how manay galaxies contributed to it 
+    norm_value_specs_by_wave (array): Same as above, but each galaxies is added as its normalization value rather than 1
     """
         # Pulls out just the flux values of each spectrum
     norm_interp_specs = [interp_cluster_spectra_dfs[i]['f_lambda_norm']

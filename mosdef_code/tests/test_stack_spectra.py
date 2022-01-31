@@ -3,7 +3,7 @@
 import numpy as np
 import pandas as pd
 import pytest
-from stack_spectra import stack_spectra, norm_axis_stack
+from stack_spectra import stack_spectra, norm_axis_stack, perform_stack
 from astropy.io import ascii
 import initialize_mosdef_dirs as imd
 
@@ -25,9 +25,29 @@ def test_stack_spectra():
 
     print("Generating artifical spectra")
     ar_df = ascii.read(imd.mosdef_dir + '/axis_ratio_data/Merged_catalogs/stack_spectra_test.csv').to_pandas()
-    spec_1_df = make_spec_df([1, 1, 1, 2, 3, 1], [0.5, 0.5, 0.5, 0.5, 0.5, 0.5])
+    spec_1_df = make_spec_df([1, 1, 1, 2, 3, 0], [0.5, 0.5, 0.5, 0.5, 0.5, 0.5])
+    spec_2_df = make_spec_df([1, 2, 0, 2, 4, 0], [0.5, 0.5, 0.5, 0.5, 0.5, 0.5])
+    spec_3_df = make_spec_df([1, 0, 0, 3, 3, 0], [0.5, 0.5, 0.5, 0.5, 0.5, 0.5])
+    spec_4_df = make_spec_df([-1, 6, 3, 3, 6, 5], [0.5, 0.5, 0.5, 0.5, 0.5, 0.5])
+    spec_dfs = [spec_1_df, spec_2_df, spec_3_df, spec_4_df]
+    total_spec, total_cont, total_errs, number_specs_by_wave, norm_value_specs_by_wave = perform_stack('mean', spec_dfs, [1,1,1,1])
+    # Our expected spectrum, remembering that 0s are not counted in the means
+    expected_spec = np.array([0.5, 3, 2, 2.5, 4, 5])
+    print(total_spec)
+    assert (total_spec == expected_spec).all()
 
-    stack_spectra(0, 'cluster_norm', axis_ratio_df=df, axis_group=axis_group, save_name=cluster_name)
+
+    total_spec, total_cont, total_errs, number_specs_by_wave, norm_value_specs_by_wave = perform_stack('median', spec_dfs, [1,1,1,1])
+    # Our expected spectrum, remembering that 0s are not counted in the means
+    expected_spec = np.array([1, 2, 2, 2.5, 3.5, 5])
+    print(total_spec)
+    assert (total_spec == expected_spec).all()
+
+
+
+    print('All tests passed for stack_spectra')
+
+    
 
     
 def make_spec_df(spec_vals, err_vals):
