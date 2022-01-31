@@ -144,7 +144,7 @@ def compare_ar_measurements(col1, err_col1, col2, err_col2):
     ax.set_ylim(-0.05, 1.05)
     fig.savefig(imd.axis_output_dir + f'/ar_compare_{col1}_{col2}.pdf')
 
-# compare_ar_measurements('F125_axis_ratio', 'F125_err_axis_ratio', 'F160_axis_ratio', 'F160_err_axis_ratio')
+compare_ar_measurements('F125_axis_ratio', 'F125_err_axis_ratio', 'F160_axis_ratio', 'F160_err_axis_ratio')
 # compare_ar_measurements('use_ratio', 'err_use_ratio', 'F160_axis_ratio', 'F160_err_axis_ratio')
 # compare_ar_measurements('use_ratio', 'err_use_ratio', 'F125_axis_ratio', 'F125_err_axis_ratio')
 plot_ar_hist(use_column = 'use_ratio',  mass_split='AndSSFR')

@@ -165,8 +165,13 @@ def read_interp_axis_ratio():
                               '/axis_ratio_data/Merged_catalogs/mosdef_all_cats_v2.csv').to_pandas()
     return merged_ar_df
 
-def filter_ar_df(ar_df):
-    """Removes any of the unwanted objects in our analysis, such as AGN or those with bad halpha detections"""
+def filter_ar_df(ar_df, return_std_ar=False):
+    """Removes any of the unwanted objects in our analysis, such as AGN or those with bad halpha detections
+    
+    Parameters:
+    ar_df (pd.DataFrame): Axis ratio dataframe to filter down
+    return_std_ar (boolead): Set to true to return the standard deviation of the axis ratio differencee as well as ar_df. Will not filter tohe bad axis ratios
+    """
     # Remove objects with greater than 0.1 error
     # ar_df = ar_df[ar_df['err_use_ratio'] < 0.1]
 
@@ -199,7 +204,7 @@ def filter_ar_df(ar_df):
     ha_bad = ar_df['ha_detflag_sfr'] == -999
     save_count(ar_df[ha_bad], 'ha_negative_flux', 'Halpha not covered')
     ar_df = ar_df[ar_df['ha_detflag_sfr'] != -999]
-    
+
     hb_bad = ar_df['hb_detflag_sfr'] == -999
     save_count(ar_df[hb_bad], 'hb_negative_flux', 'Hbeta not covered')
     # Remove objects wiithout ha/hb detections
@@ -231,6 +236,11 @@ def filter_ar_df(ar_df):
     # Compute the difference and standard devaition
     ar_diff = ar_df['F160_axis_ratio'] - ar_df['F125_axis_ratio']
     std_ar_diff = np.std(ar_diff)
+
+    if return_std_ar==True:
+        print('Stopping early and returning')
+        return ar_df, std_ar_diff
+
     # Flag the galaixes greater than 2 sigma
     above_sigma = ar_diff > 2*std_ar_diff
     below_sigma = ar_diff < -2*std_ar_diff
@@ -242,11 +252,10 @@ def filter_ar_df(ar_df):
     save_count(ar_df[too_diff_ar], 'axis_ratio_ar_too_diff', 'F125 and F160 dont agree well')
     ar_df = ar_df['axis_ratio_flag'] != 2
 
-    breakpoint()
 
     # get all the mosdef objs, going to be used for checking coverage
     mosdef_objs = [get_mosdef_obj(ar_df.iloc[i]['field'], ar_df.iloc[i]['v4id'])
-                       for i in range(len(ar_df))]
+                    for i in range(len(ar_df))]
     # Filter all galaxies to make sure that they have both emission lines covered
     before_cover = len(ar_df)
     coverage_list = [
@@ -262,4 +271,5 @@ def filter_ar_df(ar_df):
     total_removed = total_num_start - total_num_end
     print(f'Removed {total_removed} galaxies in total')
     print(f'There are {total_num_end} galaxies remaining')
+
     return ar_df
