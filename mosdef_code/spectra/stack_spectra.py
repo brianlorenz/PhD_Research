@@ -367,6 +367,11 @@ def stack_spectra(groupID, norm_method, re_observe=False, mask_negatives=False, 
     return
 
 
+
+def compute_stack():
+    pass
+
+
 def plot_spec(groupID, norm_method, mask_negatives=False, thresh=0.1, axis_group=-1, save_name='', axis_obj = 'False'):
     """Plots the spectrum
 
