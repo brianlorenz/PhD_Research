@@ -510,14 +510,14 @@ def plot_all_spectra(n_clusters, norm_method, mask_negatives=False):
 
 
 
-def stack_axis_ratio(mass_width, ssfr_width, starting_points, ratio_bins, save_name, split_by='ssfr', use_ha_ssfr=0):
+def stack_axis_ratio(mass_width, split_width, starting_points, ratio_bins, save_name, split_by):
     """Stacks galaxies in groups by axis ratio
 
     old params: , l_mass_cutoff=0, l_ssfr_cutoff=0, l_mass_bins=0, l_ssfr_bins=0, scale_ha=0
 
     Parameters:
     mass_width (float): How big the mass bins are
-    ssfr_width (float): How wide the ssfr bins are
+    split_width (float): How wide the y-axis bins are
     starting_points (list of tuples): Where to start the ssfr bins in (mass, ssfr) coordinates
     ratio_bins (tuple): Where to cut the axis ratio bins e.g. (0.4, 0.7)
     split_by (str): What column to use for the pslitting - ssfr, or eq_width_ha
@@ -528,16 +528,26 @@ def stack_axis_ratio(mass_width, ssfr_width, starting_points, ratio_bins, save_n
     ar_df = read_interp_axis_ratio()
 
     # Filters the ar_df, see filers in the code
-    ar_df = filter_ar_df(ar_df)
+    ### CHANGE BACK
+    ar_df, x = filter_ar_df(ar_df, return_std_ar=True)
 
     # Add a column for ssfr
     ar_df['log_ssfr'] = np.log10((ar_df['sfr'])/(10**ar_df['log_mass']))
     ar_df['log_halpha_ssfr'] = np.log10((ar_df['halpha_sfrs'])/(10**ar_df['log_mass']))
 
+    # Save which method of ssfr is used
+    if split_by=='log_ssfr':
+        ar_df['split_for_stack'] = ['log_ssfr']*len(ar_df)
+    if split_by=='log_halpha_ssfr':
+        ar_df['split_for_stack'] = ['log_halpha_ssfr']*len(ar_df)
+    if split_by=='eq_width_ha':
+        ar_df['split_for_stack'] = ['eq_width_ha']*len(ar_df)
+
+    split_name = ar_df.iloc[0]['split_for_stack']
+
     # Split into n_bins groups
     axis_group = 0
     cluster_name = save_name
-    # ar_dfs = np.array_split(ar_df_sorted, n_bins)
     
     ar_df_low = ar_df[ar_df['use_ratio']<ratio_bins[0]]
     ar_df_mid = ar_df[np.logical_and(ar_df['use_ratio']>=ratio_bins[0],ar_df['use_ratio']<=ratio_bins[1])]
@@ -551,16 +561,10 @@ def stack_axis_ratio(mass_width, ssfr_width, starting_points, ratio_bins, save_n
 
         for j in range(len(starting_points)):
             mass_start = starting_points[j][0]
-            ssfr_start = starting_points[j][1]
-            if split_by=='ssfr':
-                mass_idx = np.logical_and(df['log_mass']>mass_start, df['log_mass']<=mass_start+mass_width)
-                ssfr_idx = np.logical_and(df['log_ssfr']>ssfr_start, df['log_ssfr']<=ssfr_start+ssfr_width)
-                if use_ha_ssfr:
-                    ssfr_idx = np.logical_and(df['log_halpha_ssfr']>ssfr_start, df['log_halpha_ssfr']<=ssfr_start+ssfr_width)
-            elif split_by=='eq_width_ha':
-                mass_idx = np.logical_and(df['log_mass']>mass_start, df['log_mass']<=mass_start+mass_width)
-                ssfr_idx = np.logical_and(df['eq_width_ha']>ssfr_start, df['eq_width_ha']<=ssfr_start+ssfr_width)
-            bin_idx = np.logical_and(mass_idx, ssfr_idx)
+            split_start = starting_points[j][1]
+            mass_idx = np.logical_and(df['log_mass']>mass_start, df['log_mass']<=mass_start+mass_width)
+            split_idx = np.logical_and(df[split_name]>split_start, df[split_name]<=split_start+split_width)                
+            bin_idx = np.logical_and(mass_idx, split_idx)
             dfs.append(df[bin_idx])
 
         for df in dfs:
