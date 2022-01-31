@@ -16,7 +16,7 @@ random.seed(3284923)
 
 #18 bins, 2 mass 3 ssfr
 # mass_width = 0.8
-# ssfr_width = 0.5
+# split_width = 0.5
 # starting_points = [(9.3, -9.1), (9.3, -8.6), (10.1, -9.1), (10.1, -8.6), (9.3, -9.6), (10.1, -9.6)]
 # ratio_bins = [0.4, 0.7]
 # nbins = 18
@@ -24,7 +24,7 @@ random.seed(3284923)
 
 # 6 bins, 2 mass 1 ssfr
 # mass_width = 0.8
-# ssfr_width = 4
+# split_width = 4
 # starting_points = [(9.3, -11), (10.1, -11)]
 # ratio_bins = [0.4, 0.7]
 # nbins = 6
@@ -75,7 +75,7 @@ def main(nbins, save_name, split_by):
     plot_all_spec_with_cont(nbins, save_name) # This is where the normalized cont is saved
     for axis_group in range(nbins):
         fit_emission(0, 'cluster_norm', constrain_O3=False, axis_group=axis_group, save_name=save_name, scaled='False', run_name='False')
-    plot_sample_split(nbins, save_name, variable=split_by)
+    plot_sample_split(nbins, save_name)
     plot_balmer_dec(save_name, nbins, y_var='balmer_dec')
     plot_balmer_dec(save_name, nbins, y_var='av')
     plot_balmer_dec(save_name, nbins, y_var='beta')
@@ -91,15 +91,12 @@ def setup_new_stack_dir(save_name):
 
 
 
-def plot_sample_split(n_groups, save_name, variable='log_ssfr'):
+def plot_sample_split(n_groups, save_name):
     """Plots the way that the sample has been divided in mass/ssfr space
     
     variable(str): Which variable to use for the y-axis"""
 
     fig, ax = plt.subplots(figsize=(8,8))
-
-    if variable == 'ssfr':
-        variable = 'log_ssfr'
 
     
     
@@ -108,7 +105,7 @@ def plot_sample_split(n_groups, save_name, variable='log_ssfr'):
     color_list = []
     axis_medians = []
     mass_medians = []
-    ssfr_medians = []
+    split_medians = []
     av_medians = []
     err_av_medians = []
     beta_medians = []
@@ -121,14 +118,15 @@ def plot_sample_split(n_groups, save_name, variable='log_ssfr'):
 
     for axis_group in range(n_groups):
         axis_ratio_df = ascii.read(imd.axis_cluster_data_dir + f'/{save_name}/{save_name}_group_dfs/{axis_group}_df.csv').to_pandas()
+        variable = axis_ratio_df.iloc[0]['split_for_stack']
 
-        axis_ratio_df['balmer_dec'] = (axis_ratio_df['ha_flux'] / axis_ratio_df['hb_flux'])
+        # axis_ratio_df['balmer_dec'] = (axis_ratio_df['ha_flux'] / axis_ratio_df['hb_flux'])
 
 
         # Determine what color and shape to plot with
         axis_median = np.median(axis_ratio_df['use_ratio'])
         mass_median = np.median(axis_ratio_df['log_mass'])
-        ssfr_median = np.median(axis_ratio_df[variable])
+        split_median = np.median(axis_ratio_df[variable])
         av_median = np.median(axis_ratio_df['AV'])
         beta_median = np.median(axis_ratio_df['beta'])
 
@@ -145,37 +143,37 @@ def plot_sample_split(n_groups, save_name, variable='log_ssfr'):
         else:
             shape = shapes['mid']
 
-        print(f'Mass median: {mass_median}, SSFR median: {ssfr_median}')
+        print(f'Mass median: {mass_median}, SSFR median: {split_median}')
 
         # Figure out which mass/ssfr bin
         color = 'purple'
         if mass_median > starting_points[0][0] and mass_median < starting_points[0][0] + mass_width:
-            if ssfr_median > starting_points[0][1] and ssfr_median < starting_points[0][1] + ssfr_width:
+            if split_median > starting_points[0][1] and split_median < starting_points[0][1] + split_width:
                 key = "lowm_lows"
                 # Create a Rectangle patch
-                rect = patches.Rectangle((starting_points[0][0],  starting_points[0][1]), mass_width, ssfr_width, linestyle='--', linewidth=1, edgecolor=colors[key], facecolor='none')
+                rect = patches.Rectangle((starting_points[0][0],  starting_points[0][1]), mass_width, split_width, linestyle='--', linewidth=1, edgecolor=colors[key], facecolor='none')
         if mass_median > starting_points[1][0] and mass_median < starting_points[1][0] + mass_width:
-            if ssfr_median > starting_points[1][1] and ssfr_median < starting_points[1][1] + ssfr_width:
+            if split_median > starting_points[1][1] and split_median < starting_points[1][1] + split_width:
                 key = "lowm_highs"
-                rect = patches.Rectangle((starting_points[1][0],  starting_points[1][1]), mass_width, ssfr_width, linestyle='--', linewidth=1, edgecolor=colors[key], facecolor='none')
+                rect = patches.Rectangle((starting_points[1][0],  starting_points[1][1]), mass_width, split_width, linestyle='--', linewidth=1, edgecolor=colors[key], facecolor='none')
         if nbins > 6:
             if mass_median > starting_points[2][0] and mass_median < starting_points[2][0] + mass_width:
-                if ssfr_median > starting_points[2][1] and ssfr_median < starting_points[2][1] + ssfr_width:
+                if split_median > starting_points[2][1] and split_median < starting_points[2][1] + split_width:
                     key = "highm_lows"
-                    rect = patches.Rectangle((starting_points[2][0],  starting_points[2][1]), mass_width, ssfr_width, linestyle='--', linewidth=1, edgecolor=colors[key], facecolor='none')
+                    rect = patches.Rectangle((starting_points[2][0],  starting_points[2][1]), mass_width, split_width, linestyle='--', linewidth=1, edgecolor=colors[key], facecolor='none')
             if mass_median > starting_points[3][0] and mass_median < starting_points[3][0] + mass_width:
-                if ssfr_median > starting_points[3][1] and ssfr_median < starting_points[3][1] + ssfr_width:
+                if split_median > starting_points[3][1] and split_median < starting_points[3][1] + split_width:
                     key = "highm_highs"
-                    rect = patches.Rectangle((starting_points[3][0],  starting_points[3][1]), mass_width, ssfr_width, linestyle='--', linewidth=1, edgecolor=colors[key], facecolor='none')
+                    rect = patches.Rectangle((starting_points[3][0],  starting_points[3][1]), mass_width, split_width, linestyle='--', linewidth=1, edgecolor=colors[key], facecolor='none')
         if nbins > 12:
             if mass_median > starting_points[4][0] and mass_median < starting_points[4][0] + mass_width:
-                if ssfr_median > starting_points[4][1] and ssfr_median < starting_points[4][1] + ssfr_width:
+                if split_median > starting_points[4][1] and split_median < starting_points[4][1] + split_width:
                     key = "lowest_lows"
-                    rect = patches.Rectangle((starting_points[4][0],  starting_points[4][1]), mass_width, ssfr_width, linestyle='--', linewidth=1, edgecolor=colors[key], facecolor='none')
+                    rect = patches.Rectangle((starting_points[4][0],  starting_points[4][1]), mass_width, split_width, linestyle='--', linewidth=1, edgecolor=colors[key], facecolor='none')
             if mass_median > starting_points[5][0] and mass_median < starting_points[5][0] + mass_width:
-                if ssfr_median > starting_points[5][1] and ssfr_median < starting_points[5][1] + ssfr_width:
+                if split_median > starting_points[5][1] and split_median < starting_points[5][1] + split_width:
                     key = "lowest_highs"
-                    rect = patches.Rectangle((starting_points[5][0],  starting_points[5][1]), mass_width, ssfr_width, linestyle='--', linewidth=1, edgecolor=colors[key], facecolor='none')
+                    rect = patches.Rectangle((starting_points[5][0],  starting_points[5][1]), mass_width, split_width, linestyle='--', linewidth=1, edgecolor=colors[key], facecolor='none')
         color = colors[key]
 
         
@@ -184,7 +182,7 @@ def plot_sample_split(n_groups, save_name, variable='log_ssfr'):
         color_list.append(color)
         axis_medians.append(axis_median)
         mass_medians.append(mass_median)
-        ssfr_medians.append(ssfr_median)
+        split_medians.append(split_median)
         av_medians.append(av_median)
         err_av_medians.append(err_av_median)
         beta_medians.append(beta_median)
@@ -195,7 +193,7 @@ def plot_sample_split(n_groups, save_name, variable='log_ssfr'):
 
         # Set the axis limits
         xlims = (9.0, 11.0)
-        if variable == 'log_ssfr':
+        if variable == 'log_ssfr' or variable == 'log_halpha_ssfr':
             ylims = (-9.7, -8)
         elif variable == 'eq_width_ha':
             ylims = (0, 600)
@@ -206,8 +204,8 @@ def plot_sample_split(n_groups, save_name, variable='log_ssfr'):
         ellipse_width, ellipse_height = get_ellipse_shapes(xlims[1]-xlims[0], np.abs(ylims[1]-ylims[0]), shape)
 
         # plot a black point at the median
-        # ax.plot(mass_median, ssfr_median, ls='None', marker=shape, color='black', zorder=100)
-        ax.add_artist(Ellipse((mass_median, ssfr_median), ellipse_width, ellipse_height, facecolor='black', zorder=3))
+        # ax.plot(mass_median, split_median, ls='None', marker=shape, color='black', zorder=100)
+        ax.add_artist(Ellipse((mass_median, split_median), ellipse_width, ellipse_height, facecolor='black', zorder=3))
 
         
 
@@ -227,7 +225,7 @@ def plot_sample_split(n_groups, save_name, variable='log_ssfr'):
 
 
 
-    summary_df = pd.DataFrame(zip(group_num, axis_medians, mass_medians, ssfr_medians, av_medians, err_av_medians, beta_medians, err_beta_medians, shapes_list, color_list, keys), columns=['axis_group','use_ratio_median', 'log_mass_median', variable+'_median', 'av_median', 'err_av_median', 'beta_median', 'err_beta_median', 'shape', 'color', 'key'])
+    summary_df = pd.DataFrame(zip(group_num, axis_medians, mass_medians, split_medians, av_medians, err_av_medians, beta_medians, err_beta_medians, shapes_list, color_list, keys), columns=['axis_group','use_ratio_median', 'log_mass_median', variable+'_median', 'av_median', 'err_av_median', 'beta_median', 'err_beta_median', 'shape', 'color', 'key'])
     summary_df.to_csv(imd.axis_cluster_data_dir + f'/{save_name}/summary.csv', index=False)
 
 
@@ -258,11 +256,11 @@ def plot_moved(n_groups=18, save_name='halpha_norm'):
     ax.set_xlim(xlims)
 
     mass_width = 0.8
-    ssfr_width = 0.5
+    split_width = 0.5
     starting_points = [(9.3, -9.1), (9.3, -8.6), (10.1, -9.1), (10.1, -8.6), (9.3, -9.6), (10.1, -9.6)]
 
     for j in range(6):
-        rect = patches.Rectangle((starting_points[j][0],  starting_points[j][1]), mass_width, ssfr_width, linestyle='--', linewidth=1, edgecolor='black', facecolor='none')
+        rect = patches.Rectangle((starting_points[j][0],  starting_points[j][1]), mass_width, split_width, linestyle='--', linewidth=1, edgecolor='black', facecolor='none')
         ax.add_patch(rect)
 
     ax.set_xlabel('log(Stellar Mass)', fontsize=14)

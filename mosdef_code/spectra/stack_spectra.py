@@ -2,18 +2,12 @@
 # stack_spectra(groupID, norm_method) to stack within clusters
 
 import sys
-import os
-import string
 import numpy as np
 import pandas as pd
 from astropy.io import ascii
-from astropy.io import fits
-from read_data import mosdef_df
-from mosdef_obj_data_funcs import read_sed, read_mock_sed, get_mosdef_obj, read_composite_sed, read_fast_continuum, setup_get_ssfr, merge_ar_ssfr, merge_emission
+from mosdef_obj_data_funcs import read_sed, get_mosdef_obj, read_composite_sed, read_fast_continuum, setup_get_ssfr, merge_ar_ssfr, merge_emission
 import matplotlib.pyplot as plt
 from scipy import interpolate
-import scipy.integrate as integrate
-from query_funcs import get_zobjs
 import initialize_mosdef_dirs as imd
 import cluster_data_funcs as cdf
 from spectra_funcs import read_axis_ratio_spectrum, clip_skylines, check_line_coverage, get_spectra_files, median_bin_spec, read_spectrum, get_too_low_gals, norm_spec_sed, read_composite_spectrum, prepare_mock_observe_spectrum, mock_observe_spectrum
@@ -21,7 +15,6 @@ import matplotlib.patches as patches
 from axis_ratio_funcs import read_interp_axis_ratio, filter_ar_df
 from operator import itemgetter
 from itertools import *
-from astropy.table import Table
 from matplotlib import patches
 from read_FAST_spec import read_FAST_file
 from cosmology_calcs import flux_to_luminosity
