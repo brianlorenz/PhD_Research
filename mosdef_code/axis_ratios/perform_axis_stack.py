@@ -31,22 +31,22 @@ random.seed(3284923)
 # split_by = 'ssfr'
 
 # Equalivent width ha
-mass_width = 0.8
-split_width = 300
-starting_points = [(9.3, 0), (10.1, 0), (9.3, 300), (10.1, 300)]
-ratio_bins = [0.4, 0.7]
-nbins = 12
-split_by = 'eq_width_ha'
-save_name = 'eq_width_4bin'
-
-# 12 bins, 2 mass 2 ssfr
 # mass_width = 0.8
-# split_width = 0.75
-# starting_points = [(9.3, -8.85), (10.1, -8.85), (9.3, -9.6), (10.1, -9.6)]
+# split_width = 300
+# starting_points = [(9.3, 0), (10.1, 0), (9.3, 300), (10.1, 300)]
 # ratio_bins = [0.4, 0.7]
 # nbins = 12
-# split_by = 'log_ssfr'
-# save_name = 'mosdef_ssfr_4bin'
+# split_by = 'eq_width_ha'
+# save_name = 'eq_width_4bin'
+
+# 12 bins, 2 mass 2 ssfr
+mass_width = 0.8
+split_width = 0.75
+starting_points = [(9.3, -8.85), (10.1, -8.85), (9.3, -9.6), (10.1, -9.6)]
+ratio_bins = [0.4, 0.7]
+nbins = 12
+split_by = 'log_ssfr'
+save_name = 'mosdef_ssfr_4bin'
 
 # 12 bins, 2 mass 2 ssfr, new halpha ssfrs
 # mass_width = 0.8

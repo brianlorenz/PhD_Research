@@ -24,6 +24,7 @@ from itertools import *
 from astropy.table import Table
 from matplotlib import patches
 from read_FAST_spec import read_FAST_file
+from cosmology_calcs import flux_to_luminosity
 
 axis_ratio_catalog = ascii.read(imd.loc_axis_ratio_cat).to_pandas()
 
@@ -180,12 +181,17 @@ def stack_spectra(groupID, norm_method, re_observe=False, mask_negatives=False, 
                     'Select norm_method: "cluster_norm", "composite_sed_norm", ')
 
             # If stacking in axis ratio groups, do NOT normalize
-            if axis_stack:
-                norm_factor = 1.
+            # if axis_stack:
+            #     norm_factor = 1.
 
             # New method - when staking axis ratio groups, normalize by halpha
             if axis_stack:
                 axis_idx = np.logical_and(axis_ratio_catalog['field'] == field, axis_ratio_catalog['v4id'] == v4id)
+                ha_flux = axis_ratio_catalog[axis_idx].iloc[0]['ha_flux']
+                ha_luminosity = flux_to_luminosity(ha_flux, z_spec)
+                norm_factor = 3e41 / ha_luminosity
+
+                print(z_spec)
                 ha_flux = axis_ratio_catalog[axis_idx].iloc[0]['ha_flux']
                 norm_factor = 1e-17 / ha_flux
 
