@@ -10,6 +10,7 @@ import matplotlib as mpl
 from matplotlib.patches import Ellipse
 from ellipses_for_plotting import get_ellipse_shapes
 import random
+import matplotlib.gridspec as gridspec
 
 random.seed(3284923)
 
@@ -41,24 +42,24 @@ random.seed(3284923)
 # stack_type = 'mean'
 
 # 12 bins, 2 mass 2 ssfr
-mass_width = 0.8
-split_width = 0.75
-starting_points = [(9.3, -8.85), (10.1, -8.85), (9.3, -9.6), (10.1, -9.6)]
-ratio_bins = [0.4, 0.7]
-nbins = 12
-split_by = 'log_ssfr'
-save_name = 'mosdef_ssfr_4bin_mean'
-stack_type = 'mean'
-
-# 12 bins, 2 mass 2 ssfr, new halpha ssfrs
 # mass_width = 0.8
 # split_width = 0.75
 # starting_points = [(9.3, -8.85), (10.1, -8.85), (9.3, -9.6), (10.1, -9.6)]
 # ratio_bins = [0.4, 0.7]
 # nbins = 12
-# split_by = 'log_halpha_ssfr'
-# save_name = 'halpha_ssfr_4bin_mean'
+# split_by = 'log_ssfr'
+# save_name = 'mosdef_ssfr_4bin_mean'
 # stack_type = 'mean'
+
+# 12 bins, 2 mass 2 ssfr, new halpha ssfrs
+mass_width = 0.8
+split_width = 0.75
+starting_points = [(9.3, -8.85), (10.1, -8.85), (9.3, -9.6), (10.1, -9.6)]
+ratio_bins = [0.4, 0.7]
+nbins = 12
+split_by = 'log_halpha_ssfr'
+save_name = 'halpha_ssfr_4bin_mean'
+stack_type = 'mean'
 
 
 shapes = {'low': '+', 'mid': 'd', 'high': 'o'}
@@ -73,12 +74,12 @@ def main(nbins, save_name, split_by, stack_type):
     split_by (str): y-axis variable, typically either ssfr or eq_width_ha
     stack_type (str): mean or median, what to use when making the stacks pixel by pixel
     '''
-    setup_new_stack_dir(save_name)
-    stack_axis_ratio(mass_width, split_width, starting_points, ratio_bins, save_name, split_by, stack_type)
-    stack_all_continuum(nbins, save_name=save_name)
-    plot_all_spec_with_cont(nbins, save_name) # This is where the normalized cont is saved
-    for axis_group in range(nbins):
-        fit_emission(0, 'cluster_norm', constrain_O3=False, axis_group=axis_group, save_name=save_name, scaled='False', run_name='False')
+    # setup_new_stack_dir(save_name)
+    # stack_axis_ratio(mass_width, split_width, starting_points, ratio_bins, save_name, split_by, stack_type)
+    # stack_all_continuum(nbins, save_name=save_name)
+    # plot_all_spec_with_cont(nbins, save_name) # This is where the normalized cont is saved
+    # for axis_group in range(nbins):
+    #     fit_emission(0, 'cluster_norm', constrain_O3=False, axis_group=axis_group, save_name=save_name, scaled='False', run_name='False')
     plot_sample_split(nbins, save_name)
     plot_balmer_dec(save_name, nbins, y_var='balmer_dec')
     plot_balmer_dec(save_name, nbins, y_var='av')
@@ -124,7 +125,7 @@ def plot_sample_split(n_groups, save_name):
         axis_ratio_df = ascii.read(imd.axis_cluster_data_dir + f'/{save_name}/{save_name}_group_dfs/{axis_group}_df.csv').to_pandas()
         variable = axis_ratio_df.iloc[0]['split_for_stack']
 
-        # axis_ratio_df['balmer_dec'] = (axis_ratio_df['ha_flux'] / axis_ratio_df['hb_flux'])
+        axis_ratio_df['balmer_dec'] = (axis_ratio_df['ha_flux'] / axis_ratio_df['hb_flux'])
 
 
         # Determine what color and shape to plot with
@@ -208,7 +209,6 @@ def plot_sample_split(n_groups, save_name):
         ellipse_width, ellipse_height = get_ellipse_shapes(xlims[1]-xlims[0], np.abs(ylims[1]-ylims[0]), shape)
 
         # plot a black point at the median
-        # ax.plot(mass_median, split_median, ls='None', marker=shape, color='black', zorder=100)
         ax.add_artist(Ellipse((mass_median, split_median), ellipse_width, ellipse_height, facecolor='black', zorder=3))
 
         
@@ -221,9 +221,7 @@ def plot_sample_split(n_groups, save_name):
         
             ax.add_artist(Ellipse((row['log_mass'], row[variable]), ellipse_width, ellipse_height, facecolor=rgba, zorder=2))
 
-        # Plot the rest of the points
-        # ax.plot(axis_ratio_df['log_mass'], axis_ratio_df['log_ssfr'], color = color, ls='None', marker=shape)
-
+       
         # Add the patch to the Axes
         ax.add_patch(rect)
 
@@ -238,6 +236,7 @@ def plot_sample_split(n_groups, save_name):
     ax.tick_params(labelsize=12)
     cbar = fig.colorbar(mpl.cm.ScalarMappable(norm=norm, cmap=cmap), ax=ax)
     cbar.set_label('Balmer Decrement', fontsize=14)
+    ax.set_aspect(ellipse_width/ellipse_height)
     fig.savefig(imd.axis_cluster_data_dir + f'/{save_name}/sample_cut.pdf')
 
 
