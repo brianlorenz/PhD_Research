@@ -37,7 +37,8 @@ random.seed(3284923)
 # ratio_bins = [0.4, 0.7]
 # nbins = 12
 # split_by = 'eq_width_ha'
-# save_name = 'eq_width_4bin'
+# save_name = 'eq_width_4bin_mean'
+# stack_type = 'mean'
 
 # 12 bins, 2 mass 2 ssfr
 mass_width = 0.8
@@ -46,7 +47,8 @@ starting_points = [(9.3, -8.85), (10.1, -8.85), (9.3, -9.6), (10.1, -9.6)]
 ratio_bins = [0.4, 0.7]
 nbins = 12
 split_by = 'log_ssfr'
-save_name = 'mosdef_ssfr_4bin'
+save_name = 'mosdef_ssfr_4bin_mean'
+stack_type = 'mean'
 
 # 12 bins, 2 mass 2 ssfr, new halpha ssfrs
 # mass_width = 0.8
@@ -55,22 +57,24 @@ save_name = 'mosdef_ssfr_4bin'
 # ratio_bins = [0.4, 0.7]
 # nbins = 12
 # split_by = 'log_halpha_ssfr'
-# save_name = 'halpha_ssfr_4bin'
+# save_name = 'halpha_ssfr_4bin_mean'
+# stack_type = 'mean'
 
 
 shapes = {'low': '+', 'mid': 'd', 'high': 'o'}
 colors = {'lowm_lows': 'red', 'lowm_highs': 'blue', 'highm_lows': 'orange', 'highm_highs': 'mediumseagreen', 'lowest_lows': 'lightskyblue', 'lowest_highs': 'darkviolet'}
 
 
-def main(nbins, save_name, split_by):
+def main(nbins, save_name, split_by, stack_type):
     '''performs all the steps to get this group plotted
     
     Parameters:
     nbins (int): Number of total bins, calculated as mass_bins*ssfr_bins*axis_ratio_bins
     split_by (str): y-axis variable, typically either ssfr or eq_width_ha
+    stack_type (str): mean or median, what to use when making the stacks pixel by pixel
     '''
     setup_new_stack_dir(save_name)
-    stack_axis_ratio(mass_width, split_width, starting_points, ratio_bins, save_name, split_by)
+    stack_axis_ratio(mass_width, split_width, starting_points, ratio_bins, save_name, split_by, stack_type)
     stack_all_continuum(nbins, save_name=save_name)
     plot_all_spec_with_cont(nbins, save_name) # This is where the normalized cont is saved
     for axis_group in range(nbins):
@@ -453,7 +457,7 @@ def bootstrap_median(df):
 
 
 
-main(12, save_name, split_by)
+main(nbins, save_name, split_by, stack_type)
 
 # stack_all_continuum(6, save_name='mass_2bin_median')  
 # main(12, 'eq_width_4bin' ,'balmer_dec')

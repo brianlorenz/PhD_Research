@@ -585,7 +585,7 @@ def perform_stack(stack_type, interp_cluster_spectra_dfs, norm_factors):
 
 
 
-def stack_axis_ratio(mass_width, split_width, starting_points, ratio_bins, save_name, split_by):
+def stack_axis_ratio(mass_width, split_width, starting_points, ratio_bins, save_name, split_by, stack_type):
     """Stacks galaxies in groups by axis ratio
 
     old params: , l_mass_cutoff=0, l_ssfr_cutoff=0, l_mass_bins=0, l_ssfr_bins=0, scale_ha=0
@@ -597,6 +597,7 @@ def stack_axis_ratio(mass_width, split_width, starting_points, ratio_bins, save_
     ratio_bins (tuple): Where to cut the axis ratio bins e.g. (0.4, 0.7)
     split_by (str): What column to use for the pslitting - ssfr, or eq_width_ha
     use_ha_ssfr (int): Set to 1 to use the halpha calculated ssfrs
+    stack_type (str): Either mean or median, what to use when stacking the galaxies
 
     Returns:
     """
@@ -652,5 +653,5 @@ def stack_axis_ratio(mass_width, split_width, starting_points, ratio_bins, save_
                 (imd.axis_cluster_data_dir + f'/{cluster_name}/{cluster_name}_group_dfs/{axis_group}_df.csv'), index=False)
             # Within each group, start stacking the spectra
             stack_spectra(0, 'cluster_norm', axis_ratio_df=df,
-                        axis_group=axis_group, save_name=cluster_name)
+                        axis_group=axis_group, save_name=cluster_name, stack_type=stack_type)
             axis_group = axis_group + 1
