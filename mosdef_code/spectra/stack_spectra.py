@@ -116,7 +116,7 @@ def stack_spectra(groupID, norm_method, re_observe=False, mask_negatives=False, 
                 spec_median = np.median(spectrum_df[spectrum_df['f_lambda_clip'] != 0][
                     'f_lambda_clip'])
                 ratio = sed_val / spec_median
-                print(f'Ratio = {ratio}')
+                # print(f'Ratio = {ratio}')
                 if ratio > 2 or ratio < 0:
                     print('Skipping')
                     continue
@@ -572,12 +572,14 @@ def perform_stack(stack_type, interp_cluster_spectra_dfs, norm_factors):
                 nonzero_err_values = [norm_interp_errs[j][i] for j in range(len(norm_interp_errs)) if norm_interp_errs[j][i] != 0]
                 median_point = np.median(nonzero_spec_values)
                 median_cont = np.median(nonzero_cont_values)
+                variances = [nonzero_err_value**2 for nonzero_err_value in nonzero_err_values]
+                err_in_sum = np.sqrt(np.sum(variances))
 
-                ### HOW TO DO ERRORS ON THE MEDIAN?
+                ### Using 1.25*mean error, not sure if this is valid
                 median_cont = np.median(nonzero_err_values)
                 total_spec.append(median_point)
                 total_cont.append(median_cont)
-                total_errs.append(median_cont)
+                total_errs.append(1.25*err_in_sum)
 
     return total_spec, total_cont, total_errs, number_specs_by_wave, norm_value_specs_by_wave
 
@@ -604,8 +606,7 @@ def stack_axis_ratio(mass_width, split_width, starting_points, ratio_bins, save_
     ar_df = read_interp_axis_ratio()
 
     # Filters the ar_df, see filers in the code
-    ### CHANGE BACK
-    ar_df, x = filter_ar_df(ar_df, return_std_ar=True)
+    ar_df = filter_ar_df(ar_df)
 
     # Add a column for ssfr
     ar_df['log_ssfr'] = np.log10((ar_df['sfr'])/(10**ar_df['log_mass']))
@@ -647,7 +648,7 @@ def stack_axis_ratio(mass_width, split_width, starting_points, ratio_bins, save_
             # For each group, get a median and scatter of the axis ratios
             median_ratio = np.median(df['use_ratio'])
             scatter_ratio = np.std(df['use_ratio'])
-            print(f'Median: {median_ratio} \nScatter: {scatter_ratio}')
+            # print(f'Median: {median_ratio} \nScatter: {scatter_ratio}')
             # Save the dataframe for the group
             df.to_csv(
                 (imd.axis_cluster_data_dir + f'/{cluster_name}/{cluster_name}_group_dfs/{axis_group}_df.csv'), index=False)

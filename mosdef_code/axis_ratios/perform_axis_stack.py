@@ -9,8 +9,10 @@ from stack_continuum import stack_all_continuum, plot_all_spec_with_cont
 import matplotlib as mpl
 from matplotlib.patches import Ellipse
 from ellipses_for_plotting import get_ellipse_shapes
+from plot_overlaid_spectra import plot_overlaid_spectra
 import random
 import matplotlib.gridspec as gridspec
+import time
 
 random.seed(3284923)
 
@@ -32,14 +34,15 @@ random.seed(3284923)
 # split_by = 'ssfr'
 
 # Equalivent width ha
-# mass_width = 0.8
-# split_width = 300
-# starting_points = [(9.3, 0), (10.1, 0), (9.3, 300), (10.1, 300)]
-# ratio_bins = [0.4, 0.7]
-# nbins = 12
-# split_by = 'eq_width_ha'
-# save_name = 'eq_width_4bin_mean'
-# stack_type = 'mean'
+mass_width = 0.8
+split_width = 300
+starting_points = [(9.3, 0), (10.1, 0), (9.3, 300), (10.1, 300)]
+ratio_bins = [0.4, 0.7]
+nbins = 12
+split_by = 'eq_width_ha'
+save_name = 'eq_width_4bin_mean'
+stack_type = 'mean'
+only_plot = True
 
 # 12 bins, 2 mass 2 ssfr
 # mass_width = 0.8
@@ -52,38 +55,48 @@ random.seed(3284923)
 # stack_type = 'mean'
 
 # 12 bins, 2 mass 2 ssfr, new halpha ssfrs
-mass_width = 0.8
-split_width = 0.75
-starting_points = [(9.3, -8.85), (10.1, -8.85), (9.3, -9.6), (10.1, -9.6)]
-ratio_bins = [0.4, 0.7]
-nbins = 12
-split_by = 'log_halpha_ssfr'
-save_name = 'halpha_ssfr_4bin_mean'
-stack_type = 'mean'
+# mass_width = 0.8
+# split_width = 0.75
+# starting_points = [(9.3, -8.85), (10.1, -8.85), (9.3, -9.6), (10.1, -9.6)]
+# ratio_bins = [0.4, 0.7]
+# nbins = 12
+# split_by = 'log_halpha_ssfr'
+# save_name = 'halpha_ssfr_4bin_mean'
+# stack_type = 'mean'
 
 
 shapes = {'low': '+', 'mid': 'd', 'high': 'o'}
-colors = {'lowm_lows': 'red', 'lowm_highs': 'blue', 'highm_lows': 'orange', 'highm_highs': 'mediumseagreen', 'lowest_lows': 'lightskyblue', 'lowest_highs': 'darkviolet'}
+colors = {'sorted0': 'red', 'sorted1': 'blue', 'sorted2': 'orange', 'sorted3': 'mediumseagreen', 'sorted4': 'lightskyblue', 'sorted5': 'darkviolet'}
 
 
-def main(nbins, save_name, split_by, stack_type):
+def main(nbins, save_name, split_by, stack_type, only_plot=False):
     '''performs all the steps to get this group plotted
     
     Parameters:
     nbins (int): Number of total bins, calculated as mass_bins*ssfr_bins*axis_ratio_bins
     split_by (str): y-axis variable, typically either ssfr or eq_width_ha
     stack_type (str): mean or median, what to use when making the stacks pixel by pixel
+    only_plot (boolean): If set to 1, only do plotting, skip over clustering and stacking
     '''
-    # setup_new_stack_dir(save_name)
-    # stack_axis_ratio(mass_width, split_width, starting_points, ratio_bins, save_name, split_by, stack_type)
-    # stack_all_continuum(nbins, save_name=save_name)
-    # plot_all_spec_with_cont(nbins, save_name) # This is where the normalized cont is saved
-    # for axis_group in range(nbins):
-    #     fit_emission(0, 'cluster_norm', constrain_O3=False, axis_group=axis_group, save_name=save_name, scaled='False', run_name='False')
+    time_start = time.time()
+    if only_plot==False:
+        setup_new_stack_dir(save_name)
+        stack_axis_ratio(mass_width, split_width, starting_points, ratio_bins, save_name, split_by, stack_type)
+        stack_all_continuum(nbins, save_name=save_name)
+        time_stack = time.time()
+        print(f'All stacking took {time_stack-time_start}')
+        plot_all_spec_with_cont(nbins, save_name) # This is where the normalized cont is saved
+        for axis_group in range(nbins):
+            fit_emission(0, 'cluster_norm', constrain_O3=False, axis_group=axis_group, save_name=save_name, scaled='False', run_name='False')
+        time_emfit = time.time()
+        print(f'Emission fitting took {time_emfit-time_stack}')
     plot_sample_split(nbins, save_name)
-    plot_balmer_dec(save_name, nbins, y_var='balmer_dec')
-    plot_balmer_dec(save_name, nbins, y_var='av')
-    plot_balmer_dec(save_name, nbins, y_var='beta')
+    plot_overlaid_spectra(save_name)
+    plot_balmer_dec(save_name, nbins, split_by, y_var='balmer_dec')
+    plot_balmer_dec(save_name, nbins, split_by, y_var='av')
+    plot_balmer_dec(save_name, nbins, split_by, y_var='beta')
+    time_end = time.time()
+    print(f'Total program took {time_end-time_start}')
 
 def setup_new_stack_dir(save_name):
     """Sets up the directory with all the necessary folders"""
@@ -148,37 +161,38 @@ def plot_sample_split(n_groups, save_name):
         else:
             shape = shapes['mid']
 
-        print(f'Mass median: {mass_median}, SSFR median: {split_median}')
+        # print(f'Mass median: {mass_median}, SSFR median: {split_median}')
 
         # Figure out which mass/ssfr bin
         color = 'purple'
-        if mass_median > starting_points[0][0] and mass_median < starting_points[0][0] + mass_width:
-            if split_median > starting_points[0][1] and split_median < starting_points[0][1] + split_width:
-                key = "lowm_lows"
+        sorted_points = sorted(starting_points)
+        if mass_median > sorted_points[0][0] and mass_median < sorted_points[0][0] + mass_width:
+            if split_median > sorted_points[0][1] and split_median < sorted_points[0][1] + split_width:
+                key = "sorted0"
                 # Create a Rectangle patch
-                rect = patches.Rectangle((starting_points[0][0],  starting_points[0][1]), mass_width, split_width, linestyle='--', linewidth=1, edgecolor=colors[key], facecolor='none')
-        if mass_median > starting_points[1][0] and mass_median < starting_points[1][0] + mass_width:
-            if split_median > starting_points[1][1] and split_median < starting_points[1][1] + split_width:
-                key = "lowm_highs"
-                rect = patches.Rectangle((starting_points[1][0],  starting_points[1][1]), mass_width, split_width, linestyle='--', linewidth=1, edgecolor=colors[key], facecolor='none')
+                rect = patches.Rectangle((sorted_points[0][0],  sorted_points[0][1]), mass_width, split_width, linestyle='--', linewidth=1, edgecolor=colors[key], facecolor='none')
+        if mass_median > sorted_points[1][0] and mass_median < sorted_points[1][0] + mass_width:
+            if split_median > sorted_points[1][1] and split_median < sorted_points[1][1] + split_width:
+                key = "sorted1"
+                rect = patches.Rectangle((sorted_points[1][0],  sorted_points[1][1]), mass_width, split_width, linestyle='--', linewidth=1, edgecolor=colors[key], facecolor='none')
         if nbins > 6:
-            if mass_median > starting_points[2][0] and mass_median < starting_points[2][0] + mass_width:
-                if split_median > starting_points[2][1] and split_median < starting_points[2][1] + split_width:
-                    key = "highm_lows"
-                    rect = patches.Rectangle((starting_points[2][0],  starting_points[2][1]), mass_width, split_width, linestyle='--', linewidth=1, edgecolor=colors[key], facecolor='none')
-            if mass_median > starting_points[3][0] and mass_median < starting_points[3][0] + mass_width:
-                if split_median > starting_points[3][1] and split_median < starting_points[3][1] + split_width:
-                    key = "highm_highs"
-                    rect = patches.Rectangle((starting_points[3][0],  starting_points[3][1]), mass_width, split_width, linestyle='--', linewidth=1, edgecolor=colors[key], facecolor='none')
+            if mass_median > sorted_points[2][0] and mass_median < sorted_points[2][0] + mass_width:
+                if split_median > sorted_points[2][1] and split_median < sorted_points[2][1] + split_width:
+                    key = "sorted2"
+                    rect = patches.Rectangle((sorted_points[2][0],  sorted_points[2][1]), mass_width, split_width, linestyle='--', linewidth=1, edgecolor=colors[key], facecolor='none')
+            if mass_median > sorted_points[3][0] and mass_median < sorted_points[3][0] + mass_width:
+                if split_median > sorted_points[3][1] and split_median < sorted_points[3][1] + split_width:
+                    key = "sorted3"
+                    rect = patches.Rectangle((sorted_points[3][0],  sorted_points[3][1]), mass_width, split_width, linestyle='--', linewidth=1, edgecolor=colors[key], facecolor='none')
         if nbins > 12:
-            if mass_median > starting_points[4][0] and mass_median < starting_points[4][0] + mass_width:
-                if split_median > starting_points[4][1] and split_median < starting_points[4][1] + split_width:
-                    key = "lowest_lows"
-                    rect = patches.Rectangle((starting_points[4][0],  starting_points[4][1]), mass_width, split_width, linestyle='--', linewidth=1, edgecolor=colors[key], facecolor='none')
-            if mass_median > starting_points[5][0] and mass_median < starting_points[5][0] + mass_width:
-                if split_median > starting_points[5][1] and split_median < starting_points[5][1] + split_width:
-                    key = "lowest_highs"
-                    rect = patches.Rectangle((starting_points[5][0],  starting_points[5][1]), mass_width, split_width, linestyle='--', linewidth=1, edgecolor=colors[key], facecolor='none')
+            if mass_median > sorted_points[4][0] and mass_median < sorted_points[4][0] + mass_width:
+                if split_median > sorted_points[4][1] and split_median < sorted_points[4][1] + split_width:
+                    key = "sorted4"
+                    rect = patches.Rectangle((sorted_points[4][0],  sorted_points[4][1]), mass_width, split_width, linestyle='--', linewidth=1, edgecolor=colors[key], facecolor='none')
+            if mass_median > sorted_points[5][0] and mass_median < sorted_points[5][0] + mass_width:
+                if split_median > sorted_points[5][1] and split_median < sorted_points[5][1] + split_width:
+                    key = "sorted5"
+                    rect = patches.Rectangle((sorted_points[5][0],  sorted_points[5][1]), mass_width, split_width, linestyle='--', linewidth=1, edgecolor=colors[key], facecolor='none')
         color = colors[key]
 
         
@@ -272,12 +286,13 @@ def plot_moved(n_groups=18, save_name='halpha_norm'):
     fig.savefig(imd.axis_output_dir + '/old_new_sfr_comparison.pdf')
     # plt.show()
 
-def plot_balmer_dec(save_name, n_groups, y_var = 'balmer_dec', color_var='log_ssfr'):
+def plot_balmer_dec(save_name, n_groups, split_by, y_var = 'balmer_dec'):
     '''Makes the balmer decrement plots. Now can also do AV and Beta instead of balmer dec on the y-axis
 
     Parameters:
     save_name (str): Folder to pull data from and save to
     n_groups (int): Number of axis ratio groups
+    split_by (str): Column name that was used for splitting into groups in y-axis, used for coloring
     y_var (str): What to plot on the y-axis - either "balmer_dec", "av", or "beta"
 
     '''
@@ -287,14 +302,16 @@ def plot_balmer_dec(save_name, n_groups, y_var = 'balmer_dec', color_var='log_ss
     default_size = 7
     larger_size = 12
 
-    if color_var=='log_ssfr':
-        # ssfr color map
-        cmap = mpl.cm.inferno 
-        norm = mpl.colors.Normalize(vmin=-9.3, vmax=-8.1) 
-    elif color_var=='eq_width_ha':
+    color_var = split_by
+
+    if color_var=='eq_width_ha':
         # eq color map
         cmap = mpl.cm.inferno 
         norm = mpl.colors.Normalize(vmin=100, vmax=500) 
+    else:
+        # ssfr color map
+        cmap = mpl.cm.inferno 
+        norm = mpl.colors.Normalize(vmin=-9.3, vmax=-8.1) 
 
 
     # Axis limits
@@ -456,7 +473,7 @@ def bootstrap_median(df):
 
 
 
-main(nbins, save_name, split_by, stack_type)
+main(nbins, save_name, split_by, stack_type, only_plot=only_plot)
 
 # stack_all_continuum(6, save_name='mass_2bin_median')  
 # main(12, 'eq_width_4bin' ,'balmer_dec')

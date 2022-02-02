@@ -19,42 +19,51 @@ def plot_overlaid_spectra(savename):
     # fig, axarr = plt.subplots(3, 2, figsize=(14,10))
     fig = plt.figure(figsize=(10, 8))
     
-    axarr = GridSpec(3,2, left=0.1, right=0.8, wspace=0.4, hspace=0.6)
+    n_rows = int(len(summary_df) / 6)
+    axarr = GridSpec(n_rows, 2, left=0.1, right=0.8, wspace=0.4, hspace=0.6)
 
 
     plot_lims = ((4850, 4875), (6540, 6590))
 
         
-    bax_lowm_highs = brokenaxes(xlims=plot_lims, subplot_spec=axarr[0,0])
-    bax_highm_highs = brokenaxes(xlims=plot_lims, subplot_spec=axarr[0,1])
-    bax_lowm_lows = brokenaxes(xlims=plot_lims, subplot_spec=axarr[1,0])
-    bax_highm_lows = brokenaxes(xlims=plot_lims, subplot_spec=axarr[1,1])
-    bax_lowest_lows = brokenaxes(xlims=plot_lims, subplot_spec=axarr[2,0])
-    bax_lowest_highs = brokenaxes(xlims=plot_lims, subplot_spec=axarr[2,1])
+    bax_0 = brokenaxes(xlims=plot_lims, subplot_spec=axarr[0,0])
+    bax_1 = brokenaxes(xlims=plot_lims, subplot_spec=axarr[0,1])
+    if n_rows > 1:
+        bax_0 = brokenaxes(xlims=plot_lims, subplot_spec=axarr[1,0])
+        bax_1 = brokenaxes(xlims=plot_lims, subplot_spec=axarr[0,0])
+        bax_2 = brokenaxes(xlims=plot_lims, subplot_spec=axarr[1,1])
+        bax_3 = brokenaxes(xlims=plot_lims, subplot_spec=axarr[0,1])
+    if n_rows > 2:
+        bax_0 = brokenaxes(xlims=plot_lims, subplot_spec=axarr[2,0])
+        bax_1 = brokenaxes(xlims=plot_lims, subplot_spec=axarr[1,0])
+        bax_2 = brokenaxes(xlims=plot_lims, subplot_spec=axarr[0,0])
+        bax_3 = brokenaxes(xlims=plot_lims, subplot_spec=axarr[2,1])
+        bax_4 = brokenaxes(xlims=plot_lims, subplot_spec=axarr[1,1])
+        bax_5 = brokenaxes(xlims=plot_lims, subplot_spec=axarr[0,1])
 
 
     for i in range(len(summary_df)):
         row = summary_df.iloc[i]
         axis_group = row['axis_group']
 
-        if row['key'] == 'lowm_highs':
-            ax = bax_lowm_highs
-            ax.set_title('Low mass, high sSFR', color = row['color'])
-        if row['key'] == 'highm_highs':
-            ax = bax_highm_highs
-            ax.set_title('High mass, high sSFR', color = row['color'])
-        if row['key'] == 'lowm_lows':
-            ax = bax_lowm_lows
-            ax.set_title('Low mass, mid sSFR', color = row['color'])
-        if row['key'] == 'highm_lows':
-            ax = bax_highm_lows
-            ax.set_title('High mass, mid sSFR', color = row['color'])
-        if row['key'] == 'lowest_lows':
-            ax = bax_lowest_lows
-            ax.set_title('Low mass, low sSFR', color = row['color'])
-        if row['key'] == 'lowest_highs':
-            ax = bax_lowest_highs
-            ax.set_title('High mass, low sSFR', color = row['color'])
+        if row['key'] == 'sorted0':
+            ax = bax_0
+            ax.set_title('Sorted 0', color = row['color'])
+        if row['key'] == 'sorted1':
+            ax = bax_1
+            ax.set_title('Sorted 1', color = row['color'])
+        if row['key'] == 'sorted2':
+            ax = bax_2
+            ax.set_title('Sorted 2', color = row['color'])
+        if row['key'] == 'sorted3':
+            ax = bax_3
+            ax.set_title('Sorted 3', color = row['color'])
+        if row['key'] == 'sorted4':
+            ax = bax_4
+            ax.set_title('Sorted 4', color = row['color'])
+        if row['key'] == 'sorted5':
+            ax = bax_5
+            ax.set_title('Sorted 5', color = row['color'])
         
         spec_df = ascii.read(imd.axis_cluster_data_dir + f'/{savename}/{savename}_spectra/{axis_group}_spectrum.csv').to_pandas()
 
@@ -88,4 +97,4 @@ def plot_overlaid_spectra(savename):
     fig.savefig(imd.axis_cluster_data_dir + f'/{savename}/overlaid_spectra.pdf')
 
 
-plot_overlaid_spectra('halpha_norm_oldsfr_newfit')
+# plot_overlaid_spectra('mosdef_ssfr_4bin_median')

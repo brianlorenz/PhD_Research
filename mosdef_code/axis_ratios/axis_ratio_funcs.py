@@ -250,12 +250,11 @@ def filter_ar_df(ar_df, return_std_ar=False):
     
     too_diff_ar = ar_df['axis_ratio_flag'] == 2
     save_count(ar_df[too_diff_ar], 'axis_ratio_ar_too_diff', 'F125 and F160 dont agree well')
-    ar_df = ar_df['axis_ratio_flag'] != 2
+    ar_df = ar_df[ar_df['axis_ratio_flag'] != 2]
 
 
     # get all the mosdef objs, going to be used for checking coverage
-    mosdef_objs = [get_mosdef_obj(ar_df.iloc[i]['field'], ar_df.iloc[i]['v4id'])
-                    for i in range(len(ar_df))]
+    mosdef_objs = [get_mosdef_obj(ar_df.iloc[j]['field'], ar_df.iloc[j]['v4id']) for j in range(len(ar_df))]
     # Filter all galaxies to make sure that they have both emission lines covered
     before_cover = len(ar_df)
     coverage_list = [
