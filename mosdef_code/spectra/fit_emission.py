@@ -199,6 +199,8 @@ def fit_emission(groupID, norm_method, constrain_O3=False, axis_group=-1, save_n
 
     fit_df = pd.DataFrame(zip(line_names, line_centers_rest,
                               z_offset, err_z_offset, hb_scales, err_hb_scales, ha_scales, err_ha_scales, velocity, err_velocity, amps, err_amps, sigs, err_sigs, fluxes, err_fluxes, balmer_dec, err_balmer_dec_low, err_balmer_dec_high), columns=['line_name', 'line_center_rest', 'z_offset', 'err_z_offset', 'hb_scale', 'err_hb_scale', 'ha_scale', 'err_ha_scale', 'fixed_velocity', 'err_fixed_velocity', 'amplitude', 'err_amplitude', 'sigma', 'err_sigma', 'flux', 'err_flux', 'balmer_dec', 'err_balmer_dec_low', 'err_balmer_dec_high'])
+    fit_df['signal_noise_ratio'] = fit_df['flux']/fit_df['err_flux']
+
 
     if axis_group > -1:
         fit_df.to_csv(

@@ -45,15 +45,15 @@ random.seed(3284923)
 # only_plot = True
 
 # 12 bins, 2 mass 2 ssfr
-mass_width = 0.8
-split_width = 0.75
-starting_points = [(9.3, -8.85), (10.1, -8.85), (9.3, -9.6), (10.1, -9.6)]
-ratio_bins = [0.4, 0.7]
-nbins = 12
-split_by = 'log_ssfr'
-save_name = 'mosdef_ssfr_4bin_median'
-stack_type = 'median'
-only_plot = True
+# mass_width = 0.8
+# split_width = 0.75
+# starting_points = [(9.3, -8.85), (10.1, -8.85), (9.3, -9.6), (10.1, -9.6)]
+# ratio_bins = [0.4, 0.7]
+# nbins = 12
+# split_by = 'log_ssfr'
+# save_name = 'mosdef_ssfr_4bin_median'
+# stack_type = 'median'
+# only_plot = True
 
 # 12 bins, 2 mass 2 ssfr, new halpha ssfrs
 # mass_width = 0.8
@@ -67,15 +67,15 @@ only_plot = True
 # only_plot = True
 
 # 12 bins, 2 mass 2 ssfr, shifted the left boxes higher
-# mass_width = 0.8
-# split_width = 0.75
-# starting_points = [(9.3, -8.55), (10.1, -8.85), (9.3, -9.3), (10.1, -9.6)]
-# ratio_bins = [0.4, 0.7]
-# nbins = 12
-# split_by = 'log_halpha_ssfr'
-# save_name = 'halpha_ssfr_4bin_mean_shifted'
-# stack_type = 'mean'
-# only_plot = True
+mass_width = 0.8
+split_width = 0.75
+starting_points = [(9.3, -8.55), (10.1, -8.85), (9.3, -9.3), (10.1, -9.6)]
+ratio_bins = [0.4, 0.7]
+nbins = 12
+split_by = 'log_halpha_ssfr'
+save_name = 'halpha_ssfr_4bin_mean_shifted'
+stack_type = 'mean'
+only_plot = True
 
 
 shapes = {'low': '+', 'mid': 'd', 'high': 'o'}
@@ -99,10 +99,10 @@ def main(nbins, save_name, split_by, stack_type, only_plot=False):
         time_stack = time.time()
         print(f'All stacking took {time_stack-time_start}')
         plot_all_spec_with_cont(nbins, save_name) # This is where the normalized cont is saved
-        for axis_group in range(nbins):
-            fit_emission(0, 'cluster_norm', constrain_O3=False, axis_group=axis_group, save_name=save_name, scaled='False', run_name='False')
-        time_emfit = time.time()
-        print(f'Emission fitting took {time_emfit-time_stack}')
+    for axis_group in range(nbins):
+        fit_emission(0, 'cluster_norm', constrain_O3=False, axis_group=axis_group, save_name=save_name, scaled='False', run_name='False')
+    # time_emfit = time.time()
+    # print(f'Emission fitting took {time_emfit-time_stack}')
     plot_sample_split(nbins, save_name)
     plot_overlaid_spectra(save_name, plot_cont_sub=True)
     plot_balmer_dec(save_name, nbins, split_by, y_var='balmer_dec')
