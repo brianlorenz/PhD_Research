@@ -11,27 +11,32 @@ import matplotlib.patheffects as path_effects
 from matplotlib.gridspec import GridSpec
 from brokenaxes import brokenaxes
 
-def plot_overlaid_spectra(savename='halpha_norm'):
+def plot_metals(savename):
     """Make the plot
     
     """
     summary_df = ascii.read(imd.axis_cluster_data_dir + f'/{savename}/summary.csv').to_pandas()
     
-    # Start the figure
-    # fig, axarr = plt.subplots(3, 2, figsize=(14,10))
-    
 
-    fig, axarr = plt.subplots(3, 2, figsize=(14, 20))
+    n_rows = int(len(summary_df) / 6)
+    fig, axarr = plt.subplots(n_rows, 2, figsize=(12, 6+3*n_rows))
+        
 
-    # plt.subplots_adjust(left=None, bottom=None, right=None, top=None, wspace=None, hspace=1.0)
-    
-    # axarr = GridSpec(3,2, left=0.1, right=0.8, wspace=0.4, hspace=0.6)
-    ax_lowm_highs = axarr[0,0]
-    ax_highm_highs = axarr[0,1]
-    ax_lowm_lows = axarr[1,0]
-    ax_highm_lows = axarr[1,1]
-    ax_lowest_lows = axarr[2,0]
-    ax_lowest_highs = axarr[2,1]
+    if n_rows == 1:
+        ax_0 = axarr[0,0]
+        ax_1 = axarr[0,1]
+    if n_rows > 1:
+        ax_0 = axarr[1,0]
+        ax_1 = axarr[0,0]
+        ax_2 = axarr[1,1]
+        ax_3 = axarr[0,1]
+    if n_rows > 2:
+        ax_0 = axarr[2,0]
+        ax_1 = axarr[1,0]
+        ax_2 = axarr[0,0]
+        ax_3 = axarr[2,1]
+        ax_4 = axarr[1,1]
+        ax_5 = axarr[0,1]
 
     # plot_lims = ((4850, 4875), (6540, 6590))
 
@@ -48,24 +53,24 @@ def plot_overlaid_spectra(savename='halpha_norm'):
         row = summary_df.iloc[i]
         axis_group = row['axis_group']
 
-        if row['key'] == 'lowm_highs':
-            ax = ax_lowm_highs
-            ax.set_title('Low mass, high sSFR', color = row['color'])
-        if row['key'] == 'highm_highs':
-            ax = ax_highm_highs
-            ax.set_title('High mass, high sSFR', color = row['color'])
-        if row['key'] == 'lowm_lows':
-            ax = ax_lowm_lows
-            ax.set_title('Low mass, mid sSFR', color = row['color'])
-        if row['key'] == 'highm_lows':
-            ax = ax_highm_lows
-            ax.set_title('High mass, mid sSFR', color = row['color'])
-        if row['key'] == 'lowest_lows':
-            ax = ax_lowest_lows
-            ax.set_title('Low mass, low sSFR', color = row['color'])
-        if row['key'] == 'lowest_highs':
-            ax = ax_lowest_highs
-            ax.set_title('High mass, low sSFR', color = row['color'])
+        if row['key'] == 'sorted0':
+            ax = ax_0
+            ax.set_title('sorted0', color = row['color'], fontsize=14)
+        if row['key'] == 'sorted1':
+            ax = ax_1
+            ax.set_title('sorted1', color = row['color'], fontsize=14)
+        if row['key'] == 'sorted2':
+            ax = ax_2
+            ax.set_title('sorted2', color = row['color'], fontsize=14)
+        if row['key'] == 'sorted3':
+            ax = ax_3
+            ax.set_title('sorted3', color = row['color'], fontsize=14)
+        if row['key'] == 'sorted4':
+            ax = ax_4
+            ax.set_title('sorted4', color = row['color'], fontsize=14)
+        if row['key'] == 'sorted5':
+            ax = ax_5
+            ax.set_title('sorted5', color = row['color'], fontsize=14)
         
         ar_df = ascii.read(imd.axis_cluster_data_dir + f'/{savename}/{savename}_group_dfs/{axis_group}_df.csv').to_pandas()
 
@@ -96,15 +101,16 @@ def plot_overlaid_spectra(savename='halpha_norm'):
         ax.errorbar(ar_df['use_ratio'][~upper_lim_idx], ar_df['logoh_pp_n2'][~upper_lim_idx], xerr=ar_df['err_use_ratio'][~upper_lim_idx], yerr = yerrs, color=color, label = label, marker='o', ls='None') 
         ax.errorbar(ar_df['use_ratio'][upper_lim_idx], ar_df['logoh_pp_n2'][upper_lim_idx], xerr=ar_df['err_use_ratio'][upper_lim_idx], color=color, label = label, marker='o', mfc='white', ls='None') 
         ax.set_ylim(8, 9)
-        ax.set_ylabel('12 + log(O/H)')
-        ax.set_xlabel('Axis Ratio')
+        ax.set_ylabel('12 + log(O/H)', fontsize=14)
+        ax.set_xlabel('Axis Ratio', fontsize=14)
 
 
         if i == len(summary_df)-1:
             ax.legend(bbox_to_anchor=(1.5, 4.5, 0.20, 0.15), loc='upper right')
 
+        ax.tick_params(labelsize=12, size=8)
 
     fig.savefig(imd.axis_cluster_data_dir + f'/{savename}/metallicty_ar.pdf')
 
 
-plot_overlaid_spectra()
+# plot_metals(savename='halpha_ssfr_4bin_mean_shifted')

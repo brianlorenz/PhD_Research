@@ -10,6 +10,7 @@ import matplotlib as mpl
 from matplotlib.patches import Ellipse
 from ellipses_for_plotting import get_ellipse_shapes
 from plot_overlaid_spectra import plot_overlaid_spectra
+from axis_group_metallicities import plot_metals
 import random
 import matplotlib.gridspec as gridspec
 import time
@@ -99,12 +100,13 @@ def main(nbins, save_name, split_by, stack_type, only_plot=False):
         time_stack = time.time()
         print(f'All stacking took {time_stack-time_start}')
         plot_all_spec_with_cont(nbins, save_name) # This is where the normalized cont is saved
-    for axis_group in range(nbins):
-        fit_emission(0, 'cluster_norm', constrain_O3=False, axis_group=axis_group, save_name=save_name, scaled='False', run_name='False')
-    # time_emfit = time.time()
-    # print(f'Emission fitting took {time_emfit-time_stack}')
+        for axis_group in range(nbins):
+            fit_emission(0, 'cluster_norm', constrain_O3=False, axis_group=axis_group, save_name=save_name, scaled='False', run_name='False')
+        time_emfit = time.time()
+        print(f'Emission fitting took {time_emfit-time_stack}')
     plot_sample_split(nbins, save_name)
     plot_overlaid_spectra(save_name, plot_cont_sub=True)
+    plot_metals(save_name)
     plot_balmer_dec(save_name, nbins, split_by, y_var='balmer_dec')
     plot_balmer_dec(save_name, nbins, split_by, y_var='av')
     plot_balmer_dec(save_name, nbins, split_by, y_var='beta')
