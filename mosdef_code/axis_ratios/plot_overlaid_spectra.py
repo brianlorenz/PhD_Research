@@ -104,6 +104,6 @@ def plot_overlaid_spectra(savename, plot_cont_sub=False):
         
 
     fig.savefig(imd.axis_cluster_data_dir + f'/{savename}/overlaid_spectra.pdf')
-
+    plt.close('all')
 
 # plot_overlaid_spectra('mosdef_ssfr_4bin_mean', plot_cont_sub=True)

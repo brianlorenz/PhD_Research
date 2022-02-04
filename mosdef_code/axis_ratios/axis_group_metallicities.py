@@ -111,6 +111,6 @@ def plot_metals(savename):
         ax.tick_params(labelsize=12, size=8)
 
     fig.savefig(imd.axis_cluster_data_dir + f'/{savename}/metallicty_ar.pdf')
-
+    plt.close('all')
 
 # plot_metals(savename='halpha_ssfr_4bin_mean_shifted')

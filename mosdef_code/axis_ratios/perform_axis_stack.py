@@ -349,6 +349,8 @@ def plot_balmer_dec(save_name, n_groups, split_by, y_var = 'balmer_dec'):
     balmer_decs = []
     balmer_err_lows = []
     balmer_err_highs = []
+    halpha_snrs = []
+    hbeta_snrs = []
 
     for axis_group in range(n_groups):
         emission_df = ascii.read(imd.axis_cluster_data_dir + f'/{save_name}/{save_name}_emission_fits/{axis_group}_emission_fits.csv').to_pandas()
@@ -356,8 +358,10 @@ def plot_balmer_dec(save_name, n_groups, split_by, y_var = 'balmer_dec'):
         balmer_decs.append(emission_df.iloc[0]['balmer_dec'])
         balmer_err_lows.append(emission_df.iloc[0]['err_balmer_dec_low'])
         balmer_err_highs.append(emission_df.iloc[0]['err_balmer_dec_high'])
+        halpha_snrs.append(emission_df[emission_df['line_name']=='Halpha']['signal_noise_ratio'].iloc[0])
+        hbeta_snrs.append(emission_df[emission_df['line_name']=='Hbeta']['signal_noise_ratio'].iloc[0])
 
-    balmer_df = pd.DataFrame(zip(axis_groups, balmer_decs, balmer_err_lows, balmer_err_highs), columns=['axis_group', 'balmer_dec', 'err_balmer_dec_low', 'err_balmer_dec_high'])
+    balmer_df = pd.DataFrame(zip(axis_groups, balmer_decs, balmer_err_lows, balmer_err_highs, halpha_snrs, hbeta_snrs), columns=['axis_group', 'balmer_dec', 'err_balmer_dec_low', 'err_balmer_dec_high', 'halpha_snr', 'hbeta_snr'])
 
     summary_df = summary_df.merge(balmer_df, left_on='axis_group', right_on='axis_group')
 
@@ -387,6 +391,11 @@ def plot_balmer_dec(save_name, n_groups, split_by, y_var = 'balmer_dec'):
             y_cord = row['balmer_dec']
             
             ellipse_width, ellipse_height = get_ellipse_shapes(1.1, y_axis_len, row['shape'])
+
+            # Make the point obvoise if hbeta signal_noise is low
+            if row['hbeta_snr'] < 3:
+                rgba = 'skyblue'
+
 
             ax.errorbar(x_cord, y_cord, yerr=np.array(row['err_balmer_dec_low'], row['err_balmer_dec_high']), marker='None', color=rgba)
             ax.add_artist(Ellipse((x_cord, y_cord), ellipse_width, ellipse_height, facecolor=rgba))
@@ -443,6 +452,10 @@ def plot_balmer_dec(save_name, n_groups, split_by, y_var = 'balmer_dec'):
             x_cord = row['log_mass_median']
             y_cord = row['balmer_dec']
             
+            # Make the point obvoise if hbeta signal_noise is low
+            if row['hbeta_snr'] < 3:
+                rgba = 'skyblue'
+
             ellipse_width, ellipse_height = get_ellipse_shapes(1.5, y_axis_len, row['shape'])
             
             ax.errorbar(x_cord, y_cord, yerr=np.array(row['err_balmer_dec_low'], row['err_balmer_dec_high']), marker='None', color=rgba)
