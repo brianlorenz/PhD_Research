@@ -34,25 +34,26 @@ random.seed(3284923)
 # split_by = 'ssfr'
 
 # Equalivent width ha
-mass_width = 0.8
-split_width = 300
-starting_points = [(9.3, 0), (10.1, 0), (9.3, 300), (10.1, 300)]
-ratio_bins = [0.4, 0.7]
-nbins = 12
-split_by = 'eq_width_ha'
-save_name = 'eq_width_4bin_mean'
-stack_type = 'mean'
-only_plot = True
-
-# 12 bins, 2 mass 2 ssfr
 # mass_width = 0.8
-# split_width = 0.75
-# starting_points = [(9.3, -8.85), (10.1, -8.85), (9.3, -9.6), (10.1, -9.6)]
+# split_width = 300
+# starting_points = [(9.3, 0), (10.1, 0), (9.3, 300), (10.1, 300)]
 # ratio_bins = [0.4, 0.7]
 # nbins = 12
-# split_by = 'log_ssfr'
-# save_name = 'mosdef_ssfr_4bin_mean'
+# split_by = 'eq_width_ha'
+# save_name = 'eq_width_4bin_mean'
 # stack_type = 'mean'
+# only_plot = True
+
+# 12 bins, 2 mass 2 ssfr
+mass_width = 0.8
+split_width = 0.75
+starting_points = [(9.3, -8.85), (10.1, -8.85), (9.3, -9.6), (10.1, -9.6)]
+ratio_bins = [0.4, 0.7]
+nbins = 12
+split_by = 'log_ssfr'
+save_name = 'mosdef_ssfr_4bin_median'
+stack_type = 'median'
+only_plot = True
 
 # 12 bins, 2 mass 2 ssfr, new halpha ssfrs
 # mass_width = 0.8
@@ -63,6 +64,18 @@ only_plot = True
 # split_by = 'log_halpha_ssfr'
 # save_name = 'halpha_ssfr_4bin_mean'
 # stack_type = 'mean'
+# only_plot = True
+
+# 12 bins, 2 mass 2 ssfr, shifted the left boxes higher
+# mass_width = 0.8
+# split_width = 0.75
+# starting_points = [(9.3, -8.55), (10.1, -8.85), (9.3, -9.3), (10.1, -9.6)]
+# ratio_bins = [0.4, 0.7]
+# nbins = 12
+# split_by = 'log_halpha_ssfr'
+# save_name = 'halpha_ssfr_4bin_mean_shifted'
+# stack_type = 'mean'
+# only_plot = True
 
 
 shapes = {'low': '+', 'mid': 'd', 'high': 'o'}
@@ -91,7 +104,7 @@ def main(nbins, save_name, split_by, stack_type, only_plot=False):
         time_emfit = time.time()
         print(f'Emission fitting took {time_emfit-time_stack}')
     plot_sample_split(nbins, save_name)
-    plot_overlaid_spectra(save_name)
+    plot_overlaid_spectra(save_name, plot_cont_sub=True)
     plot_balmer_dec(save_name, nbins, split_by, y_var='balmer_dec')
     plot_balmer_dec(save_name, nbins, split_by, y_var='av')
     plot_balmer_dec(save_name, nbins, split_by, y_var='beta')
@@ -315,11 +328,18 @@ def plot_balmer_dec(save_name, n_groups, split_by, y_var = 'balmer_dec'):
 
 
     # Axis limits
-    ylims = {
-        'balmer_dec': (2, 7),
-        'av': (0.25, 1.1),
-        'beta': (-1.9, -0.95)
-    }
+    if color_var == 'log_halpha_ssfr' or color_var == 'eq_width_ha':
+        ylims = {
+            'balmer_dec': (2, 10),
+            'av': (0.25, 1.1),
+            'beta': (-1.9, -0.95)
+        }
+    else:
+        ylims = {
+            'balmer_dec': (2, 7),
+            'av': (0.25, 1.1),
+            'beta': (-1.9, -0.95)
+        }
     
     summary_df = ascii.read(imd.axis_cluster_data_dir + f'/{save_name}/summary.csv').to_pandas()
 

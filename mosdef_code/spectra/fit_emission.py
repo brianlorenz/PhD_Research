@@ -409,41 +409,6 @@ def plot_emission_fit(groupID, norm_method, axis_group=-1, save_name='', scaled=
     return
 
 
-def norm_gausses(wavelength, peak_wavelength, sig):
-    """Normalized Gaussians
-
-    Parameters:
-    wavelength (pd.DataFrame): Wavelength array to fit
-    peak_wavelength (float): Peak of the line in the rest frame [angstroms]
-    sig (float): Standard deviation of the gaussian [angstroms]
-
-    Returns:
-    """
-    A48, A63, A83, B = get_amps(wavelength, peak_wavelength, sig)
-    gauss = np.exp(-0.5 * (wavelength - (peak_wavelength))**2 /
-                   (np.e**sig)**2) / np.sqrt(2 * np.pi * (np.e**sig)**2)
-    s = A48 * g48 + A63 * g63 + A83 * g83 + B * m
-    return s
-
-
-def get_amps(wavelength, peak_wavelength, sig, spectrum, model):
-    """Finds the amplitudes for a range of Gaussians
-
-    Parameters:
-    wavelength (pd.DataFrame): Wavelength array to fit
-    peak_wavelength (float): Peak of the line in the rest frame [angstroms]
-    sig (float): Standard deviation of the gaussian [angstroms]
-    spectrum (): Spectrum
-    model (): Continuum model
-
-    Returns:
-    amps_and_offset (list) = First n elemenst are the n amplitudes, last element is the continuum offset
-    """
-    gauss = np.exp(-0.5 * (wavelength - (peak_wavelength))**2 /
-                   (np.e**sig)**2) / np.sqrt(2 * np.pi * (np.e**sig)**2)
-    amps_and_offset = nnls(np.transpose([g48, g63, g83, model]), spectrum)[0]
-    return amps_and_offset
-
 
 def gaussian_func(wavelength, peak_wavelength, amp, sig):
     """Standard Gaussian funciton
@@ -488,6 +453,7 @@ def monte_carlo_fit(func, wavelength_cut, continuum, y_data, y_err, guess, bound
         y_data_cont_sub, hb_scale, ha_scale = fast_continuum_subtract(y_data, fast_continuum_cut, hb_half_idx, ha_half_idx)
     else:
         y_data_cont_sub, hb_scale, ha_scale = scale_continuum(y_data, continuum, hb_half_idx, ha_half_idx, hb_cut, ha_cut)
+
 
     start = time.time()
 
@@ -560,20 +526,6 @@ def get_flux(amp, sig, amp_err=0, sig_err=0):
         return (flux, flux_err)
     return (flux, 0)
 
-
-def get_flux_integrate(gaussian, continuum, wavelength_range):
-    '''Given the amplitude and std deviation of a Gaussian, compute the line flux
-
-    Parameters:
-    gaussian (pd.DataFrame): y-values of the gaussian function
-    continuum (pd.DataFrame): y-values of the continuum
-    wavelength_range (pd.DataFrame): x-values to integrate along
-
-    Returns:
-    flux (float): Total area under the Gaussian
-    '''
-    integral_gauss = integrate.quad()
-    return flux
 
 
 def fit_all_emission(n_clusters, norm_method, constrain_O3=False):

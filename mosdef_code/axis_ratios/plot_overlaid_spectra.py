@@ -9,8 +9,12 @@ import matplotlib.patheffects as path_effects
 from matplotlib.gridspec import GridSpec
 from brokenaxes import brokenaxes
 
-def plot_overlaid_spectra(savename):
+def plot_overlaid_spectra(savename, plot_cont_sub=False):
     """Make the plot
+
+    Parameters:
+    savename (str): Folder to save the name under
+    plot_cont_sub (boolean): Set to True to plot continuum-subtracted data
     
     """
     summary_df = ascii.read(imd.axis_cluster_data_dir + f'/{savename}/summary.csv').to_pandas()
@@ -25,9 +29,9 @@ def plot_overlaid_spectra(savename):
 
     plot_lims = ((4850, 4875), (6540, 6590))
 
-        
-    bax_0 = brokenaxes(xlims=plot_lims, subplot_spec=axarr[0,0])
-    bax_1 = brokenaxes(xlims=plot_lims, subplot_spec=axarr[0,1])
+    if n_rows == 1:
+        bax_0 = brokenaxes(xlims=plot_lims, subplot_spec=axarr[0,0])
+        bax_1 = brokenaxes(xlims=plot_lims, subplot_spec=axarr[0,1])
     if n_rows > 1:
         bax_0 = brokenaxes(xlims=plot_lims, subplot_spec=axarr[1,0])
         bax_1 = brokenaxes(xlims=plot_lims, subplot_spec=axarr[0,0])
@@ -65,9 +69,15 @@ def plot_overlaid_spectra(savename):
             ax = bax_5
             ax.set_title('Sorted 5', color = row['color'])
         
-        spec_df = ascii.read(imd.axis_cluster_data_dir + f'/{savename}/{savename}_spectra/{axis_group}_spectrum.csv').to_pandas()
-
-
+        ### Read in spectra
+        if plot_cont_sub==True:
+            spec_df = ascii.read(imd.axis_cluster_data_dir + f'/{savename}/{savename}_cont_subs/{axis_group}_cont_sub.csv').to_pandas()
+            add_str = ' (Cont-sub)'
+            spec_df = spec_df.rename(columns={"wavelength_cut": "wavelength", "continuum_sub_ydata": "f_lambda"})
+        else:
+            add_str = ''
+            spec_df = ascii.read(imd.axis_cluster_data_dir + f'/{savename}/{savename}_spectra/{axis_group}_spectrum.csv').to_pandas()
+  
         if row['shape'] == '+': 
             color = 'red'
             label = 'Axis Ratio < 0.4'
@@ -84,8 +94,7 @@ def plot_overlaid_spectra(savename):
         scale_factor = 1.0/peak_halpha
         ax.plot(spec_df['wavelength'], spec_df['f_lambda']*scale_factor, color=color, label = label) 
         ax.set_ylim(-0.1, 1.05)
-        # ax.set_ylabel('F$_\\lambda$ ($10^{-17}$ erg/cm$^2$/s/$\AA$)')
-        ax.set_ylabel('Normalized F$_\\lambda')
+        ax.set_ylabel(f'Normalized F$_\\lambda${add_str}')
         ax.set_xlabel('Wavelength ($\AA$)')
 
 
@@ -97,4 +106,4 @@ def plot_overlaid_spectra(savename):
     fig.savefig(imd.axis_cluster_data_dir + f'/{savename}/overlaid_spectra.pdf')
 
 
-# plot_overlaid_spectra('mosdef_ssfr_4bin_median')
+plot_overlaid_spectra('mosdef_ssfr_4bin_mean', plot_cont_sub=True)
