@@ -67,6 +67,8 @@ def stack_spectra(groupID, norm_method, re_observe=False, mask_negatives=False, 
 
     # min, max, step-size
     spectrum_wavelength = np.arange(3000, 10000, 1)
+    if axis_stack:
+        spectrum_wavelength = np.arange(3000, 10000, 0.5)
 
     # Now that we have the mosdef objs for each galaxy in the cluster, we need
     # to loop over each one

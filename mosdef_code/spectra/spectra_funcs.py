@@ -450,7 +450,8 @@ def read_spectrum(mosdef_obj, spectrum_file):
 
     rest_wavelength = wavelength / (1 + z_spec)
 
-    spectrum_df = pd.DataFrame(zip(rest_wavelength, spec_data, spec_data_errs, wavelength), columns=[
+    #Multiply the spectrum by 1+z since we are dividing wavelength by 1+z
+    spectrum_df = pd.DataFrame(zip(rest_wavelength, spec_data*(1+z_spec), spec_data_errs*(1+z_spec), wavelength), columns=[
                                'rest_wavelength', 'f_lambda', 'err_f_lambda', 'obs_wavelength'])
 
     return spectrum_df
