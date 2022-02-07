@@ -614,10 +614,13 @@ def stack_axis_ratio(mass_width, split_width, starting_points, ratio_bins, save_
     # Add a column for ssfr
     ar_df['log_ssfr'] = np.log10((ar_df['sfr'])/(10**ar_df['log_mass']))
     ar_df['log_halpha_ssfr'] = np.log10((ar_df['halpha_sfrs'])/(10**ar_df['log_mass']))
+    ar_df['log_use_ssfr'] = np.log10((ar_df['use_sfr'])/(10**ar_df['log_mass']))
 
     # Save which method of ssfr is used
     if split_by=='log_ssfr':
         ar_df['split_for_stack'] = ['log_ssfr']*len(ar_df)
+    if split_by=='log_use_ssfr':
+        ar_df['split_for_stack'] = ['log_use_ssfr']*len(ar_df)
     if split_by=='log_halpha_ssfr':
         ar_df['split_for_stack'] = ['log_halpha_ssfr']*len(ar_df)
     if split_by=='eq_width_ha':
