@@ -13,6 +13,15 @@ from flag_galaxies_by_axis_ratio import flag_axis_ratios
 from compute_new_sfrs import convert_ha_to_sfr, add_use_sfr                                                        
 
 
+def main():
+    """Runs all the functions needed to update the catalog with new information"""
+    make_mosdef_all_cats_2()
+    flag_axis_ratios()
+    convert_ha_to_sfr()
+    add_use_sfr()
+    flag_axis_ratios()
+
+
 def make_mosdef_all_cats_2():
     '''Adds measurement of balmer decrement to the mosdef_all_cats.csv file generated in axis ratio funcs
     
@@ -165,7 +174,4 @@ def make_mosdef_all_cats_2():
     merged_all_cats.to_csv(imd.loc_axis_ratio_cat, index=False)
 
 
-make_mosdef_all_cats_2()
-flag_axis_ratios()
-convert_ha_to_sfr()
-add_use_sfr()
+main()

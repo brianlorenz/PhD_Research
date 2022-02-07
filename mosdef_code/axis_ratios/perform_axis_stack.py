@@ -46,26 +46,26 @@ random.seed(3284923)
 # only_plot = True
 
 # 12 bins, 2 mass 2 ssfr
-mass_width = 0.8
-split_width = 0.75
-starting_points = [(9.3, -8.85), (10.1, -8.85), (9.3, -9.6), (10.1, -9.6)]
-ratio_bins = [0.4, 0.7]
-nbins = 12
-split_by = 'log_ssfr'
-save_name = 'mosdef_ssfr_4bin_mean'
-stack_type = 'mean'
-only_plot = False
-
-# 12 bins, 2 mass 2 ssfr, using sfr2 when both lines are good, halpha_sfr when hbeta is below 3 sigma (or not covered)
 # mass_width = 0.8
 # split_width = 0.75
 # starting_points = [(9.3, -8.85), (10.1, -8.85), (9.3, -9.6), (10.1, -9.6)]
 # ratio_bins = [0.4, 0.7]
 # nbins = 12
-# split_by = 'use_ssfr'
-# save_name = 'both_ssfrs_4bin_mean'
+# split_by = 'log_ssfr'
+# save_name = 'mosdef_ssfr_4bin_mean'
 # stack_type = 'mean'
 # only_plot = False
+f
+# 12 bins, 2 mass 2 ssfr, using sfr2 when both lines are good, halpha_sfr when hbeta is below 3 sigma (or not covered)
+mass_width = 0.8
+split_width = 0.75
+starting_points = [(9.3, -8.85), (10.1, -8.85), (9.3, -9.6), (10.1, -9.6)]
+ratio_bins = [0.4, 0.7]
+nbins = 12
+split_by = 'log_use_ssfr'
+save_name = 'both_ssfrs_4bin_mean'
+stack_type = 'mean'
+only_plot = False
 
 # 12 bins, 2 mass 2 ssfr, new halpha ssfrs
 # mass_width = 0.8
@@ -105,8 +105,8 @@ def main(nbins, save_name, split_by, stack_type, only_plot=False):
     '''
     time_start = time.time()
     if only_plot==False:
-        # setup_new_stack_dir(save_name)
-        # stack_axis_ratio(mass_width, split_width, starting_points, ratio_bins, save_name, split_by, stack_type)
+        setup_new_stack_dir(save_name)
+        stack_axis_ratio(mass_width, split_width, starting_points, ratio_bins, save_name, split_by, stack_type)
         stack_all_continuum(nbins, save_name=save_name)
         time_stack = time.time()
         print(f'All stacking took {time_stack-time_start}')
@@ -238,7 +238,7 @@ def plot_sample_split(n_groups, save_name):
 
         # Set the axis limits
         xlims = (9.0, 11.0)
-        if variable == 'log_ssfr' or variable == 'log_halpha_ssfr':
+        if variable == 'log_ssfr' or variable == 'log_halpha_ssfr' or variable == 'log_use_ssfr':
             ylims = (-9.7, -8)
         elif variable == 'eq_width_ha':
             ylims = (0, 600)
