@@ -58,7 +58,7 @@ def add_use_sfr():
     # ar_df = ar_df.rename(columns={"sfr": "sfr2", "err_sfr": "err_sfr2"})
     # ar_df = ar_df.rename(columns={"use_sfr": "sfr"})
 
-    # ar_df.to_csv(imd.loc_axis_ratio_cat, index=False)
+    ar_df.to_csv(imd.loc_axis_ratio_cat, index=False)
 
 
 
@@ -289,7 +289,7 @@ def plot_sfrs():
 
 # convert_ha_to_sfr()
 # add_use_sfr()
-plot_sfrs()
+# plot_sfrs()
 
 
 

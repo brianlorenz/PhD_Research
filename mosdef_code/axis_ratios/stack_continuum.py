@@ -22,8 +22,10 @@ def stack_continuum(axis_group, save_name):
 
     cont_dfs = [ascii.read(file).to_pandas() for file in file_names]
     interp_conts = [interpolate.interp1d(cont_df['rest_wavelength'], cont_df['f_lambda_norm'], fill_value=0, bounds_error=False) for cont_df in cont_dfs]
+    
+    spec_df = ascii.read(imd.axis_cluster_data_dir + f'/{save_name}/{save_name}_spectra/{axis_group}_spectrum.csv').to_pandas()
 
-    spectrum_wavelength = np.arange(3000, 10000, 1)
+    spectrum_wavelength = spec_df['wavelength']
     interp_fluxes = [interp_cont(spectrum_wavelength) for interp_cont in interp_conts]
     summed_flux = np.mean(interp_fluxes, axis=0)         
     sum_cont_df = pd.DataFrame(zip(spectrum_wavelength, summed_flux), columns = ['rest_wavelength', 'f_lambda'])
