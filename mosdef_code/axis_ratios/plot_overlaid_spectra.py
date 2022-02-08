@@ -24,6 +24,8 @@ def plot_overlaid_spectra(savename, plot_cont_sub=False):
     fig = plt.figure(figsize=(10, 8))
     
     n_rows = int(len(summary_df) / 6)
+    if len(summary_df) == 8:
+        n_rows = 2
     axarr = GridSpec(n_rows, 2, left=0.1, right=0.8, wspace=0.4, hspace=0.6)
 
 

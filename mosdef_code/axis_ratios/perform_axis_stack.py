@@ -34,6 +34,17 @@ random.seed(3284923)
 # nbins = 6
 # split_by = 'ssfr'
 
+# Only 2 axis ratio bins, to see if we get similar trends
+mass_width = 0.8
+split_width = 0.75
+starting_points = [(9.3, -8.85), (10.1, -8.85), (9.3, -9.6), (10.1, -9.6)]
+ratio_bins = [0.55]
+nbins = 8
+split_by = 'log_use_ssfr'
+save_name = 'both_ssfrs_4bin_mean-2axis'
+stack_type = 'mean'
+only_plot = True
+
 # Equalivent width ha
 # mass_width = 0.8
 # split_width = 300
@@ -55,17 +66,17 @@ random.seed(3284923)
 # save_name = 'mosdef_ssfr_4bin_mean'
 # stack_type = 'mean'
 # only_plot = False
-f
+
 # 12 bins, 2 mass 2 ssfr, using sfr2 when both lines are good, halpha_sfr when hbeta is below 3 sigma (or not covered)
-mass_width = 0.8
-split_width = 0.75
-starting_points = [(9.3, -8.85), (10.1, -8.85), (9.3, -9.6), (10.1, -9.6)]
-ratio_bins = [0.4, 0.7]
-nbins = 12
-split_by = 'log_use_ssfr'
-save_name = 'both_ssfrs_4bin_mean'
-stack_type = 'mean'
-only_plot = False
+# mass_width = 0.8
+# split_width = 0.75
+# starting_points = [(9.3, -8.85), (10.1, -8.85), (9.3, -9.6), (10.1, -9.6)]
+# ratio_bins = [0.4, 0.7]
+# nbins = 12
+# split_by = 'log_use_ssfr'
+# save_name = 'both_ssfrs_4bin_mean'
+# stack_type = 'mean'
+# only_plot = False
 
 # 12 bins, 2 mass 2 ssfr, new halpha ssfrs
 # mass_width = 0.8
@@ -179,13 +190,20 @@ def plot_sample_split(n_groups, save_name):
         err_beta_median = bootstrap_median(axis_ratio_df['beta'])
 
 
-        # Figure out what axis ratio bin
-        if axis_median < ratio_bins[0]:
-            shape = shapes['low']
-        elif axis_median > ratio_bins[1]:
-            shape = shapes['high']
-        else:
-            shape = shapes['mid']
+        # Figure out what axis ratio bin (+1 is since the bins are dividers)
+        if len(ratio_bins)+1 == 3:
+            if axis_median < ratio_bins[0]:
+                shape = shapes['low']
+            elif axis_median > ratio_bins[1]:
+                shape = shapes['high']
+            else:
+                shape = shapes['mid']
+        
+        if len(ratio_bins)+1 == 2:
+            if axis_median < ratio_bins[0]:
+                shape = shapes['low']
+            else:
+                shape = shapes['high']
 
         # print(f'Mass median: {mass_median}, SSFR median: {split_median}')
 

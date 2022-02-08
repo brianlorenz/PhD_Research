@@ -632,11 +632,20 @@ def stack_axis_ratio(mass_width, split_width, starting_points, ratio_bins, save_
     axis_group = 0
     cluster_name = save_name
     
-    ar_df_low = ar_df[ar_df['use_ratio']<ratio_bins[0]]
-    ar_df_mid = ar_df[np.logical_and(ar_df['use_ratio']>=ratio_bins[0],ar_df['use_ratio']<=ratio_bins[1])]
-    ar_df_high = ar_df[ar_df['use_ratio']>ratio_bins[1]]
+    # Figure out what axis ratio bin (+1 is since the bins are dividers)
+    if len(ratio_bins)+1 == 3:
+        ar_df_low = ar_df[ar_df['use_ratio']<ratio_bins[0]]
+        ar_df_mid = ar_df[np.logical_and(ar_df['use_ratio']>=ratio_bins[0],ar_df['use_ratio']<=ratio_bins[1])]
+        ar_df_high = ar_df[ar_df['use_ratio']>ratio_bins[1]]
+        
+        ar_dfs = [ar_df_low, ar_df_mid, ar_df_high]
     
-    ar_dfs = [ar_df_low, ar_df_mid, ar_df_high]
+    if len(ratio_bins)+1 == 2:
+        ar_df_low = ar_df[ar_df['use_ratio']<ratio_bins[0]]
+        ar_df_high = ar_df[ar_df['use_ratio']>=ratio_bins[0]]
+        
+        ar_dfs = [ar_df_low, ar_df_high]
+
     for i in range(len(ar_dfs)):
         df = ar_dfs[i]
 

@@ -19,6 +19,8 @@ def plot_metals(savename):
     
 
     n_rows = int(len(summary_df) / 6)
+    if len(summary_df) == 8:
+        n_rows = 2
     fig, axarr = plt.subplots(n_rows, 2, figsize=(12, 6+3*n_rows))
         
 

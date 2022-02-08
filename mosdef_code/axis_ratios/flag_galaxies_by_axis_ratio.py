@@ -52,6 +52,6 @@ def flag_axis_ratios(plot=False):
         ax.legend(fontsize=14)
         fig.savefig(imd.axis_output_dir + f'/axis_ratio_filtering.pdf')
 
-        ar_df.to_csv(imd.loc_axis_ratio_cat, index=False)
+    ar_df.to_csv(imd.loc_axis_ratio_cat, index=False)
 
-flag_axis_ratios()
+# flag_axis_ratios()
