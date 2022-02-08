@@ -18,6 +18,7 @@ import time
 random.seed(3284923)
 
 
+
 #18 bins, 2 mass 3 ssfr
 # mass_width = 0.8
 # split_width = 0.5
@@ -34,78 +35,12 @@ random.seed(3284923)
 # nbins = 6
 # split_by = 'ssfr'
 
-# Only 2 axis ratio bins, to see if we get similar trends
-mass_width = 0.8
-split_width = 0.75
-starting_points = [(9.3, -8.85), (10.1, -8.85), (9.3, -9.6), (10.1, -9.6)]
-ratio_bins = [0.55]
-nbins = 8
-split_by = 'log_use_ssfr'
-save_name = 'both_ssfrs_4bin_mean-2axis'
-stack_type = 'mean'
-only_plot = True
-
-# Equalivent width ha
-# mass_width = 0.8
-# split_width = 300
-# starting_points = [(9.3, 0), (10.1, 0), (9.3, 300), (10.1, 300)]
-# ratio_bins = [0.4, 0.7]
-# nbins = 12
-# split_by = 'eq_width_ha'
-# save_name = 'eq_width_4bin_mean'
-# stack_type = 'mean'
-# only_plot = True
-
-# 12 bins, 2 mass 2 ssfr
-# mass_width = 0.8
-# split_width = 0.75
-# starting_points = [(9.3, -8.85), (10.1, -8.85), (9.3, -9.6), (10.1, -9.6)]
-# ratio_bins = [0.4, 0.7]
-# nbins = 12
-# split_by = 'log_ssfr'
-# save_name = 'mosdef_ssfr_4bin_mean'
-# stack_type = 'mean'
-# only_plot = False
-
-# 12 bins, 2 mass 2 ssfr, using sfr2 when both lines are good, halpha_sfr when hbeta is below 3 sigma (or not covered)
-# mass_width = 0.8
-# split_width = 0.75
-# starting_points = [(9.3, -8.85), (10.1, -8.85), (9.3, -9.6), (10.1, -9.6)]
-# ratio_bins = [0.4, 0.7]
-# nbins = 12
-# split_by = 'log_use_ssfr'
-# save_name = 'both_ssfrs_4bin_mean'
-# stack_type = 'mean'
-# only_plot = False
-
-# 12 bins, 2 mass 2 ssfr, new halpha ssfrs
-# mass_width = 0.8
-# split_width = 0.75
-# starting_points = [(9.3, -8.85), (10.1, -8.85), (9.3, -9.6), (10.1, -9.6)]
-# ratio_bins = [0.4, 0.7]
-# nbins = 12
-# split_by = 'log_halpha_ssfr'
-# save_name = 'halpha_ssfr_4bin_mean'
-# stack_type = 'mean'
-# only_plot = True
-
-# 12 bins, 2 mass 2 ssfr, shifted the left boxes higher
-# mass_width = 0.8
-# split_width = 0.75
-# starting_points = [(9.3, -8.55), (10.1, -8.85), (9.3, -9.3), (10.1, -9.6)]
-# ratio_bins = [0.4, 0.7]
-# nbins = 12
-# split_by = 'log_halpha_ssfr'
-# save_name = 'halpha_ssfr_4bin_mean_shifted'
-# stack_type = 'mean'
-# only_plot = True
-
 
 shapes = {'low': '+', 'mid': 'd', 'high': 'o'}
 colors = {'sorted0': 'red', 'sorted1': 'blue', 'sorted2': 'orange', 'sorted3': 'mediumseagreen', 'sorted4': 'lightskyblue', 'sorted5': 'darkviolet'}
 
 
-def main(nbins, save_name, split_by, stack_type, only_plot=False):
+def stack_all_and_plot_all(param_class):
     '''performs all the steps to get this group plotted
     
     Parameters:
@@ -114,6 +49,19 @@ def main(nbins, save_name, split_by, stack_type, only_plot=False):
     stack_type (str): mean or median, what to use when making the stacks pixel by pixel
     only_plot (boolean): If set to 1, only do plotting, skip over clustering and stacking
     '''
+    # only do all the functions if run_stack is True
+    if param_class.run_stack == False:
+        return
+    nbins = param_class.nbins
+    save_name = param_class.save_name
+    split_by = param_class.split_by
+    stack_type = param_class.stack_type
+    only_plot = param_class.only_plot
+    mass_width = param_class.mass_width
+    split_width = param_class.split_width
+    starting_points = param_class.starting_points
+    ratio_bins = param_class.ratio_bins
+    print(f'Running stack {save_name}. Making just the plots: {only_plot}')
     time_start = time.time()
     if only_plot==False:
         setup_new_stack_dir(save_name)
@@ -126,7 +74,7 @@ def main(nbins, save_name, split_by, stack_type, only_plot=False):
             fit_emission(0, 'cluster_norm', constrain_O3=False, axis_group=axis_group, save_name=save_name, scaled='False', run_name='False')
         time_emfit = time.time()
         print(f'Emission fitting took {time_emfit-time_stack}')
-    plot_sample_split(nbins, save_name)
+    plot_sample_split(nbins, save_name, ratio_bins, starting_points, mass_width, split_width, nbins)
     plot_overlaid_spectra(save_name, plot_cont_sub=True)
     plot_metals(save_name)
     plot_balmer_dec(save_name, nbins, split_by, y_var='balmer_dec')
@@ -146,7 +94,7 @@ def setup_new_stack_dir(save_name):
 
 
 
-def plot_sample_split(n_groups, save_name):
+def plot_sample_split(n_groups, save_name, ratio_bins, starting_points, mass_width, split_width, nbins):
     """Plots the way that the sample has been divided in mass/ssfr space
     
     variable(str): Which variable to use for the y-axis"""
@@ -537,7 +485,7 @@ def bootstrap_median(df):
 
 
 
-main(nbins, save_name, split_by, stack_type, only_plot=only_plot)
+# main(nbins, save_name, split_by, stack_type, only_plot=only_plot)
 
 # stack_all_continuum(6, save_name='mass_2bin_median')  
 # main(12, 'eq_width_4bin' ,'balmer_dec')
