@@ -576,7 +576,7 @@ def perform_stack(stack_type, interp_cluster_spectra_dfs, norm_factors):
                 median_cont = np.median(nonzero_cont_values)
                 variances = [nonzero_err_value**2 for nonzero_err_value in nonzero_err_values]
                 err_in_sum = np.sqrt(np.sum(variances))
-                err_in_mean = divz(err_in_sum, number_specs_by_wave)
+                err_in_mean = divz(err_in_sum, num_specs)
 
                 ### Using 1.25*mean error, not sure if this is valid
                 median_cont = np.median(nonzero_err_values)
