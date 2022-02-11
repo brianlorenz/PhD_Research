@@ -528,6 +528,19 @@ def get_flux(amp, sig, amp_err=0, sig_err=0):
         return (flux, flux_err)
     return (flux, 0)
 
+def get_amp(flux, sig):
+    '''Given the flux and std deviation of a Gaussian, compute the amplitude
+
+    Parameters:
+    flux (float): flux of gaussian (flux units)
+    sig (float): Standard deviation of the gaussian (angstrom)
+
+    Returns:
+    flux (float): Total area under the Gaussian
+    '''
+    amp = flux / (sig * np.sqrt(2 * np.pi))
+    return amp
+
 
 
 def fit_all_emission(n_clusters, norm_method, constrain_O3=False):

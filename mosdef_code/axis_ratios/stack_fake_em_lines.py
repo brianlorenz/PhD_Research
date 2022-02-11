@@ -1,15 +1,16 @@
 # Generate fake emission lines with different velocity dispersions, do a median stack, then change the velocity dispersion, then stack again, talk to Aliza about this, N-med method? 
 import numpy as np
 import pandas as pd
-from fit_emission import gaussian_func, velocity_to_sig
+from fit_emission import gaussian_func, velocity_to_sig, get_amp, get_flux
 import matplotlib.pyplot as plt
 from matplotlib.gridspec import GridSpec
 import initialize_mosdef_dirs as imd
 from scipy import interpolate
 from stack_spectra import perform_stack
+from scipy.optimize import curve_fit
 
 
-def main(n_spec=9):
+def main(n_spec=1000):
     """
     Runs all the functions to generate the plot. 
 
@@ -47,14 +48,13 @@ def plot_group_of_spectra(gal_dfs, interp_spectrum_dfs, median_total_spec, mean_
     ax9 = fig.add_subplot(gs[2, 2])
     spec_axs = [ax1, ax2, ax3, ax4, ax5, ax6, ax7, ax8, ax9]
     ax_stack = fig.add_subplot(gs[3:, 0:])
-    # format_axes(fig)
     spec_wavelength = interp_spectrum_dfs[0]['rest_wavelength']
 
     for i in range(9):
         ax = spec_axs[i]
         ax.plot(gal_dfs[i]['rest_wavelength'], gal_dfs[i]['f_lambda_norm'], marker='o', color='black', ls='-', label = 'rest-frame')
         ax.plot(spec_wavelength, interp_spectrum_dfs[i]['f_lambda_norm'], marker='o', color='blue', ls='-', label='interpolated')
-        ax.set_ylim(0, 4)
+        ax.set_ylim(0, 0.5)
         ax.set_xlim(6553, 6577)
         ax.set_xlabel('wavelength')
         ax.set_ylabel('flux')
@@ -63,6 +63,11 @@ def plot_group_of_spectra(gal_dfs, interp_spectrum_dfs, median_total_spec, mean_
     ax_stack.plot(spec_wavelength, mean_total_spec, color='orange', marker='o', ls='-', label='mean')
     ax_stack.set_xlabel('wavelength')
     ax_stack.set_ylabel('flux')
+
+    # Fit the output emission lines
+
+    mean_center, mean_amp, mean_sigma, mean_line_flux = fit_emission_line(spec_wavelength, mean_total_spec, 6565)
+    median_center, median_amp, median_sigma, median_line_flux = fit_emission_line(spec_wavelength, median_total_spec, 6565)
 
 
     ax1.legend(loc=1)
@@ -94,32 +99,33 @@ def generate_group_of_spectra(n_spec=9):
     gal_dfs = [generate_fake_galaxy_prop(zs[i], 1, vel_disps[i], 6565) for i in range(n_spec)]
     return gal_dfs
 
-def generate_fake_galaxy_prop(z, amplitude, vel_disp, line_peak):
+def generate_fake_galaxy_prop(z, flux, vel_disp, line_peak):
     """Makes a fake galaxy spectrum with the properties specified
     
     Parameters:
     z (float): redshift of the galaxy
-    amplitude (float): Amplitude of the line
+    flux (float): flux of the line
     vel_disp (float): velocity dispersion of the galaxy 
     line_peak (float): Peak wavelength of the line to generate for
     """
 
     obs_line_peak = line_peak * (1+z)
     wavelength = np.arange(int(obs_line_peak)-40, int(obs_line_peak)+40, 1.5)
-    fluxes = generate_emission_line(wavelength, amplitude, vel_disp)
+    fluxes = generate_emission_line(wavelength, flux, vel_disp)
     rest_wavelength = wavelength / (1+z)
     rest_flux = fluxes * (1+z)
     gal_df = pd.DataFrame(zip(wavelength, fluxes, rest_wavelength, rest_flux), columns = ['wavelength', 'flux', 'rest_wavelength', 'f_lambda_norm'])
+    # fit_emission_line(gal_df, 6565)
     return gal_df
     
 
 
-def generate_emission_line(wavelength, amplitude, vel_disp):
+def generate_emission_line(wavelength, flux, vel_disp):
     """Given an amplitude and velocity dispersion, generate an emission line
     
     Parameters:
     wavelength (array): Wavelength array to put the line on. It will be centered
-    amplitude (float): Amplitude of the line
+    flux (float): flux of the line
     vel_disp (float): Velocity dispersion of the line, will be converted into a width
 
     Returns:
@@ -130,7 +136,29 @@ def generate_emission_line(wavelength, amplitude, vel_disp):
 
     # Convert the velocity dispersion into a line width, depends on wavelength
     sigma = velocity_to_sig(line_center, vel_disp)
+    amplitude = get_amp(flux, sigma)
+    # print(amplitude)
     fluxes = gaussian_func(wavelength, line_center, amplitude, sigma)
     return fluxes
+
+
+def fit_emission_line(rest_wavelength, fluxes, line_center):
+    """Fit an emission line from a gal_df
+
+    Parameters:
+    rest_wavelength (array): Wavelength array
+    fluxes (array): Fluxes array
+    line_center (float): Central wavelength (angstrom)
+    
+    """
+    guess_center = line_center
+    guess_amp = 0.15
+    guess_sigma = 6
+    guess = [guess_center, guess_amp, guess_sigma]
+    popt, pcov = curve_fit(gaussian_func, rest_wavelength, fluxes, guess)
+    center, amp, sigma = popt
+    line_flux, _ = get_flux(amp, sigma)
+    print(line_flux)
+    return center, amp, sigma, line_flux
 
 main()
