@@ -8,9 +8,48 @@ import initialize_mosdef_dirs as imd
 from scipy import interpolate
 from stack_spectra import perform_stack
 from scipy.optimize import curve_fit
+import time
+from astropy.io import ascii
+import os
+
+def plot_balmer_df_results():
+    file_dir = imd.axis_output_dir + f'/emline_stack_tests/emline_stack_balmer_dfs/'
+    files = os.listdir(file_dir)
+    
+    median_points = []
+    median_stds = []
+    mean_points = []
+    mean_stds = []
+    n_loops = []
+    for file in files:
+        n_loop = int(file.split('_')[2])
+        balmer_df = ascii.read(file_dir + file).to_pandas()
+        # Negative since we did target-stack
+        # median_points.append(np.mean(-balmer_df['median_diff']))
+        # median_stds.append(np.std(balmer_df['median_diff']))
+        balmer_df['median_diff_from_mean'] = balmer_df['stack_median']-balmer_df['target_mean']
+        median_points.append(np.mean(balmer_df['median_diff_from_mean']))
+        median_stds.append(np.mean(balmer_df['median_diff_from_mean']))
+        mean_points.append(np.mean(-balmer_df['mean_diff']))
+        mean_stds.append(np.std(balmer_df['mean_diff']))
+        n_loops.append(n_loop)
+
+    fig, ax = plt.subplots(figsize=(8,8))
+    ax.errorbar(n_loops, median_points, yerr=median_stds, ls='None', marker='o', color='black', label='Median')
+    ax.errorbar(n_loops, mean_points, yerr=mean_stds, ls='None', marker='o', color='orange', label='Mean')
+    # ax.plot((0.01, 0), (100000000, 0), ls='-', marker='o', color='red')
+    ax.axhline(0, color='red', ls='--')
+    ax.set_ylim(-0.3, 0.3)
+    ax.set_xlim(5, 1100)
+    ax.set_xscale('log')
+    ax.set_xlabel('Number of galaxies', fontsize=12)
+    ax.set_ylabel('Stack Balmer - Mean Source Balmer', fontsize=12)
+    ax.legend(fontsize=12)
+    fig.savefig(imd.axis_output_dir + f'/emline_stack_tests/balmer_summary_plot.pdf')
 
 
-def main(n_spec=10, n_loops=1, balmer_test=False):
+
+def main(n_spec=1000, n_loops=100, balmer_test=True):
     """
     Runs all the functions to generate the plot. 
 
@@ -19,9 +58,9 @@ def main(n_spec=10, n_loops=1, balmer_test=False):
     n_loops (int): How many itmes to repeat the process
     balmer_test (boolean): Whether or not to generate hbeta as well as halpha, makes slightly different plots
     """
+    start = time.time()
     loop_count = 0
     skip_figs = 0
-    balmer_decs
     while loop_count < n_loops: 
         if balmer_test:
             line_peaks = [4861, 6563]
@@ -33,9 +72,25 @@ def main(n_spec=10, n_loops=1, balmer_test=False):
         median_total_spec, _, _, _, _ = perform_stack('median', interp_spectrum_dfs, norm_factors)
         mean_total_spec, _, _, _, _ = perform_stack('mean', interp_spectrum_dfs, norm_factors)
         stacked_spec_df = pd.DataFrame(zip(median_total_spec, mean_total_spec), columns=['median_total_spec', 'mean_total_spec'])
-        plot_group_of_spectra(gal_dfs, interp_spectrum_dfs, stacked_spec_df, balmer_test, balmer_decs, skip_figs)
+        out_balmer_dec_df = plot_group_of_spectra(gal_dfs, interp_spectrum_dfs, stacked_spec_df, balmer_test, balmer_decs, skip_figs)
+        if n_loops == 1:
+            return
+        if loop_count == 0:
+            # Creates a copy where changes aren't reflected in original
+            balmer_dec_df = out_balmer_dec_df.copy(deep=True)
+        else:
+            balmer_dec_df = pd.concat([balmer_dec_df, out_balmer_dec_df])
         skip_figs = 1
         loop_count += 1
+    balmer_dec_df['mean_diff'] = balmer_dec_df['target_mean']-balmer_dec_df['stack_mean']
+    balmer_dec_df['median_diff'] = balmer_dec_df['target_median']-balmer_dec_df['stack_median']
+    print(np.mean(balmer_dec_df['mean_diff']))
+    print(np.std(balmer_dec_df['mean_diff']))
+    print(np.mean(balmer_dec_df['median_diff']))
+    print(np.std(balmer_dec_df['median_diff']))
+    balmer_dec_df.to_csv(imd.axis_output_dir + f'/emline_stack_tests/emline_stack_balmer_dfs/balmer_df_{n_spec}_{n_loops}.csv', index=False)
+    end = time.time()
+    print(f'Runtime = {end-start}')
 
 def plot_group_of_spectra(gal_dfs, interp_spectrum_dfs, stacked_spec_df, balmer_test, balmer_decs, skip_figs = False):
     """Plots the spectra passed to it
@@ -115,17 +170,19 @@ def plot_group_of_spectra(gal_dfs, interp_spectrum_dfs, stacked_spec_df, balmer_
         # median_dec = ha_median_line_flux / hb_median_line_flux
         median_zoffset, median_velocity, median_ha_amp, median_hb_amp, median_ha_flux, median_hb_flux, median_balmer_dec = fit_ha_hb(spec_wavelength, stacked_spec_df['median_total_spec'])
         mean_zoffset, mean_velocity, mean_ha_amp, mean_hb_amp, mean_ha_flux, mean_hb_flux, mean_balmer_dec = fit_ha_hb(spec_wavelength, stacked_spec_df['mean_total_spec'])
-        print(f'mean: {mean_balmer_dec}')
-        print(f'median: {median_balmer_dec}')
-        print(f'target mean: {np.mean(balmer_decs)}')
-        print(f'target median: {np.median(balmer_decs)}')
+        # print(f'mean: {mean_balmer_dec}')
+        # print(f'median: {median_balmer_dec}')
+        # print(f'target mean: {np.mean(balmer_decs)}')
+        # print(f'target median: {np.median(balmer_decs)}')
 
         median_fit_fluxes = gauss_ha_hb(spec_wavelength, median_zoffset, median_velocity, median_ha_amp, median_hb_amp)
         mean_fit_fluxes = gauss_ha_hb(spec_wavelength, mean_zoffset, mean_velocity, mean_ha_amp, mean_hb_amp)
-    fit_flux_df = pd.DataFrame(zip(median_fit_fluxes, mean_fit_fluxes), columns=['median_fit', 'mean_fit'])
+        balmer_out_df = pd.DataFrame([[mean_balmer_dec, median_balmer_dec, np.mean(balmer_decs), np.median(balmer_decs)]], columns=['stack_mean', 'stack_median', 'target_mean', 'target_median'])
 
+
+    fit_flux_df = pd.DataFrame(zip(median_fit_fluxes, mean_fit_fluxes), columns=['median_fit', 'mean_fit'])
+    
     if skip_figs == True:
-        balmer_out_df = pd.DataFrame(zip(mean_balmer_dec, median_balmer_dec, np.mean(balmer_decs), np.median(balmer_decs)), columns=['stack_mean', 'stack_median', 'target_mean', 'target_median'])
         return balmer_out_df
 
 
@@ -164,7 +221,9 @@ def plot_group_of_spectra(gal_dfs, interp_spectrum_dfs, stacked_spec_df, balmer_
         save_addon = ''
     fig.savefig(imd.axis_output_dir + f'/emline_stack_tests/stacked_{len(gal_dfs)}_{save_addon}.pdf')
     plt.close('all') 
-    return _ 
+    if balmer_test==False:
+        balmer_out_df = 1
+    return balmer_out_df
 
 def interpolate_spec(spectrum_df, balmer_test):
     """Interpolate teh spectrum and add uncertainties in the same way that is done in stack_spectra"""
@@ -313,4 +372,5 @@ def gauss_ha_hb(wavelength_cut, z_offset, velocity, ha_amp, hb_amp):
     return combined_gauss
 
 
-main()
+# main()
+plot_balmer_df_results()
