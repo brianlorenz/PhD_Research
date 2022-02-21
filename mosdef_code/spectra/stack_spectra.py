@@ -231,6 +231,7 @@ def stack_spectra(groupID, norm_method, re_observe=False, mask_negatives=False, 
             spectrum_flux_norm = norm_interp(spectrum_wavelength)
             spectrum_err_norm = err_interp(spectrum_wavelength)
             cont_norm = cont_interp(spectrum_wavelength)
+
             # After interpolation, we need to set points to zero that fall in
             # the ranges
             idx_clips = clip_spectrum(
@@ -244,6 +245,10 @@ def stack_spectra(groupID, norm_method, re_observe=False, mask_negatives=False, 
             # Store the interpolated spectrum
             interp_spectrum_df = pd.DataFrame(zip(spectrum_wavelength, spectrum_flux_norm, spectrum_err_norm, cont_norm),
                                               columns=['rest_wavelength', 'f_lambda_norm', 'err_f_lambda_norm', 'cont_norm'])
+            if axis_stack:
+                imd.check_and_make_dir(imd.axis_cluster_data_dir + f'/{save_name}/{save_name}_indiv_spectra')
+                imd.check_and_make_dir(imd.axis_cluster_data_dir + f'/{save_name}/{save_name}_indiv_spectra/{axis_group}')
+                interp_spectrum_df.to_csv(imd.axis_cluster_data_dir + f'/{save_name}/{save_name}_indiv_spectra/{axis_group}/{field}_{v4id}_interp_spec_df.csv', index=False)
             interp_cluster_spectra_dfs.append(interp_spectrum_df)
             norm_factors.append(norm_factor)
 
@@ -480,8 +485,11 @@ def clip_spectrum(spectrum_df, padded_mask, spectrum_wavelength, spectrum_flux_n
     return idx_clips
 
 def norm_axis_stack(ha_flux, z_spec):
-    ha_luminosity = flux_to_luminosity(ha_flux, z_spec)
-    norm_factor = 3e41 / ha_luminosity
+    """To keep them all at the same area under the curve of the halpha line, we should normalize by flux and NOT luminosity
+    """
+    # ha_luminosity = flux_to_luminosity(ha_flux, z_spec)
+    # norm_factor = 3e41 / ha_luminosity
+    norm_factor = 1e-17/ha_flux
     return norm_factor
 
 
