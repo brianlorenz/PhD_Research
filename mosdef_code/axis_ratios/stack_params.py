@@ -1,4 +1,3 @@
-from inspect import stack
 from perform_axis_stack import stack_all_and_plot_all
 
 
@@ -49,7 +48,7 @@ def make_both_ssfrs_4bin_mean_2axis_params(run_stack = False, only_plot = False)
 both_ssfrs_4bin_mean_2axis_params = make_both_ssfrs_4bin_mean_2axis_params()
 
 # Normal 12bin using combined sfrs, using sfr2 when both lines are good, halpha_sfr when hbeta is below 3 sigma (or not covered)
-def make_both_ssfrs_4bin_mean_params(run_stack = False, only_plot = False):
+def make_both_ssfrs_4bin_mean_params(run_stack = True, only_plot = False):
     run_stack = run_stack
     only_plot = only_plot
     mass_width = 0.8
@@ -81,7 +80,7 @@ def make_mosdef_ssfr_4bin_mean_params(run_stack = False, only_plot = False):
 mosdef_ssfr_4bin_mean_params = make_mosdef_ssfr_4bin_mean_params()
 
 # Normal 12bin using only sfr2 rates + lower limits, with median stack
-def make_mosdef_ssfr_4bin_median_params(run_stack = True, only_plot = False):
+def make_mosdef_ssfr_4bin_median_params(run_stack = False, only_plot = False):
     run_stack = run_stack
     only_plot = only_plot
     mass_width = 0.8
@@ -97,7 +96,7 @@ def make_mosdef_ssfr_4bin_median_params(run_stack = True, only_plot = False):
 mosdef_ssfr_4bin_median_params = make_mosdef_ssfr_4bin_median_params()
 
 # 12 bins halpha sfrs only,shifted the left boxes higher
-def make_halpha_ssfr_4bin_mean_shifted_params(run_stack = True, only_plot = False):
+def make_halpha_ssfr_4bin_mean_shifted_params(run_stack = False, only_plot = False):
     run_stack = run_stack
     only_plot = only_plot
     mass_width = 0.8
