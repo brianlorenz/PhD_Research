@@ -7,14 +7,29 @@ from astropy.io import ascii
 import pandas as pd
 import os
 import sys
+from mosdef_obj_data_funcs import read_sed, get_mosdef_obj
 
 
 def read_norm_specs(save_name, axis_group):
     spec_dir = imd.axis_cluster_data_dir + f'/{save_name}/{save_name}_indiv_spectra/{axis_group}'
     spec_files = os.listdir(spec_dir)
     spec_dfs = [ascii.read(spec_dir + '/' + filename).to_pandas() for filename in spec_files if '.csv' in filename]
+    fields = [filename.split('_')[0] for filename in spec_files if '.csv' in filename]
+    v4ids = [int(filename.split('_')[1]) for filename in spec_files if '.csv' in filename]
+    mosdef_objs = [get_mosdef_obj(fields[i], v4ids[i]) for i in range(len(fields))]
+    redshifts = [obj['Z_MOSFIRE_USE'] for obj in mosdef_objs]
+    line_fluxes = []
     for i in range(len(spec_dfs)):
-        plot_norm_spec(spec_dfs[i], save_name, axis_group, spec_files[i])
+        line_fluxes.append(plot_norm_spec(spec_dfs[i], save_name, axis_group, spec_files[i]))
+
+    fig, ax = plt.subplots(figsize=(8,8))
+    ax.plot(redshifts, line_fluxes, ls='None', marker='o', color='black')
+    ax.set_xlabel('Redshift', fontsize=14)
+    ax.set_ylabel('Normalized Flux', fontsize=14)
+    ax.tick_params(labelsize=14)
+    fig.savefig(imd.axis_cluster_data_dir + f'/{save_name}/{save_name}_indiv_spec_plots/{axis_group}/cumulative_fig.pdf')
+    plt.close('all')
+
     
 
 def plot_norm_spec(spec_df, save_name, axis_group, filename):
@@ -41,5 +56,6 @@ def plot_norm_spec(spec_df, save_name, axis_group, filename):
     imd.check_and_make_dir(imd.axis_cluster_data_dir + f'/{save_name}/{save_name}_indiv_spec_plots/{axis_group}')
     fig.savefig(imd.axis_cluster_data_dir + f'/{save_name}/{save_name}_indiv_spec_plots/{axis_group}/{filename}.pdf')
     plt.close('all')
+    return line_flux
 
-read_norm_specs('both_ssfrs_4bin_mean_haflux_stack', 0)
+read_norm_specs('both_ssfrs_4bin_mean', 0)

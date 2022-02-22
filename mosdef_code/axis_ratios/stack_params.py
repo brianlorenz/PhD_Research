@@ -57,7 +57,7 @@ def make_both_ssfrs_4bin_mean_params(run_stack = True, only_plot = False):
     ratio_bins = [0.4, 0.7]
     nbins = 12
     split_by = 'log_use_ssfr'
-    save_name = 'both_ssfrs_4bin_mean'
+    save_name = 'both_ssfrs_4bin_mean_ha_stack'
     stack_type = 'mean'
     both_ssfrs_4bin_mean_params = stack_params(mass_width, split_width, starting_points, ratio_bins, nbins, split_by, save_name, stack_type, only_plot, run_stack)
     return both_ssfrs_4bin_mean_params
