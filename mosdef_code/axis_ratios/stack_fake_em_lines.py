@@ -12,8 +12,8 @@ import time
 from astropy.io import ascii
 import os
 
-def plot_balmer_df_results():
-    file_dir = imd.axis_output_dir + f'/emline_stack_tests/emline_stack_balmer_dfs/'
+def plot_balmer_df_results(save_dir='/fixed_z_and_vel'):
+    file_dir = imd.axis_output_dir + f'/emline_stack_tests{save_dir}/emline_stack_balmer_dfs/'
     files = os.listdir(file_dir)
     
     median_points = []
@@ -45,11 +45,11 @@ def plot_balmer_df_results():
     ax.set_xlabel('Number of galaxies', fontsize=12)
     ax.set_ylabel('Stack Balmer - Mean Source Balmer', fontsize=12)
     ax.legend(fontsize=12)
-    fig.savefig(imd.axis_output_dir + f'/emline_stack_tests/balmer_summary_plot.pdf')
+    fig.savefig(imd.axis_output_dir + f'/emline_stack_tests{save_dir}/balmer_summary_plot.pdf')
 
 
 
-def main(n_spec=1000, n_loops=100, balmer_test=True):
+def main(n_spec=100, n_loops=100, balmer_test=True, fixed_variables=['redshift', 'vel_disp'], save_dir='/fixed_z_and_vel'):
     """
     Runs all the functions to generate the plot. 
 
@@ -57,6 +57,7 @@ def main(n_spec=1000, n_loops=100, balmer_test=True):
     n_spec (int): Number of spectra to generate
     n_loops (int): How many itmes to repeat the process
     balmer_test (boolean): Whether or not to generate hbeta as well as halpha, makes slightly different plots
+    fixed_variables (list of str): Which variable to hold constant ['redshift', 'vel_disp']
     """
     start = time.time()
     loop_count = 0
@@ -66,13 +67,13 @@ def main(n_spec=1000, n_loops=100, balmer_test=True):
             line_peaks = [4861, 6563]
         else:
             line_peaks = [6563]
-        gal_dfs, balmer_decs = generate_group_of_spectra(n_spec=n_spec, line_peaks = line_peaks)
+        gal_dfs, balmer_decs = generate_group_of_spectra(n_spec=n_spec, line_peaks = line_peaks, fixed_variables = fixed_variables)
         interp_spectrum_dfs = [interpolate_spec(gal_dfs[i], balmer_test) for i in range(len(gal_dfs))]
         norm_factors = np.ones(len(interp_spectrum_dfs))
         median_total_spec, _, _, _, _ = perform_stack('median', interp_spectrum_dfs, norm_factors)
         mean_total_spec, _, _, _, _ = perform_stack('mean', interp_spectrum_dfs, norm_factors)
         stacked_spec_df = pd.DataFrame(zip(median_total_spec, mean_total_spec), columns=['median_total_spec', 'mean_total_spec'])
-        out_balmer_dec_df = plot_group_of_spectra(gal_dfs, interp_spectrum_dfs, stacked_spec_df, balmer_test, balmer_decs, skip_figs)
+        out_balmer_dec_df = plot_group_of_spectra(save_dir, gal_dfs, interp_spectrum_dfs, stacked_spec_df, balmer_test, balmer_decs, skip_figs)
         if n_loops == 1:
             return
         if loop_count == 0:
@@ -88,11 +89,12 @@ def main(n_spec=1000, n_loops=100, balmer_test=True):
     print(np.std(balmer_dec_df['mean_diff']))
     print(np.mean(balmer_dec_df['median_diff']))
     print(np.std(balmer_dec_df['median_diff']))
-    balmer_dec_df.to_csv(imd.axis_output_dir + f'/emline_stack_tests/emline_stack_balmer_dfs/balmer_df_{n_spec}_{n_loops}.csv', index=False)
+    imd.check_and_make_dir(imd.axis_output_dir + f'/emline_stack_tests{save_dir}/emline_stack_balmer_dfs')
+    balmer_dec_df.to_csv(imd.axis_output_dir + f'/emline_stack_tests{save_dir}/emline_stack_balmer_dfs/balmer_df_{n_spec}_{n_loops}.csv', index=False)
     end = time.time()
     print(f'Runtime = {end-start}')
 
-def plot_group_of_spectra(gal_dfs, interp_spectrum_dfs, stacked_spec_df, balmer_test, balmer_decs, skip_figs = False):
+def plot_group_of_spectra(save_dir, gal_dfs, interp_spectrum_dfs, stacked_spec_df, balmer_test, balmer_decs, skip_figs = False):
     """Plots the spectra passed to it
     
     """
@@ -219,7 +221,8 @@ def plot_group_of_spectra(gal_dfs, interp_spectrum_dfs, stacked_spec_df, balmer_
         save_addon = 'balmer'
     else:
         save_addon = ''
-    fig.savefig(imd.axis_output_dir + f'/emline_stack_tests/stacked_{len(gal_dfs)}_{save_addon}.pdf')
+    imd.check_and_make_dir(imd.axis_output_dir + f'/emline_stack_tests{save_dir}')
+    fig.savefig(imd.axis_output_dir + f'/emline_stack_tests{save_dir}/stacked_{len(gal_dfs)}_{save_addon}.pdf')
     plt.close('all') 
     if balmer_test==False:
         balmer_out_df = 1
@@ -239,16 +242,22 @@ def interpolate_spec(spectrum_df, balmer_test):
     interp_spectrum_df = pd.DataFrame(zip(spectrum_wavelength, spectrum_flux_norm, spectrum_err_norm, cont_norm), columns=['rest_wavelength', 'f_lambda_norm', 'err_f_lambda_norm', 'cont_norm'])
     return interp_spectrum_df
 
-def generate_group_of_spectra(n_spec=9, line_peaks = [4861, 6563]):
+def generate_group_of_spectra(n_spec=9, line_peaks = [4861, 6563], fixed_variables=[]):
     """Makes a group of spectra from the parameter space
 
     Parameters:
     n_spec (int): Number of spectra to generate
     line_peaks (array): Peak wavelengths of the lines to generate for
+    fixed_variables (list of str): Which variables not to randomize
     """
-    
-    zs = [np.random.random() + 1.6 for i in range(n_spec)]
-    vel_disps = [np.random.random()*80 + 70 for i in range(n_spec)]
+    if 'redshift' in fixed_variables:
+        zs = [2 for i in range(n_spec)]
+    else:
+        zs = [np.random.random() + 1.6 for i in range(n_spec)]
+    if 'vel_disp' in fixed_variables:
+        vel_disps = [100 for i in range(n_spec)]
+    else:
+        vel_disps = [np.random.random()*80 + 70 for i in range(n_spec)]
     balmer_decs = [np.random.random()*3 + 3 for i in range(n_spec)]
     gal_dfs = [generate_fake_galaxy_prop(zs[i], 1, vel_disps[i], line_peaks, balmer_decs[i]) for i in range(n_spec)]
     return gal_dfs, balmer_decs
