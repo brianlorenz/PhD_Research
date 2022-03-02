@@ -11,8 +11,10 @@ from scipy.optimize import curve_fit
 import time
 from astropy.io import ascii
 import os
+import matplotlib as mpl
 
-def plot_balmer_df_results(save_dir='/fixed_z_and_vel'):
+
+def plot_balmer_df_results(save_dir='/fixed_balmer_vel_z'):
     file_dir = imd.axis_output_dir + f'/emline_stack_tests{save_dir}/emline_stack_balmer_dfs/'
     files = os.listdir(file_dir)
     
@@ -49,7 +51,7 @@ def plot_balmer_df_results(save_dir='/fixed_z_and_vel'):
 
 
 
-def main(n_spec=100, n_loops=100, balmer_test=True, fixed_variables=['redshift', 'vel_disp'], save_dir='/fixed_z_and_vel'):
+def main(n_spec=10, n_loops=100, balmer_test=True, fixed_variables=['balmer_dec','vel_disp','redshift'], save_dir='/fixed_balmer_vel_z'):
     """
     Runs all the functions to generate the plot. 
 
@@ -57,7 +59,7 @@ def main(n_spec=100, n_loops=100, balmer_test=True, fixed_variables=['redshift',
     n_spec (int): Number of spectra to generate
     n_loops (int): How many itmes to repeat the process
     balmer_test (boolean): Whether or not to generate hbeta as well as halpha, makes slightly different plots
-    fixed_variables (list of str): Which variable to hold constant ['redshift', 'vel_disp']
+    fixed_variables (list of str): Which variable to hold constant ['redshift', 'vel_disp', 'balmer_dec]
     """
     start = time.time()
     loop_count = 0
@@ -258,7 +260,10 @@ def generate_group_of_spectra(n_spec=9, line_peaks = [4861, 6563], fixed_variabl
         vel_disps = [100 for i in range(n_spec)]
     else:
         vel_disps = [np.random.random()*80 + 70 for i in range(n_spec)]
-    balmer_decs = [np.random.random()*3 + 3 for i in range(n_spec)]
+    if 'balmer_dec' in fixed_variables:
+        balmer_decs = [4.5 for i in range(n_spec)]
+    else:
+        balmer_decs = [np.random.random()*3 + 3 for i in range(n_spec)]
     gal_dfs = [generate_fake_galaxy_prop(zs[i], 1, vel_disps[i], line_peaks, balmer_decs[i]) for i in range(n_spec)]
     return gal_dfs, balmer_decs
 
@@ -381,5 +386,28 @@ def gauss_ha_hb(wavelength_cut, z_offset, velocity, ha_amp, hb_amp):
     return combined_gauss
 
 
+def plot_range_of_vel_disp():
+    """Makes a plot of the same amplitude with a range of velocity dispersions"""
+    line_peaks = [6563]
+    n_spec=10
+    zs = [2 for i in range(n_spec)]
+    balmer_decs = [4 for i in range(n_spec)]
+    vel_disps = np.arange(70, 150, 80/n_spec)
+    gal_dfs = [generate_fake_galaxy_prop(zs[i], 1, vel_disps[i], line_peaks, balmer_decs[i]) for i in range(n_spec)]
+    
+    fig, ax = plt.subplots(figsize=(9,8))
+    cmap = mpl.cm.inferno 
+    norm = mpl.colors.Normalize(vmin=70, vmax=150) 
+    for i in range(n_spec):
+        rgba = cmap(norm(vel_disps[i]))
+        ax.plot(gal_dfs[i]['rest_wavelength'], gal_dfs[i]['f_lambda_norm'], color=rgba)
+    cbar = fig.colorbar(mpl.cm.ScalarMappable(norm=norm, cmap=cmap), ax=ax)
+    cbar.set_label('Velocity Dispersion (km/s)', fontsize=14)
+    ax.set_title('Fixed z=2, Flux = 1', fontsize=14)
+    ax.set_xlabel('Rest Wavelength', fontsize=14)
+    ax.set_ylabel('f_lambda', fontsize=14)
+    fig.savefig(imd.axis_output_dir + '/emline_stack_tests/var_veldisp_ha.pdf')
+
 # main()
-plot_balmer_df_results()
+# plot_balmer_df_results()
+# plot_range_of_vel_disp()
