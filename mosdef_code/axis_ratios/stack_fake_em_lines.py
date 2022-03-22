@@ -12,6 +12,7 @@ import time
 from astropy.io import ascii
 import os
 import matplotlib as mpl
+from scipy.interpolate import interp1d
 
 
 def plot_balmer_df_results(save_dir='/fixed_balmer_vel_z'):
@@ -58,7 +59,7 @@ def plot_balmer_df_results(save_dir='/fixed_balmer_vel_z'):
 
 
 
-def main(n_spec=10, n_loops=100, balmer_test=True, fixed_variables=['balmer_dec','vel_disp','redshift'], save_dir='/fixed_balmer_vel_z', interp_resolution=0.5):
+def main(n_spec=100, n_loops=100, balmer_test=True, fixed_variables=[], save_dir='/all_free_smoothvel', interp_resolution=0.5, smooth_vel=1):
     """
     Runs all the functions to generate the plot. 
 
@@ -68,6 +69,7 @@ def main(n_spec=10, n_loops=100, balmer_test=True, fixed_variables=['balmer_dec'
     balmer_test (boolean): Whether or not to generate hbeta as well as halpha, makes slightly different plots
     fixed_variables (list of str): Which variable to hold constant ['redshift', 'vel_disp', 'balmer_dec]
     interp_resolution (float): Number of angstroms per pixel (pixel scale?)
+    smooth_vel (boolean): Set to 1 to smooth the velocity dispersion to 200kms
     """
     start = time.time()
     loop_count = 0
@@ -77,7 +79,7 @@ def main(n_spec=10, n_loops=100, balmer_test=True, fixed_variables=['balmer_dec'
             line_peaks = [4861, 6563]
         else:
             line_peaks = [6563]
-        gal_dfs, balmer_decs = generate_group_of_spectra(n_spec=n_spec, line_peaks = line_peaks, fixed_variables = fixed_variables)
+        gal_dfs, balmer_decs = generate_group_of_spectra(n_spec=n_spec, line_peaks = line_peaks, fixed_variables = fixed_variables, smooth_vel=smooth_vel)
         interp_spectrum_dfs = [interpolate_spec(gal_dfs[i], balmer_test, resolution=interp_resolution) for i in range(len(gal_dfs))]
         norm_factors = np.ones(len(interp_spectrum_dfs))
         median_total_spec, _, _, _, _ = perform_stack('median', interp_spectrum_dfs, norm_factors)
@@ -252,13 +254,14 @@ def interpolate_spec(spectrum_df, balmer_test, resolution=0.5):
     interp_spectrum_df = pd.DataFrame(zip(spectrum_wavelength, spectrum_flux_norm, spectrum_err_norm, cont_norm), columns=['rest_wavelength', 'f_lambda_norm', 'err_f_lambda_norm', 'cont_norm'])
     return interp_spectrum_df
 
-def generate_group_of_spectra(n_spec=9, line_peaks = [4861, 6563], fixed_variables=[]):
+def generate_group_of_spectra(n_spec=9, line_peaks = [4861, 6563], fixed_variables=[], smooth_vel=0):
     """Makes a group of spectra from the parameter space
 
     Parameters:
     n_spec (int): Number of spectra to generate
     line_peaks (array): Peak wavelengths of the lines to generate for
     fixed_variables (list of str): Which variables not to randomize
+    smooth_vel (boolean): Set to 1 to smooth to velocity dispersion
     """
     if 'redshift' in fixed_variables:
         zs = [2 for i in range(n_spec)]
@@ -272,10 +275,10 @@ def generate_group_of_spectra(n_spec=9, line_peaks = [4861, 6563], fixed_variabl
         balmer_decs = [4.5 for i in range(n_spec)]
     else:
         balmer_decs = [np.random.random()*3 + 3 for i in range(n_spec)]
-    gal_dfs = [generate_fake_galaxy_prop(zs[i], 1, vel_disps[i], line_peaks, balmer_decs[i]) for i in range(n_spec)]
+    gal_dfs = [generate_fake_galaxy_prop(zs[i], 1, vel_disps[i], line_peaks, balmer_decs[i], smooth_vel=smooth_vel) for i in range(n_spec)]
     return gal_dfs, balmer_decs
 
-def generate_fake_galaxy_prop(z, flux, vel_disp, line_peaks, balmer_dec):
+def generate_fake_galaxy_prop(z, flux, vel_disp, line_peaks, balmer_dec, smooth_vel=0):
     """Makes a fake galaxy spectrum with the properties specified
     
     Parameters:
@@ -284,6 +287,7 @@ def generate_fake_galaxy_prop(z, flux, vel_disp, line_peaks, balmer_dec):
     vel_disp (float): velocity dispersion of the galaxy 
     line_peaks (array): Peak wavelengths of the lines to generate for
     balmer_dec (float): Ratio between halpha and hbeta lines. Halpha stays fixed to 1, hbeta is some fraction of its flux
+    smooth_vel (boolean): Set to 1 to smooth the velocity dispersion of the spectrum
     """
     line_dfs = []
     for line_peak in line_peaks:
@@ -296,6 +300,10 @@ def generate_fake_galaxy_prop(z, flux, vel_disp, line_peaks, balmer_dec):
         fluxes = generate_emission_line(wavelength, use_flux, vel_disp)
         rest_wavelength = wavelength / (1+z)
         rest_flux = fluxes * (1+z)
+
+        if smooth_vel:
+            fluxes = smooth_velocity(rest_wavelength, rest_flux, vel_disp)
+
         line_df = pd.DataFrame(zip(wavelength, fluxes, rest_wavelength, rest_flux), columns = ['wavelength', 'flux', 'rest_wavelength', 'f_lambda_norm'])
         line_dfs.append(line_df)
     gal_df = pd.concat(line_dfs)
@@ -416,7 +424,48 @@ def plot_range_of_vel_disp():
     ax.set_ylabel('f_lambda', fontsize=14)
     fig.savefig(imd.axis_output_dir + '/emline_stack_tests/var_veldisp_ha.pdf')
 
-# main()
-plot_balmer_df_results(save_dir='/old_all_free')
+
+def smooth_velocity(wave,spec,insig,mask=None,sigma=200,scale=1):
+    '''
+    Convolve spectrum to desired velocity dispersion
+    Code inspired by prospector 'smooth_vel' function in 'smoothing.py'
+
+    :param wave:
+        The wavelength vector of the input spectrum, ndarray.  Assumed
+        angstroms.
+    :param spec:
+        The flux vector of the input spectrum, ndarray
+    :param insig:
+        The velocity dispersion of the input spectrum
+    :param mask:
+        Wavelengths to mask (eg skylines), these are interpolated over before convolving.
+    :param sigma:
+        Desired velocity resolution (km/s), *not* FWHM.
+    :returns flux:
+        The smoothed spectrum on the input wave grid, ndarray.
+    '''
+    sigma_eff_sq = sigma**2 - insig**2
+    if np.any(sigma_eff_sq) < 0.0:
+        raise ValueError("Desired velocity resolution smaller than the value"
+                        "possible for this input spectrum.".format(insig))
+    # sigma_eff is in units of sigma_lambda / lambda
+    sigma_eff = np.sqrt(sigma_eff_sq) / 299792
+
+    if mask is not None:
+        y = interp1d(wave[~mask],spec[~mask],fill_value='extrapolate')
+        spec = y(wave)
+
+    flux = np.zeros(len(wave))
+    for i, w in enumerate(wave):
+        # x = (np.log(w) - lnwave) / sigma_eff # what's used in propsector
+        x = (w-wave)/(sigma_eff*w) # what makes more sense to me (gives same result)
+        f = np.exp(-0.5 * x**2) / np.trapz(np.exp(-0.5 * x**2), wave)
+        flux[i] = np.trapz(f**scale * spec, wave) # / np.trapz(f, wave)
+
+    return flux
+
+
+main()
+# plot_balmer_df_results(save_dir='/old_all_free')
 # plot_range_of_vel_disp()
 # main(n_spec=10, n_loops=10, balmer_test=True, fixed_variables=[], save_dir='/resolution_001_allfree', interp_resolution=0.001)

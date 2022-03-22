@@ -68,7 +68,7 @@ def make_mosdef_all_cats_2():
     err_eqwidth_hbs = []
 
     #mips data
-    mips_fluxs = [] 
+    mips_fluxes = [] 
     err_mips_fluxes = []
     mips_corr24s = []
     mips_exp24s = []
@@ -85,8 +85,8 @@ def make_mosdef_all_cats_2():
     metals_df = read_file(imd.mosdef_dir + '/Mosdef_cats/mosdef_metallicity_latest.fits')
     metals_df['FIELD_STR'] = [metals_df.iloc[i]['FIELD'].decode("utf-8").rstrip() for i in range(len(metals_df))]
 
-    mosdef_ir_df = read_file(imd.loc_ir_latest)
-    mosdef_ir_df['FIELD_STR'] = [mosdef_ir_df.iloc[i]['FIELD'].decode("utf-8").rstrip() for i in range(len(mosdef_ir_df))]
+    ir_df = read_file(imd.loc_ir_latest)
+    ir_df['FIELD_STR'] = [ir_df.iloc[i]['FIELD'].decode("utf-8").rstrip() for i in range(len(ir_df))]
 
     #### Sidenote, some objects are missing
     # np.sum((sfrs_df['ID'] - betas_df['ID']) != 0)    
@@ -123,7 +123,8 @@ def make_mosdef_all_cats_2():
         betas_slice = np.logical_and(betas_df['ID']==cat_id, betas_df['FIELD_STR']==field)
         metals_slice = np.logical_and(metals_df['ID']==cat_id, metals_df['FIELD_STR']==field)
         line_eq_slice = np.logical_and(line_eq_df['ID']==cat_id, line_eq_df['FIELD']==field)
-        
+        ir_slice = np.logical_and(ir_df['ID']==cat_id, ir_df['FIELD_STR']==field)
+
         hb_values.append(linemeas_df[linemeas_slice].iloc[0]['HB4863_FLUX'])
         hb_errs.append(linemeas_df[linemeas_slice].iloc[0]['HB4863_FLUX_ERR'])
         ha_values.append(linemeas_df[linemeas_slice].iloc[0]['HA6565_FLUX'])
@@ -169,6 +170,19 @@ def make_mosdef_all_cats_2():
             err_eqwidth_hbs.append(line_eq_df[line_eq_slice].iloc[0]['WHBERR'])
         
 
+        # Mips IR Data
+        if len(ir_df[ir_slice]) == 0:
+            mips_fluxes.append(-99)
+            err_mips_fluxes.append(-99)
+            mips_corr24s.append(-99)
+            mips_exp24s.append(-99)
+
+        else:
+            mips_fluxes.append(ir_df[ir_slice].iloc[0]['F24'])
+            err_mips_fluxes.append(ir_df[ir_slice].iloc[0]['E24'])
+            mips_corr24s.append(ir_df[ir_slice].iloc[0]['CORR24'])
+            mips_exp24s.append(ir_df[ir_slice].iloc[0]['EXP24'])
+
 
         
 
@@ -176,7 +190,7 @@ def make_mosdef_all_cats_2():
 
 
 
-    to_merge_df = pd.DataFrame(zip(fields, v4ids, agn_flags, masses, err_l_masses, err_h_masses, sfrs, err_sfrs, sfrs_corrs, ha_det_sfrs, hb_det_sfrs, res, err_res, zs, z_quals, avs, betas, hb_values, hb_errs, ha_values, ha_errs, logoh_pps, logoh_pps_ulims, logoh_pps_llims, n2_lim_flag, eqwidth_has, err_eqwidth_has, eqwidth_hbs, err_eqwidth_hbs), columns=['field', 'v4id', 'agn_flag', 'log_mass', 'err_log_mass_d', 'err_log_mass_u', 'sfr', 'err_sfr', 'sfr_corr', 'ha_detflag_sfr', 'hb_detflag_sfr', 'half_light', 'err_half_light', 'z', 'z_qual_flag', 'AV', 'beta', 'hb_flux', 'err_hb_flux', 'ha_flux', 'err_ha_flux', 'logoh_pp_n2', 'u68_logoh_pp_n2', 'l68_logoh_pp_n2', 'n2flag_metals', 'eq_width_ha', 'err_eq_width_ha', 'eq_width_hb', 'err_eq_width_hb'])
+    to_merge_df = pd.DataFrame(zip(fields, v4ids, agn_flags, masses, err_l_masses, err_h_masses, sfrs, err_sfrs, sfrs_corrs, ha_det_sfrs, hb_det_sfrs, res, err_res, zs, z_quals, avs, betas, hb_values, hb_errs, ha_values, ha_errs, logoh_pps, logoh_pps_ulims, logoh_pps_llims, n2_lim_flag, eqwidth_has, err_eqwidth_has, eqwidth_hbs, err_eqwidth_hbs, mips_fluxes, err_mips_fluxes, mips_corr24s, mips_exp24s), columns=['field', 'v4id', 'agn_flag', 'log_mass', 'err_log_mass_d', 'err_log_mass_u', 'sfr', 'err_sfr', 'sfr_corr', 'ha_detflag_sfr', 'hb_detflag_sfr', 'half_light', 'err_half_light', 'z', 'z_qual_flag', 'AV', 'beta', 'hb_flux', 'err_hb_flux', 'ha_flux', 'err_ha_flux', 'logoh_pp_n2', 'u68_logoh_pp_n2', 'l68_logoh_pp_n2', 'n2flag_metals', 'eq_width_ha', 'err_eq_width_ha', 'eq_width_hb', 'err_eq_width_hb', 'mips_flux', 'err_mips_flux', 'mips_corr24', 'mips_exp24'])
     merged_all_cats = all_cats_df.merge(to_merge_df, left_on=['v4id', 'field'], right_on=['v4id', 'field']) 
     merged_all_cats.to_csv(imd.loc_axis_ratio_cat, index=False)
 

@@ -86,6 +86,7 @@ def stack_all_and_plot_all(param_class):
     plot_balmer_dec(save_name, nbins, split_by, y_var='av', color_var=split_by)
     plot_balmer_dec(save_name, nbins, split_by, y_var='beta', color_var=split_by)
     plot_balmer_dec(save_name, nbins, split_by, y_var='metallicity', color_var=split_by)
+    plot_balmer_dec(save_name, nbins, split_by, y_var='mips_flux', color_var=split_by)
     time_end = time.time()
     print(f'Total program took {time_end-time_start}')
 
@@ -119,6 +120,8 @@ def plot_sample_split(n_groups, save_name, ratio_bins, starting_points, mass_wid
     err_av_medians = []
     beta_medians = []
     err_beta_medians = []
+    mips_flux_medians = []
+    err_mips_flux_medians = []
     keys = []
 
     # Figure 1 - Showing how the sample gets cut
@@ -138,10 +141,13 @@ def plot_sample_split(n_groups, save_name, ratio_bins, starting_points, mass_wid
         split_median = np.median(axis_ratio_df[variable])
         av_median = np.median(axis_ratio_df['AV'])
         beta_median = np.median(axis_ratio_df['beta'])
+        mips_flux_median = np.median(axis_ratio_df['mips_flux'])
 
         # Bootstrap errors on the medians
         err_av_median = bootstrap_median(axis_ratio_df['AV'])
         err_beta_median = bootstrap_median(axis_ratio_df['beta'])
+        # Better to bootstrap or use MAD?
+        err_mips_flux_median = bootstrap_median(axis_ratio_df['mips_flux'])
 
 
         # Figure out what axis ratio bin (+1 is since the bins are dividers)
@@ -204,6 +210,8 @@ def plot_sample_split(n_groups, save_name, ratio_bins, starting_points, mass_wid
         err_av_medians.append(err_av_median)
         beta_medians.append(beta_median)
         err_beta_medians.append(err_beta_median)
+        mips_flux_medians.append(mips_flux_median)
+        err_mips_flux_medians.append(err_mips_flux_median)
         keys.append(key)
 
 
@@ -239,7 +247,7 @@ def plot_sample_split(n_groups, save_name, ratio_bins, starting_points, mass_wid
 
 
 
-    summary_df = pd.DataFrame(zip(group_num, axis_medians, mass_medians, split_medians, av_medians, err_av_medians, beta_medians, err_beta_medians, shapes_list, color_list, keys), columns=['axis_group','use_ratio_median', 'log_mass_median', variable+'_median', 'av_median', 'err_av_median', 'beta_median', 'err_beta_median', 'shape', 'color', 'key'])
+    summary_df = pd.DataFrame(zip(group_num, axis_medians, mass_medians, split_medians, av_medians, err_av_medians, beta_medians, err_beta_medians, mips_flux_medians, err_mips_flux_medians, shapes_list, color_list, keys), columns=['axis_group','use_ratio_median', 'log_mass_median', variable+'_median', 'av_median', 'err_av_median', 'beta_median', 'err_beta_median', 'mips_flux_median', 'err_mips_flux_median', 'shape', 'color', 'key'])
     summary_df.to_csv(imd.axis_cluster_data_dir + f'/{save_name}/summary.csv', index=False)
 
 
@@ -308,14 +316,16 @@ def plot_balmer_dec(save_name, n_groups, split_by, y_var = 'balmer_dec', color_v
             'balmer_dec': (2, 10),
             'av': (0.25, 1.1),
             'beta': (-1.9, -0.95),
-            'metallicity': (8.1, 8.7)
+            'metallicity': (8.1, 8.7),
+            'mips_flux': (0, 0.043)
         }
     else:
         ylims = {
             'balmer_dec': (2, 7),
             'av': (0.25, 1.1),
             'beta': (-1.9, -0.95),
-            'metallicity': (8.1, 8.7)
+            'metallicity': (8.1, 8.7),
+            'mips_flux': (0, 0.043)
         }
     
     # Read in summary df
@@ -416,6 +426,15 @@ def plot_balmer_dec(save_name, n_groups, split_by, y_var = 'balmer_dec', color_v
             ax.errorbar(x_cord, y_cord, yerr=row['err_metallicity_median'], marker='None', color=rgba)
             ax.add_artist(Ellipse((x_cord, y_cord), ellipse_width, ellipse_height, facecolor=rgba))
             ax.set_ylabel('Metallicity', fontsize=axis_fontsize)
+        elif y_var == 'mips_flux':
+            x_cord = row['use_ratio_median']
+            y_cord = row['mips_flux_median']
+
+            ellipse_width, ellipse_height = get_ellipse_shapes(1.1, y_axis_len, row['shape'])
+
+            ax.errorbar(x_cord, y_cord, yerr=row['err_mips_flux_median'], marker='None', color=rgba)
+            ax.add_artist(Ellipse((x_cord, y_cord), ellipse_width, ellipse_height, facecolor=rgba))
+            ax.set_ylabel('MIPS Flux', fontsize=axis_fontsize)
     
     for ax in axarr:
         ax.set_xlabel('Axis Ratio', fontsize=axis_fontsize) 
@@ -484,7 +503,16 @@ def plot_balmer_dec(save_name, n_groups, split_by, y_var = 'balmer_dec', color_v
 
             ax.errorbar(x_cord, y_cord, yerr=row['err_metallicity_median'], marker='None', color=rgba)
             ax.add_artist(Ellipse((x_cord, y_cord), ellipse_width, ellipse_height, facecolor=rgba))
-            ax.set_ylabel('Betaphot', fontsize=axis_fontsize)
+            ax.set_ylabel('Metallcity', fontsize=axis_fontsize)
+        elif y_var == 'mips_flux':
+            x_cord = row['log_mass_median']
+            y_cord = row['mips_flux_median']
+            
+            ellipse_width, ellipse_height = get_ellipse_shapes(1.5, y_axis_len, row['shape'])
+
+            ax.errorbar(x_cord, y_cord, yerr=row['err_mips_flux_median'], marker='None', color=rgba)
+            ax.add_artist(Ellipse((x_cord, y_cord), ellipse_width, ellipse_height, facecolor=rgba))
+            ax.set_ylabel('MIPS Flux', fontsize=axis_fontsize)
 
 
 
