@@ -10,7 +10,7 @@ import matplotlib as mpl
 from matplotlib.patches import Ellipse
 from ellipses_for_plotting import get_ellipse_shapes
 from plot_overlaid_spectra import plot_overlaid_spectra
-from axis_group_metallicities import plot_metals
+from axis_group_metallicities import add_metals_to_summary_df, plot_metals, measure_metals, plot_group_metals_compare, plot_mass_metal
 import random
 import matplotlib.gridspec as gridspec
 import time
@@ -41,7 +41,7 @@ colors = {'sorted0': 'red', 'sorted1': 'blue', 'sorted2': 'orange', 'sorted3': '
 
 
 def stack_all_and_plot_all(param_class):
-    '''performs all the steps to get this group plotted
+    '''performs all t he steps to get this group plotted
     
     Parameters:
     nbins (int): Number of total bins, calculated as mass_bins*ssfr_bins*axis_ratio_bins
@@ -77,9 +77,15 @@ def stack_all_and_plot_all(param_class):
     plot_sample_split(nbins, save_name, ratio_bins, starting_points, mass_width, split_width, nbins)
     plot_overlaid_spectra(save_name, plot_cont_sub=True)
     plot_metals(save_name)
-    plot_balmer_dec(save_name, nbins, split_by, y_var='balmer_dec')
-    plot_balmer_dec(save_name, nbins, split_by, y_var='av')
-    plot_balmer_dec(save_name, nbins, split_by, y_var='beta')
+    measure_metals(nbins, save_name)
+    plot_group_metals_compare(nbins, save_name)
+    plot_mass_metal(nbins, save_name)
+    add_metals_to_summary_df(save_name, metal_column='O3N2_metallicity')
+    plot_balmer_dec(save_name, nbins, split_by, y_var='balmer_dec', color_var=split_by)
+    plot_balmer_dec(save_name, nbins, split_by, y_var='balmer_dec', color_var='metallicity')
+    plot_balmer_dec(save_name, nbins, split_by, y_var='av', color_var=split_by)
+    plot_balmer_dec(save_name, nbins, split_by, y_var='beta', color_var=split_by)
+    plot_balmer_dec(save_name, nbins, split_by, y_var='metallicity', color_var=split_by)
     time_end = time.time()
     print(f'Total program took {time_end-time_start}')
 
@@ -278,7 +284,7 @@ def plot_moved(n_groups=18, save_name='halpha_norm'):
     fig.savefig(imd.axis_output_dir + '/old_new_sfr_comparison.pdf')
     # plt.show()
 
-def plot_balmer_dec(save_name, n_groups, split_by, y_var = 'balmer_dec'):
+def plot_balmer_dec(save_name, n_groups, split_by, y_var = 'balmer_dec', color_var='log_ssfr'):
     '''Makes the balmer decrement plots. Now can also do AV and Beta instead of balmer dec on the y-axis
 
     Parameters:
@@ -286,6 +292,7 @@ def plot_balmer_dec(save_name, n_groups, split_by, y_var = 'balmer_dec'):
     n_groups (int): Number of axis ratio groups
     split_by (str): Column name that was used for splitting into groups in y-axis, used for coloring
     y_var (str): What to plot on the y-axis - either "balmer_dec", "av", or "beta"
+    color_var (str): Colorbar variable for the plots
 
     '''
 
@@ -294,33 +301,38 @@ def plot_balmer_dec(save_name, n_groups, split_by, y_var = 'balmer_dec'):
     default_size = 7
     larger_size = 12
 
-    color_var = split_by
-
-    if color_var=='eq_width_ha':
-        # eq color map
-        cmap = mpl.cm.inferno 
-        norm = mpl.colors.Normalize(vmin=100, vmax=500) 
-    else:
-        # ssfr color map
-        cmap = mpl.cm.inferno 
-        norm = mpl.colors.Normalize(vmin=-9.3, vmax=-8.1) 
-
 
     # Axis limits
     if color_var == 'log_halpha_ssfr' or color_var == 'eq_width_ha':
         ylims = {
             'balmer_dec': (2, 10),
             'av': (0.25, 1.1),
-            'beta': (-1.9, -0.95)
+            'beta': (-1.9, -0.95),
+            'metallicity': (8.1, 8.7)
         }
     else:
         ylims = {
             'balmer_dec': (2, 7),
             'av': (0.25, 1.1),
-            'beta': (-1.9, -0.95)
+            'beta': (-1.9, -0.95),
+            'metallicity': (8.1, 8.7)
         }
     
+    # Read in summary df
     summary_df = ascii.read(imd.axis_cluster_data_dir + f'/{save_name}/summary.csv').to_pandas()
+
+    color_str = ''
+    cmap = mpl.cm.inferno 
+    if color_var=='eq_width_ha':
+        # eq color map
+        norm = mpl.colors.Normalize(vmin=100, vmax=500) 
+    elif color_var=='log_halpha_ssfr' or color_var=='log_ssfr' or color_var=='log_use_ssfr':
+        # ssfr color map
+        norm = mpl.colors.Normalize(vmin=-9.3, vmax=-8.1) 
+    elif color_var=='metallicity':
+        # metallicity color map
+        norm = mpl.colors.Normalize(vmin=8.1, vmax=8.9) 
+        color_str='_metal_color'
 
     axis_groups = []
     balmer_decs = []
@@ -395,6 +407,15 @@ def plot_balmer_dec(save_name, n_groups, split_by, y_var = 'balmer_dec'):
             ax.errorbar(x_cord, y_cord, yerr=row['err_beta_median'], marker='None', color=rgba)
             ax.add_artist(Ellipse((x_cord, y_cord), ellipse_width, ellipse_height, facecolor=rgba))
             ax.set_ylabel('Betaphot', fontsize=axis_fontsize)
+        elif y_var == 'metallicity':
+            x_cord = row['use_ratio_median']
+            y_cord = row['metallicity_median']
+
+            ellipse_width, ellipse_height = get_ellipse_shapes(1.1, y_axis_len, row['shape'])
+
+            ax.errorbar(x_cord, y_cord, yerr=row['err_metallicity_median'], marker='None', color=rgba)
+            ax.add_artist(Ellipse((x_cord, y_cord), ellipse_width, ellipse_height, facecolor=rgba))
+            ax.set_ylabel('Metallicity', fontsize=axis_fontsize)
     
     for ax in axarr:
         ax.set_xlabel('Axis Ratio', fontsize=axis_fontsize) 
@@ -410,7 +431,7 @@ def plot_balmer_dec(save_name, n_groups, split_by, y_var = 'balmer_dec'):
     cbar = fig.colorbar(mpl.cm.ScalarMappable(norm=norm, cmap=cmap), ax=axarr)
     cbar.set_label(color_var, fontsize=axis_fontsize)
     
-    fig.savefig(imd.axis_cluster_data_dir + f'/{save_name}/{y_var}_vs_ar.pdf', bbox_inches='tight')
+    fig.savefig(imd.axis_cluster_data_dir + f'/{save_name}/{y_var}_vs_ar{color_str}.pdf', bbox_inches='tight')
 
 
 
@@ -453,6 +474,15 @@ def plot_balmer_dec(save_name, n_groups, split_by, y_var = 'balmer_dec'):
             ellipse_width, ellipse_height = get_ellipse_shapes(1.5, y_axis_len, row['shape'])
 
             ax.errorbar(x_cord, y_cord, yerr=row['err_beta_median'], marker='None', color=rgba)
+            ax.add_artist(Ellipse((x_cord, y_cord), ellipse_width, ellipse_height, facecolor=rgba))
+            ax.set_ylabel('Betaphot', fontsize=axis_fontsize)
+        elif y_var == 'metallicity':
+            x_cord = row['log_mass_median']
+            y_cord = row['metallicity_median']
+            
+            ellipse_width, ellipse_height = get_ellipse_shapes(1.5, y_axis_len, row['shape'])
+
+            ax.errorbar(x_cord, y_cord, yerr=row['err_metallicity_median'], marker='None', color=rgba)
             ax.add_artist(Ellipse((x_cord, y_cord), ellipse_width, ellipse_height, facecolor=rgba))
             ax.set_ylabel('Betaphot', fontsize=axis_fontsize)
 

@@ -30,28 +30,35 @@ def plot_balmer_df_results(save_dir='/fixed_balmer_vel_z'):
         # median_points.append(np.mean(-balmer_df['median_diff']))
         # median_stds.append(np.std(balmer_df['median_diff']))
         balmer_df['median_diff_from_mean'] = balmer_df['stack_median']-balmer_df['target_mean']
-        median_points.append(np.mean(balmer_df['median_diff_from_mean']))
-        median_stds.append(np.mean(balmer_df['median_diff_from_mean']))
-        mean_points.append(np.mean(-balmer_df['mean_diff']))
-        mean_stds.append(np.std(balmer_df['mean_diff']))
+        balmer_df['mean_pct_diff_from_mean'] = balmer_df['stack_mean']/balmer_df['target_mean']
+        balmer_df['median_pct_diff_from_mean'] = balmer_df['stack_median']/balmer_df['target_mean']
+        median_points.append(np.mean(balmer_df['median_pct_diff_from_mean']))
+        median_stds.append(np.std(balmer_df['median_pct_diff_from_mean']))
+        mean_points.append(np.mean(balmer_df['mean_pct_diff_from_mean']))
+        mean_stds.append(np.std(balmer_df['mean_pct_diff_from_mean']))
+
+        # median_points.append(np.mean(balmer_df['median_diff_from_mean']))
+        # median_stds.append(np.std(balmer_df['median_diff_from_mean']))
+        # mean_points.append(np.mean(-balmer_df['mean_diff']))
+        # mean_stds.append(np.std(balmer_df['mean_diff']))
         n_loops.append(n_loop)
 
     fig, ax = plt.subplots(figsize=(8,8))
     ax.errorbar(n_loops, median_points, yerr=median_stds, ls='None', marker='o', color='black', label='Median')
     ax.errorbar(n_loops, mean_points, yerr=mean_stds, ls='None', marker='o', color='orange', label='Mean')
     # ax.plot((0.01, 0), (100000000, 0), ls='-', marker='o', color='red')
-    ax.axhline(0, color='red', ls='--')
-    ax.set_ylim(-0.3, 0.3)
+    ax.axhline(1, color='red', ls='--')
+    ax.set_ylim(0.94, 1.06)
     ax.set_xlim(5, 1100)
     ax.set_xscale('log')
     ax.set_xlabel('Number of galaxies', fontsize=12)
-    ax.set_ylabel('Stack Balmer - Mean Source Balmer', fontsize=12)
+    ax.set_ylabel('Stack Balmer / Mean Source Balmer', fontsize=12)
     ax.legend(fontsize=12)
     fig.savefig(imd.axis_output_dir + f'/emline_stack_tests{save_dir}/balmer_summary_plot.pdf')
 
 
 
-def main(n_spec=10, n_loops=100, balmer_test=True, fixed_variables=['balmer_dec','vel_disp','redshift'], save_dir='/fixed_balmer_vel_z'):
+def main(n_spec=10, n_loops=100, balmer_test=True, fixed_variables=['balmer_dec','vel_disp','redshift'], save_dir='/fixed_balmer_vel_z', interp_resolution=0.5):
     """
     Runs all the functions to generate the plot. 
 
@@ -60,6 +67,7 @@ def main(n_spec=10, n_loops=100, balmer_test=True, fixed_variables=['balmer_dec'
     n_loops (int): How many itmes to repeat the process
     balmer_test (boolean): Whether or not to generate hbeta as well as halpha, makes slightly different plots
     fixed_variables (list of str): Which variable to hold constant ['redshift', 'vel_disp', 'balmer_dec]
+    interp_resolution (float): Number of angstroms per pixel (pixel scale?)
     """
     start = time.time()
     loop_count = 0
@@ -70,7 +78,7 @@ def main(n_spec=10, n_loops=100, balmer_test=True, fixed_variables=['balmer_dec'
         else:
             line_peaks = [6563]
         gal_dfs, balmer_decs = generate_group_of_spectra(n_spec=n_spec, line_peaks = line_peaks, fixed_variables = fixed_variables)
-        interp_spectrum_dfs = [interpolate_spec(gal_dfs[i], balmer_test) for i in range(len(gal_dfs))]
+        interp_spectrum_dfs = [interpolate_spec(gal_dfs[i], balmer_test, resolution=interp_resolution) for i in range(len(gal_dfs))]
         norm_factors = np.ones(len(interp_spectrum_dfs))
         median_total_spec, _, _, _, _ = perform_stack('median', interp_spectrum_dfs, norm_factors)
         mean_total_spec, _, _, _, _ = perform_stack('mean', interp_spectrum_dfs, norm_factors)
@@ -230,11 +238,11 @@ def plot_group_of_spectra(save_dir, gal_dfs, interp_spectrum_dfs, stacked_spec_d
         balmer_out_df = 1
     return balmer_out_df
 
-def interpolate_spec(spectrum_df, balmer_test):
+def interpolate_spec(spectrum_df, balmer_test, resolution=0.5):
     """Interpolate teh spectrum and add uncertainties in the same way that is done in stack_spectra"""
-    spectrum_wavelength = np.arange(6553, 6577, 0.5)
+    spectrum_wavelength = np.arange(6553, 6577, resolution)
     if balmer_test:
-        spectrum_wavelength_hb = np.arange(4843, 4883, 0.5)
+        spectrum_wavelength_hb = np.arange(4843, 4883, resolution)
         spectrum_wavelength = np.concatenate([spectrum_wavelength_hb, spectrum_wavelength])
     norm_interp = interpolate.interp1d(
                 spectrum_df['rest_wavelength'], spectrum_df['f_lambda_norm'], fill_value=0, bounds_error=False)
@@ -409,5 +417,6 @@ def plot_range_of_vel_disp():
     fig.savefig(imd.axis_output_dir + '/emline_stack_tests/var_veldisp_ha.pdf')
 
 # main()
-# plot_balmer_df_results()
+plot_balmer_df_results(save_dir='/old_all_free')
 # plot_range_of_vel_disp()
+# main(n_spec=10, n_loops=10, balmer_test=True, fixed_variables=[], save_dir='/resolution_001_allfree', interp_resolution=0.001)

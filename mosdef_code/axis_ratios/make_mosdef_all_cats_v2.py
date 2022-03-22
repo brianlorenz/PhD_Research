@@ -29,7 +29,6 @@ def make_mosdef_all_cats_2():
     all_cats_df = ascii.read(imd.mosdef_dir + '/axis_ratio_data/Merged_catalogs/mosdef_all_cats.csv').to_pandas()
     linemeas_df = ascii.read(imd.loc_linemeas).to_pandas()
     line_eq_df = ascii.read(imd.loc_eqwidth_cat, header_start=0, data_start=1).to_pandas()
-
     
     fields = []
     v4ids = []
@@ -67,6 +66,12 @@ def make_mosdef_all_cats_2():
     err_eqwidth_has = []
     eqwidth_hbs = []
     err_eqwidth_hbs = []
+
+    #mips data
+    mips_fluxs = [] 
+    err_mips_fluxes = []
+    mips_corr24s = []
+    mips_exp24s = []
     
 
     # Add the sfrs from the sfr_latest catalog
@@ -80,6 +85,8 @@ def make_mosdef_all_cats_2():
     metals_df = read_file(imd.mosdef_dir + '/Mosdef_cats/mosdef_metallicity_latest.fits')
     metals_df['FIELD_STR'] = [metals_df.iloc[i]['FIELD'].decode("utf-8").rstrip() for i in range(len(metals_df))]
 
+    mosdef_ir_df = read_file(imd.loc_ir_latest)
+    mosdef_ir_df['FIELD_STR'] = [mosdef_ir_df.iloc[i]['FIELD'].decode("utf-8").rstrip() for i in range(len(mosdef_ir_df))]
 
     #### Sidenote, some objects are missing
     # np.sum((sfrs_df['ID'] - betas_df['ID']) != 0)    

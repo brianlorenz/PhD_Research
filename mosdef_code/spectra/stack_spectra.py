@@ -508,7 +508,7 @@ def perform_stack(stack_type, interp_cluster_spectra_dfs, norm_factors):
     number_specs_by_wave (array): At each pixel, how manay galaxies contributed to it 
     norm_value_specs_by_wave (array): Same as above, but each galaxies is added as its normalization value rather than 1
     """
-        # Pulls out just the flux values of each spectrum
+    # Pulls out just the flux values of each spectrum
     norm_interp_specs = [interp_cluster_spectra_dfs[i]['f_lambda_norm']
                          for i in range(len(interp_cluster_spectra_dfs))]
     # Pull out the errors
