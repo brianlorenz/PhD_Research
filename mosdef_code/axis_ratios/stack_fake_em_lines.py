@@ -465,7 +465,7 @@ def smooth_velocity(wave,spec,insig,mask=None,sigma=200,scale=1):
     return flux
 
 
-main()
-# plot_balmer_df_results(save_dir='/old_all_free')
+# main()
+plot_balmer_df_results(save_dir='/all_free_smoothvel')
 # plot_range_of_vel_disp()
 # main(n_spec=10, n_loops=10, balmer_test=True, fixed_variables=[], save_dir='/resolution_001_allfree', interp_resolution=0.001)

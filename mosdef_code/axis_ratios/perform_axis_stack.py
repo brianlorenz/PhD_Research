@@ -141,7 +141,13 @@ def plot_sample_split(n_groups, save_name, ratio_bins, starting_points, mass_wid
         split_median = np.median(axis_ratio_df[variable])
         av_median = np.median(axis_ratio_df['AV'])
         beta_median = np.median(axis_ratio_df['beta'])
-        mips_flux_median = np.median(axis_ratio_df['mips_flux'])
+
+        #Compute the mips flux, normalized int he same way we normalized the spectra
+        ### WORKING HERE CHECK THIS
+        axis_ratio_df['norm_factor'] = norm_axis_stack(axis_ratio_df['ha_flux'], axis_ratio_df['Z_MOSFIRE'])
+        good_mips_idxs = axis_ratio_df['mips_flux'] > -98
+        mips_flux_median = (axis_ratio_df[good_mips_idxs]['err_mips_flux']*axis_ratio_df[good_mips_idxs]['norm_factor'])
+
 
         # Bootstrap errors on the medians
         err_av_median = bootstrap_median(axis_ratio_df['AV'])
