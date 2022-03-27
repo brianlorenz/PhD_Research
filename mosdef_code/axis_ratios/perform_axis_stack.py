@@ -146,7 +146,7 @@ def plot_sample_split(n_groups, save_name, ratio_bins, starting_points, mass_wid
         ### WORKING HERE CHECK THIS
         axis_ratio_df['norm_factor'] = norm_axis_stack(axis_ratio_df['ha_flux'], axis_ratio_df['Z_MOSFIRE'])
         good_mips_idxs = axis_ratio_df['mips_flux'] > -98
-        mips_flux_median = (axis_ratio_df[good_mips_idxs]['err_mips_flux']*axis_ratio_df[good_mips_idxs]['norm_factor'])
+        mips_flux_median = np.median(axis_ratio_df[good_mips_idxs]['err_mips_flux']*axis_ratio_df[good_mips_idxs]['norm_factor'])
 
 
         # Bootstrap errors on the medians
