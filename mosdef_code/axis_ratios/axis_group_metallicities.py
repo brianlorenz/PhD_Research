@@ -102,7 +102,10 @@ def measure_metals(n_groups, save_name):
         err_log_N2_Ha_measures.append(err_log_N2_Ha_measure)
 
         # PP04 O3N2 metallicity
-        O3N2_metal = 8.73 - 0.32*log_O3N2_measure
+        # O3N2_metal = 8.73 - 0.32*log_O3N2_measure
+        # err_O3N2_metal = 0.32*err_log_O3N2_measure
+        # Bian 2018 version of O3N2
+        O3N2_metal = 8.97 - 0.39*log_O3N2_measure
         err_O3N2_metal = 0.32*err_log_O3N2_measure
         O3N2_metals.append(O3N2_metal)
         err_O3N2_metals.append(err_O3N2_metal)

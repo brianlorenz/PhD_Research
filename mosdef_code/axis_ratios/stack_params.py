@@ -64,7 +64,7 @@ def make_both_ssfrs_4bin_mean_params(run_stack = False, only_plot = False):
 both_ssfrs_4bin_mean_params = make_both_ssfrs_4bin_mean_params()
 
 # Normal 12bin using combined sfrs, using sfr2 when both lines are good, halpha_sfr when hbeta is below 3 sigma (or not covered)
-def make_both_ssfrs_4bin_median_params(run_stack = False, only_plot = False):
+def make_both_ssfrs_4bin_median_params(run_stack = False, only_plot = True):
     run_stack = run_stack
     only_plot = only_plot
     mass_width = 0.8

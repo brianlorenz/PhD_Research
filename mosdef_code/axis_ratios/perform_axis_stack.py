@@ -18,7 +18,6 @@ import time
 random.seed(3284923)
 
 
-
 #18 bins, 2 mass 3 ssfr
 # mass_width = 0.8
 # split_width = 0.5
@@ -143,18 +142,20 @@ def plot_sample_split(n_groups, save_name, ratio_bins, starting_points, mass_wid
         beta_median = np.median(axis_ratio_df['beta'])
 
         #Compute the mips flux, normalized int he same way we normalized the spectra
-        ### WORKING HERE CHECK THIS
+        # Old way was just axis_ratio_df['mips_flux']
         axis_ratio_df['norm_factor'] = norm_axis_stack(axis_ratio_df['ha_flux'], axis_ratio_df['Z_MOSFIRE'])
+        axis_ratio_df.to_csv(imd.axis_cluster_data_dir + f'/{save_name}/{save_name}_group_dfs/{axis_group}_df.csv', index=False)
+        # print(f'Group: {axis_group}, median_norm: {np.median(axis_ratio_df["norm_factor"])}')
         good_mips_idxs = axis_ratio_df['mips_flux'] > -98
-        mips_flux_median = np.median(axis_ratio_df[good_mips_idxs]['err_mips_flux']*axis_ratio_df[good_mips_idxs]['norm_factor'])
+        mips_flux_median = np.median(axis_ratio_df[good_mips_idxs]['mips_flux']*axis_ratio_df[good_mips_idxs]['norm_factor'])
+        # Better to bootstrap or use MAD?
+        err_mips_flux_median = bootstrap_median(axis_ratio_df[good_mips_idxs]['err_mips_flux']*axis_ratio_df[good_mips_idxs]['norm_factor'])
 
 
         # Bootstrap errors on the medians
         err_av_median = bootstrap_median(axis_ratio_df['AV'])
         err_beta_median = bootstrap_median(axis_ratio_df['beta'])
-        # Better to bootstrap or use MAD?
-        err_mips_flux_median = bootstrap_median(axis_ratio_df['mips_flux'])
-
+        
 
         # Figure out what axis ratio bin (+1 is since the bins are dividers)
         if len(ratio_bins)+1 == 3:
@@ -323,7 +324,7 @@ def plot_balmer_dec(save_name, n_groups, split_by, y_var = 'balmer_dec', color_v
             'av': (0.25, 1.1),
             'beta': (-1.9, -0.95),
             'metallicity': (8.1, 8.7),
-            'mips_flux': (0, 0.043)
+            'mips_flux': (0, 0.0063)
         }
     else:
         ylims = {
@@ -331,7 +332,7 @@ def plot_balmer_dec(save_name, n_groups, split_by, y_var = 'balmer_dec', color_v
             'av': (0.25, 1.1),
             'beta': (-1.9, -0.95),
             'metallicity': (8.1, 8.7),
-            'mips_flux': (0, 0.043)
+            'mips_flux': (0, 0.0063)
         }
     
     # Read in summary df
@@ -529,7 +530,7 @@ def plot_balmer_dec(save_name, n_groups, split_by, y_var = 'balmer_dec', color_v
     ax.tick_params(labelsize=12)
     ax.set_xlim(9.25, 10.75)
     ax.set_ylim(ylims[y_var])
-    fig.savefig(imd.axis_cluster_data_dir + f'/{save_name}/{y_var}_vs_mass.pdf')
+    fig.savefig(imd.axis_cluster_data_dir + f'/{save_name}/{y_var}_vs_mass{color_str}.pdf')
 
 def bootstrap_median(df):
     """Bootstrap an error on a median from a column of a pandas dataframe
