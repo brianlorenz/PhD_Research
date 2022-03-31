@@ -598,7 +598,7 @@ def perform_stack(stack_type, interp_cluster_spectra_dfs, norm_factors):
 
 
 
-def stack_axis_ratio(mass_width, split_width, starting_points, ratio_bins, save_name, split_by, stack_type):
+def stack_axis_ratio(mass_width, split_width, starting_points, ratio_bins, save_name, split_by, stack_type, sfms_bins):
     """Stacks galaxies in groups by axis ratio
 
     old params: , l_mass_cutoff=0, l_ssfr_cutoff=0, l_mass_bins=0, l_ssfr_bins=0, scale_ha=0
@@ -611,6 +611,7 @@ def stack_axis_ratio(mass_width, split_width, starting_points, ratio_bins, save_
     split_by (str): What column to use for the pslitting - ssfr, or eq_width_ha
     use_ha_ssfr (int): Set to 1 to use the halpha calculated ssfrs
     stack_type (str): Either mean or median, what to use when stacking the galaxies
+    sfms_bins (boolean): Set to True to overwrite the other bins and split along the sfms
 
     Returns:
     """
@@ -623,12 +624,16 @@ def stack_axis_ratio(mass_width, split_width, starting_points, ratio_bins, save_
     ar_df['log_ssfr'] = np.log10((ar_df['sfr'])/(10**ar_df['log_mass']))
     ar_df['log_halpha_ssfr'] = np.log10((ar_df['halpha_sfrs'])/(10**ar_df['log_mass']))
     ar_df['log_use_ssfr'] = np.log10((ar_df['use_sfr'])/(10**ar_df['log_mass']))
+    ar_df['log_use_sfr'] = np.log10(ar_df['use_sfr'])
+
 
     # Save which method of ssfr is used
     if split_by=='log_ssfr':
         ar_df['split_for_stack'] = ['log_ssfr']*len(ar_df)
     if split_by=='log_use_ssfr':
         ar_df['split_for_stack'] = ['log_use_ssfr']*len(ar_df)
+    if split_by=='log_use_sfr':
+        ar_df['split_for_stack'] = ['log_use_sfr']*len(ar_df)
     if split_by=='log_halpha_ssfr':
         ar_df['split_for_stack'] = ['log_halpha_ssfr']*len(ar_df)
     if split_by=='eq_width_ha':
@@ -654,18 +659,29 @@ def stack_axis_ratio(mass_width, split_width, starting_points, ratio_bins, save_
         
         ar_dfs = [ar_df_low, ar_df_high]
 
+
     for i in range(len(ar_dfs)):
         df = ar_dfs[i]
 
-        dfs = []
+        # If we're not using the sfms bins, use starting points to split
+        if sfms_bins==False:
+            dfs = []
 
-        for j in range(len(starting_points)):
-            mass_start = starting_points[j][0]
-            split_start = starting_points[j][1]
-            mass_idx = np.logical_and(df['log_mass']>mass_start, df['log_mass']<=mass_start+mass_width)
-            split_idx = np.logical_and(df[split_name]>split_start, df[split_name]<=split_start+split_width)                
-            bin_idx = np.logical_and(mass_idx, split_idx)
-            dfs.append(df[bin_idx])
+            for j in range(len(starting_points)):
+                mass_start = starting_points[j][0]
+                split_start = starting_points[j][1]
+                mass_idx = np.logical_and(df['log_mass']>mass_start, df['log_mass']<=mass_start+mass_width)
+                split_idx = np.logical_and(df[split_name]>split_start, df[split_name]<=split_start+split_width)                
+                bin_idx = np.logical_and(mass_idx, split_idx)
+                dfs.append(df[bin_idx])
+        
+        # If we are using sfms bins, see if the data falls below, above, or between the cuts
+        if sfms_bins==True:
+            low_idx = df[split_by] < 1.07*df['log_mass']-9.83
+            high_idx = df[split_by] > 1.07*df['log_mass']-8.6
+            mid_idx = np.logical_and(np.logical_not(low_idx), np.logical_not(high_idx))
+
+            dfs = [df[low_idx], df[mid_idx], df[high_idx]]
 
         for df in dfs:
             # For each group, get a median and scatter of the axis ratios
@@ -676,6 +692,8 @@ def stack_axis_ratio(mass_width, split_width, starting_points, ratio_bins, save_
             df.to_csv(
                 (imd.axis_cluster_data_dir + f'/{cluster_name}/{cluster_name}_group_dfs/{axis_group}_df.csv'), index=False)
             # Within each group, start stacking the spectra
-            stack_spectra(0, 'cluster_norm', axis_ratio_df=df,
-                        axis_group=axis_group, save_name=cluster_name, stack_type=stack_type)
+            # stack_spectra(0, 'cluster_norm', axis_ratio_df=df,
+            #             axis_group=axis_group, save_name=cluster_name, stack_type=stack_type)
             axis_group = axis_group + 1
+
+    exit()

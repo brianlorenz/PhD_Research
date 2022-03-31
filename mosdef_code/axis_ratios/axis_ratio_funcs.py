@@ -229,8 +229,14 @@ def filter_ar_df(ar_df, return_std_ar=False):
     #For counting purposes
     mass_bad = ar_df['log_mass'] <= 0
     save_count(ar_df[mass_bad], 'mass_bad', 'no measured mass')
-    # Remove anything without a measured sfr 
+    # Remove anything without a measured mass 
     ar_df = ar_df[ar_df['log_mass'] > 0]
+
+    #For counting purposes
+    mass_out = np.logical_or(ar_df['log_mass'] <= 8.95, ar_df['log_mass'] >= 11.05)
+    save_count(ar_df[mass_out], 'mass_out_of_range', 'mass out of range')
+    # Remove anything outside of our mass limits
+    ar_df = ar_df[np.logical_not(mass_out)]
 
 
     # Compute the difference and standard devaition
@@ -252,6 +258,7 @@ def filter_ar_df(ar_df, return_std_ar=False):
     save_count(ar_df[too_diff_ar], 'axis_ratio_ar_too_diff', 'F125 and F160 dont agree well')
     ar_df = ar_df[ar_df['axis_ratio_flag'] != 2]
 
+    exit()
 
     # get all the mosdef objs, going to be used for checking coverage
     mosdef_objs = [get_mosdef_obj(ar_df.iloc[j]['field'], ar_df.iloc[j]['v4id']) for j in range(len(ar_df))]

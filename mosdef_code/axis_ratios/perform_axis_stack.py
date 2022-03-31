@@ -60,11 +60,11 @@ def stack_all_and_plot_all(param_class):
     split_width = param_class.split_width
     starting_points = param_class.starting_points
     ratio_bins = param_class.ratio_bins
+    sfms_bins = param_class.sfms_bins
     print(f'Running stack {save_name}. Making just the plots: {only_plot}')
     time_start = time.time()
     if only_plot==False:
-        setup_new_stack_dir(save_name)
-        stack_axis_ratio(mass_width, split_width, starting_points, ratio_bins, save_name, split_by, stack_type)
+        stack_axis_ratio(mass_width, split_width, starting_points, ratio_bins, save_name, split_by, stack_type, sfms_bins)
         stack_all_continuum(nbins, save_name=save_name)
         time_stack = time.time()
         print(f'All stacking took {time_stack-time_start}')
@@ -73,7 +73,8 @@ def stack_all_and_plot_all(param_class):
             fit_emission(0, 'cluster_norm', constrain_O3=False, axis_group=axis_group, save_name=save_name, scaled='False', run_name='False')
         time_emfit = time.time()
         print(f'Emission fitting took {time_emfit-time_stack}')
-    plot_sample_split(nbins, save_name, ratio_bins, starting_points, mass_width, split_width, nbins)
+    if sfms_bins == False:
+        plot_sample_split(nbins, save_name, ratio_bins, starting_points, mass_width, split_width, nbins)
     plot_overlaid_spectra(save_name, plot_cont_sub=True)
     plot_metals(save_name)
     measure_metals(nbins, save_name)
@@ -323,7 +324,7 @@ def plot_balmer_dec(save_name, n_groups, split_by, y_var = 'balmer_dec', color_v
             'balmer_dec': (2, 10),
             'av': (0.25, 1.1),
             'beta': (-1.9, -0.95),
-            'metallicity': (8.1, 8.7),
+            'metallicity': (8.2, 8.9),
             'mips_flux': (0, 0.0063)
         }
     else:
@@ -331,7 +332,7 @@ def plot_balmer_dec(save_name, n_groups, split_by, y_var = 'balmer_dec', color_v
             'balmer_dec': (2, 7),
             'av': (0.25, 1.1),
             'beta': (-1.9, -0.95),
-            'metallicity': (8.1, 8.7),
+            'metallicity': (8.2, 8.9),
             'mips_flux': (0, 0.0063)
         }
     
@@ -484,6 +485,7 @@ def plot_balmer_dec(save_name, n_groups, split_by, y_var = 'balmer_dec', color_v
             
             ax.errorbar(x_cord, y_cord, yerr=np.array(row['err_balmer_dec_low'], row['err_balmer_dec_high']), marker='None', color=rgba)
             ax.add_artist(Ellipse((x_cord, y_cord), ellipse_width, ellipse_height, facecolor=rgba))
+            ax.set_ylabel('Balmer Decrement', fontsize=axis_fontsize)
         elif y_var == 'av':
             x_cord = row['log_mass_median']
             y_cord = row['av_median']
