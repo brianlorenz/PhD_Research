@@ -73,8 +73,7 @@ def stack_all_and_plot_all(param_class):
             fit_emission(0, 'cluster_norm', constrain_O3=False, axis_group=axis_group, save_name=save_name, scaled='False', run_name='False')
         time_emfit = time.time()
         print(f'Emission fitting took {time_emfit-time_stack}')
-    if sfms_bins == False:
-        plot_sample_split(nbins, save_name, ratio_bins, starting_points, mass_width, split_width, nbins)
+    plot_sample_split(nbins, save_name, ratio_bins, starting_points, mass_width, split_width, nbins, sfms_bins)
     plot_overlaid_spectra(save_name, plot_cont_sub=True)
     plot_metals(save_name)
     measure_metals(nbins, save_name)
@@ -101,7 +100,7 @@ def setup_new_stack_dir(save_name):
 
 
 
-def plot_sample_split(n_groups, save_name, ratio_bins, starting_points, mass_width, split_width, nbins):
+def plot_sample_split(n_groups, save_name, ratio_bins, starting_points, mass_width, split_width, nbins, sfms_bins):
     """Plots the way that the sample has been divided in mass/ssfr space
     
     variable(str): Which variable to use for the y-axis"""
@@ -205,7 +204,12 @@ def plot_sample_split(n_groups, save_name, ratio_bins, starting_points, mass_wid
                 if split_median > sorted_points[5][1] and split_median < sorted_points[5][1] + split_width:
                     key = "sorted5"
                     rect = patches.Rectangle((sorted_points[5][0],  sorted_points[5][1]), mass_width, split_width, linestyle='--', linewidth=1, edgecolor=colors[key], facecolor='none')
-        color = colors[key]
+        if sfms_bins==False:
+            color = colors[key]
+        else:
+            key = f'sorted{axis_group%6}'
+            color = 'black'
+            rect = patches.Rectangle([0, 0], 0.5, 0.5, linestyle='--', linewidth=1, edgecolor='blue', facecolor='none')
 
         
         group_num.append(axis_group)
@@ -230,6 +234,8 @@ def plot_sample_split(n_groups, save_name, ratio_bins, starting_points, mass_wid
             ylims = (-9.7, -8)
         elif variable == 'eq_width_ha':
             ylims = (0, 600)
+        else:
+            ylims = (-0.1, 2.6)
         ax.set_ylim(ylims)
         ax.set_xlim(xlims)
 
