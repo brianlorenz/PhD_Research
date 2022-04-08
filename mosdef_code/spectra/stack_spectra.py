@@ -659,6 +659,9 @@ def stack_axis_ratio(mass_width, split_width, starting_points, ratio_bins, save_
         
         ar_dfs = [ar_df_low, ar_df_high]
 
+    if len(ratio_bins)+1 == 1:
+        ar_dfs = [ar_df]
+
 
     for i in range(len(ar_dfs)):
         df = ar_dfs[i]

@@ -168,6 +168,8 @@ def plot_metals(savename):
     n_rows = int(len(summary_df) / 6)
     if len(summary_df) == 8:
         n_rows = 2
+    if len(summary_df) == 4:
+        n_rows = 2
     if savename=='both_sfms_6bin_median_2axis':
         n_rows=3
     
@@ -236,6 +238,9 @@ def plot_metals(savename):
         if row['shape'] == 'o':
             color = 'blue'
             label = '0.7 < Axis Ratio'
+        if row['shape'] == 1.0: 
+            color = 'red'
+            label = ''
 
         # compute uncertainties
         ar_df['metal_err_high'] = ar_df['u68_logoh_pp_n2'] - ar_df['logoh_pp_n2']

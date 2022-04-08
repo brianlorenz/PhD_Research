@@ -11,6 +11,7 @@ from matplotlib.patches import Ellipse
 from ellipses_for_plotting import get_ellipse_shapes
 from plot_overlaid_spectra import plot_overlaid_spectra
 from axis_group_metallicities import add_metals_to_summary_df, plot_metals, measure_metals, plot_group_metals_compare, plot_mass_metal
+from balmer_avs import plot_balmer_stellar_avs
 import random
 import matplotlib.gridspec as gridspec
 import time
@@ -64,6 +65,7 @@ def stack_all_and_plot_all(param_class):
     print(f'Running stack {save_name}. Making just the plots: {only_plot}')
     time_start = time.time()
     if only_plot==False:
+        setup_new_stack_dir(save_name)
         stack_axis_ratio(mass_width, split_width, starting_points, ratio_bins, save_name, split_by, stack_type, sfms_bins)
         stack_all_continuum(nbins, save_name=save_name)
         time_stack = time.time()
@@ -85,7 +87,11 @@ def stack_all_and_plot_all(param_class):
     plot_balmer_dec(save_name, nbins, split_by, y_var='av', color_var=split_by)
     plot_balmer_dec(save_name, nbins, split_by, y_var='beta', color_var=split_by)
     plot_balmer_dec(save_name, nbins, split_by, y_var='metallicity', color_var=split_by)
+    plot_balmer_dec(save_name, nbins, split_by, y_var='metallicity', color_var='log_use_sfr')
+    plot_balmer_dec(save_name, nbins, split_by, y_var='log_use_sfr', color_var='metallicity')
+    plot_balmer_dec(save_name, nbins, split_by, y_var='balmer_dec', color_var='log_use_ssfr')
     plot_balmer_dec(save_name, nbins, split_by, y_var='mips_flux', color_var=split_by)
+    plot_balmer_stellar_avs(save_name)
     time_end = time.time()
     print(f'Total program took {time_end-time_start}')
 
@@ -121,6 +127,16 @@ def plot_sample_split(n_groups, save_name, ratio_bins, starting_points, mass_wid
     err_beta_medians = []
     mips_flux_medians = []
     err_mips_flux_medians = []
+    halpha_snrs = []
+    hbeta_snrs = []
+    balmer_decs = []
+    err_balmer_decs_low = []
+    err_balmer_decs_high = []
+    balmer_avs = []
+    err_balmer_av_lows = []
+    err_balmer_av_highs = []
+    log_use_ssfr_medians = []
+    log_use_sfr_medians = []
     keys = []
 
     # Figure 1 - Showing how the sample gets cut
@@ -129,10 +145,27 @@ def plot_sample_split(n_groups, save_name, ratio_bins, starting_points, mass_wid
 
     for axis_group in range(n_groups):
         axis_ratio_df = ascii.read(imd.axis_cluster_data_dir + f'/{save_name}/{save_name}_group_dfs/{axis_group}_df.csv').to_pandas()
+        emission_df = ascii.read(imd.axis_cluster_data_dir + f'/{save_name}/{save_name}_emission_fits/{axis_group}_emission_fits.csv').to_pandas()
         variable = axis_ratio_df.iloc[0]['split_for_stack']
 
-        axis_ratio_df['balmer_dec'] = (axis_ratio_df['ha_flux'] / axis_ratio_df['hb_flux'])
+        axis_ratio_df['balmer_dec'] = (axis_ratio_df['ha_flux'] / axis_ratio_df['hb_flux'])        
 
+        # Adding the balmer decrement measured to summary df:
+        balmer_dec = emission_df['balmer_dec'].iloc[0]
+        balmer_err_low = emission_df['err_balmer_dec_low'].iloc[0]
+        balmer_err_high = emission_df['err_balmer_dec_high'].iloc[0]
+        balmer_decs.append(balmer_dec)
+        err_balmer_decs_low.append(balmer_err_low)
+        err_balmer_decs_high.append(balmer_err_high)
+        halpha_snrs.append(emission_df[emission_df['line_name']=='Halpha']['signal_noise_ratio'].iloc[0])
+        hbeta_snrs.append(emission_df[emission_df['line_name']=='Hbeta']['signal_noise_ratio'].iloc[0])
+        # See Price 2014 for the conversion factors:
+        balmer_av = 4.05*1.97*np.log10(balmer_dec/2.86)
+        err_balmer_av_low = 1.97*np.sqrt((0.434*((balmer_err_low/balmer_dec)/2.86))**2 + (0.8/4.05)**2)
+        err_balmer_av_high = 1.97*np.sqrt((0.434*((balmer_err_high/balmer_dec)/2.86))**2 + (0.8/4.05)**2)
+        balmer_avs.append(balmer_av)
+        err_balmer_av_lows.append(err_balmer_av_low)
+        err_balmer_av_highs.append(err_balmer_av_high)
 
         # Determine what color and shape to plot with
         axis_median = np.median(axis_ratio_df['use_ratio'])
@@ -140,6 +173,14 @@ def plot_sample_split(n_groups, save_name, ratio_bins, starting_points, mass_wid
         split_median = np.median(axis_ratio_df[variable])
         av_median = np.median(axis_ratio_df['AV'])
         beta_median = np.median(axis_ratio_df['beta'])
+
+        # We want log_use_sfr and log_use_ssfr in all cases:
+        if variable != 'log_use_ssfr':
+            log_use_ssfr_median = np.median(axis_ratio_df['log_use_ssfr'])
+            log_use_ssfr_medians.append(log_use_ssfr_median)
+        if variable != 'log_use_sfr':
+            log_use_sfr_median = np.median(axis_ratio_df['log_use_sfr'])
+            log_use_sfr_medians.append(log_use_sfr_median)
 
         #Compute the mips flux, normalized int he same way we normalized the spectra
         # Old way was just axis_ratio_df['mips_flux']
@@ -171,6 +212,9 @@ def plot_sample_split(n_groups, save_name, ratio_bins, starting_points, mass_wid
                 shape = shapes['low']
             else:
                 shape = shapes['high']
+        
+        if len(ratio_bins)+1 == 1:
+            shape = shapes['low']
 
         # print(f'Mass median: {mass_median}, SSFR median: {split_median}')
 
@@ -186,7 +230,7 @@ def plot_sample_split(n_groups, save_name, ratio_bins, starting_points, mass_wid
             if split_median > sorted_points[1][1] and split_median < sorted_points[1][1] + split_width:
                 key = "sorted1"
                 rect = patches.Rectangle((sorted_points[1][0],  sorted_points[1][1]), mass_width, split_width, linestyle='--', linewidth=1, edgecolor=colors[key], facecolor='none')
-        if nbins > 6:
+        if nbins > 6 or nbins==4:
             if mass_median > sorted_points[2][0] and mass_median < sorted_points[2][0] + mass_width:
                 if split_median > sorted_points[2][1] and split_median < sorted_points[2][1] + split_width:
                     key = "sorted2"
@@ -261,7 +305,11 @@ def plot_sample_split(n_groups, save_name, ratio_bins, starting_points, mass_wid
 
 
 
-    summary_df = pd.DataFrame(zip(group_num, axis_medians, mass_medians, split_medians, av_medians, err_av_medians, beta_medians, err_beta_medians, mips_flux_medians, err_mips_flux_medians, shapes_list, color_list, keys), columns=['axis_group','use_ratio_median', 'log_mass_median', variable+'_median', 'av_median', 'err_av_median', 'beta_median', 'err_beta_median', 'mips_flux_median', 'err_mips_flux_median', 'shape', 'color', 'key'])
+    summary_df = pd.DataFrame(zip(group_num, axis_medians, mass_medians, split_medians, av_medians, err_av_medians, beta_medians, err_beta_medians, mips_flux_medians, err_mips_flux_medians, halpha_snrs, hbeta_snrs, balmer_decs, err_balmer_decs_low, err_balmer_decs_high, balmer_avs, err_balmer_av_lows, err_balmer_av_highs, shapes_list, color_list, keys), columns=['axis_group','use_ratio_median', 'log_mass_median', variable+'_median', 'av_median', 'err_av_median', 'beta_median', 'err_beta_median', 'mips_flux_median', 'err_mips_flux_median', 'halpha_snr', 'hbeta_snr', 'balmer_dec', 'err_balmer_dec_low', 'err_balmer_dec_high', 'balmer_av', 'err_balmer_av_low', 'err_balmer_av_high', 'shape', 'color', 'key'])    
+    if variable != 'log_use_ssfr':
+        summary_df['log_use_ssfr_median'] = log_use_ssfr_medians
+    if variable != 'log_use_sfr':
+        summary_df['log_use_sfr_median'] = log_use_sfr_medians
     summary_df.to_csv(imd.axis_cluster_data_dir + f'/{save_name}/summary.csv', index=False)
 
 
@@ -331,7 +379,8 @@ def plot_balmer_dec(save_name, n_groups, split_by, y_var = 'balmer_dec', color_v
             'av': (0.25, 1.1),
             'beta': (-1.9, -0.95),
             'metallicity': (8.2, 8.9),
-            'mips_flux': (0, 0.0063)
+            'mips_flux': (0, 0.0063),
+            'log_use_sfr': (-0.1, 2.6)
         }
     else:
         ylims = {
@@ -339,7 +388,8 @@ def plot_balmer_dec(save_name, n_groups, split_by, y_var = 'balmer_dec', color_v
             'av': (0.25, 1.1),
             'beta': (-1.9, -0.95),
             'metallicity': (8.2, 8.9),
-            'mips_flux': (0, 0.0063)
+            'mips_flux': (0, 0.0063),
+            'log_use_sfr': (-0.1, 2.6)
         }
     
     # Read in summary df
@@ -353,31 +403,20 @@ def plot_balmer_dec(save_name, n_groups, split_by, y_var = 'balmer_dec', color_v
     elif color_var=='log_halpha_ssfr' or color_var=='log_ssfr' or color_var=='log_use_ssfr':
         # ssfr color map
         norm = mpl.colors.Normalize(vmin=-9.3, vmax=-8.1) 
+    elif color_var=='log_use_sfr':
+        # ssfr color map
+        norm = mpl.colors.Normalize(vmin=0, vmax=2.5) 
+        color_str='_log_use_sfr_color'
     elif color_var=='metallicity':
         # metallicity color map
         norm = mpl.colors.Normalize(vmin=8.1, vmax=8.9) 
         color_str='_metal_color'
+    elif color_var=='log_use_ssfr':
+        # metallicity color map
+        norm = mpl.colors.Normalize(vmin=8.1, vmax=8.9) 
+        color_str='_log_use_ssfr_color'
 
-    axis_groups = []
-    balmer_decs = []
-    balmer_err_lows = []
-    balmer_err_highs = []
-    halpha_snrs = []
-    hbeta_snrs = []
-
-    for axis_group in range(n_groups):
-        emission_df = ascii.read(imd.axis_cluster_data_dir + f'/{save_name}/{save_name}_emission_fits/{axis_group}_emission_fits.csv').to_pandas()
-        axis_groups.append(axis_group)
-        balmer_decs.append(emission_df.iloc[0]['balmer_dec'])
-        balmer_err_lows.append(emission_df.iloc[0]['err_balmer_dec_low'])
-        balmer_err_highs.append(emission_df.iloc[0]['err_balmer_dec_high'])
-        halpha_snrs.append(emission_df[emission_df['line_name']=='Halpha']['signal_noise_ratio'].iloc[0])
-        hbeta_snrs.append(emission_df[emission_df['line_name']=='Hbeta']['signal_noise_ratio'].iloc[0])
-
-    balmer_df = pd.DataFrame(zip(axis_groups, balmer_decs, balmer_err_lows, balmer_err_highs, halpha_snrs, hbeta_snrs), columns=['axis_group', 'balmer_dec', 'err_balmer_dec_low', 'err_balmer_dec_high', 'halpha_snr', 'hbeta_snr'])
-
-    summary_df = summary_df.merge(balmer_df, left_on='axis_group', right_on='axis_group')
-
+ 
     # Get the length of the y-axis
     y_axis_len = ylims[y_var][1] - ylims[y_var][0]
 
@@ -449,6 +488,15 @@ def plot_balmer_dec(save_name, n_groups, split_by, y_var = 'balmer_dec', color_v
             ax.errorbar(x_cord, y_cord, yerr=row['err_mips_flux_median'], marker='None', color=rgba)
             ax.add_artist(Ellipse((x_cord, y_cord), ellipse_width, ellipse_height, facecolor=rgba))
             ax.set_ylabel('MIPS Flux', fontsize=axis_fontsize)
+        elif y_var == 'log_use_sfr':
+            x_cord = row['use_ratio_median']
+            y_cord = row['log_use_sfr_median']
+
+            ellipse_width, ellipse_height = get_ellipse_shapes(1.1, y_axis_len, row['shape'])
+
+            ax.errorbar(x_cord, y_cord, marker='None', color=rgba)
+            ax.add_artist(Ellipse((x_cord, y_cord), ellipse_width, ellipse_height, facecolor=rgba))
+            ax.set_ylabel('log_use_sfr', fontsize=axis_fontsize)
     
     for ax in axarr:
         ax.set_xlabel('Axis Ratio', fontsize=axis_fontsize) 
@@ -528,6 +576,15 @@ def plot_balmer_dec(save_name, n_groups, split_by, y_var = 'balmer_dec', color_v
             ax.errorbar(x_cord, y_cord, yerr=row['err_mips_flux_median'], marker='None', color=rgba)
             ax.add_artist(Ellipse((x_cord, y_cord), ellipse_width, ellipse_height, facecolor=rgba))
             ax.set_ylabel('MIPS Flux', fontsize=axis_fontsize)
+        elif y_var == 'log_use_sfr':
+            x_cord = row['use_ratio_median']
+            y_cord = row['log_use_sfr_median']
+
+            ellipse_width, ellipse_height = get_ellipse_shapes(1.1, y_axis_len, row['shape'])
+
+            ax.errorbar(x_cord, y_cord, marker='None', color=rgba)
+            ax.add_artist(Ellipse((x_cord, y_cord), ellipse_width, ellipse_height, facecolor=rgba))
+            ax.set_ylabel('log_use_sfr', fontsize=axis_fontsize)
 
 
 

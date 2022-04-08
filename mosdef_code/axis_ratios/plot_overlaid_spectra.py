@@ -28,6 +28,8 @@ def plot_overlaid_spectra(savename, plot_cont_sub=False):
         n_rows=3
     if len(summary_df) == 8:
         n_rows = 2
+    if len(summary_df) == 4:
+        n_rows = 2
     axarr = GridSpec(n_rows, 2, left=0.1, right=0.8, wspace=0.4, hspace=0.6)
 
 
@@ -91,6 +93,11 @@ def plot_overlaid_spectra(savename, plot_cont_sub=False):
         if row['shape'] == 'o':
             color = 'blue'
             label = '0.7 < Axis Ratio'
+        if row['shape'] == 1.0: 
+            color = 'red'
+            label = ''
+
+
 
         # Find the peak of the halpha line so we can normalize it to 10^-17 erg/cm^2/s/anstrom
         halpha_range = np.logical_and(spec_df['wavelength']>6560, spec_df['wavelength']<6570)

@@ -23,6 +23,8 @@ def get_ellipse_shapes(x_axis_len, y_axis_len, shape):
         ellipse_frac = ellipse_fracs[1]
     elif shape == 'o':
         ellipse_frac = ellipse_fracs[2]
+    elif shape == 1.0:
+        ellipse_frac = ellipse_fracs[2]
 
     y_height_factor = (ellipse_width/x_axis_len) * y_axis_len
     ellipse_height = y_height_factor*ellipse_frac
