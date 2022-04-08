@@ -12,12 +12,13 @@ import initialize_mosdef_dirs as imd
 import cluster_data_funcs as cdf
 from spectra_funcs import read_axis_ratio_spectrum, clip_skylines, check_line_coverage, get_spectra_files, median_bin_spec, read_spectrum, get_too_low_gals, norm_spec_sed, read_composite_spectrum, prepare_mock_observe_spectrum, mock_observe_spectrum
 import matplotlib.patches as patches
-from axis_ratio_funcs import read_interp_axis_ratio, filter_ar_df
+from axis_ratio_funcs import read_interp_axis_ratio, filter_ar_df, read_filtered_ar_df
 from operator import itemgetter
 from itertools import *
 from matplotlib import patches
 from read_FAST_spec import read_FAST_file
 from cosmology_calcs import flux_to_luminosity
+from sfms_bins import sfms_slope, sfms_yint
 
 axis_ratio_catalog = ascii.read(imd.loc_axis_ratio_cat).to_pandas()
 
@@ -598,7 +599,7 @@ def perform_stack(stack_type, interp_cluster_spectra_dfs, norm_factors):
 
 
 
-def stack_axis_ratio(mass_width, split_width, starting_points, ratio_bins, save_name, split_by, stack_type, sfms_bins):
+def stack_axis_ratio(mass_width, split_width, starting_points, ratio_bins, save_name, split_by, stack_type, sfms_bins, re_filter=False):
     """Stacks galaxies in groups by axis ratio
 
     old params: , l_mass_cutoff=0, l_ssfr_cutoff=0, l_mass_bins=0, l_ssfr_bins=0, scale_ha=0
@@ -615,10 +616,13 @@ def stack_axis_ratio(mass_width, split_width, starting_points, ratio_bins, save_
 
     Returns:
     """
-    ar_df = read_interp_axis_ratio()
+    if re_filter == True:
+        ar_df = read_interp_axis_ratio()
+        # Filters the ar_df, see filers in the code
+        ar_df = filter_ar_df(ar_df)
+    else:
+        ar_df = read_filtered_ar_df()
 
-    # Filters the ar_df, see filers in the code
-    ar_df = filter_ar_df(ar_df)
 
     # Add a column for ssfr
     ar_df['log_ssfr'] = np.log10((ar_df['sfr'])/(10**ar_df['log_mass']))
@@ -680,18 +684,20 @@ def stack_axis_ratio(mass_width, split_width, starting_points, ratio_bins, save_
         
         # If we are using sfms bins, see if the data falls below, above, or between the cuts
         if sfms_bins==True:
-            low_idx = df[split_by] < 1.07*df['log_mass']-9.83
-            high_idx = df[split_by] > 1.07*df['log_mass']-9.15
-            mid_idx = np.logical_and(np.logical_not(low_idx), np.logical_not(high_idx))
+            # low_idx = df[split_by] < 1.07*df['log_mass']-9.83
+            # high_idx = df[split_by] > 1.07*df['log_mass']-9.15
+            # mid_idx = np.logical_and(np.logical_not(low_idx), np.logical_not(high_idx))
+            low_idx = df[split_by] < sfms_slope*df['log_mass']+sfms_yint
+            high_idx = df[split_by] >= sfms_slope*df['log_mass']+sfms_yint
 
-            low_mass = df['log_mass']<=10.1
-            high_mass = df['log_mass']>10.1
+            low_mass = df['log_mass']<=10
+            high_mass = df['log_mass']>10
 
             dfs.append(df[np.logical_and(low_mass, low_idx)])
-            dfs.append(df[np.logical_and(low_mass, mid_idx)])
+            # dfs.append(df[np.logical_and(low_mass, mid_idx)])
             dfs.append(df[np.logical_and(low_mass, high_idx)])
             dfs.append(df[np.logical_and(high_mass, low_idx)])
-            dfs.append(df[np.logical_and(high_mass, mid_idx)])
+            # dfs.append(df[np.logical_and(high_mass, mid_idx)])
             dfs.append(df[np.logical_and(high_mass, high_idx)])
 
 

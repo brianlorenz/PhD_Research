@@ -18,6 +18,8 @@ import initialize_mosdef_dirs as imd
 import cluster_data_funcs as cdf
 from save_counts import save_count
 from spectra_funcs import check_line_coverage
+import stat
+import time
 
 
 
@@ -275,5 +277,20 @@ def filter_ar_df(ar_df, return_std_ar=False):
     total_removed = total_num_start - total_num_end
     print(f'Removed {total_removed} galaxies in total')
     print(f'There are {total_num_end} galaxies remaining')
+    
+    ar_df.to_csv(imd.mosdef_dir + '/axis_ratio_data/Merged_catalogs/filtered_ar_df.csv', index=False)
 
     return ar_df
+
+def read_filtered_ar_df():
+    """Reads the output form the above function that filters the ar_df
+    
+    """
+    ar_path = imd.mosdef_dir + '/axis_ratio_data/Merged_catalogs/filtered_ar_df.csv'
+    ar_df = ascii.read(ar_path).to_pandas()
+
+    fileStatsObj = os.stat(ar_path)
+    modificationTime = time.ctime(fileStatsObj[stat.ST_MTIME])
+    print("Last Filtered ar_df: ", modificationTime)
+    return ar_df
+
