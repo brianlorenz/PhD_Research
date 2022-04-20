@@ -26,6 +26,10 @@ def plot_overlaid_spectra(savename, plot_cont_sub=False):
     n_rows = int(len(summary_df) / 6)
     if savename=='both_sfms_6bin_median_2axis':
         n_rows=3
+    if savename=='both_sfms_6bin_median_1axis':
+        n_rows=3
+    if savename=='both_6bin_1axis_median_params':
+        n_rows=3
     if len(summary_df) == 8:
         n_rows = 2
     if len(summary_df) == 4:

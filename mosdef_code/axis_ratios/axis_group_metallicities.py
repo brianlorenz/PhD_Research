@@ -172,6 +172,10 @@ def plot_metals(savename):
         n_rows = 2
     if savename=='both_sfms_6bin_median_2axis':
         n_rows=3
+    if savename=='both_sfms_6bin_median_1axis':
+        n_rows=3
+    if savename=='both_6bin_1axis_median_params':
+        n_rows=3
     
     fig, axarr = plt.subplots(n_rows, 2, figsize=(12, 6+3*n_rows))
         
