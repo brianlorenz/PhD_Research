@@ -123,7 +123,7 @@ def plot_sample_split(n_groups, save_name, ratio_bins, starting_points, mass_wid
                 shape = shapes['high']
         
         if len(ratio_bins)+1 == 1:
-            shape = shapes['low']
+            shape = shapes['high']
 
         # print(f'Mass median: {mass_median}, SSFR median: {split_median}')
         # Figure out which mass/ssfr bin

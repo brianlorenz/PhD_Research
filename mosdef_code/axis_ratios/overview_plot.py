@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 import initialize_mosdef_dirs as imd
 
 def plot_overview(nbins, save_name, ratio_bins, starting_points, mass_width, split_width, sfms_bins, split_by):
-    fig, axarr = plt.subplots(2, 5, figsize=(20, 10))
+    fig, axarr = plt.subplots(2, 5, figsize=(30, 10))
     ax_sample = axarr[0,0]
     ax_balmer1 = axarr[0,1]
     ax_balmer2 = axarr[0,2]
@@ -27,4 +27,5 @@ def plot_overview(nbins, save_name, ratio_bins, starting_points, mass_width, spl
     plot_balmer_dec(save_name, nbins, split_by, y_var='metallicity', color_var=split_by, axarr=axarr_metals, fig=fig)
     plot_balmer_dec(save_name, nbins, split_by, y_var='av', color_var=split_by, axarr=axarr_av, fig=fig)
     plot_balmer_dec(save_name, nbins, split_by, y_var='beta', color_var=split_by, axarr=axarr_beta, fig=fig) 
+    plt.tight_layout()
     fig.savefig(imd.axis_cluster_data_dir + f'/{save_name}/combined_overview.pdf')

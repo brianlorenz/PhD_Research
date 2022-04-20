@@ -166,6 +166,7 @@ def plot_balmer_dec(save_name, n_groups, split_by, y_var = 'balmer_dec', color_v
     
     ax_low_mass.set_title('log(Stellar Mass) < 10', fontsize=axis_fontsize)
     ax_high_mass.set_title('log(Stellar Mass) > 10', fontsize=axis_fontsize)
+    
     cbar = fig.colorbar(mpl.cm.ScalarMappable(norm=norm, cmap=cmap), ax=axarr)
     cbar.set_label(color_var, fontsize=axis_fontsize)
     
@@ -245,10 +246,9 @@ def plot_balmer_dec(save_name, n_groups, split_by, y_var = 'balmer_dec', color_v
             ax.add_artist(Ellipse((x_cord, y_cord), ellipse_width, ellipse_height, facecolor=rgba))
             ax.set_ylabel('log_use_sfr', fontsize=axis_fontsize)
 
-
-
-    cbar = fig.colorbar(mpl.cm.ScalarMappable(norm=norm, cmap=cmap), ax=ax)
-    cbar.set_label(color_var, fontsize=axis_fontsize)
+    if len(axarr) == 1:
+        cbar = fig.colorbar(mpl.cm.ScalarMappable(norm=norm, cmap=cmap), ax=ax)
+        cbar.set_label(color_var, fontsize=axis_fontsize)
     ax.set_xlabel('log(Stellar Mass)', fontsize=axis_fontsize) 
     
     ax.tick_params(labelsize=12)
