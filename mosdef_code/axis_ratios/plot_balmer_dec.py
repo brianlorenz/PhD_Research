@@ -98,6 +98,27 @@ def plot_balmer_dec(save_name, n_groups, split_by, y_var = 'balmer_dec', color_v
         elif row['log_mass_median'] >= 10:
             ax = ax_high_mass
 
+        # Plot background points:
+        if background_points==True:
+            if y_var == 'balmer_dec':
+                plot_var = 'balmer_dec'
+            elif y_var == 'av':
+                plot_var = 'AV'
+            elif y_var == 'beta':
+                plot_var = 'beta'
+            elif y_var == 'metallicity':
+                plot_var = 'None'
+            elif y_var == 'log_use_sfr':
+                plot_var = 'log_use_sfr'
+            elif y_var == 'mips_flux':
+                plot_var = 'None'
+            # print(y_var)
+            if plot_var!='None':
+                for axis_group in range(len(summary_df)):
+                    axis_group_df = ascii.read(imd.axis_cluster_data_dir + f'/{save_name}/{save_name}_group_dfs/{axis_group}_df.csv').to_pandas()
+                    low_mass = axis_group_df['log_mass'] < 10
+                    ax_low_mass.plot(axis_group_df[low_mass]['use_ratio'], axis_group_df[low_mass][plot_var], color='grey', marker='o', ls='None', markersize=3, zorder=1)
+                    ax_high_mass.plot(axis_group_df[~low_mass]['use_ratio'], axis_group_df[~low_mass][plot_var], color='grey', marker='o', ls='None', markersize=3, zorder=1)
 
         if y_var == 'balmer_dec':
             x_cord = row['use_ratio_median']
@@ -111,7 +132,7 @@ def plot_balmer_dec(save_name, n_groups, split_by, y_var = 'balmer_dec', color_v
 
 
             ax.errorbar(x_cord, y_cord, yerr=np.array(row['err_balmer_dec_low'], row['err_balmer_dec_high']), marker='None', color=rgba)
-            ax.add_artist(Ellipse((x_cord, y_cord), ellipse_width, ellipse_height, facecolor=rgba), zorder=2)
+            ax.add_artist(Ellipse((x_cord, y_cord), ellipse_width, ellipse_height, facecolor=rgba))
             ax.set_ylabel('Balmer Decrement', fontsize=axis_fontsize)
         elif y_var == 'av':
             x_cord = row['use_ratio_median']
@@ -120,7 +141,7 @@ def plot_balmer_dec(save_name, n_groups, split_by, y_var = 'balmer_dec', color_v
             ellipse_width, ellipse_height = get_ellipse_shapes(1.1, y_axis_len, row['shape'])
 
             ax.errorbar(x_cord, y_cord, yerr=row['err_av_median'], marker='None', color=rgba)
-            ax.add_artist(Ellipse((x_cord, y_cord), ellipse_width, ellipse_height, facecolor=rgba), zorder=2)
+            ax.add_artist(Ellipse((x_cord, y_cord), ellipse_width, ellipse_height, facecolor=rgba))
             ax.set_ylabel('FAST AV', fontsize=axis_fontsize)
         elif y_var == 'beta':
             x_cord = row['use_ratio_median']
@@ -129,7 +150,7 @@ def plot_balmer_dec(save_name, n_groups, split_by, y_var = 'balmer_dec', color_v
             ellipse_width, ellipse_height = get_ellipse_shapes(1.1, y_axis_len, row['shape'])
 
             ax.errorbar(x_cord, y_cord, yerr=row['err_beta_median'], marker='None', color=rgba)
-            ax.add_artist(Ellipse((x_cord, y_cord), ellipse_width, ellipse_height, facecolor=rgba), zorder=2)
+            ax.add_artist(Ellipse((x_cord, y_cord), ellipse_width, ellipse_height, facecolor=rgba))
             ax.set_ylabel('Betaphot', fontsize=axis_fontsize)
         elif y_var == 'metallicity':
             x_cord = row['use_ratio_median']
@@ -138,7 +159,7 @@ def plot_balmer_dec(save_name, n_groups, split_by, y_var = 'balmer_dec', color_v
             ellipse_width, ellipse_height = get_ellipse_shapes(1.1, y_axis_len, row['shape'])
 
             ax.errorbar(x_cord, y_cord, yerr=row['err_metallicity_median'], marker='None', color=rgba)
-            ax.add_artist(Ellipse((x_cord, y_cord), ellipse_width, ellipse_height, facecolor=rgba), zorder=2)
+            ax.add_artist(Ellipse((x_cord, y_cord), ellipse_width, ellipse_height, facecolor=rgba))
             ax.set_ylabel('Metallicity', fontsize=axis_fontsize)
         elif y_var == 'mips_flux':
             x_cord = row['use_ratio_median']
@@ -147,7 +168,7 @@ def plot_balmer_dec(save_name, n_groups, split_by, y_var = 'balmer_dec', color_v
             ellipse_width, ellipse_height = get_ellipse_shapes(1.1, y_axis_len, row['shape'])
 
             ax.errorbar(x_cord, y_cord, yerr=row['err_mips_flux_median'], marker='None', color=rgba)
-            ax.add_artist(Ellipse((x_cord, y_cord), ellipse_width, ellipse_height, facecolor=rgba), zorder=2)
+            ax.add_artist(Ellipse((x_cord, y_cord), ellipse_width, ellipse_height, facecolor=rgba))
             ax.set_ylabel('MIPS Flux', fontsize=axis_fontsize)
         elif y_var == 'log_use_sfr':
             x_cord = row['use_ratio_median']
@@ -156,30 +177,10 @@ def plot_balmer_dec(save_name, n_groups, split_by, y_var = 'balmer_dec', color_v
             ellipse_width, ellipse_height = get_ellipse_shapes(1.1, y_axis_len, row['shape'])
 
             ax.errorbar(x_cord, y_cord, marker='None', color=rgba)
-            ax.add_artist(Ellipse((x_cord, y_cord), ellipse_width, ellipse_height, facecolor=rgba), zorder=2)
+            ax.add_artist(Ellipse((x_cord, y_cord), ellipse_width, ellipse_height, facecolor=rgba))
             ax.set_ylabel('log_use_sfr', fontsize=axis_fontsize)
     
-    # Plot background points:
-    if background_points==True:
-        if y_var == 'balmer_dec':
-            plot_var = 'balmer_dec'
-        elif y_var == 'av':
-            plot_var = 'AV'
-        elif y_var == 'beta':
-            plot_var = 'beta'
-        elif y_var == 'metallicity':
-            plot_var = 'None'
-        elif y_var == 'log_use_sfr':
-            plot_var = 'log_use_sfr'
-        elif y_var == 'mips_flux':
-            plot_var = 'None'
-        # print(y_var)
-        if plot_var!='None':
-            for axis_group in range(len(summary_df)):
-                axis_group_df = ascii.read(imd.axis_cluster_data_dir + f'/{save_name}/{save_name}_group_dfs/{axis_group}_df.csv').to_pandas()
-                low_mass = axis_group_df['log_mass'] < 10
-                ax_low_mass.plot(axis_group_df[low_mass]['use_ratio'], axis_group_df[low_mass][plot_var], color='grey', marker='o', ls='None', markersize=3, zorder=1)
-                ax_high_mass.plot(axis_group_df[~low_mass]['use_ratio'], axis_group_df[~low_mass][plot_var], color='grey', marker='o', ls='None', markersize=3, zorder=1)
+
 
     for ax in axarr:
         ax.set_xlabel('Axis Ratio', fontsize=axis_fontsize) 
