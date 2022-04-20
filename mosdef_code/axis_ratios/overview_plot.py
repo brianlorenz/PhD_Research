@@ -27,5 +27,5 @@ def plot_overview(nbins, save_name, ratio_bins, starting_points, mass_width, spl
     plot_balmer_dec(save_name, nbins, split_by, y_var='metallicity', color_var=split_by, axarr=axarr_metals, fig=fig)
     plot_balmer_dec(save_name, nbins, split_by, y_var='av', color_var=split_by, axarr=axarr_av, fig=fig)
     plot_balmer_dec(save_name, nbins, split_by, y_var='beta', color_var=split_by, axarr=axarr_beta, fig=fig) 
-    plt.tight_layout()
+    # plt.tight_layout()
     fig.savefig(imd.axis_cluster_data_dir + f'/{save_name}/combined_overview.pdf')
