@@ -10,6 +10,7 @@ from matplotlib import patches
 import matplotlib.gridspec as gridspec
 from astropy.io import ascii
 import pandas as pd
+from sfms_bins import sfms_slope, sfms_yint
 
 shapes = {'low': '+', 'mid': 'd', 'high': 'o'}
 colors = {'sorted0': 'red', 'sorted1': 'blue', 'sorted2': 'orange', 'sorted3': 'mediumseagreen', 'sorted4': 'lightskyblue', 'sorted5': 'darkviolet'}
@@ -22,6 +23,9 @@ def plot_sample_split(n_groups, save_name, ratio_bins, starting_points, mass_wid
     # If there isn't an axis set, make one - otherwise, use the one provided
     if ax == 'None':
         fig, ax = plt.subplots(figsize=(8,8))
+        made_new_axis = True
+    else:
+        made_new_axis = False
     
     
     group_num = []
@@ -188,6 +192,10 @@ def plot_sample_split(n_groups, save_name, ratio_bins, starting_points, mass_wid
             ylims = (0, 600)
         else:
             ylims = (-0.1, 2.6)
+            x = np.linspace(8.8, 11.2, 100)
+            y1 = sfms_slope*x+sfms_yint
+            plt.plot(x, y1, color='black', ls='--')
+            plt.axvline(10, color='black', ls='--')
         ax.set_ylim(ylims)
         ax.set_xlim(xlims)
 
@@ -228,5 +236,5 @@ def plot_sample_split(n_groups, save_name, ratio_bins, starting_points, mass_wid
     cbar = fig.colorbar(mpl.cm.ScalarMappable(norm=norm, cmap=cmap), ax=ax)
     cbar.set_label('Balmer Decrement', fontsize=14)
     ax.set_aspect(ellipse_width/ellipse_height)
-    if ax == 'None':
+    if made_new_axis==True:
         fig.savefig(imd.axis_cluster_data_dir + f'/{save_name}/sample_cut.pdf')
