@@ -61,6 +61,7 @@ def stack_all_and_plot_all(param_class):
     if only_plot==False:
         setup_new_stack_dir(save_name, param_class)
         stack_axis_ratio(mass_width, split_width, starting_points, ratio_bins, save_name, split_by, stack_type, sfms_bins)
+        sys.exit()
         stack_all_continuum(nbins, save_name=save_name)
         time_stack = time.time()
         print(f'All stacking took {time_stack-time_start}')
@@ -86,6 +87,7 @@ def stack_all_and_plot_all(param_class):
     plot_balmer_dec(save_name, nbins, split_by, y_var='balmer_dec', color_var='log_use_ssfr')
     plot_balmer_dec(save_name, nbins, split_by, y_var='mips_flux', color_var=split_by)
     plot_balmer_stellar_avs(save_name)
+    print('starting plot')
     plot_overview(nbins, save_name, ratio_bins, starting_points, mass_width, split_width, sfms_bins, split_by)
     time_end = time.time()
     print(f'Total program took {time_end-time_start}')

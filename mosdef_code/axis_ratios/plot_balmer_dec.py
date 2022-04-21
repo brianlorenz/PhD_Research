@@ -117,8 +117,8 @@ def plot_balmer_dec(save_name, n_groups, split_by, y_var = 'balmer_dec', color_v
                 for axis_group in range(len(summary_df)):
                     axis_group_df = ascii.read(imd.axis_cluster_data_dir + f'/{save_name}/{save_name}_group_dfs/{axis_group}_df.csv').to_pandas()
                     low_mass = axis_group_df['log_mass'] < 10
-                    ax_low_mass.plot(axis_group_df[low_mass]['use_ratio'], axis_group_df[low_mass][plot_var], color='grey', marker='o', ls='None', markersize=3, zorder=1)
-                    ax_high_mass.plot(axis_group_df[~low_mass]['use_ratio'], axis_group_df[~low_mass][plot_var], color='grey', marker='o', ls='None', markersize=3, zorder=1)
+                    ax_low_mass.plot(axis_group_df[low_mass]['use_ratio'], axis_group_df[low_mass][plot_var], color='grey', marker='o', ls='None', markersize=2, zorder=1)
+                    ax_high_mass.plot(axis_group_df[~low_mass]['use_ratio'], axis_group_df[~low_mass][plot_var], color='grey', marker='o', ls='None', markersize=2, zorder=1)
 
         if y_var == 'balmer_dec':
             x_cord = row['use_ratio_median']

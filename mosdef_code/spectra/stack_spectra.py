@@ -2,6 +2,7 @@
 # stack_spectra(groupID, norm_method) to stack within clusters
 
 import sys
+import time
 import numpy as np
 import pandas as pd
 from astropy.io import ascii
@@ -23,7 +24,7 @@ from sfms_bins import sfms_slope, sfms_yint
 axis_ratio_catalog = ascii.read(imd.loc_axis_ratio_cat).to_pandas()
 
 
-def stack_spectra(groupID, norm_method, re_observe=False, mask_negatives=False, ignore_low_spectra=False, axis_ratio_df=[], axis_group=0, save_name='', scale_factors=0, stack_type='median'):
+def stack_spectra(groupID, norm_method, re_observe=False, mask_negatives=False, ignore_low_spectra=False, axis_ratio_df=[], axis_group=0, save_name='', scale_factors=0, stack_type='median', bootstrap=0):
     """Stack all the spectra for every object in a given group
 
     Parameters:
@@ -37,6 +38,7 @@ def stack_spectra(groupID, norm_method, re_observe=False, mask_negatives=False, 
     save_name (str): location to save the files
     scale_factors (list): Set to a list to manually choose the normalization for each object - requires norm_method 'manual'
     stack_type (str): either 'mean' or 'median' to choose whether to use the mean of each value or median for the stack
+    bootstrap (int): Number of times to bootstrap the stacking. Set to 0 to not bootstrap. 
 
     Returns:
     """
@@ -263,6 +265,28 @@ def stack_spectra(groupID, norm_method, re_observe=False, mask_negatives=False, 
 
 
     total_spec, total_cont, total_errs, number_specs_by_wave, norm_value_specs_by_wave = perform_stack(stack_type, interp_cluster_spectra_dfs, norm_factors)
+
+    #If boostrrapping is turned on, perform multiple stacks with different subsets of the data, and save each of these
+    if bootstrap>0:
+        start_strap = time.time()
+        print('Starting bootstrap')
+        bootstrap_count = 0
+        imd.check_and_make_dir(imd.axis_cluster_data_dir + f'/{save_name}/{save_name}_spectra_boots/')
+        while bootstrap_count<bootstrap:
+            # Resample the interp_spectrum_dfs and corresponding norm factors to bootstrap with:
+            n_gals = len(interp_cluster_spectra_dfs)
+            # Grab the indices of which galaxies to use
+            keys = np.random.choice(range(n_gals), size=n_gals) 
+            boot_interp_cluster_spectra_dfs = [interp_cluster_spectra_dfs[keys[k]] for k in range(n_gals)]
+            boot_norm_factors = [norm_factors[keys[k]] for k in range(n_gals)]
+
+            boot_total_spec, boot_total_cont, boot_total_errs, boot_number_specs_by_wave, boot_norm_value_specs_by_wave = perform_stack(stack_type, boot_interp_cluster_spectra_dfs, boot_norm_factors)
+            boot_total_spec_df = pd.DataFrame(zip(spectrum_wavelength, boot_total_spec, boot_total_errs, boot_total_cont, boot_number_specs_by_wave, boot_norm_value_specs_by_wave), columns=['wavelength', 'f_lambda', 'err_f_lambda', 'cont_f_lambda', 'n_galaxies', 'norm_value_summed'])
+            boot_total_spec_df.to_csv(imd.axis_cluster_data_dir + f'/{save_name}/{save_name}_spectra_boots/{axis_group}_spectrum_{bootstrap_count}.csv', index=False)
+            bootstrap_count=bootstrap_count+1
+        end_strap = time.time()
+        print(f'Bootstrap took {end_strap-start_strap} seconds')
+
 
     # Now we have divided each point by the sum of the normalizations that
     # contributed to it.
@@ -599,7 +623,7 @@ def perform_stack(stack_type, interp_cluster_spectra_dfs, norm_factors):
 
 
 
-def stack_axis_ratio(mass_width, split_width, starting_points, ratio_bins, save_name, split_by, stack_type, sfms_bins, re_filter=False):
+def stack_axis_ratio(mass_width, split_width, starting_points, ratio_bins, save_name, split_by, stack_type, sfms_bins, re_filter=False, bootstrap=0):
     """Stacks galaxies in groups by axis ratio
 
     old params: , l_mass_cutoff=0, l_ssfr_cutoff=0, l_mass_bins=0, l_ssfr_bins=0, scale_ha=0
@@ -613,6 +637,7 @@ def stack_axis_ratio(mass_width, split_width, starting_points, ratio_bins, save_
     use_ha_ssfr (int): Set to 1 to use the halpha calculated ssfrs
     stack_type (str): Either mean or median, what to use when stacking the galaxies
     sfms_bins (boolean): Set to True to overwrite the other bins and split along the sfms
+    bootstrap (int): Set to a value for how many times to bootstrap
 
     Returns:
     """
@@ -713,5 +738,5 @@ def stack_axis_ratio(mass_width, split_width, starting_points, ratio_bins, save_
                 (imd.axis_cluster_data_dir + f'/{cluster_name}/{cluster_name}_group_dfs/{axis_group}_df.csv'), index=False)
             # Within each group, start stacking the spectra
             stack_spectra(0, 'cluster_norm', axis_ratio_df=df,
-                        axis_group=axis_group, save_name=cluster_name, stack_type=stack_type)
+                        axis_group=axis_group, save_name=cluster_name, stack_type=stack_type, bootstrap=bootstrap)
             axis_group = axis_group + 1

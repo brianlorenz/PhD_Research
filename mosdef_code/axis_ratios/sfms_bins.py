@@ -8,7 +8,7 @@ import initialize_mosdef_dirs as imd
 from axis_ratio_funcs import read_interp_axis_ratio, filter_ar_df, read_filtered_ar_df
 
 sfms_slope = 0.598 
-sfms_yint = -4.475
+sfms_yint = -4.745
 
 
 def find_sfms(divide_axis = True):

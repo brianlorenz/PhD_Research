@@ -193,7 +193,8 @@ def plot_sample_split(n_groups, save_name, ratio_bins, starting_points, mass_wid
         else:
             ylims = (-0.1, 2.6)
             x = np.linspace(8.8, 11.2, 100)
-            y1 = sfms_slope*x+sfms_yint
+            print(sfms_slope, sfms_yint)
+            y1 = sfms_slope*x + sfms_yint
             plt.plot(x, y1, color='black', ls='--')
             plt.axvline(10, color='black', ls='--')
         ax.set_ylim(ylims)
@@ -226,7 +227,7 @@ def plot_sample_split(n_groups, save_name, ratio_bins, starting_points, mass_wid
         summary_df['log_use_ssfr_median'] = log_use_ssfr_medians
     if variable != 'log_use_sfr':
         summary_df['log_use_sfr_median'] = log_use_sfr_medians
-    if ax=='None':
+    if made_new_axis==True:
         summary_df.to_csv(imd.axis_cluster_data_dir + f'/{save_name}/summary.csv', index=False)
 
 
