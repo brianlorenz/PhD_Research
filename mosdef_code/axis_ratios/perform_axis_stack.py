@@ -1,3 +1,4 @@
+from ensurepip import bootstrap
 from initialize_mosdef_dirs import check_and_make_dir
 from stack_spectra import *
 from fit_emission import fit_emission
@@ -60,7 +61,7 @@ def stack_all_and_plot_all(param_class):
     time_start = time.time()
     if only_plot==False:
         setup_new_stack_dir(save_name, param_class)
-        stack_axis_ratio(mass_width, split_width, starting_points, ratio_bins, save_name, split_by, stack_type, sfms_bins)
+        stack_axis_ratio(mass_width, split_width, starting_points, ratio_bins, save_name, split_by, stack_type, sfms_bins, bootstrap=10)
         sys.exit()
         stack_all_continuum(nbins, save_name=save_name)
         time_stack = time.time()

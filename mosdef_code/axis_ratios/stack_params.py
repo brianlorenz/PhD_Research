@@ -109,7 +109,7 @@ def make_both_ssfrs_4bin_median_params(run_stack = False, only_plot = True):
 both_ssfrs_4bin_median_params = make_both_ssfrs_4bin_median_params()
 
 # Normal 12bin using combined sfrs, using sfr2 when both lines are good, halpha_sfr when hbeta is below 3 sigma (or not covered)
-def make_both_ssfrs_4bin_2axis_median_params(run_stack = False, only_plot = True):
+def make_both_ssfrs_4bin_2axis_median_params(run_stack = True, only_plot = False):
     run_stack = run_stack
     only_plot = only_plot
     mass_width = 1.0
@@ -125,7 +125,7 @@ def make_both_ssfrs_4bin_2axis_median_params(run_stack = False, only_plot = True
     return both_ssfrs_4bin_mean_params
 both_ssfrs_4bin_2axis_median_params = make_both_ssfrs_4bin_2axis_median_params()
 
-def make_both_sfms_4bin_2axis_median_params(run_stack = True, only_plot = True):
+def make_both_sfms_4bin_2axis_median_params(run_stack = False, only_plot = True):
     run_stack = run_stack
     only_plot = only_plot
     mass_width = 1.0

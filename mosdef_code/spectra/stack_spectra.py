@@ -265,7 +265,7 @@ def stack_spectra(groupID, norm_method, re_observe=False, mask_negatives=False, 
 
 
     total_spec, total_cont, total_errs, number_specs_by_wave, norm_value_specs_by_wave = perform_stack(stack_type, interp_cluster_spectra_dfs, norm_factors)
-
+    print(f'bootstrap {bootstrap}')
     #If boostrrapping is turned on, perform multiple stacks with different subsets of the data, and save each of these
     if bootstrap>0:
         start_strap = time.time()
@@ -276,12 +276,15 @@ def stack_spectra(groupID, norm_method, re_observe=False, mask_negatives=False, 
             # Resample the interp_spectrum_dfs and corresponding norm factors to bootstrap with:
             n_gals = len(interp_cluster_spectra_dfs)
             # Grab the indices of which galaxies to use
+            print('Resampling...')
             keys = np.random.choice(range(n_gals), size=n_gals) 
             boot_interp_cluster_spectra_dfs = [interp_cluster_spectra_dfs[keys[k]] for k in range(n_gals)]
             boot_norm_factors = [norm_factors[keys[k]] for k in range(n_gals)]
-
+            print('Stacking...')
             boot_total_spec, boot_total_cont, boot_total_errs, boot_number_specs_by_wave, boot_norm_value_specs_by_wave = perform_stack(stack_type, boot_interp_cluster_spectra_dfs, boot_norm_factors)
+            print('Making dataframe...')
             boot_total_spec_df = pd.DataFrame(zip(spectrum_wavelength, boot_total_spec, boot_total_errs, boot_total_cont, boot_number_specs_by_wave, boot_norm_value_specs_by_wave), columns=['wavelength', 'f_lambda', 'err_f_lambda', 'cont_f_lambda', 'n_galaxies', 'norm_value_summed'])
+            print('Saving...')
             boot_total_spec_df.to_csv(imd.axis_cluster_data_dir + f'/{save_name}/{save_name}_spectra_boots/{axis_group}_spectrum_{bootstrap_count}.csv', index=False)
             bootstrap_count=bootstrap_count+1
         end_strap = time.time()
@@ -581,41 +584,60 @@ def perform_stack(stack_type, interp_cluster_spectra_dfs, norm_factors):
         total_cont = divz(summed_cont, number_specs_by_wave)
         total_errs = divz(err_in_sum, number_specs_by_wave)
     
-    
+    # Older slow code
+    # if stack_type == 'median':
+    #     # Set up the spectra to fill
+    #     total_spec = []
+    #     total_cont = []
+    #     total_errs = []
+
+    #     # Loop through the number of spectra that contribute to each point
+    #     for i in range(len(number_specs_by_wave)):
+            
+    #         num_specs = number_specs_by_wave[i]
+            
+    #         # If there are no spectra contributing to that point, set it to zero
+    #         if num_specs == 0:
+    #             total_spec.append(0)
+    #             total_cont.append(0)
+    #             total_errs.append(0)
+    #             continue
+            
+    #         # Otherwise, find the nonzero spectra and median them
+    #         else:
+    #             nonzero_spec_values = [norm_interp_specs[j][i] for j in range(len(norm_interp_specs)) if norm_interp_specs[j][i] != 0]
+    #             nonzero_cont_values = [norm_interp_conts[j][i] for j in range(len(norm_interp_conts)) if norm_interp_conts[j][i] != 0]
+    #             nonzero_err_values = [norm_interp_errs[j][i] for j in range(len(norm_interp_errs)) if norm_interp_errs[j][i] != 0]
+    #             median_point = np.median(nonzero_spec_values)
+    #             median_cont = np.median(nonzero_cont_values)
+    #             variances = [nonzero_err_value**2 for nonzero_err_value in nonzero_err_values]
+    #             err_in_sum = np.sqrt(np.sum(variances))
+    #             err_in_mean = divz(err_in_sum, num_specs)
+
+    #             ### Using 1.25*mean error, not sure if this is valid
+    #             median_cont = np.median(nonzero_err_values)
+    #             total_spec.append(median_point)
+    #             total_cont.append(median_cont)
+    #             total_errs.append(1.25*err_in_mean)
+
+
     if stack_type == 'median':
-        # Set up the spectra to fill
-        total_spec = []
-        total_cont = []
-        total_errs = []
+        # Turn the lists of norm_interp_specs into an array
+        interp_spec_arr = np.array(norm_interp_specs)
+        spec_zeros_mask = np.ma.masked_where(interp_spec_arr == 0, interp_spec_arr)
+        total_spec = np.ma.median(spec_zeros_mask, axis=0).filled(0)
 
-        # Loop through the number of spectra that contribute to each point
-        for i in range(len(number_specs_by_wave)):
-            
-            num_specs = number_specs_by_wave[i]
-            
-            # If there are no spectra contributing to that point, set it to zero
-            if num_specs == 0:
-                total_spec.append(0)
-                total_cont.append(0)
-                total_errs.append(0)
-                continue
-            
-            # Otherwise, find the nonzero spectra and median them
-            else:
-                nonzero_spec_values = [norm_interp_specs[j][i] for j in range(len(norm_interp_specs)) if norm_interp_specs[j][i] != 0]
-                nonzero_cont_values = [norm_interp_conts[j][i] for j in range(len(norm_interp_conts)) if norm_interp_conts[j][i] != 0]
-                nonzero_err_values = [norm_interp_errs[j][i] for j in range(len(norm_interp_errs)) if norm_interp_errs[j][i] != 0]
-                median_point = np.median(nonzero_spec_values)
-                median_cont = np.median(nonzero_cont_values)
-                variances = [nonzero_err_value**2 for nonzero_err_value in nonzero_err_values]
-                err_in_sum = np.sqrt(np.sum(variances))
-                err_in_mean = divz(err_in_sum, num_specs)
+        # Repeat for cont:
+        interp_cont_arr = np.array(norm_interp_conts)
+        cont_zeros_mask = np.ma.masked_where(interp_cont_arr == 0, interp_cont_arr)
+        total_cont = np.ma.median(cont_zeros_mask, axis=0).filled(0)
 
-                ### Using 1.25*mean error, not sure if this is valid
-                median_cont = np.median(nonzero_err_values)
-                total_spec.append(median_point)
-                total_cont.append(median_cont)
-                total_errs.append(1.25*err_in_mean)
+        # Find errs:
+        interp_err_arr = np.array(norm_interp_errs)
+        interp_err_arr_sums = np.sqrt(np.sum(interp_err_arr**2, axis=0))
+        number_specs_by_wave_arr = np.array(number_specs_by_wave)
+        # MAD - 1.25 * error in the mean
+        total_errs = 1.25*(interp_err_arr_sums/number_specs_by_wave_arr)
 
     return total_spec, total_cont, total_errs, number_specs_by_wave, norm_value_specs_by_wave
 
