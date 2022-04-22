@@ -6,6 +6,7 @@ from scipy import interpolate
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
+from stack_spectra import plot_spec
 from cross_correlate import get_cross_cor
 
 
@@ -14,9 +15,6 @@ from cross_correlate import get_cross_cor
 
 def stack_continuum(axis_group, save_name):
     '''Stacks all of the normalized continuum fast fits'''
-
-    
-
     cont_folder = imd.axis_cluster_data_dir + f'/{save_name}/{save_name}_conts/{axis_group}_conts/'
     file_names = glob.glob(os.path.join(cont_folder, '*'))
 
@@ -36,15 +34,66 @@ def stack_all_continuum(n_clusters, save_name):
         print(f'Stacking group {axis_group}')
         stack_continuum(axis_group, save_name)
 
-
-
-def plot_spec_with_cont(axis_group, save_name):
-    '''Plots the spectrum witht he continuum overlaid'''
-
+def scale_bootstrapped_conts(axis_group, save_name, bootstrap=0, make_plot=False):
+    '''Scales the continuums for each of the bootstrapped spectra
+    
+    NOTE - still only uses the summed cont from above, probably should re-sum the continuum for each bootstrap
+    
+    Parameters:
+    axis_group (int): Group number
+    save_name (str): Name of the location to save
+    bootstrap (int): Number of bootstrapped samples
+    make_plot (boolean): Set to True to make and save plots for each spectrum
+    '''
     sum_cont_df = ascii.read(imd.axis_cluster_data_dir + f'/{save_name}/{save_name}_conts/summed_conts/{axis_group}_summed_cont.csv').to_pandas()
-    spec_df = ascii.read(imd.axis_cluster_data_dir + f'/{save_name}/{save_name}_spectra/{axis_group}_spectrum.csv').to_pandas()
+    imd.check_and_make_dir(imd.axis_cluster_data_dir + f'/{save_name}/{save_name}_conts/summed_conts_boots/')
+    for bootstrap_num in range(bootstrap):
+        plot_spec_with_cont(axis_group, save_name, bootstrap_num=bootstrap_num, sum_cont_df=sum_cont_df, use_sum_cont_df=True, make_plot=make_plot)
 
+def scale_all_bootstrapped_conts(n_clusters, save_name, bootstrap=0, make_plot=False):
+    '''Scales the continuums for each of the bootstrapped spectra
+    
+    NOTE - still only uses the summed cont from above, probably should re-sum the continuum for each bootstrap
+    
+    Parameters:
+    n_clusters (int): Number of groups
+    save_name (str): Name of the location to save
+    bootstrap (int): Number of bootstrapped samples
+    '''
+    for axis_group in range(n_clusters):
+        scale_bootstrapped_conts(axis_group, save_name, bootstrap=bootstrap, make_plot=make_plot)
+
+
+
+def plot_spec_with_cont(axis_group, save_name, bootstrap_num=-1, sum_cont_df='None', use_sum_cont_df=False, make_plot=True):
+    '''Plots the spectrum witht he continuum overlaid
+    
+    Parameters:
+    axis_group (int): Group number
+    save_name (str): Name of the location to save
+    bootstrap_num (int): number of the current bootstrap
+    sum_cont_df (pd.DataFrame): set to the sum cont df to avoid reading it in every time
+    use_sum_cont_df (boolean): Set to True to use the provided sum cont df, False to read in a new one
+    make_plot (boolean): Set to true to make and save a plot, false otherwise
+    '''
+    if use_sum_cont_df==False:
+        sum_cont_df = ascii.read(imd.axis_cluster_data_dir + f'/{save_name}/{save_name}_conts/summed_conts/{axis_group}_summed_cont.csv').to_pandas()
+    
+    # Top if statement if using a bootstrapped spectrum, bottom otherwise
+    if bootstrap_num>-1:
+        spec_df = ascii.read(imd.axis_cluster_data_dir + f'/{save_name}/{save_name}_spectra_boots/{axis_group}_spectrum_{bootstrap_num}.csv').to_pandas()
+    else:
+        spec_df = ascii.read(imd.axis_cluster_data_dir + f'/{save_name}/{save_name}_spectra/{axis_group}_spectrum.csv').to_pandas()
     spec_df, sum_cont_df = scale_continuum(spec_df, sum_cont_df)
+
+    # Save the scaled continuum
+    if bootstrap_num>-1:
+        sum_cont_df.to_csv(imd.axis_cluster_data_dir + f'/{save_name}/{save_name}_conts/summed_conts_boots/{axis_group}_summed_cont_{bootstrap_num}.csv', index=False)
+    else:
+        sum_cont_df.to_csv(imd.axis_cluster_data_dir + f'/{save_name}/{save_name}_conts/summed_conts/{axis_group}_summed_cont.csv', index=False)
+
+    if make_plot==False:
+        return
 
     fig, ax = plt.subplots(figsize=(8,8))
     ax.plot(spec_df['wavelength'], spec_df['f_lambda'], color = 'orange')
@@ -54,14 +103,14 @@ def plot_spec_with_cont(axis_group, save_name):
     ax.set_ylabel('Flux', fontsize=14)
     ax.tick_params(labelsize=12)
 
-    fig.savefig(imd.axis_cluster_data_dir + f'/{save_name}/{save_name}_conts/summed_conts/{axis_group}_cont_spec.pdf')
+    if bootstrap_num>-1:
+        fig.savefig(imd.axis_cluster_data_dir + f'/{save_name}/{save_name}_conts/summed_conts_boots/{axis_group}_cont_spec_{bootstrap_num}.pdf')
+    else:
+        fig.savefig(imd.axis_cluster_data_dir + f'/{save_name}/{save_name}_conts/summed_conts/{axis_group}_cont_spec.pdf')
 
     fig, ax = plt.subplots(figsize=(8,8))
     ax.plot(spec_df['wavelength'], spec_df['f_lambda'], color = 'orange')
     ax.plot(sum_cont_df['rest_wavelength'], sum_cont_df['f_lambda_scaled'], color = 'black')
-
-    # Save the scaled continuum
-    sum_cont_df.to_csv(imd.axis_cluster_data_dir + f'/{save_name}/{save_name}_conts/summed_conts/{axis_group}_summed_cont.csv', index=False)
 
     ax.set_xlabel('Wavelength ($\AA$)', fontsize=14)
     ax.set_ylabel('Flux', fontsize=14)
@@ -70,8 +119,10 @@ def plot_spec_with_cont(axis_group, save_name):
     ax.tick_params(labelsize=12)
 
 
-
-    fig.savefig(imd.axis_cluster_data_dir + f'/{save_name}/{save_name}_conts/summed_conts/{axis_group}_zoomha.pdf')
+    if bootstrap_num>-1:
+        fig.savefig(imd.axis_cluster_data_dir + f'/{save_name}/{save_name}_conts/summed_conts_boots/{axis_group}_zoomha_{bootstrap_num}.pdf')
+    else:
+        fig.savefig(imd.axis_cluster_data_dir + f'/{save_name}/{save_name}_conts/summed_conts/{axis_group}_zoomha.pdf')
     plt.close('all')
 
 def plot_all_spec_with_cont(n_clusters, save_name):
@@ -123,5 +174,7 @@ def scale_continuum(spec_df, cont_df):
     return spec_df, cont_df
 
 
-# stack_all_continuum(18)
+# plot_all_spec_with_cont(8, 'both_ssfrs_4bin_median_2axis')
 # plot_all_spec_with_cont(18)
+# plot_spec_with_cont(1, 'both_ssfrs_4bin_median_2axis')
+# scale_all_bootstrapped_conts(8, 'both_ssfrs_4bin_median_2axis', 10, make_plot=False)
