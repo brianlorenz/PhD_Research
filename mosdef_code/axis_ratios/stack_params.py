@@ -4,7 +4,7 @@ from perform_axis_stack import stack_all_and_plot_all
 
 class stack_params:
     
-    def __init__(self, mass_width, split_width, starting_points, ratio_bins, nbins, split_by, save_name, stack_type, sfms_bins, only_plot, run_stack):
+    def __init__(self, mass_width, split_width, starting_points, ratio_bins, nbins, split_by, save_name, stack_type, sfms_bins, bootstrap, only_plot, run_stack):
         '''
         
         Parameters:
@@ -17,6 +17,7 @@ class stack_params:
         save_name (str): Name for the directory where all outputs will be saved
         stack_type (str): 'mean' or 'median' for how to stack the spectra
         sfms_bins (boolean): Set to True to use different bins from the star-forming main sequence instead of the above method
+        bootstrap (int): Set to 0 to not bootstrap, or the number of boostrap samples to run to do so
         only_plot (boolean): Set to True to skip the stacking step and just re-run the plots
         run_stack (boolean): Set to True to include this group in the current run of the code
 
@@ -31,8 +32,10 @@ class stack_params:
         self.save_name = save_name
         self.stack_type = stack_type
         self.sfms_bins = sfms_bins
+        self.bootstrap = bootstrap
         self.only_plot = only_plot
         self.run_stack = run_stack
+        
 
 # Equalivent width ha
 ## NOT USING
@@ -104,7 +107,8 @@ def make_both_ssfrs_4bin_median_params(run_stack = False, only_plot = True):
     save_name = 'both_ssfrs_4bin_median'
     stack_type = 'median'
     sfms_bins = False
-    both_ssfrs_4bin_mean_params = stack_params(mass_width, split_width, starting_points, ratio_bins, nbins, split_by, save_name, stack_type, sfms_bins, only_plot, run_stack)
+    bootstrap = 10
+    both_ssfrs_4bin_mean_params = stack_params(mass_width, split_width, starting_points, ratio_bins, nbins, split_by, save_name, stack_type, sfms_bins, bootstrap, only_plot, run_stack)
     return both_ssfrs_4bin_mean_params
 both_ssfrs_4bin_median_params = make_both_ssfrs_4bin_median_params()
 
@@ -121,7 +125,8 @@ def make_both_ssfrs_4bin_2axis_median_params(run_stack = True, only_plot = False
     save_name = 'both_ssfrs_4bin_median_2axis'
     stack_type = 'median'
     sfms_bins = False
-    both_ssfrs_4bin_mean_params = stack_params(mass_width, split_width, starting_points, ratio_bins, nbins, split_by, save_name, stack_type, sfms_bins, only_plot, run_stack)
+    bootstrap = 10
+    both_ssfrs_4bin_mean_params = stack_params(mass_width, split_width, starting_points, ratio_bins, nbins, split_by, save_name, stack_type, sfms_bins, bootstrap, only_plot, run_stack)
     return both_ssfrs_4bin_mean_params
 both_ssfrs_4bin_2axis_median_params = make_both_ssfrs_4bin_2axis_median_params()
 
@@ -137,7 +142,8 @@ def make_both_sfms_4bin_2axis_median_params(run_stack = False, only_plot = True)
     save_name = 'both_sfms_4bin_median_2axis'
     stack_type = 'median'
     sfms_bins = True
-    both_ssfrs_4bin_mean_params = stack_params(mass_width, split_width, starting_points, ratio_bins, nbins, split_by, save_name, stack_type, sfms_bins, only_plot, run_stack)
+    bootstrap = 10
+    both_ssfrs_4bin_mean_params = stack_params(mass_width, split_width, starting_points, ratio_bins, nbins, split_by, save_name, stack_type, sfms_bins, bootstrap, only_plot, run_stack)
     return both_ssfrs_4bin_mean_params
 both_sfms_4bin_2axis_median_params = make_both_sfms_4bin_2axis_median_params()
 
@@ -153,7 +159,8 @@ def make_both_4bin_1axis_median_params(run_stack = False, only_plot = True):
     save_name = 'both_4bin_1axis_median_params'
     stack_type = 'median'
     sfms_bins = False
-    both_ssfrs_4bin_mean_params = stack_params(mass_width, split_width, starting_points, ratio_bins, nbins, split_by, save_name, stack_type, sfms_bins, only_plot, run_stack)
+    bootstrap = 10
+    both_ssfrs_4bin_mean_params = stack_params(mass_width, split_width, starting_points, ratio_bins, nbins, split_by, save_name, stack_type, sfms_bins, bootstrap, only_plot, run_stack)
     return both_ssfrs_4bin_mean_params
 both_4bin_1axis_median_params = make_both_4bin_1axis_median_params()
 
@@ -169,7 +176,8 @@ def make_both_6bin_1axis_median_params(run_stack = False, only_plot = True):
     save_name = 'both_6bin_1axis_median_params'
     stack_type = 'median'
     sfms_bins = False
-    both_ssfrs_4bin_mean_params = stack_params(mass_width, split_width, starting_points, ratio_bins, nbins, split_by, save_name, stack_type, sfms_bins, only_plot, run_stack)
+    bootstrap = 10
+    both_ssfrs_4bin_mean_params = stack_params(mass_width, split_width, starting_points, ratio_bins, nbins, split_by, save_name, stack_type, sfms_bins, bootstrap, only_plot, run_stack)
     return both_ssfrs_4bin_mean_params
 both_6bin_1axis_median_params = make_both_6bin_1axis_median_params()
 

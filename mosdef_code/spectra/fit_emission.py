@@ -1,5 +1,6 @@
 # Codes for simultaneously fitting the emission lines in a spectrum
 
+from ensurepip import bootstrap
 import sys
 import os
 import string
@@ -32,7 +33,7 @@ line_list = [
 line_centers_rest = [line_list[i][1] for i in range(len(line_list))]
 
 
-def fit_emission(groupID, norm_method, constrain_O3=False, axis_group=-1, save_name='', scaled='False', run_name='False'):
+def fit_emission(groupID, norm_method, constrain_O3=False, axis_group=-1, save_name='', scaled='False', run_name='False', bootstrap_num=-1):
     """Given a groupID, fit the emission lines in that composite spectrum
 
     Parameters:
@@ -43,15 +44,23 @@ def fit_emission(groupID, norm_method, constrain_O3=False, axis_group=-1, save_n
     axis_group (int): Set to the number of the axis ratio group to fit that instead
     scaled (str): Set to 'True' if fitting the scaled spectra
     run_name (str): Set to the prospector run_name if fitting prospector spectra
+    bootstrap_num (int): Set to -1 to avoid bootstrap, set to the number to read in the corresponding spectrum and fit that
 
     Returns:
     Saves a csv of the fits for all of the lines
     """
+    # Number of loops in Monte Carlo
+    n_loops = 0
 
     if axis_group > -1:
-        composite_spectrum_df = read_axis_ratio_spectrum(axis_group, save_name)
-        fast_continuum_df = ascii.read(imd.axis_cluster_data_dir + f'/{save_name}/{save_name}_conts/summed_conts/{axis_group}_summed_cont.csv').to_pandas()
-        fast_continuum = fast_continuum_df['f_lambda_scaled']
+        if bootstrap_num > -1:
+            composite_spectrum_df = ascii.read(imd.axis_cluster_data_dir + f'/{save_name}/{save_name}_spectra_boots/{axis_group}_spectrum_{bootstrap_num}.csv').to_pandas()
+            fast_continuum_df = ascii.read(imd.axis_cluster_data_dir + f'/{save_name}/{save_name}_conts/summed_conts_boots/{axis_group}_summed_cont_{bootstrap_num}.csv').to_pandas()
+            fast_continuum = fast_continuum_df['f_lambda_scaled']
+        else:
+            composite_spectrum_df = read_axis_ratio_spectrum(axis_group, save_name)
+            fast_continuum_df = ascii.read(imd.axis_cluster_data_dir + f'/{save_name}/{save_name}_conts/summed_conts/{axis_group}_summed_cont.csv').to_pandas()
+            fast_continuum = fast_continuum_df['f_lambda_scaled']
     elif scaled == 'True':
         composite_spectrum_df = read_composite_spectrum(
             groupID, norm_method, scaled='True')
@@ -110,7 +119,6 @@ def fit_emission(groupID, norm_method, constrain_O3=False, axis_group=-1, save_n
             bounds_high.append(scale_factor * 10**-16)
     bounds = (np.array(bounds_low), np.array(bounds_high))
 
-    n_loops = 10
     wavelength = composite_spectrum_df[
         'wavelength']
     if scaled == 'True':
@@ -142,7 +150,12 @@ def fit_emission(groupID, norm_method, constrain_O3=False, axis_group=-1, save_n
     else:    
         popt, arr_popt, cont_scale_out, y_data_cont_sub = monte_carlo_fit(multi_gaussian, wavelength_cut, scale_factor * continuum_cut, scale_factor * composite_spectrum_df[full_cut][
             'f_lambda'], scale_factor * composite_spectrum_df[full_cut]['err_f_lambda'], np.array(guess), bounds, n_loops)
+    
     err_popt = np.std(arr_popt, axis=0)
+    # If we're not doing the monte carlo fitting, just return -99s for all the uncertainties. These can be updated laters
+    if n_loops == 0:
+        err_popt = np.ones(len(popt))*-99
+
     # popt, pcov = curve_fit(multi_gaussian, composite_spectrum_df[
     #     'wavelength'], composite_spectrum_df['f_lambda'], guess)
 
@@ -150,7 +163,11 @@ def fit_emission(groupID, norm_method, constrain_O3=False, axis_group=-1, save_n
     if axis_group > -1:
         y_data_cont_sub = y_data_cont_sub / scale_factor
         cont_sub_df = pd.DataFrame(zip(wavelength_cut, y_data_cont_sub), columns=['wavelength_cut','continuum_sub_ydata'])
-        cont_sub_df.to_csv(imd.axis_cluster_data_dir + f'/{save_name}/{save_name}_cont_subs/{axis_group}_cont_sub.csv', index=False)
+        if bootstrap_num > -1:
+            imd.check_and_make_dir(imd.axis_cluster_data_dir + f'/{save_name}/{save_name}_cont_subs_boots/')
+            cont_sub_df.to_csv(imd.axis_cluster_data_dir + f'/{save_name}/{save_name}_cont_subs_boots/{axis_group}_cont_sub_{bootstrap_num}.csv', index=False)
+        else:
+            cont_sub_df.to_csv(imd.axis_cluster_data_dir + f'/{save_name}/{save_name}_cont_subs/{axis_group}_cont_sub.csv', index=False)
 
 
     # Now, parse the results into a dataframe
@@ -162,6 +179,7 @@ def fit_emission(groupID, norm_method, constrain_O3=False, axis_group=-1, save_n
     line_names = [line_list[i][0] for i in range(len(line_list))]
     line_centers_rest = [line_list[i][1] for i in range(len(line_list))]
     z_offset = [popt[0] for i in range(len(line_list))]
+    print(err_popt)
     err_z_offset = [err_popt[0] for i in range(len(line_list))]
     velocity = [popt[1] for i in range(len(line_list))]
     err_velocity = [err_popt[1] for i in range(len(line_list))]
@@ -194,8 +212,17 @@ def fit_emission(groupID, norm_method, constrain_O3=False, axis_group=-1, save_n
     balmer_dec = [fluxes[ha_idx] / fluxes[hb_idx]
                   for i in range(len(line_list))]
 
-    err_balmer_dec_low = balmer_dec - np.percentile(all_balmer_decs, 16)
-    err_balmer_dec_high = np.percentile(all_balmer_decs, 84) - balmer_dec
+    if n_loops == 0:
+        err_balmer_dec_low = -99*np.ones(len(balmer_dec))
+        err_balmer_dec_high = -99*np.ones(len(balmer_dec))
+        err_ha_scales = -99*np.ones(len(balmer_dec))
+        err_hb_scales = -99*np.ones(len(balmer_dec))
+        err_sigs = -99*np.ones(len(balmer_dec))
+        err_amps = -99*np.ones(len(balmer_dec))
+        err_fluxes = -99*np.ones(len(balmer_dec))
+    else:
+        err_balmer_dec_low = balmer_dec - np.percentile(all_balmer_decs, 16)
+        err_balmer_dec_high = np.percentile(all_balmer_decs, 84) - balmer_dec
 
     fit_df = pd.DataFrame(zip(line_names, line_centers_rest,
                               z_offset, err_z_offset, hb_scales, err_hb_scales, ha_scales, err_ha_scales, velocity, err_velocity, amps, err_amps, sigs, err_sigs, fluxes, err_fluxes, balmer_dec, err_balmer_dec_low, err_balmer_dec_high), columns=['line_name', 'line_center_rest', 'z_offset', 'err_z_offset', 'hb_scale', 'err_hb_scale', 'ha_scale', 'err_ha_scale', 'fixed_velocity', 'err_fixed_velocity', 'amplitude', 'err_amplitude', 'sigma', 'err_sigma', 'flux', 'err_flux', 'balmer_dec', 'err_balmer_dec_low', 'err_balmer_dec_high'])
@@ -203,10 +230,17 @@ def fit_emission(groupID, norm_method, constrain_O3=False, axis_group=-1, save_n
 
 
     if axis_group > -1:
-        fit_df.to_csv(
-            imd.axis_cluster_data_dir + f'/{save_name}/{save_name}_emission_fits/{axis_group}_emission_fits.csv', index=False)
-        plot_emission_fit(groupID, norm_method,
-                          axis_group=axis_group, save_name=save_name)
+        if bootstrap_num > -1:
+            imd.check_and_make_dir(imd.axis_cluster_data_dir + f'/{save_name}/{save_name}_emission_fits_boots/')
+            fit_df.to_csv(
+                imd.axis_cluster_data_dir + f'/{save_name}/{save_name}_emission_fits_boots/{axis_group}_emission_fits_{bootstrap_num}.csv', index=False)
+            plot_emission_fit(groupID, norm_method,
+                            axis_group=axis_group, save_name=save_name, bootstrap_num=bootstrap_num)
+        else:
+            fit_df.to_csv(
+                imd.axis_cluster_data_dir + f'/{save_name}/{save_name}_emission_fits/{axis_group}_emission_fits.csv', index=False)
+            plot_emission_fit(groupID, norm_method,
+                            axis_group=axis_group, save_name=save_name)
     elif scaled == 'True':
         fit_df.to_csv(imd.emission_fit_csvs_dir +
                       f'/{groupID}_emission_fits_scaled.csv', index=False)
@@ -236,7 +270,7 @@ def fit_all_emission(n_clusters, norm_method, scaled='False'):
         fit_emission(i, norm_method, scaled=scaled)
 
 
-def plot_emission_fit(groupID, norm_method, axis_group=-1, save_name='', scaled='False', run_name='False'):
+def plot_emission_fit(groupID, norm_method, axis_group=-1, save_name='', scaled='False', run_name='False', bootstrap_num=-1):
     """Plots the fit to each emission line
 
     Parameters:
@@ -245,6 +279,7 @@ def plot_emission_fit(groupID, norm_method, axis_group=-1, save_name='', scaled=
     axis_group (int): Set to the number of the axis ratio group to fit that instead
     scaled (str): Set to true if plotting the scaled fits
     run_name (str): Set to name of prospector run to fit with those
+    bootstrap_num (int): Which number in the bootstrap to plot, -1 to plot the original
 
     Returns:
     Saves a pdf of the fits for all of the lines
@@ -257,12 +292,20 @@ def plot_emission_fit(groupID, norm_method, axis_group=-1, save_name='', scaled=
     textfont = 16
 
     if axis_group > -1:
-        fit_df = ascii.read(
-            imd.axis_cluster_data_dir + f'/{save_name}/{save_name}_emission_fits/{axis_group}_emission_fits.csv').to_pandas()
-        total_spec_df = read_axis_ratio_spectrum(axis_group, save_name)
-        fast_continuum_df = ascii.read(imd.axis_cluster_data_dir + f'/{save_name}/{save_name}_conts/summed_conts/{axis_group}_summed_cont.csv').to_pandas()
-        fast_continuum = fast_continuum_df['f_lambda_scaled']
-        cont_sub_df = ascii.read(imd.axis_cluster_data_dir + f'/{save_name}/{save_name}_cont_subs/{axis_group}_cont_sub.csv').to_pandas()
+        if bootstrap_num > -1:
+            fit_df = ascii.read(
+                imd.axis_cluster_data_dir + f'/{save_name}/{save_name}_emission_fits_boots/{axis_group}_emission_fits_{bootstrap_num}.csv').to_pandas()
+            total_spec_df = ascii.read(imd.axis_cluster_data_dir + f'/{save_name}/{save_name}_spectra_boots/{axis_group}_spectrum_{bootstrap_num}.csv').to_pandas()
+            fast_continuum_df = ascii.read(imd.axis_cluster_data_dir + f'/{save_name}/{save_name}_conts/summed_conts_boots/{axis_group}_summed_cont_{bootstrap_num}.csv').to_pandas()
+            fast_continuum = fast_continuum_df['f_lambda_scaled']
+            cont_sub_df = ascii.read(imd.axis_cluster_data_dir + f'/{save_name}/{save_name}_cont_subs_boots/{axis_group}_cont_sub_{bootstrap_num}.csv').to_pandas()
+        else:
+            fit_df = ascii.read(
+                imd.axis_cluster_data_dir + f'/{save_name}/{save_name}_emission_fits/{axis_group}_emission_fits.csv').to_pandas()
+            total_spec_df = read_axis_ratio_spectrum(axis_group, save_name)
+            fast_continuum_df = ascii.read(imd.axis_cluster_data_dir + f'/{save_name}/{save_name}_conts/summed_conts/{axis_group}_summed_cont.csv').to_pandas()
+            fast_continuum = fast_continuum_df['f_lambda_scaled']
+            cont_sub_df = ascii.read(imd.axis_cluster_data_dir + f'/{save_name}/{save_name}_cont_subs/{axis_group}_cont_sub.csv').to_pandas()
     elif scaled == 'True':
         fit_df = ascii.read(imd.emission_fit_csvs_dir +
                             f'/{groupID}_emission_fits_scaled.csv').to_pandas()
@@ -393,8 +436,11 @@ def plot_emission_fit(groupID, norm_method, axis_group=-1, save_name='', scaled=
     ax.tick_params(labelsize=ticksize, size=ticks)
 
     if axis_group > -1:
-        fig.savefig(
-            imd.axis_cluster_data_dir + f'/{save_name}/{save_name}_emission_images/{axis_group}_emission_fit.pdf')
+        if bootstrap_num > -1:
+            imd.check_and_make_dir(imd.axis_cluster_data_dir + f'/{save_name}/{save_name}_emission_images_boots/')
+            fig.savefig(imd.axis_cluster_data_dir + f'/{save_name}/{save_name}_emission_images_boots/{axis_group}_emission_fit_{bootstrap_num}.pdf')
+        else:
+            fig.savefig(imd.axis_cluster_data_dir + f'/{save_name}/{save_name}_emission_images/{axis_group}_emission_fit.pdf')
     elif scaled == 'True':
         fig.savefig(imd.emission_fit_images_dir +
                     f'/{groupID}_emission_fit_scaled.pdf')
@@ -695,3 +741,9 @@ def get_cuts(wavelength_cut_section, width=7):
     cuts = np.prod(cuts, axis=0)
     cut = [bool(i) for i in cuts]
     return cut
+
+# fit_emission(0, 'cluster_norm', constrain_O3=False, axis_group=0, save_name='both_ssfrs_4bin_median_2axis', scaled='False', run_name='False', bootstrap_num=0)
+# bootstrap = 10
+# fit_emission(0, 'cluster_norm', constrain_O3=False, axis_group=1, save_name='both_ssfrs_4bin_median_2axis', scaled='False', run_name='False')
+# for bootstrap_num in range(bootstrap):
+#     fit_emission(0, 'cluster_norm', constrain_O3=False, axis_group=1, save_name='both_ssfrs_4bin_median_2axis', scaled='False', run_name='False', bootstrap_num=bootstrap_num)

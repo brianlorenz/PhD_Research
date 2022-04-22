@@ -2,7 +2,7 @@ from ensurepip import bootstrap
 from initialize_mosdef_dirs import check_and_make_dir
 from stack_spectra import *
 from fit_emission import fit_emission
-from stack_continuum import stack_all_continuum, plot_all_spec_with_cont
+from stack_continuum import stack_all_continuum, plot_all_spec_with_cont, scale_all_bootstrapped_conts
 import matplotlib as mpl
 from plot_overlaid_spectra import plot_overlaid_spectra
 from axis_group_metallicities import add_metals_to_summary_df, plot_metals, measure_metals, plot_group_metals_compare, plot_mass_metal
@@ -57,18 +57,23 @@ def stack_all_and_plot_all(param_class):
     starting_points = param_class.starting_points
     ratio_bins = param_class.ratio_bins
     sfms_bins = param_class.sfms_bins
+    bootstrap = param_class.bootstrap
     print(f'Running stack {save_name}. Making just the plots: {only_plot}')
     time_start = time.time()
     if only_plot==False:
         setup_new_stack_dir(save_name, param_class)
-        stack_axis_ratio(mass_width, split_width, starting_points, ratio_bins, save_name, split_by, stack_type, sfms_bins, bootstrap=10)
-        sys.exit()
+        stack_axis_ratio(mass_width, split_width, starting_points, ratio_bins, save_name, split_by, stack_type, sfms_bins, bootstrap=bootstrap)
         stack_all_continuum(nbins, save_name=save_name)
         time_stack = time.time()
         print(f'All stacking took {time_stack-time_start}')
         plot_all_spec_with_cont(nbins, save_name) # This is where the normalized cont is saved
+        if bootstrap > 0:
+            scale_all_bootstrapped_conts(nbins, save_name, bootstrap, make_plot=False) # This makes the normalized cont for all of the bootstraps
         for axis_group in range(nbins):
             fit_emission(0, 'cluster_norm', constrain_O3=False, axis_group=axis_group, save_name=save_name, scaled='False', run_name='False')
+            if bootstrap > 0:
+                for bootstrap_num in range(bootstrap):
+                    fit_emission(0, 'cluster_norm', constrain_O3=False, axis_group=axis_group, save_name=save_name, scaled='False', run_name='False', bootstrap_num=bootstrap_num)
         time_emfit = time.time()
         print(f'Emission fitting took {time_emfit-time_stack}')
     plot_sample_split(nbins, save_name, ratio_bins, starting_points, mass_width, split_width, nbins, sfms_bins)
