@@ -131,7 +131,7 @@ def plot_balmer_dec(save_name, n_groups, split_by, y_var = 'balmer_dec', color_v
                 rgba = 'skyblue'
 
 
-            ax.errorbar(x_cord, y_cord, yerr=np.array(row['err_balmer_dec_low'], row['err_balmer_dec_high']), marker='None', color=rgba)
+            ax.errorbar(x_cord, y_cord, yerr=np.array([[row['err_balmer_dec_low'], row['err_balmer_dec_high']]]).T, marker='None', color=rgba)
             ax.add_artist(Ellipse((x_cord, y_cord), ellipse_width, ellipse_height, facecolor=rgba))
             ax.set_ylabel('Balmer Decrement', fontsize=axis_fontsize)
         elif y_var == 'av':
@@ -158,7 +158,7 @@ def plot_balmer_dec(save_name, n_groups, split_by, y_var = 'balmer_dec', color_v
 
             ellipse_width, ellipse_height = get_ellipse_shapes(1.1, y_axis_len, row['shape'])
 
-            ax.errorbar(x_cord, y_cord, yerr=row['err_metallicity_median'], marker='None', color=rgba)
+            ax.errorbar(x_cord, y_cord, yerr=np.array([[row['err_metallicity_median_low'], row['err_metallicity_median_high']]]).T, marker='None', color=rgba)
             ax.add_artist(Ellipse((x_cord, y_cord), ellipse_width, ellipse_height, facecolor=rgba))
             ax.set_ylabel('Metallicity', fontsize=axis_fontsize)
         elif y_var == 'mips_flux':
@@ -230,7 +230,7 @@ def plot_balmer_dec(save_name, n_groups, split_by, y_var = 'balmer_dec', color_v
 
             ellipse_width, ellipse_height = get_ellipse_shapes(1.5, y_axis_len, row['shape'])
             
-            ax.errorbar(x_cord, y_cord, yerr=np.array(row['err_balmer_dec_low'], row['err_balmer_dec_high']), marker='None', color=rgba)
+            ax.errorbar(x_cord, y_cord, yerr=np.array([[row['err_balmer_dec_low'], row['err_balmer_dec_high']]]).T, marker='None', color=rgba)
             ax.add_artist(Ellipse((x_cord, y_cord), ellipse_width, ellipse_height, facecolor=rgba))
             ax.set_ylabel('Balmer Decrement', fontsize=axis_fontsize)
         elif y_var == 'av':
@@ -257,7 +257,7 @@ def plot_balmer_dec(save_name, n_groups, split_by, y_var = 'balmer_dec', color_v
             
             ellipse_width, ellipse_height = get_ellipse_shapes(1.5, y_axis_len, row['shape'])
 
-            ax.errorbar(x_cord, y_cord, yerr=row['err_metallicity_median'], marker='None', color=rgba)
+            ax.errorbar(x_cord, y_cord, yerr=np.array([[row['err_metallicity_median_low'], row['err_metallicity_median_high']]]).T, marker='None', color=rgba)
             ax.add_artist(Ellipse((x_cord, y_cord), ellipse_width, ellipse_height, facecolor=rgba))
             ax.set_ylabel('Metallcity', fontsize=axis_fontsize)
         elif y_var == 'mips_flux':

@@ -742,8 +742,69 @@ def get_cuts(wavelength_cut_section, width=7):
     cut = [bool(i) for i in cuts]
     return cut
 
+def compute_bootstrap_uncertainties(n_clusters, save_name, bootstrap=-1):
+    """Reads in all the bootstrapped fits form all the clusters, then computes uncertainties and adds them back to the main fit
+    
+    Parameters:
+    n_clusters (int): Number of axis ratio groups
+    save_name (str): Name of the folder they are saved in
+    bootstrap (int): Set to the number of bootstrapped data points
+    
+    """
+    for axis_group in range(n_clusters):
+        emission_df = ascii.read(imd.axis_cluster_data_dir + f'/{save_name}/{save_name}_emission_fits/{axis_group}_emission_fits.csv').to_pandas()
+
+        boot_dfs = [ascii.read(imd.axis_cluster_data_dir + f'/{save_name}/{save_name}_emission_fits_boots/{axis_group}_emission_fits_{bootstrap_num}.csv').to_pandas() for bootstrap_num in range(bootstrap)]
+        
+        def compute_err_on_col(col_name, true_values, symmetric_err=True):
+            """Give a column name, use the bootstrapped points to find an uncertainty
+            
+            Parameters:
+            col_name(str): Column name that you are comping the uncertainties for, e.g. 'flux'
+            true_values (pd.DataFrame of float): Value measured in the emission_df
+            symmetric_err (boolean): Set to True to just get a standard deviation, flase for asymmetric errors
+            """
+            arr = np.array([boot_dfs[i][col_name] for i in range(len(boot_dfs))])
+            if symmetric_err==True:
+                errs = np.std(arr, axis=0)
+                low_errs = -99*np.ones(len(arr))
+                high_errs = -99*np.ones(len(arr))
+            else:
+                errs = -99*np.ones(len(arr))
+                low_errs = true_values - np.percentile(arr, 16, axis=0)
+                high_errs = np.percentile(arr, 84, axis=0) - true_values
+            return errs, low_errs, high_errs
+
+        err, low_err, high_err = compute_err_on_col('z_offset', emission_df['z_offset'], symmetric_err=True)
+        emission_df['err_z_offset'] = err
+
+        err, low_err, high_err = compute_err_on_col('hb_scale', emission_df['hb_scale'], symmetric_err=True)
+        emission_df['err_hb_scale'] = err
+
+        err, low_err, high_err = compute_err_on_col('ha_scale', emission_df['ha_scale'], symmetric_err=True)
+        emission_df['err_ha_scale'] = err
+
+        err, low_err, high_err = compute_err_on_col('fixed_velocity', emission_df['fixed_velocity'], symmetric_err=True)
+        emission_df['err_fixed_velocity'] = err
+
+        err, low_err, high_err = compute_err_on_col('amplitude', emission_df['amplitude'], symmetric_err=True)
+        emission_df['err_amplitude'] = err
+
+        err, low_err, high_err = compute_err_on_col('sigma', emission_df['sigma'], symmetric_err=True)
+        emission_df['err_sigma'] = err
+
+        err, low_err, high_err = compute_err_on_col('flux', emission_df['flux'], symmetric_err=True)
+        emission_df['err_flux'] = err
+
+        err, low_err, high_err = compute_err_on_col('balmer_dec', emission_df['balmer_dec'], symmetric_err=False)
+        emission_df['err_balmer_dec_low'] = low_err
+        emission_df['err_balmer_dec_high'] = high_err
+
+        emission_df['signal_noise_ratio'] = emission_df['flux']/emission_df['err_flux']
+        emission_df.to_csv(imd.axis_cluster_data_dir + f'/{save_name}/{save_name}_emission_fits/{axis_group}_emission_fits.csv', index=False)
 # fit_emission(0, 'cluster_norm', constrain_O3=False, axis_group=0, save_name='both_ssfrs_4bin_median_2axis', scaled='False', run_name='False', bootstrap_num=0)
 # bootstrap = 10
 # fit_emission(0, 'cluster_norm', constrain_O3=False, axis_group=1, save_name='both_ssfrs_4bin_median_2axis', scaled='False', run_name='False')
 # for bootstrap_num in range(bootstrap):
 #     fit_emission(0, 'cluster_norm', constrain_O3=False, axis_group=1, save_name='both_ssfrs_4bin_median_2axis', scaled='False', run_name='False', bootstrap_num=bootstrap_num)
+# compute_bootstrap_uncertainties(8, 'both_ssfrs_4bin_median_2axis', bootstrap=10)

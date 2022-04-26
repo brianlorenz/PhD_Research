@@ -1,7 +1,7 @@
 from ensurepip import bootstrap
 from initialize_mosdef_dirs import check_and_make_dir
 from stack_spectra import *
-from fit_emission import fit_emission
+from fit_emission import fit_emission, compute_bootstrap_uncertainties
 from stack_continuum import stack_all_continuum, plot_all_spec_with_cont, scale_all_bootstrapped_conts
 import matplotlib as mpl
 from plot_overlaid_spectra import plot_overlaid_spectra
@@ -74,12 +74,15 @@ def stack_all_and_plot_all(param_class):
             if bootstrap > 0:
                 for bootstrap_num in range(bootstrap):
                     fit_emission(0, 'cluster_norm', constrain_O3=False, axis_group=axis_group, save_name=save_name, scaled='False', run_name='False', bootstrap_num=bootstrap_num)
+        if bootstrap > 0:
+            compute_bootstrap_uncertainties(nbins, save_name, bootstrap=bootstrap)
         time_emfit = time.time()
-        print(f'Emission fitting took {time_emfit-time_stack}')
+        print(f'Emission fitting took {time_emfit-time_stack}')     
     plot_sample_split(nbins, save_name, ratio_bins, starting_points, mass_width, split_width, nbins, sfms_bins)
+    # plot_sample_split(nbins, save_name, ratio_bins, starting_points, mass_width, split_width, nbins, sfms_bins, plot_sfr_and_ssfr=True)
     plot_overlaid_spectra(save_name, plot_cont_sub=True)
     plot_metals(save_name)
-    measure_metals(nbins, save_name)
+    measure_metals(nbins, save_name, bootstrap=bootstrap)
     plot_group_metals_compare(nbins, save_name)
     plot_mass_metal(nbins, save_name)
     add_metals_to_summary_df(save_name, metal_column='O3N2_metallicity')
@@ -93,7 +96,7 @@ def stack_all_and_plot_all(param_class):
     plot_balmer_dec(save_name, nbins, split_by, y_var='balmer_dec', color_var='log_use_ssfr')
     plot_balmer_dec(save_name, nbins, split_by, y_var='mips_flux', color_var=split_by)
     plot_balmer_stellar_avs(save_name)
-    print('starting plot')
+    print('starting overview plot')
     plot_overview(nbins, save_name, ratio_bins, starting_points, mass_width, split_width, sfms_bins, split_by)
     time_end = time.time()
     print(f'Total program took {time_end-time_start}')

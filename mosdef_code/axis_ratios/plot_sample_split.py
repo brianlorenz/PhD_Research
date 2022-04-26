@@ -15,10 +15,12 @@ from sfms_bins import sfms_slope, sfms_yint
 shapes = {'low': '+', 'mid': 'd', 'high': 'o'}
 colors = {'sorted0': 'red', 'sorted1': 'blue', 'sorted2': 'orange', 'sorted3': 'mediumseagreen', 'sorted4': 'lightskyblue', 'sorted5': 'darkviolet'}
 
-def plot_sample_split(n_groups, save_name, ratio_bins, starting_points, mass_width, split_width, nbins, sfms_bins, ax='None', fig='fig'):
+def plot_sample_split(n_groups, save_name, ratio_bins, starting_points, mass_width, split_width, nbins, sfms_bins, ax='None', fig='fig', plot_sfr_and_ssfr=False):
     """Plots the way that the sample has been divided in mass/ssfr space
     
-    variable(str): Which variable to use for the y-axis"""
+    variable(str): Which variable to use for the y-axis
+    plot_sfr_and_ssfr (boolean): If true, will take the sfms cut and plot it on the ssfr axis
+    """
 
     # If there isn't an axis set, make one - otherwise, use the one provided
     if ax == 'None':
@@ -195,8 +197,21 @@ def plot_sample_split(n_groups, save_name, ratio_bins, starting_points, mass_wid
             x = np.linspace(8.8, 11.2, 100)
             print(sfms_slope, sfms_yint)
             y1 = sfms_slope*x + sfms_yint
-            plt.plot(x, y1, color='black', ls='--')
-            plt.axvline(10, color='black', ls='--')
+            ax.plot(x, y1, color='black', ls='--')
+            ax.axvline(10, color='black', ls='--')
+        
+        # Plots the sfms division line
+        add_str=''
+        if plot_sfr_and_ssfr == True:
+            x = np.linspace(8.8, 11.2, 100)
+            print(sfms_slope, sfms_yint)
+            y1 = sfms_slope*x + sfms_yint
+            y_ssfr = np.log10((10**y1)/(10**x))
+            ax.plot(x, y_ssfr, color='black', ls='--')
+            # ax.axvline(10, color='black', ls='--')
+            add_str = '_bothcuts'
+        
+        
         ax.set_ylim(ylims)
         ax.set_xlim(xlims)
 
@@ -238,4 +253,4 @@ def plot_sample_split(n_groups, save_name, ratio_bins, starting_points, mass_wid
     cbar.set_label('Balmer Decrement', fontsize=14)
     ax.set_aspect(ellipse_width/ellipse_height)
     if made_new_axis==True:
-        fig.savefig(imd.axis_cluster_data_dir + f'/{save_name}/sample_cut.pdf')
+        fig.savefig(imd.axis_cluster_data_dir + f'/{save_name}/sample_cut{add_str}.pdf')

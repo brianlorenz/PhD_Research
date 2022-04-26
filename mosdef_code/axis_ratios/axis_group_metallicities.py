@@ -15,13 +15,13 @@ from sympy import symbols, solve
 
 
 
-
-def measure_metals(n_groups, save_name):
+def measure_metals(n_groups, save_name, bootstrap=-1):
     """Make the metallicity measurements of the axis groups using the methods of Bian 2018
     
     Parameters:
     n_groups (int): Number of axis ratio groups
     save_name (str): Folder where results are stored
+    bootsrap (int): Set to -1 to skip, otherwise set to number of bootstraps
     """
 
     ### OIII Hbeta method
@@ -38,6 +38,10 @@ def measure_metals(n_groups, save_name):
     err_log_O3N2_measures = []
     O3N2_metals = []
     err_O3N2_metals = []
+    boot_err_O3N2_metal_lows = []
+    boot_err_O3N2_metal_highs = []
+
+
     for axis_group in range(n_groups):
         fit_df = ascii.read(imd.axis_cluster_data_dir + f'/{save_name}/{save_name}_emission_fits/{axis_group}_emission_fits.csv').to_pandas()
         O3_5008_row = np.argmin(np.abs(fit_df['line_center_rest'] - 5008))
@@ -78,10 +82,13 @@ def measure_metals(n_groups, save_name):
         # log_N2_Ha_measure = np.log10(N2_Ha_measure)
 
         O3N2_numerator, log_O3N2_numerator, err_O3N2_numerator, err_log_O3N2_numerator = compute_err_and_logerr(fit_df.iloc[O3_5008_row]['flux'], fit_df.iloc[Hb_row]['flux'], fit_df.iloc[O3_5008_row]['err_flux'], fit_df.iloc[Hb_row]['err_flux'])
-        # O3N2_measure = (fit_df.iloc[O3_5008_row]['flux'] / fit_df.iloc[Hb_row]['flux']) / (fit_df.iloc[N2_6585_row]['flux'] / fit_df.iloc[Ha_row]['flux'])
         O3N2_measure, log_O3N2_measure, err_O3N2_measure, err_log_O3N2_measure = compute_err_and_logerr(O3N2_numerator, N2_Ha_measure, err_O3N2_numerator, err_N2_Ha_measure)
-        # log_O3N2_measure = np.log10(O3N2_measure)
 
+        def compute_O3N2_metallicity(log_O3N2_measure, err_log_O3N2_measure):
+            """From Bian 2018"""
+            O3N2_metal = 8.97 - 0.39*log_O3N2_measure
+            err_O3N2_metal = 0.32*err_log_O3N2_measure
+            return O3N2_metal, err_O3N2_metal
 
 
         # Bian 2018 O3N2 metallicity
@@ -105,8 +112,7 @@ def measure_metals(n_groups, save_name):
         # O3N2_metal = 8.73 - 0.32*log_O3N2_measure
         # err_O3N2_metal = 0.32*err_log_O3N2_measure
         # Bian 2018 version of O3N2
-        O3N2_metal = 8.97 - 0.39*log_O3N2_measure
-        err_O3N2_metal = 0.32*err_log_O3N2_measure
+        O3N2_metal, err_O3N2_metal = compute_O3N2_metallicity(log_O3N2_measure, err_log_O3N2_measure)
         O3N2_metals.append(O3N2_metal)
         err_O3N2_metals.append(err_O3N2_metal)
         log_O3N2_measures.append(log_O3N2_measure)
@@ -117,8 +123,24 @@ def measure_metals(n_groups, save_name):
         err_O3_Hb_metals.append(err_O3_Hb_metal)
         log_03_Hbs.append(log_O3_Hb_measure)
         err_log_03_Hbs.append(err_log_O3_Hb_measure)
-    
-    metals_df = pd.DataFrame(zip(axis_groups, log_03_Hbs, err_log_03_Hbs, O3_Hb_metals, err_O3_Hb_metals, log_N2_Ha_measures, err_log_N2_Ha_measures, N2_Ha_metals, err_N2_Ha_metals, log_O3N2_measures, err_log_O3N2_measures, O3N2_metals, err_O3N2_metals), columns=['axis_group', 'log_03_Hb_measure', 'err_log_03_Hb_measure', 'O3_Hb_metallicity', 'err_O3_Hb_metallicity', 'log_N2_Ha_measure', 'err_log_N2_Ha_measure', 'N2_Ha_metallicity', 'err_N2_Ha_metallicity', 'log_O3N2_measure', 'err_log_O3N2_measure', 'O3N2_metallicity', 'err_O3N2_metallicity'])
+
+
+        if bootstrap > -1:
+            boot_O3N2s = []
+            for bootstrap_num in range(bootstrap):
+                boot_fit_df = ascii.read(imd.axis_cluster_data_dir + f'/{save_name}/{save_name}_emission_fits_boots/{axis_group}_emission_fits_{bootstrap_num}.csv').to_pandas()
+                boot_N2_Ha_measure, boot_log_N2_Ha_measure, boot_err_N2_Ha_measure, boot_err_log_N2_Ha_measure = compute_err_and_logerr(boot_fit_df.iloc[N2_6585_row]['flux'], boot_fit_df.iloc[Ha_row]['flux'], boot_fit_df.iloc[N2_6585_row]['err_flux'], boot_fit_df.iloc[Ha_row]['err_flux'])
+                boot_O3N2_numerator, boot_log_O3N2_numerator, boot_err_O3N2_numerator, boot_err_log_O3N2_numerator = compute_err_and_logerr(boot_fit_df.iloc[O3_5008_row]['flux'], boot_fit_df.iloc[Hb_row]['flux'], boot_fit_df.iloc[O3_5008_row]['err_flux'], boot_fit_df.iloc[Hb_row]['err_flux'])
+                boot_O3N2_measure, boot_log_O3N2_measure, boot_err_O3N2_measure, boot_err_log_O3N2_measure = compute_err_and_logerr(boot_O3N2_numerator, boot_N2_Ha_measure, boot_err_O3N2_numerator, boot_err_N2_Ha_measure)
+                boot_O3N2_metal, _ = compute_O3N2_metallicity(boot_log_O3N2_measure, boot_err_log_O3N2_measure)
+                boot_O3N2s.append(boot_O3N2_metal)
+            boot_err_O3N2_metal_low = O3N2_metal - np.percentile(boot_O3N2s, 16)
+            boot_err_O3N2_metal_high = np.percentile(boot_O3N2s, 84) - O3N2_metal
+            boot_err_O3N2_metal_lows.append(boot_err_O3N2_metal_low)
+            boot_err_O3N2_metal_highs.append(boot_err_O3N2_metal_high)
+
+
+    metals_df = pd.DataFrame(zip(axis_groups, log_03_Hbs, err_log_03_Hbs, O3_Hb_metals, err_O3_Hb_metals, log_N2_Ha_measures, err_log_N2_Ha_measures, N2_Ha_metals, err_N2_Ha_metals, log_O3N2_measures, err_log_O3N2_measures, O3N2_metals, err_O3N2_metals, boot_err_O3N2_metal_lows, boot_err_O3N2_metal_highs), columns=['axis_group', 'log_03_Hb_measure', 'err_log_03_Hb_measure', 'O3_Hb_metallicity', 'err_O3_Hb_metallicity', 'log_N2_Ha_measure', 'err_log_N2_Ha_measure', 'N2_Ha_metallicity', 'err_N2_Ha_metallicity', 'log_O3N2_measure', 'err_log_O3N2_measure', 'O3N2_metallicity', 'err_O3N2_metallicity', 'boot_err_O3N2_metallicity_low', 'boot_err_O3N2_metallicity_high'])
     metals_df.to_csv(imd.axis_cluster_data_dir + f'/{save_name}/group_metallicities.csv', index=False)
 
 
@@ -304,11 +326,13 @@ def add_metals_to_summary_df(save_name, metal_column):
     # Have to name it this way for rest of code to recognize it as a color_var
     summary_df['metallicity_median'] = metals_df[metal_column]
     summary_df['err_metallicity_median'] = metals_df['err_'+metal_column]
+    summary_df['err_metallicity_median_low'] = metals_df['boot_err_'+metal_column+'_low']
+    summary_df['err_metallicity_median_high'] = metals_df['boot_err_'+metal_column+'_high']
 
     summary_df.to_csv(imd.axis_cluster_data_dir + f'/{save_name}/summary.csv', index=False)
 
 # plot_metals(savename='halpha_ssfr_4bin_mean_shifted')
-# measure_metals(12, 'both_ssfrs_4bin_mean')
+# measure_metals(8, 'both_sfms_4bin_median_2axis_boot100', bootstrap=100)
 # plot_group_metals_compare(12, 'both_ssfrs_4bin_mean')
 # plot_mass_metal(12, 'both_ssfrs_4bin_mean')
-# add_metals_to_summary_df('both_ssfrs_4bin_mean', metal_column='O3N2_metallicity')
+# add_metals_to_summary_df('both_sfms_4bin_median_2axis_boot100', metal_column='O3N2_metallicity')
