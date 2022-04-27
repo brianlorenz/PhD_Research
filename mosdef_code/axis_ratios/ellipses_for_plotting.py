@@ -13,7 +13,7 @@ def get_ellipse_shapes(x_axis_len, y_axis_len, shape):
     '''
 
 
-    ellipse_width = 0.03 # Width of the ellipse, in axes coords
+    ellipse_width = 0.045*x_axis_len # Width of the ellipse, in axes coords
     ellipse_fracs = [0.3, 0.5, 1] 
 
 
