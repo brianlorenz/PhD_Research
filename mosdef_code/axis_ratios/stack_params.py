@@ -76,7 +76,7 @@ def make_both_ssfrs_4bin_2axis_median_params(run_stack = False, only_plot = True
     return both_ssfrs_4bin_mean_params
 both_ssfrs_4bin_2axis_median_params = make_both_ssfrs_4bin_2axis_median_params()
 
-def make_both_sfms_4bin_2axis_median_params(run_stack = True, only_plot = True):
+def make_both_sfms_4bin_2axis_median_params(run_stack = False, only_plot = True):
     run_stack = run_stack
     only_plot = only_plot
     mass_width = 1.0
@@ -92,6 +92,23 @@ def make_both_sfms_4bin_2axis_median_params(run_stack = True, only_plot = True):
     both_ssfrs_4bin_mean_params = stack_params(mass_width, split_width, starting_points, ratio_bins, nbins, split_by, save_name, stack_type, sfms_bins, bootstrap, only_plot, run_stack)
     return both_ssfrs_4bin_mean_params
 both_sfms_4bin_2axis_median_params = make_both_sfms_4bin_2axis_median_params()
+
+def make_both_sfms_4bin_2axis_median_metaltest_params(run_stack = True, only_plot = False):
+    run_stack = run_stack
+    only_plot = only_plot
+    mass_width = 1.0
+    split_width = 0.75
+    starting_points = [(9, -8.85), (10, -8.85), (9, -9.6), (10, -9.6)]
+    ratio_bins = [0.55]
+    nbins = 8
+    split_by = 'log_use_sfr'
+    save_name = 'both_sfms_4bin_median_2axis_boot100_metaltest'
+    stack_type = 'median'
+    sfms_bins = True
+    bootstrap = 100
+    both_ssfrs_4bin_mean_params = stack_params(mass_width, split_width, starting_points, ratio_bins, nbins, split_by, save_name, stack_type, sfms_bins, bootstrap, only_plot, run_stack)
+    return both_ssfrs_4bin_mean_params
+both_sfms_4bin_2axis_median_metaltest_params = make_both_sfms_4bin_2axis_median_metaltest_params()
 
 def make_both_4bin_1axis_median_params(run_stack = False, only_plot = True):
     run_stack = run_stack
@@ -127,22 +144,7 @@ def make_both_6bin_1axis_median_params(run_stack = False, only_plot = True):
     return both_ssfrs_4bin_mean_params
 both_6bin_1axis_median_params = make_both_6bin_1axis_median_params()
 
-def make_both_6bin_2axis_median_params(run_stack = False, only_plot = False):
-    run_stack = run_stack
-    only_plot = only_plot
-    mass_width = 1.0
-    split_width = 0.5
-    starting_points = [(9.0, -8.6), (10.0, -8.6), (9.0, -9.1), (10.0, -9.1), (9.0, -9.6), (10.0, -9.6)]
-    ratio_bins = [0.55]
-    nbins = 12
-    split_by = 'log_use_ssfr'
-    save_name = 'both_6bin_2axis_median_params_boot100'
-    stack_type = 'median'
-    sfms_bins = False
-    bootstrap = 100
-    both_ssfrs_4bin_mean_params = stack_params(mass_width, split_width, starting_points, ratio_bins, nbins, split_by, save_name, stack_type, sfms_bins, bootstrap, only_plot, run_stack)
-    return both_ssfrs_4bin_mean_params
-both_6bin_2axis_median_params = make_both_6bin_2axis_median_params()
+
 
 ## -----------------------------------------------------------------
 ## End Using
@@ -171,7 +173,7 @@ stack_all_and_plot_all(both_ssfrs_4bin_2axis_median_params)
 stack_all_and_plot_all(both_sfms_4bin_2axis_median_params)
 stack_all_and_plot_all(both_4bin_1axis_median_params)
 stack_all_and_plot_all(both_6bin_1axis_median_params)
-stack_all_and_plot_all(both_6bin_2axis_median_params)
+stack_all_and_plot_all(both_sfms_4bin_2axis_median_metaltest_params)
 # stack_all_and_plot_all(mosdef_ssfr_4bin_mean_params)
 # stack_all_and_plot_all(mosdef_ssfr_4bin_median_params)
 # stack_all_and_plot_all(halpha_ssfr_4bin_mean_shifted_params)

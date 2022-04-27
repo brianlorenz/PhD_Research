@@ -4,16 +4,16 @@ from matplotlib.patches import Ellipse
 
 
 
-def get_ellipse_shapes(x_axis_len, y_axis_len, shape):
+def get_ellipse_shapes(x_axis_len, y_axis_len, shape, scale_factor=0.035):
     '''Will return the appropriate dimensions for the ellipse to plot
 
     x_axis_len (float): Length of the x-axis
     y_axis_len (float): Length of the y-axis   
     shape (str): Shape from summary df 
+    scale_factor (float): Fractional width of the axis for point size
     '''
 
-
-    ellipse_width = 0.045*x_axis_len # Width of the ellipse, in axes coords
+    ellipse_width = scale_factor*x_axis_len # Width of the ellipse, in axes coords
     ellipse_fracs = [0.3, 0.5, 1] 
 
 

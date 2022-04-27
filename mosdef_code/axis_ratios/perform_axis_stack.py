@@ -91,6 +91,7 @@ def stack_all_and_plot_all(param_class):
     plot_balmer_dec(save_name, nbins, split_by, y_var='av', color_var=split_by)
     plot_balmer_dec(save_name, nbins, split_by, y_var='beta', color_var=split_by)
     plot_balmer_dec(save_name, nbins, split_by, y_var='metallicity', color_var=split_by)
+    plot_balmer_dec(save_name, nbins, split_by, y_var='metallicity', color_var='log_use_ssfr')
     plot_balmer_dec(save_name, nbins, split_by, y_var='metallicity', color_var='log_use_sfr')
     plot_balmer_dec(save_name, nbins, split_by, y_var='log_use_sfr', color_var='metallicity')
     plot_balmer_dec(save_name, nbins, split_by, y_var='balmer_dec', color_var='log_use_ssfr')
