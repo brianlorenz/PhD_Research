@@ -670,9 +670,6 @@ def stack_axis_ratio(mass_width, split_width, starting_points, ratio_bins, save_
     else:
         ar_df = read_filtered_ar_df()
 
-    #Metallicity filter, just for a test
-    # ar_df = ar_df[ar_df['logoh_pp_n2']<8.8]
-
 
     # Add a column for ssfr
     ar_df['log_ssfr'] = np.log10((ar_df['sfr'])/(10**ar_df['log_mass']))
@@ -743,12 +740,32 @@ def stack_axis_ratio(mass_width, split_width, starting_points, ratio_bins, save_
             low_mass = df['log_mass']<=10
             high_mass = df['log_mass']>10
 
+
+            # REMOVE LATER ----- FOR METALLICITY TESTS
+            # def fixed_metal_df(in_df, thresh_low, thresh_high):
+            #     in_df = in_df[in_df['logoh_pp_n2']>thresh_low]
+            #     in_df = in_df[in_df['logoh_pp_n2']<thresh_high]
+            #     return in_df
+            # df_low_low = df[np.logical_and(low_mass, low_idx)]
+            # df_low_low = fixed_metal_df(df_low_low, 8.4, 8.6)
+            # dfs.append(df_low_low)
+            # df_low_high = df[np.logical_and(low_mass, high_idx)]
+            # df_low_high = fixed_metal_df(df_low_high, 8.2, 8.4)
+            # dfs.append(df_low_high)
+            # df_high_low = df[np.logical_and(high_mass, low_idx)]
+            # df_high_low = fixed_metal_df(df_high_low, 8.4, 8.6)
+            # dfs.append(df_high_low)
+            # df_high_high = df[np.logical_and(high_mass, high_idx)]
+            # df_high_high = fixed_metal_df(df_high_high, 8.4, 8.6)
+            # dfs.append(df_high_high)
+
+            # ADD BACK ------ Normal method
             dfs.append(df[np.logical_and(low_mass, low_idx)])
-            # dfs.append(df[np.logical_and(low_mass, mid_idx)])
             dfs.append(df[np.logical_and(low_mass, high_idx)])
             dfs.append(df[np.logical_and(high_mass, low_idx)])
-            # dfs.append(df[np.logical_and(high_mass, mid_idx)])
             dfs.append(df[np.logical_and(high_mass, high_idx)])
+            # dfs.append(df[np.logical_and(low_mass, mid_idx)])
+            # dfs.append(df[np.logical_and(high_mass, mid_idx)])
 
 
 
