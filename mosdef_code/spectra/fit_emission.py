@@ -234,8 +234,8 @@ def fit_emission(groupID, norm_method, constrain_O3=False, axis_group=-1, save_n
             imd.check_and_make_dir(imd.axis_cluster_data_dir + f'/{save_name}/{save_name}_emission_fits_boots/')
             fit_df.to_csv(
                 imd.axis_cluster_data_dir + f'/{save_name}/{save_name}_emission_fits_boots/{axis_group}_emission_fits_{bootstrap_num}.csv', index=False)
-            plot_emission_fit(groupID, norm_method,
-                            axis_group=axis_group, save_name=save_name, bootstrap_num=bootstrap_num)
+            # plot_emission_fit(groupID, norm_method,
+            #                 axis_group=axis_group, save_name=save_name, bootstrap_num=bootstrap_num)
         else:
             fit_df.to_csv(
                 imd.axis_cluster_data_dir + f'/{save_name}/{save_name}_emission_fits/{axis_group}_emission_fits.csv', index=False)

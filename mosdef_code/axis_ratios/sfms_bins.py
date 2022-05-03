@@ -91,7 +91,7 @@ def plot_sfms_bins(save_name, nbins, split_by):
     ax.set_ylabel('log(SFR)')
     fig.savefig(imd.axis_cluster_data_dir + f'/{save_name}/sfr_mass.pdf')
 
-find_sfms()
+# find_sfms()
 # plot_sfms_bins('both_sfms_6bin_median_2axis', 12, 'log_use_sfr')
 #low cut - (9.5, 0.3), (11.0, 1.9)  y = 1.07x-9.83
 #high cut - (9.0, 0.5), (10.5, 2.0) y = 1.07x-8.6
