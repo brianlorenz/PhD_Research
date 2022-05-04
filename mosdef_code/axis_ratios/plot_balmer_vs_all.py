@@ -69,7 +69,7 @@ def plot_balmer_vs_all(save_name):
             elif x_points == 're_median':
                 ax.set_xlim(0, 0.75)
                 ax_x_len = 0.75
-                xlabel = 'Median ' + ssfr_label
+                xlabel = 'Median re'
             
             else:
                 ax_x_len = 1
@@ -112,7 +112,7 @@ def plot_balmer_vs_all(save_name):
     plot_balmer_on_axis(axarr[1,2], 'log_use_ssfr_median')
     plot_balmer_on_axis(axarr[1,0], 'av_median', 'err_av_median')
     plot_balmer_on_axis(axarr[1,1], 'beta_median', 'err_beta_median')
-    plot_balmer_on_axis(axarr[2,0], 're_median')
+    plot_balmer_on_axis(axarr[2,0], 're_median', 'err_re_median')
 
     fig.savefig(imd.axis_cluster_data_dir + f'/{save_name}/balmer_plots/balmer_plots.pdf')
 

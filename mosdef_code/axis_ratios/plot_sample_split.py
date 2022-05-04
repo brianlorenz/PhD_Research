@@ -54,6 +54,7 @@ def plot_sample_split(n_groups, save_name, ratio_bins, starting_points, mass_wid
     log_use_ssfr_medians = []
     log_use_sfr_medians = []
     re_medians = []
+    err_re_medians = []
     keys = []
 
     # Figure 1 - Showing how the sample gets cut
@@ -92,6 +93,7 @@ def plot_sample_split(n_groups, save_name, ratio_bins, starting_points, mass_wid
         beta_median = np.median(axis_ratio_df['beta'])
         re_median = np.median(axis_ratio_df['half_light'])
 
+
         # We want log_use_sfr and log_use_ssfr in all cases:
         if variable != 'log_use_ssfr':
             log_use_ssfr_median = np.median(axis_ratio_df['log_use_ssfr'])
@@ -111,9 +113,12 @@ def plot_sample_split(n_groups, save_name, ratio_bins, starting_points, mass_wid
         err_mips_flux_median = bootstrap_median(axis_ratio_df[good_mips_idxs]['err_mips_flux']*axis_ratio_df[good_mips_idxs]['norm_factor'])
 
 
+
         # Bootstrap errors on the medians
         err_av_median = bootstrap_median(axis_ratio_df['AV'])
         err_beta_median = bootstrap_median(axis_ratio_df['beta'])
+        err_re_median = bootstrap_median(axis_ratio_df['half_light'])
+
         
 
         # Figure out what axis ratio bin (+1 is since the bins are dividers)
@@ -186,6 +191,7 @@ def plot_sample_split(n_groups, save_name, ratio_bins, starting_points, mass_wid
         mips_flux_medians.append(mips_flux_median)
         err_mips_flux_medians.append(err_mips_flux_median)
         re_medians.append(re_median)
+        err_re_medians.append(err_re_median)
         keys.append(key)
 
 
@@ -241,7 +247,7 @@ def plot_sample_split(n_groups, save_name, ratio_bins, starting_points, mass_wid
 
 
 
-    summary_df = pd.DataFrame(zip(group_num, axis_medians, mass_medians, split_medians, av_medians, err_av_medians, beta_medians, err_beta_medians, mips_flux_medians, err_mips_flux_medians, re_medians, halpha_snrs, hbeta_snrs, balmer_decs, err_balmer_decs_low, err_balmer_decs_high, balmer_avs, err_balmer_av_lows, err_balmer_av_highs, shapes_list, color_list, keys), columns=['axis_group','use_ratio_median', 'log_mass_median', variable+'_median', 'av_median', 'err_av_median', 'beta_median', 'err_beta_median', 'mips_flux_median', 'err_mips_flux_median', 're_median', 'halpha_snr', 'hbeta_snr', 'balmer_dec', 'err_balmer_dec_low', 'err_balmer_dec_high', 'balmer_av', 'err_balmer_av_low', 'err_balmer_av_high', 'shape', 'color', 'key'])    
+    summary_df = pd.DataFrame(zip(group_num, axis_medians, mass_medians, split_medians, av_medians, err_av_medians, beta_medians, err_beta_medians, mips_flux_medians, err_mips_flux_medians, re_medians, err_re_medians, halpha_snrs, hbeta_snrs, balmer_decs, err_balmer_decs_low, err_balmer_decs_high, balmer_avs, err_balmer_av_lows, err_balmer_av_highs, shapes_list, color_list, keys), columns=['axis_group','use_ratio_median', 'log_mass_median', variable+'_median', 'av_median', 'err_av_median', 'beta_median', 'err_beta_median', 'mips_flux_median', 'err_mips_flux_median', 're_median', 'err_re_median', 'halpha_snr', 'hbeta_snr', 'balmer_dec', 'err_balmer_dec_low', 'err_balmer_dec_high', 'balmer_av', 'err_balmer_av_low', 'err_balmer_av_high', 'shape', 'color', 'key'])    
     if variable != 'log_use_ssfr':
         summary_df['log_use_ssfr_median'] = log_use_ssfr_medians
     if variable != 'log_use_sfr':

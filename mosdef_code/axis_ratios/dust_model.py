@@ -30,7 +30,7 @@ def plot_dust_model(save_name):
     # sys.exit()
     summary_df['dust_model_av'] = dust_vals
     ax_xlim = (0,5)
-    ax_ylim = (0,2)
+    ax_ylim = (0,5)
     ax_x_len = ax_xlim[1]-ax_xlim[0]
     ax_y_len = ax_ylim[1]-ax_ylim[0]
     for i in range(len(summary_df)):
@@ -43,6 +43,7 @@ def plot_dust_model(save_name):
         rgba = cmap(norm(row['log_use_ssfr_median']))
         # ax.plot(row['dust_model_av'], row['balmer_av'], marker='o', color=rgba)
         ax.add_artist(Ellipse((row['dust_model_av'], row['balmer_av']), ellipse_width, ellipse_height, facecolor=rgba))
+        ax.plot([-1, 100], [-1, 100], ls='--', color='red')
     ax.set_xlim(ax_xlim)
     ax.set_ylim(ax_ylim)
     ax.set_xlabel('Dust Model')
