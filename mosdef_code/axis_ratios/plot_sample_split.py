@@ -11,6 +11,7 @@ import matplotlib.gridspec as gridspec
 from astropy.io import ascii
 import pandas as pd
 from sfms_bins import sfms_slope, sfms_yint
+from plot_vals import *
 
 shapes = {'low': '+', 'mid': 'd', 'high': 'o'}
 colors = {'sorted0': 'red', 'sorted1': 'blue', 'sorted2': 'orange', 'sorted3': 'mediumseagreen', 'sorted4': 'lightskyblue', 'sorted5': 'darkviolet'}
@@ -52,6 +53,7 @@ def plot_sample_split(n_groups, save_name, ratio_bins, starting_points, mass_wid
     err_balmer_av_highs = []
     log_use_ssfr_medians = []
     log_use_sfr_medians = []
+    re_medians = []
     keys = []
 
     # Figure 1 - Showing how the sample gets cut
@@ -88,6 +90,7 @@ def plot_sample_split(n_groups, save_name, ratio_bins, starting_points, mass_wid
         split_median = np.median(axis_ratio_df[variable])
         av_median = np.median(axis_ratio_df['AV'])
         beta_median = np.median(axis_ratio_df['beta'])
+        re_median = np.median(axis_ratio_df['half_light'])
 
         # We want log_use_sfr and log_use_ssfr in all cases:
         if variable != 'log_use_ssfr':
@@ -182,6 +185,7 @@ def plot_sample_split(n_groups, save_name, ratio_bins, starting_points, mass_wid
         err_beta_medians.append(err_beta_median)
         mips_flux_medians.append(mips_flux_median)
         err_mips_flux_medians.append(err_mips_flux_median)
+        re_medians.append(re_median)
         keys.append(key)
 
 
@@ -216,10 +220,10 @@ def plot_sample_split(n_groups, save_name, ratio_bins, starting_points, mass_wid
         ax.set_xlim(xlims)
 
         # Get the ellipse shapes for plotting
-        ellipse_width, ellipse_height = get_ellipse_shapes(xlims[1]-xlims[0], np.abs(ylims[1]-ylims[0]), shape)
+        ellipse_width, ellipse_height = get_ellipse_shapes(xlims[1]-xlims[0], np.abs(ylims[1]-ylims[0]), shape, scale_factor=0.025)
 
         # plot a black point at the median
-        ax.add_artist(Ellipse((mass_median, split_median), ellipse_width, ellipse_height, facecolor='black', zorder=3))
+        # ax.add_artist(Ellipse((mass_median, split_median), ellipse_width, ellipse_height, facecolor='black', zorder=3))
 
         
 
@@ -237,7 +241,7 @@ def plot_sample_split(n_groups, save_name, ratio_bins, starting_points, mass_wid
 
 
 
-    summary_df = pd.DataFrame(zip(group_num, axis_medians, mass_medians, split_medians, av_medians, err_av_medians, beta_medians, err_beta_medians, mips_flux_medians, err_mips_flux_medians, halpha_snrs, hbeta_snrs, balmer_decs, err_balmer_decs_low, err_balmer_decs_high, balmer_avs, err_balmer_av_lows, err_balmer_av_highs, shapes_list, color_list, keys), columns=['axis_group','use_ratio_median', 'log_mass_median', variable+'_median', 'av_median', 'err_av_median', 'beta_median', 'err_beta_median', 'mips_flux_median', 'err_mips_flux_median', 'halpha_snr', 'hbeta_snr', 'balmer_dec', 'err_balmer_dec_low', 'err_balmer_dec_high', 'balmer_av', 'err_balmer_av_low', 'err_balmer_av_high', 'shape', 'color', 'key'])    
+    summary_df = pd.DataFrame(zip(group_num, axis_medians, mass_medians, split_medians, av_medians, err_av_medians, beta_medians, err_beta_medians, mips_flux_medians, err_mips_flux_medians, re_medians, halpha_snrs, hbeta_snrs, balmer_decs, err_balmer_decs_low, err_balmer_decs_high, balmer_avs, err_balmer_av_lows, err_balmer_av_highs, shapes_list, color_list, keys), columns=['axis_group','use_ratio_median', 'log_mass_median', variable+'_median', 'av_median', 'err_av_median', 'beta_median', 'err_beta_median', 'mips_flux_median', 'err_mips_flux_median', 're_median', 'halpha_snr', 'hbeta_snr', 'balmer_dec', 'err_balmer_dec_low', 'err_balmer_dec_high', 'balmer_av', 'err_balmer_av_low', 'err_balmer_av_high', 'shape', 'color', 'key'])    
     if variable != 'log_use_ssfr':
         summary_df['log_use_ssfr_median'] = log_use_ssfr_medians
     if variable != 'log_use_sfr':
@@ -246,11 +250,14 @@ def plot_sample_split(n_groups, save_name, ratio_bins, starting_points, mass_wid
         summary_df.to_csv(imd.axis_cluster_data_dir + f'/{save_name}/summary.csv', index=False)
 
 
-    ax.set_xlabel('log(Stellar Mass)', fontsize=14) 
-    ax.set_ylabel(variable, fontsize=14)
+    ax.set_xlabel(stellar_mass_label, fontsize=16) 
+    ax.set_ylabel(variable, fontsize=16)
+    if variable=='log_use_sfr':
+        ax.set_ylabel(sfr_label, fontsize=16)
     ax.tick_params(labelsize=12)
-    cbar = fig.colorbar(mpl.cm.ScalarMappable(norm=norm, cmap=cmap), ax=ax)
+    cbar = fig.colorbar(mpl.cm.ScalarMappable(norm=norm, cmap=cmap), ax=ax, fraction=0.046, pad=0.04)
     cbar.set_label('Balmer Decrement', fontsize=14)
+    cbar.ax.tick_params(labelsize=12)
     ax.set_aspect(ellipse_width/ellipse_height)
     if made_new_axis==True:
         fig.savefig(imd.axis_cluster_data_dir + f'/{save_name}/sample_cut{add_str}.pdf')

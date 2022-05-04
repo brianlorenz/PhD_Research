@@ -7,6 +7,7 @@ import numpy as np
 from matplotlib.patches import Ellipse
 from ellipses_for_plotting import get_ellipse_shapes
 import matplotlib as mpl
+from plot_vals import *
 
 def plot_balmer_vs_all(save_name):
     """Plots balmer decrement vs a variety of measured galaxy propertties
@@ -28,7 +29,7 @@ def plot_balmer_vs_all(save_name):
 
     colors = ['black', 'blue', 'orange', 'mediumseagreen', 'red', 'violet', 'grey', 'pink', 'cyan', 'darkblue', 'brown', 'darkgreen']
 
-    def plot_balmer_on_axis(ax, x_points, err_x_points='None', err_x_points_high='None'):
+    def plot_balmer_on_axis(ax, x_points, err_x_points='None', err_x_points_high='None', color='None'):
         """Makes one of the plots
         
         Parameters:
@@ -52,7 +53,7 @@ def plot_balmer_vs_all(save_name):
             elif x_points == 'log_use_sfr_median':
                 ax.set_xlim(0.7, 1.9)
                 ax_x_len = 1.2
-                xlabel = 'Median SFR'
+                xlabel =  sfr_label
             elif x_points == 'av_median':
                 ax.set_xlim(0.2, 0.9)
                 ax_x_len = 0.7
@@ -61,18 +62,27 @@ def plot_balmer_vs_all(save_name):
                 ax.set_xlim(-1.8, -1.1)
                 ax_x_len = 0.7
                 xlabel = 'Median Beta'
-            elif x_points == 'log_use_sfr_median':
+            elif x_points == 'log_use_ssfr_median':
                 ax.set_xlim(-9.4, -8.2)
                 ax_x_len = 1.2
-                xlabel = 'Median ssfr'
+                xlabel = 'Median ' + ssfr_label
+            elif x_points == 're_median':
+                ax.set_xlim(0, 0.75)
+                ax_x_len = 0.75
+                xlabel = 'Median ' + ssfr_label
             
             else:
                 ax_x_len = 1
                 xlabel = x_points
 
-            cmap = mpl.cm.inferno
-            norm = mpl.colors.Normalize(vmin=-9.3, vmax=-8.1) 
-            rgba = cmap(norm(row['log_use_ssfr_median']))
+            if color=='mass':
+                cmap = mpl.cm.inferno
+                norm = mpl.colors.Normalize(vmin=9, vmax=11) 
+                rgba = cmap(norm(row['log_mass_median']))
+            else:
+                cmap = mpl.cm.inferno
+                norm = mpl.colors.Normalize(vmin=-9.3, vmax=-8.1) 
+                rgba = cmap(norm(row['log_use_ssfr_median']))
 
             ellipse_width, ellipse_height = get_ellipse_shapes(ax_x_len, ax_y_len, row['shape'])
 
@@ -87,8 +97,10 @@ def plot_balmer_vs_all(save_name):
             ax.add_artist(Ellipse((row[x_points], row['balmer_dec']), ellipse_width, ellipse_height, facecolor=rgba))
             ax.set_xlabel(xlabel, fontsize=fontsize)
             ax.set_ylabel('Balmer Decrement', fontsize=fontsize)
-        cbar = fig.colorbar(mpl.cm.ScalarMappable(norm=norm, cmap=cmap), ax=ax)
+        cbar = fig.colorbar(mpl.cm.ScalarMappable(norm=norm, cmap=cmap), ax=ax, fraction=0.046, pad=0.04)
         cbar.set_label('log_ssfr', fontsize=fontsize)
+        if color=='mass':
+            cbar.set_label('Median ' + stellar_mass_label, fontsize=fontsize)
         ax.tick_params(labelsize=12)
         ax.set_aspect(ellipse_width/ellipse_height)
             
@@ -100,10 +112,17 @@ def plot_balmer_vs_all(save_name):
     plot_balmer_on_axis(axarr[1,2], 'log_use_ssfr_median')
     plot_balmer_on_axis(axarr[1,0], 'av_median', 'err_av_median')
     plot_balmer_on_axis(axarr[1,1], 'beta_median', 'err_beta_median')
-
-
+    plot_balmer_on_axis(axarr[2,0], 're_median')
 
     fig.savefig(imd.axis_cluster_data_dir + f'/{save_name}/balmer_plots/balmer_plots.pdf')
+
+    fig, ax = plt.subplots(figsize=(8,8))
+    plot_balmer_on_axis(ax, 'log_use_ssfr_median', color='mass')
+    fig.savefig(imd.axis_cluster_data_dir + f'/{save_name}/balmer_plots/balmer_ssfr_mass_color.pdf')
+
+
+
+    
 
 
 plot_balmer_vs_all('both_sfms_4bin_median_2axis_boot100')
