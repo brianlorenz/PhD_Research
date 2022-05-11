@@ -180,7 +180,7 @@ def plot_group_metals_compare(n_groups, save_name):
 
 
 
-def plot_metals(savename):
+def plot_metals(savename, plot_half_light_instead=False):
     """Make the plot of individual galaxy metallicities
     
     """
@@ -268,32 +268,50 @@ def plot_metals(savename):
             color = 'red'
             label = ''
 
-        # compute uncertainties
-        ar_df['metal_err_high'] = ar_df['u68_logoh_pp_n2'] - ar_df['logoh_pp_n2']
-        ar_df['metal_err_low'] = ar_df['logoh_pp_n2'] - ar_df['l68_logoh_pp_n2']  
+        if plot_half_light_instead:
+            ax.errorbar(ar_df['use_ratio'], ar_df['half_light'], xerr=ar_df['err_use_ratio'], yerr = ar_df['err_half_light'], color=color, label = label, marker='o', ls='None') 
+            # ax.set_ylim(8, 9)
+            ax.set_ylabel('r_e', fontsize=14)
+            ax.set_yscale('log')
+            ax.tick_params(labelsize=12, size=8)
+            ax.set_xlabel('Axis Ratio', fontsize=14)
+            if np.median(ar_df['log_mass']) > 10:
+                ax.hlines([0.25, 0.6], -100, 100, color='black') 
+            else:
+                ax.hlines([0.1, 0.5], -100, 100, color='black') 
+            ax.set_xlim(-0.05, 1.05)
+            if i == len(summary_df)-1:
+                ax.legend(bbox_to_anchor=(1.5, 4.5, 0.20, 0.15), loc='upper right')
+
+        else:
+            # compute uncertainties
+            ar_df['metal_err_high'] = ar_df['u68_logoh_pp_n2'] - ar_df['logoh_pp_n2']
+            ar_df['metal_err_low'] = ar_df['logoh_pp_n2'] - ar_df['l68_logoh_pp_n2']  
         
-       
-        # Plot 
-        upper_lim_idx = ar_df['n2flag_metals'] == 1
+            # Plot 
+            upper_lim_idx = ar_df['n2flag_metals'] == 1
 
-        # Errors on non-lower-lim points
-        yerrs_low = [ar_df['metal_err_low'][~upper_lim_idx].iloc[k] for k in range(len(ar_df[~upper_lim_idx]))]
-        yerrs_high = [ar_df['metal_err_high'][~upper_lim_idx].iloc[k] for k in range(len(ar_df[~upper_lim_idx]))]
-        yerrs = (yerrs_low, yerrs_high)
+            # Errors on non-lower-lim points
+            yerrs_low = [ar_df['metal_err_low'][~upper_lim_idx].iloc[k] for k in range(len(ar_df[~upper_lim_idx]))]
+            yerrs_high = [ar_df['metal_err_high'][~upper_lim_idx].iloc[k] for k in range(len(ar_df[~upper_lim_idx]))]
+            yerrs = (yerrs_low, yerrs_high)
 
-        ax.errorbar(ar_df['use_ratio'][~upper_lim_idx], ar_df['logoh_pp_n2'][~upper_lim_idx], xerr=ar_df['err_use_ratio'][~upper_lim_idx], yerr = yerrs, color=color, label = label, marker='o', ls='None') 
-        ax.errorbar(ar_df['use_ratio'][upper_lim_idx], ar_df['logoh_pp_n2'][upper_lim_idx], xerr=ar_df['err_use_ratio'][upper_lim_idx], color=color, label = label, marker='o', mfc='white', ls='None') 
-        ax.set_ylim(8, 9)
-        ax.set_ylabel('12 + log(O/H)', fontsize=14)
-        ax.set_xlabel('Axis Ratio', fontsize=14)
+            ax.errorbar(ar_df['use_ratio'][~upper_lim_idx], ar_df['logoh_pp_n2'][~upper_lim_idx], xerr=ar_df['err_use_ratio'][~upper_lim_idx], yerr = yerrs, color=color, label = label, marker='o', ls='None') 
+            ax.errorbar(ar_df['use_ratio'][upper_lim_idx], ar_df['logoh_pp_n2'][upper_lim_idx], xerr=ar_df['err_use_ratio'][upper_lim_idx], color=color, label = label, marker='o', mfc='white', ls='None') 
+            ax.set_ylim(8, 9)
+            ax.set_xlim(-0.05, 1.05)
+            ax.set_ylabel('12 + log(O/H)', fontsize=14)
 
+            if i == len(summary_df)-1:
+                ax.legend(bbox_to_anchor=(1.5, 4.5, 0.20, 0.15), loc='upper right')
 
-        if i == len(summary_df)-1:
-            ax.legend(bbox_to_anchor=(1.5, 4.5, 0.20, 0.15), loc='upper right')
+            ax.tick_params(labelsize=12, size=8)
+            ax.set_xlabel('Axis Ratio', fontsize=14)
 
-        ax.tick_params(labelsize=12, size=8)
-
-    fig.savefig(imd.axis_cluster_data_dir + f'/{savename}/metallicty_ar.pdf')
+    if plot_half_light_instead==True:
+        fig.savefig(imd.axis_cluster_data_dir + f'/{savename}/re_ar.pdf')
+    else:
+        fig.savefig(imd.axis_cluster_data_dir + f'/{savename}/metallicty_ar.pdf')
     plt.close('all')
 
 def plot_mass_metal(n_groups, save_name):
@@ -331,7 +349,7 @@ def add_metals_to_summary_df(save_name, metal_column):
 
     summary_df.to_csv(imd.axis_cluster_data_dir + f'/{save_name}/summary.csv', index=False)
 
-# plot_metals(savename='halpha_ssfr_4bin_mean_shifted')
+plot_metals(savename='both_sfms_4bin_median_2axis_boot100', plot_half_light_instead=True)
 # measure_metals(8, 'both_sfms_4bin_median_2axis_boot100', bootstrap=100)
 # plot_group_metals_compare(12, 'both_ssfrs_4bin_mean')
 # plot_mass_metal(12, 'both_ssfrs_4bin_mean')

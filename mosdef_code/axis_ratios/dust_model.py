@@ -1,3 +1,4 @@
+from curses import meta
 from astropy.io import ascii
 import matplotlib.pyplot as plt
 import matplotlib as mpl
@@ -6,16 +7,32 @@ import numpy as np
 from matplotlib.patches import Ellipse
 from ellipses_for_plotting import get_ellipse_shapes
 import sys
+from scipy.optimize import curve_fit
+
+n = 1.4
+a = 1.77
+b = -17.96
+const = 100
+const2 = 2.5*10**(-17)
 
 def dust_model(metallicity, sfr, re, mass):
-    n = 1.4
-    a = 1.77
-    b = -17.96
-    const = 100
-    A_lambda = const * (10**(a * metallicity + b)) * ((sfr / (2 * np.pi * (re**2)))**(1/n))
+    # A_lambda = const * (10**(a * metallicity + b)) * ((sfr / (2 * np.pi * (re**2)))**(1/n))
+    A_lambda = const2 * 10**(a*metallicity) * (sfr/(re**2))**(1/n)
     # A_lambda = const * (a * metallicity + b) * (sfr)**(1/n)
     # A_lambda = const * metallicity * (sfr)**(1/n)
     return A_lambda
+
+def test_dust_model():
+    metallicity = 8.7
+    sfr = 10**(0.81)
+    re = 0.26
+    print(dust_model(metallicity, sfr, re, 0))
+
+    sfr = 3.1*sfr
+    metallicity = 0.977*metallicity
+    print(metallicity)
+    print(dust_model(metallicity, sfr, re, 0))
+
 
 def plot_dust_model(save_name):
     fig, ax = plt.subplots(figsize=(8,8))
@@ -40,7 +57,8 @@ def plot_dust_model(save_name):
 
         cmap = mpl.cm.inferno
         norm = mpl.colors.Normalize(vmin=-9.3, vmax=-8.1) 
-        rgba = cmap(norm(row['log_use_ssfr_median']))
+        norm = mpl.colors.Normalize(vmin=0, vmax=2.6) 
+        rgba = cmap(norm(row['log_use_sfr_median']))
         # ax.plot(row['dust_model_av'], row['balmer_av'], marker='o', color=rgba)
         ax.add_artist(Ellipse((row['dust_model_av'], row['balmer_av']), ellipse_width, ellipse_height, facecolor=rgba))
         ax.plot([-1, 100], [-1, 100], ls='--', color='red')
@@ -48,6 +66,9 @@ def plot_dust_model(save_name):
     ax.set_ylim(ax_ylim)
     ax.set_xlabel('Dust Model')
     ax.set_ylabel('Balmer AV')
-    plt.show()
+    # plt.show()
+    fig.savefig(imd.axis_cluster_data_dir + f'/{save_name}/dust_model.pdf')
 
-plot_dust_model('both_sfms_4bin_median_2axis_boot100')
+# test_dust_model()
+# plot_dust_model('both_sfms_4bin_median_2axis_boot100')
+# plot_dust_model('both_sfms_4bin_median_2axis_boot100_retest')

@@ -82,6 +82,7 @@ def stack_all_and_plot_all(param_class):
     # plot_sample_split(nbins, save_name, ratio_bins, starting_points, mass_width, split_width, nbins, sfms_bins, plot_sfr_and_ssfr=True)
     plot_overlaid_spectra(save_name, plot_cont_sub=True)
     plot_metals(save_name)
+    plot_metals(save_name, plot_half_light_instead=True)
     measure_metals(nbins, save_name, bootstrap=bootstrap)
     plot_group_metals_compare(nbins, save_name)
     plot_mass_metal(nbins, save_name)

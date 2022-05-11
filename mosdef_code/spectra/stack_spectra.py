@@ -759,11 +759,30 @@ def stack_axis_ratio(mass_width, split_width, starting_points, ratio_bins, save_
             # df_high_high = fixed_metal_df(df_high_high, 8.4, 8.6)
             # dfs.append(df_high_high)
 
+            # REMOVE LATER ----- FOR HALF_LIGHT TESTS
+            # def fixed_half_light_df(in_df, thresh_low, thresh_high):
+            #     in_df = in_df[in_df['half_light']>thresh_low]
+            #     in_df = in_df[in_df['half_light']<thresh_high]
+            #     return in_df
+            # df_low_low = df[np.logical_and(low_mass, low_idx)]
+            # df_low_low = fixed_half_light_df(df_low_low, 0.1, 0.5)
+            # dfs.append(df_low_low)
+            # df_low_high = df[np.logical_and(low_mass, high_idx)]
+            # df_low_high = fixed_half_light_df(df_low_high, 0.1, 0.5)
+            # dfs.append(df_low_high)
+            # df_high_low = df[np.logical_and(high_mass, low_idx)]
+            # df_high_low = fixed_half_light_df(df_high_low, 0.25, 0.6)
+            # dfs.append(df_high_low)
+            # df_high_high = df[np.logical_and(high_mass, high_idx)]
+            # df_high_high = fixed_half_light_df(df_high_high, 0.25, 0.6)
+            # dfs.append(df_high_high)
+
             # ADD BACK ------ Normal method
             dfs.append(df[np.logical_and(low_mass, low_idx)])
             dfs.append(df[np.logical_and(low_mass, high_idx)])
             dfs.append(df[np.logical_and(high_mass, low_idx)])
             dfs.append(df[np.logical_and(high_mass, high_idx)])
+            
             # dfs.append(df[np.logical_and(low_mass, mid_idx)])
             # dfs.append(df[np.logical_and(high_mass, mid_idx)])
 

@@ -122,7 +122,10 @@ def plot_balmer_vs_all(save_name):
 
 
 
-    
+
+
+
 
 
 plot_balmer_vs_all('both_sfms_4bin_median_2axis_boot100')
+# plot_balmer_vs_all('both_sfms_4bin_median_2axis_boot100_retest')
