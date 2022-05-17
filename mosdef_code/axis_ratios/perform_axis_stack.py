@@ -13,6 +13,9 @@ import json
 from plot_sample_split import plot_sample_split
 from plot_balmer_dec import plot_balmer_dec
 from overview_plot import plot_overview
+from integrate_line import re_calc_emission_flux
+from dust_model import plot_dust_model
+from plot_sfr_metallicity import plot_sfr_metals
 
 
 random.seed(3284923)
@@ -74,7 +77,9 @@ def stack_all_and_plot_all(param_class):
             if bootstrap > 0:
                 for bootstrap_num in range(bootstrap):
                     fit_emission(0, 'cluster_norm', constrain_O3=False, axis_group=axis_group, save_name=save_name, scaled='False', run_name='False', bootstrap_num=bootstrap_num)
+        re_calc_emission_flux(nbins, save_name)
         if bootstrap > 0:
+            re_calc_emission_flux(nbins, save_name, bootstrap=bootstrap)
             compute_bootstrap_uncertainties(nbins, save_name, bootstrap=bootstrap)
         time_emfit = time.time()
         print(f'Emission fitting took {time_emfit-time_stack}')     
@@ -98,6 +103,8 @@ def stack_all_and_plot_all(param_class):
     plot_balmer_dec(save_name, nbins, split_by, y_var='balmer_dec', color_var='log_use_ssfr')
     plot_balmer_dec(save_name, nbins, split_by, y_var='mips_flux', color_var=split_by)
     plot_balmer_stellar_avs(save_name)
+    plot_dust_model('both_sfms_4bin_median_2axis_boot100')
+    plot_sfr_metals('both_sfms_4bin_median_2axis_boot100')
     print('starting overview plot')
     plot_overview(nbins, save_name, ratio_bins, starting_points, mass_width, split_width, sfms_bins, split_by)
     time_end = time.time()
