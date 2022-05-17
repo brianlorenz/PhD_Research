@@ -22,6 +22,29 @@ def dust_model(metallicity, sfr, re, mass):
     # A_lambda = const * metallicity * (sfr)**(1/n)
     return A_lambda
 
+fm_const = 8.90
+fm_const_m = 0.37
+fm_const_s = -0.14
+fm_const_m2 = -0.19
+fm_const_ms = 0.12
+fm_const_s2 = -0.054
+def fundamental_plane(m, s):
+    """ From Mannucci, 
+
+    Parameters:
+    m (float): log(stellar_mass) - 10
+    s (float): log(SFR) 
+    (solar units)
+    """
+    metallicity = fm_const + fm_const_m*m + fm_const_s*s + fm_const_m2*(m**2) + fm_const_ms*m*s + fm_const_s2*(s**2)
+    return metallicity
+
+def sanders_plane(log_mass, log_sfr):
+    u60 = log_mass - 0.6*log_sfr
+    y = u60 - 10
+    metallicity = 8.8 + 1.88*y - 0.22 * y**2 - 0.0531 * y**3
+    return metallicity
+
 def test_dust_model():
     metallicity = 8.7
     sfr = 10**(0.81)
