@@ -10,6 +10,11 @@ from stack_spectra import plot_spec
 from cross_correlate import get_cross_cor
 
 
+line_regions = [
+    (6450, 6650),
+    (4700, 5200)
+]
+
 # Run in the order - stack, plot
 
 
@@ -84,7 +89,8 @@ def plot_spec_with_cont(axis_group, save_name, bootstrap_num=-1, sum_cont_df='No
         spec_df = ascii.read(imd.axis_cluster_data_dir + f'/{save_name}/{save_name}_spectra_boots/{axis_group}_spectrum_{bootstrap_num}.csv').to_pandas()
     else:
         spec_df = ascii.read(imd.axis_cluster_data_dir + f'/{save_name}/{save_name}_spectra/{axis_group}_spectrum.csv').to_pandas()
-    spec_df, sum_cont_df = scale_continuum(spec_df, sum_cont_df)
+    # spec_df, sum_cont_df = scale_continuum(spec_df, sum_cont_df)
+    spec_df, sum_cont_df = scale_cont_to_lines(spec_df, sum_cont_df, line_regions)
 
     # Save the scaled continuum
     if bootstrap_num>-1:
@@ -129,6 +135,47 @@ def plot_all_spec_with_cont(n_clusters, save_name):
     for axis_group in range(n_clusters):
         print(f'Plotting group {axis_group}')
         plot_spec_with_cont(axis_group, save_name)
+
+
+
+
+def scale_cont_to_lines(spec_df, cont_df, line_regions):
+    '''Scales the continuum separately around each emission line region, then adds them back together and saves
+    
+    '''
+    cont_df['f_lambda_scaled'] = cont_df['f_lambda']
+    for line in line_regions:
+        region_start = line[0]
+        region_end = line[1]
+        # Only use the middle section (5k to 7k angstroms) when matching
+        def get_region(df):
+            middle_idx = np.logical_and(df['rest_wavelength']>region_start, df['rest_wavelength']<region_end)
+            return middle_idx
+
+        # Clip the extreme points - only use the median 16-84th percentile across both for correlation
+        def clip_extremes(df, cutoff_pct=(16, 84)):
+            '''Gets the indicles that cut the dataframe to just the specified percentiles
+
+            Parameters:
+            df (pd.DataFrmae): Dataframe to cut, operates on the f_lambda column
+            cutoff_pct (tuple): (low, high) percents to cut at 
+            '''
+            idx = np.logical_and(df['f_lambda']>np.percentile(df['f_lambda'], cutoff_pct[0]), df['f_lambda']<np.percentile(df['f_lambda'], cutoff_pct[1]))
+            return idx
+        
+        region_idxs = get_region(cont_df)
+
+        med_spec_idx = clip_extremes(spec_df[region_idxs])
+        med_cont_idx = clip_extremes(cont_df[region_idxs])
+        med_both_idx = np.logical_and(med_spec_idx, med_cont_idx)
+
+        # a12, b12 = get_cross_cor(cont_df[region_idxs][med_both_idx], spec_df[region_idxs][med_both_idx])
+        # cont_df[region_idxs]['f_lambda_scaled'] = cont_df[region_idxs]['f_lambda']/a12
+        # print(f'Scale factor: {a12}')
+
+        # scale by the medians
+        cont_df.loc[region_idxs, 'f_lambda_scaled'] = cont_df[region_idxs]['f_lambda'] * np.median(spec_df[region_idxs][med_both_idx]['f_lambda']) / np.median(cont_df[region_idxs][med_both_idx]['f_lambda'])
+    return spec_df, cont_df
 
 
 def scale_continuum(spec_df, cont_df):

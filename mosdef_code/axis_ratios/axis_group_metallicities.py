@@ -180,7 +180,7 @@ def plot_group_metals_compare(n_groups, save_name):
 
 
 
-def plot_metals(savename, plot_half_light_instead=False):
+def plot_metals(savename, plot_half_light_instead=False, plot_uvj_instead=False, plot_z_instead=False):
     """Make the plot of individual galaxy metallicities
     
     """
@@ -258,12 +258,16 @@ def plot_metals(savename, plot_half_light_instead=False):
         if row['shape'] == '+': 
             color = 'red'
             label = 'Axis Ratio < 0.4'
+            if plot_uvj_instead:
+                label = 'Axis Ratio < 0.55'
         if row['shape'] == 'd':
             color = 'mediumseagreen'
             label = '0.4 < Axis Ratio < 0.7'
         if row['shape'] == 'o':
             color = 'blue'
             label = '0.7 < Axis Ratio'
+            if plot_uvj_instead:
+                label = 'Axis Ratio > 0.55'
         if row['shape'] == 1.0: 
             color = 'red'
             label = ''
@@ -282,7 +286,28 @@ def plot_metals(savename, plot_half_light_instead=False):
             ax.set_xlim(-0.05, 1.05)
             if i == len(summary_df)-1:
                 ax.legend(bbox_to_anchor=(1.5, 4.5, 0.20, 0.15), loc='upper right')
-
+        
+        elif plot_uvj_instead:
+            ax.plot(ar_df['V_J'], ar_df['U_V'], color=color, label = label, marker='o', ls='None') 
+            ax.set_ylabel('U-V', fontsize=14)
+            ax.set_xlabel('V-J', fontsize=14)
+            ax.set_xlim(-0.5, 2)
+            ax.set_ylim(0, 2.5)
+            # UVJ diagram lines
+            ax.plot((-100, 0.69), (1.3, 1.3), color='black')
+            ax.plot((1.5, 1.5), (2.01, 100), color='black')
+            xline = np.arange(0.69, 1.5, 0.001)
+            yline = xline * 0.88 + 0.69
+            ax.plot(xline, yline, color='black')
+            ax.legend(loc='upper right')
+        
+        elif plot_z_instead:
+            ax.plot(ar_df['use_ratio'], ar_df['Z_MOSFIRE'], color=color, label = label, marker='o', ls='None') 
+            ax.set_ylabel('Redshift', fontsize=14)
+            ax.set_xlabel('Axis Ratio', fontsize=14)
+            ax.set_xlim(-0.05, 1.05)
+            # ax.set_ylim(0, 2.5)
+        
         else:
             # compute uncertainties
             ar_df['metal_err_high'] = ar_df['u68_logoh_pp_n2'] - ar_df['logoh_pp_n2']
@@ -310,6 +335,10 @@ def plot_metals(savename, plot_half_light_instead=False):
 
     if plot_half_light_instead==True:
         fig.savefig(imd.axis_cluster_data_dir + f'/{savename}/re_ar.pdf')
+    elif plot_uvj_instead==True:
+        fig.savefig(imd.axis_cluster_data_dir + f'/{savename}/uvj_ar_groups.pdf')
+    elif plot_z_instead==True:
+        fig.savefig(imd.axis_cluster_data_dir + f'/{savename}/ar_z.pdf')
     else:
         fig.savefig(imd.axis_cluster_data_dir + f'/{savename}/metallicty_ar.pdf')
     plt.close('all')
@@ -349,7 +378,9 @@ def add_metals_to_summary_df(save_name, metal_column):
 
     summary_df.to_csv(imd.axis_cluster_data_dir + f'/{save_name}/summary.csv', index=False)
 
-plot_metals(savename='both_sfms_4bin_median_2axis_boot100', plot_half_light_instead=True)
+# plot_metals(savename='both_sfms_4bin_median_2axis_boot100', plot_half_light_instead=True)
+# plot_metals(savename='both_sfms_4bin_median_2axis_boot100', plot_uvj_instead=True)
+plot_metals(savename='both_sfms_4bin_median_2axis_boot100', plot_z_instead=True)
 # measure_metals(8, 'both_sfms_4bin_median_2axis_boot100', bootstrap=100)
 # plot_group_metals_compare(12, 'both_ssfrs_4bin_mean')
 # plot_mass_metal(12, 'both_ssfrs_4bin_mean')

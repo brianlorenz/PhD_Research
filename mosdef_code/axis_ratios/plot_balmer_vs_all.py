@@ -29,7 +29,7 @@ def plot_balmer_vs_all(save_name):
 
     colors = ['black', 'blue', 'orange', 'mediumseagreen', 'red', 'violet', 'grey', 'pink', 'cyan', 'darkblue', 'brown', 'darkgreen']
 
-    def plot_balmer_on_axis(ax, x_points, err_x_points='None', err_x_points_high='None', color='None'):
+    def plot_balmer_on_axis(ax, x_points, err_x_points='None', err_x_points_high='None', color='None', colorbar=True, use_cbar_axis=False, cbar_axis = 'None'):
         """Makes one of the plots
         
         Parameters:
@@ -47,13 +47,13 @@ def plot_balmer_vs_all(save_name):
                 ax_x_len = 0.6
                 xlabel = 'Median Metallicity'
             elif x_points == 'log_mass_median':
-                ax.set_xlim(9.0, 11.0)
-                ax_x_len = 2.0
-                xlabel = 'Median Stellar Mass'
+                ax.set_xlim(9.5, 10.5)
+                ax_x_len = 1.0
+                xlabel = 'Median ' + stellar_mass_label
             elif x_points == 'log_use_sfr_median':
                 ax.set_xlim(0.7, 1.9)
                 ax_x_len = 1.2
-                xlabel =  sfr_label
+                xlabel =  'Median ' + sfr_label
             elif x_points == 'av_median':
                 ax.set_xlim(0.2, 0.9)
                 ax_x_len = 0.7
@@ -97,12 +97,19 @@ def plot_balmer_vs_all(save_name):
             ax.add_artist(Ellipse((row[x_points], row['balmer_dec']), ellipse_width, ellipse_height, facecolor=rgba))
             ax.set_xlabel(xlabel, fontsize=fontsize)
             ax.set_ylabel('Balmer Decrement', fontsize=fontsize)
-        cbar = fig.colorbar(mpl.cm.ScalarMappable(norm=norm, cmap=cmap), ax=ax, fraction=0.046, pad=0.04)
-        cbar.set_label('log_ssfr', fontsize=fontsize)
-        if color=='mass':
-            cbar.set_label('Median ' + stellar_mass_label, fontsize=fontsize)
+        
+        if colorbar==True:
+            if use_cbar_axis==False:
+                cbar_axis = ax
+                cbar = fig.colorbar(mpl.cm.ScalarMappable(norm=norm, cmap=cmap), ax=cbar_axis, fraction=0.046, pad=0.04)
+            else:
+                cbar = fig.colorbar(mpl.cm.ScalarMappable(norm=norm, cmap=cmap), cax=cbar_axis, fraction=0.046, pad=0.04)
+            cbar.set_label('log_ssfr', fontsize=fontsize)
+            if color=='mass':
+                cbar.set_label('Median ' + stellar_mass_label, fontsize=fontsize)
         ax.tick_params(labelsize=12)
         ax.set_aspect(ellipse_width/ellipse_height)
+        
             
     
 
@@ -116,8 +123,14 @@ def plot_balmer_vs_all(save_name):
 
     fig.savefig(imd.axis_cluster_data_dir + f'/{save_name}/balmer_plots/balmer_plots.pdf')
 
-    fig, ax = plt.subplots(figsize=(8,8))
-    plot_balmer_on_axis(ax, 'log_use_ssfr_median', color='mass')
+    ## PAPER FIGURE
+    fig, axarr = plt.subplots(1, 2, figsize=(15,8))
+    ax_balmer_mass = axarr[0]
+    ax_balmer_ssfr = axarr[1]
+    fig.subplots_adjust(right=0.85)
+    ax_cbar = fig.add_axes([0.90, 0.2, 0.02, 0.60])
+    plot_balmer_on_axis(ax_balmer_mass, 'log_mass_median', color='mass', colorbar=False)
+    plot_balmer_on_axis(ax_balmer_ssfr, 'log_use_sfr_median', color='mass', use_cbar_axis=True, cbar_axis = ax_cbar)
     fig.savefig(imd.axis_cluster_data_dir + f'/{save_name}/balmer_plots/balmer_ssfr_mass_color.pdf')
 
 

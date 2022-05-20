@@ -798,6 +798,7 @@ def stack_axis_ratio(mass_width, split_width, starting_points, ratio_bins, save_
             df.to_csv(
                 (imd.axis_cluster_data_dir + f'/{cluster_name}/{cluster_name}_group_dfs/{axis_group}_df.csv'), index=False)
             # Within each group, start stacking the spectra
+            
             stack_spectra(0, 'cluster_norm', axis_ratio_df=df,
                         axis_group=axis_group, save_name=cluster_name, stack_type=stack_type, bootstrap=bootstrap)
             axis_group = axis_group + 1

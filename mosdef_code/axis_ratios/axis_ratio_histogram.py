@@ -1,5 +1,5 @@
 # Plot a histogram of the axis ratios of the galaxies being used
-from axis_ratio_funcs import filter_ar_df
+from axis_ratio_funcs import filter_ar_df, read_filtered_ar_df
 import numpy as np
 import pandas as pd
 from astropy.io import ascii
@@ -17,8 +17,7 @@ def plot_ar_hist(use_column = 'use_ratio',  mass_split='False'):
     mass_split(str): Set to "True" to make 2 panels by mass
     '''
 
-    ar_df = ascii.read(imd.loc_axis_ratio_cat).to_pandas()
-    ar_df = filter_ar_df(ar_df)
+    ar_df = read_filtered_ar_df()
     bins = np.arange(0, 1, 0.05)
     
     if mass_split=='True':
@@ -78,11 +77,11 @@ def plot_ar_hist(use_column = 'use_ratio',  mass_split='False'):
         ax.hist(ar_df[use_column], bins=bins, color='black')
         axarr = [ax]
         savename = ''
-        ax.set_ylim(0, 110)
+        ax.set_ylim(0, 60)
     
     for ax in axarr:
-        ax.axvline(0.4, ls='--', color='red')
-        ax.axvline(0.7, ls='--', color='red')
+        # ax.axvline(0.4, ls='--', color='red')
+        ax.axvline(0.55, ls='--', color='red')
 
         ax.set_xlabel('Axis Ratio', fontsize=14) 
         ax.set_ylabel('Number of Galaxies', fontsize=14)
@@ -94,12 +93,12 @@ def plot_ar_hist(use_column = 'use_ratio',  mass_split='False'):
     fig.savefig(imd.axis_output_dir + f'/ar_histogram_{use_column}{savename}.pdf')
 
 
-plot_ar_hist()
-plot_ar_hist(use_column='F125_axis_ratio')
-plot_ar_hist(use_column='F140_axis_ratio')
-plot_ar_hist(use_column='F160_axis_ratio')
-plot_ar_hist(use_column='F160_axis_ratio', mass_split='True')
-plot_ar_hist(use_column='F160_axis_ratio', mass_split='AndSSFR')
+# plot_ar_hist()
+# plot_ar_hist(use_column='F125_axis_ratio')
+# plot_ar_hist(use_column='F140_axis_ratio')
+# plot_ar_hist(use_column='F160_axis_ratio')
+# plot_ar_hist(use_column='F160_axis_ratio', mass_split='True')
+# plot_ar_hist(use_column='F160_axis_ratio', mass_split='AndSSFR')
 
 
 
@@ -111,13 +110,13 @@ def compare_ar_measurements(col1, err_col1, col2, err_col2):
     col1 (str): Column to retrieve the axis ratios from
     '''
 
-    ar_df = ascii.read(imd.loc_axis_ratio_cat).to_pandas()
-
+    # ar_df = ascii.read(imd.loc_axis_ratio_cat).to_pandas()
+    ar_df = read_filtered_ar_df()
 
     cmap = mpl.cm.viridis 
     norm = mpl.colors.Normalize(vmin=1.3, vmax=2.8) 
     
-    fig, ax = plt.subplots(figsize=(8,8))
+    fig, ax = plt.subplots(figsize=(9,8))
 
     ar_df = ar_df[ar_df[col1]>-90]
     ar_df = ar_df[ar_df[col2]>-90]
@@ -144,7 +143,7 @@ def compare_ar_measurements(col1, err_col1, col2, err_col2):
     ax.set_ylim(-0.05, 1.05)
     fig.savefig(imd.axis_output_dir + f'/ar_compare_{col1}_{col2}.pdf')
 
-compare_ar_measurements('F125_axis_ratio', 'F125_err_axis_ratio', 'F160_axis_ratio', 'F160_err_axis_ratio')
+# compare_ar_measurements('F125_axis_ratio', 'F125_err_axis_ratio', 'F160_axis_ratio', 'F160_err_axis_ratio')
 # compare_ar_measurements('use_ratio', 'err_use_ratio', 'F160_axis_ratio', 'F160_err_axis_ratio')
 # compare_ar_measurements('use_ratio', 'err_use_ratio', 'F125_axis_ratio', 'F125_err_axis_ratio')
-plot_ar_hist(use_column = 'use_ratio',  mass_split='AndSSFR')
+plot_ar_hist(use_column = 'use_ratio')

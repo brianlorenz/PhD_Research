@@ -294,3 +294,5 @@ def read_filtered_ar_df():
     print("Last Filtered ar_df: ", modificationTime)
     return ar_df
 
+# ar_df = read_interp_axis_ratio()
+# ar_df = filter_ar_df(ar_df)

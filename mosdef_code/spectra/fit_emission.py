@@ -414,7 +414,7 @@ def plot_emission_fit(groupID, norm_method, axis_group=-1, save_name='', scaled=
 
     def set_plot_ranges(ax, axis, plot_range, box_color):
         lim_min = 0.9 * np.min(spectrum[np.logical_and(
-            wavelength > plot_range[0], wavelength < plot_range[1])])
+            wavelength > plot_range[0], wavelength < plot_range[1])]) - 2e-19
         lim_max = 1.05 * np.max(spectrum[np.logical_and(
             wavelength > plot_range[0], wavelength < plot_range[1])])
         axis.set_ylim(lim_min, lim_max)
@@ -808,3 +808,5 @@ def compute_bootstrap_uncertainties(n_clusters, save_name, bootstrap=-1):
 # for bootstrap_num in range(bootstrap):
 #     fit_emission(0, 'cluster_norm', constrain_O3=False, axis_group=1, save_name='both_ssfrs_4bin_median_2axis', scaled='False', run_name='False', bootstrap_num=bootstrap_num)
 # compute_bootstrap_uncertainties(8, 'both_ssfrs_4bin_median_2axis', bootstrap=10)
+# for axis_group in range(8):
+#     plot_emission_fit(0, 'cluster_norm', axis_group=axis_group, save_name='both_sfms_4bin_median_2axis_boot100')
