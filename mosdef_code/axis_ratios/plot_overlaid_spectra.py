@@ -9,13 +9,13 @@ import matplotlib.patheffects as path_effects
 from matplotlib.gridspec import GridSpec
 from brokenaxes import brokenaxes
 
-def plot_overlaid_spectra(savename, plot_cont_sub=False):
+def plot_overlaid_spectra(savename, plot_cont_sub=False, paper_fig=False):
     """Make the plot
 
     Parameters:
     savename (str): Folder to save the name under
     plot_cont_sub (boolean): Set to True to plot continuum-subtracted data
-    
+    paper_fig (boolean): Set to trun to use alternate settings to gneerate a figure for publication - better titles and labels, etc
     """
     summary_df = ascii.read(imd.axis_cluster_data_dir + f'/{savename}/summary.csv').to_pandas()
     
@@ -63,15 +63,23 @@ def plot_overlaid_spectra(savename, plot_cont_sub=False):
         if row['key'] == 'sorted0':
             ax = bax_0
             ax.set_title('Sorted 0', color = row['color'])
+            if paper_fig == True:
+                 ax.set_title('$\log(M_*) < 10$, below SFMS', color = row['color'])
         if row['key'] == 'sorted1':
             ax = bax_1
             ax.set_title('Sorted 1', color = row['color'])
+            if paper_fig == True:
+                 ax.set_title('$\log(M_*) < 10$, above SFMS', color = row['color'])
         if row['key'] == 'sorted2':
             ax = bax_2
             ax.set_title('Sorted 2', color = row['color'])
+            if paper_fig == True:
+                 ax.set_title('$\log(M_*) > 10$, below SFMS', color = row['color'])
         if row['key'] == 'sorted3':
             ax = bax_3
             ax.set_title('Sorted 3', color = row['color'])
+            if paper_fig == True:
+                 ax.set_title('$\log(M_*) > 10$, above SFMS', color = row['color'])
         if row['key'] == 'sorted4':
             ax = bax_4
             ax.set_title('Sorted 4', color = row['color'])
@@ -91,12 +99,16 @@ def plot_overlaid_spectra(savename, plot_cont_sub=False):
         if row['shape'] == '+': 
             color = 'red'
             label = 'Axis Ratio < 0.4'
+            if paper_fig==True:
+                label = '$(b/a) < 0.55$'
         if row['shape'] == 'd':
             color = 'mediumseagreen'
             label = '0.4 < Axis Ratio < 0.7'
         if row['shape'] == 'o':
             color = 'blue'
             label = '0.7 < Axis Ratio'
+            if paper_fig==True:
+                label = '$(b/a) > 0.55$'
         if row['shape'] == 1.0: 
             color = 'red'
             label = ''
@@ -111,14 +123,20 @@ def plot_overlaid_spectra(savename, plot_cont_sub=False):
         ax.set_ylim(-0.1, 1.05)
         ax.set_ylabel(f'Normalized F$_\\lambda${add_str}')
         ax.set_xlabel('Wavelength ($\AA$)')
+        if paper_fig == True:
+            ax.set_ylabel(f'Normalized Flux')
+            ax.set_xlabel('Wavelength ($\AA$)')
 
-
-        if i == len(summary_df)-1:
-            ax.legend(bbox_to_anchor=(1.5, 4.5, 0.20, 0.15), loc='upper right')
+        if paper_fig==True:
+            if i == 5:
+                ax.legend(bbox_to_anchor=(0.36, 0.85, 0.20, 0.15), loc='upper right')
 
         
-
-    fig.savefig(imd.axis_cluster_data_dir + f'/{savename}/overlaid_spectra.pdf')
+    if paper_fig==True:
+        fig.savefig(imd.axis_cluster_data_dir + f'/{savename}/overlaid_spectra_paper.pdf')
+    else:
+        fig.savefig(imd.axis_cluster_data_dir + f'/{savename}/overlaid_spectra.pdf')
     plt.close('all')
 
 # plot_overlaid_spectra('mosdef_ssfr_4bin_mean', plot_cont_sub=True)
+plot_overlaid_spectra('both_sfms_4bin_median_2axis_boot100', plot_cont_sub=True, paper_fig=True)
