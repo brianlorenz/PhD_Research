@@ -88,7 +88,8 @@ def make_shape(n_points = 1000, height = 1):
 
     points = []
     for i in range(n_points):
-        points.append(random_point_ellipsoid(1,1,height))
+        ellipticity = np.random.rand()*0.2+0.8
+        points.append(random_point_ellipsoid(1,ellipticity,height))
 
     return points
 
@@ -205,8 +206,8 @@ def iterate_remove_points(points, n_iter, show_plots=False):
 
 def generate_uniformheight_distribution(n_repeats = 1000):
     """Makes the distribution where all galaxies have a specified height"""
-    heights = [0.01, 0.25, 0.5, 0.75, 1.0]
-    # heights = [0.01]
+    # heights = [0.01, 0.25, 0.5, 0.75, 1.0]
+    heights = [0.2]
 
 
     for height in heights:
@@ -260,7 +261,7 @@ def generate_mixedheight_distribution(n_repeats = 1000):
     for i in range(len(height_tuples)):
         ax.text(0.05, text_start-0.04*i, f'Axis: {height_tuples[i][0]}, Pct: {height_tuples[i][1]}', transform=ax.transAxes, color='red')
 
-    fig.savefig(imd.axis_output_dir + f'/distribution_simulations/Sample_sim.pdf')
+    fig.savefig(imd.axis_output_dir + f'/distribution_simulations/Sample_sim_test.pdf')
 
 
 
@@ -317,9 +318,8 @@ def test_ellipse():
     
 
 
-
+# generate_uniformheight_distribution()
 # generate_mixedheight_distribution()
-
-generate_oneplot(height=0.4)
+# generate_oneplot(height=0.4)
 # test_ellipse()
 

@@ -7,6 +7,7 @@ import matplotlib.pyplot as plt
 import matplotlib as mpl
 import initialize_mosdef_dirs as imd
 import matplotlib.patheffects as path_effects
+from plot_vals import *
 
 
 def plot_ar_hist(use_column = 'use_ratio',  mass_split='False'):
@@ -83,13 +84,14 @@ def plot_ar_hist(use_column = 'use_ratio',  mass_split='False'):
         # ax.axvline(0.4, ls='--', color='red')
         ax.axvline(0.55, ls='--', color='red')
 
-        ax.set_xlabel('Axis Ratio', fontsize=14) 
-        ax.set_ylabel('Number of Galaxies', fontsize=14)
-        ax.tick_params(labelsize=12)
-        ax.text(-0.07, -10, 'Edge-on', fontsize=14, zorder=100)
-        ax.text(0.95, -10, 'Face-on', fontsize=14, zorder=100)
+        ax.set_xlabel('Axis Ratio', fontsize=single_column_axisfont) 
+        ax.set_ylabel('Number of Galaxies', fontsize=single_column_axisfont)
+        ax.tick_params(labelsize=single_column_ticksize)
+        ax.text(-0.10, -10, 'Edge-on', fontsize=single_column_axisfont, zorder=100)
+        ax.text(0.92, -10, 'Face-on', fontsize=single_column_axisfont, zorder=100)
         ax.set_xlim(-0.05, 1.05)
         
+    ax.set_aspect(1/60)
     fig.savefig(imd.axis_output_dir + f'/ar_histogram_{use_column}{savename}.pdf')
 
 
@@ -132,18 +134,21 @@ def compare_ar_measurements(col1, err_col1, col2, err_col2):
     ax.plot((-1,2), (-1, 2), color='red', ls='-')
 
     cbar = fig.colorbar(mpl.cm.ScalarMappable(norm=norm, cmap=cmap), ax=ax)
-    cbar.set_label('Redshift', fontsize=14)
+    cbar.set_label('Redshift', fontsize=single_column_axisfont)
+    cbar.ax.tick_params(labelsize=single_column_ticksize)
 
-    ax.set_xlabel(f'{col1[0:4]} Axis Ratio', fontsize=14) 
-    ax.set_ylabel(f'{col2[0:4]} Axis Ratio', fontsize=14)
-    ax.tick_params(labelsize=12)
-    ax.text(-0.07, -10, 'Edge-on', fontsize=14, zorder=100)
-    ax.text(0.95, -10, 'Face-on', fontsize=14, zorder=100)
+    ax.set_xlabel(f'{col1[0:4]} Axis Ratio', fontsize=single_column_axisfont) 
+    ax.set_ylabel(f'{col2[0:4]} Axis Ratio', fontsize=single_column_axisfont)
+    ax.tick_params(labelsize=single_column_ticksize)
+    ax.text(-0.07, -10, 'Edge-on', fontsize=single_column_axisfont, zorder=100)
+    ax.text(0.95, -10, 'Face-on', fontsize=single_column_axisfont, zorder=100)
     ax.set_xlim(-0.05, 1.05)
     ax.set_ylim(-0.05, 1.05)
+    ax.set_aspect(1)
     fig.savefig(imd.axis_output_dir + f'/ar_compare_{col1}_{col2}.pdf')
 
-compare_ar_measurements('F125_axis_ratio', 'F125_err_axis_ratio', 'F160_axis_ratio', 'F160_err_axis_ratio')
+# compare_ar_measurements('F125_axis_ratio', 'F125_err_axis_ratio', 'F160_axis_ratio', 'F160_err_axis_ratio')
+plot_ar_hist(use_column = 'use_ratio')
+
 # compare_ar_measurements('use_ratio', 'err_use_ratio', 'F160_axis_ratio', 'F160_err_axis_ratio')
 # compare_ar_measurements('use_ratio', 'err_use_ratio', 'F125_axis_ratio', 'F125_err_axis_ratio')
-plot_ar_hist(use_column = 'use_ratio')

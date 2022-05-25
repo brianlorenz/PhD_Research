@@ -380,7 +380,7 @@ def add_metals_to_summary_df(save_name, metal_column):
 
 # plot_metals(savename='both_sfms_4bin_median_2axis_boot100', plot_half_light_instead=True)
 # plot_metals(savename='both_sfms_4bin_median_2axis_boot100', plot_uvj_instead=True)
-plot_metals(savename='both_sfms_4bin_median_2axis_boot100', plot_z_instead=True)
+# plot_metals(savename='both_sfms_4bin_median_2axis_boot100', plot_z_instead=True)
 # measure_metals(8, 'both_sfms_4bin_median_2axis_boot100', bootstrap=100)
 # plot_group_metals_compare(12, 'both_ssfrs_4bin_mean')
 # plot_mass_metal(12, 'both_ssfrs_4bin_mean')

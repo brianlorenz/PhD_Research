@@ -58,8 +58,9 @@ def plot_sample_split(n_groups, save_name, ratio_bins, starting_points, mass_wid
     keys = []
 
     # Figure 1 - Showing how the sample gets cut
-    cmap = mpl.cm.viridis 
-    norm = mpl.colors.Normalize(vmin=2, vmax=7) 
+    # cmap = mpl.cm.Reds 
+    cmap = mpl.cm.gist_heat_r 
+    norm = mpl.colors.Normalize(vmin=1, vmax=7) 
 
     for axis_group in range(n_groups):
         axis_ratio_df = ascii.read(imd.axis_cluster_data_dir + f'/{save_name}/{save_name}_group_dfs/{axis_group}_df.csv').to_pandas()
@@ -207,8 +208,8 @@ def plot_sample_split(n_groups, save_name, ratio_bins, starting_points, mass_wid
             x = np.linspace(8.8, 11.2, 100)
             print(sfms_slope, sfms_yint)
             y1 = sfms_slope*x + sfms_yint
-            ax.plot(x, y1, color='black', ls='--')
-            ax.axvline(10, color='black', ls='--')
+            ax.plot(x, y1, color='grey', ls='--')
+            ax.axvline(10, color='grey', ls='--')
         
         # Plots the sfms division line
         add_str=''
@@ -238,8 +239,10 @@ def plot_sample_split(n_groups, save_name, ratio_bins, starting_points, mass_wid
             row = axis_ratio_df.iloc[i]
             rgba = cmap(norm(row['balmer_dec']))
             # ax.plot(row['log_mass'], row['log_ssfr'], color = rgba, ls='None', marker=shape)
-        
-            ax.add_artist(Ellipse((row['log_mass'], row[variable]), ellipse_width, ellipse_height, facecolor=rgba, zorder=2))
+            if row['hb_detflag_sfr'] == 1.0:
+                ax.add_artist(Ellipse((row['log_mass'], row[variable]), ellipse_width, ellipse_height, edgecolor=rgba, zorder=2, fill=False, linewidth=2))
+            else:
+                ax.add_artist(Ellipse((row['log_mass'], row[variable]), ellipse_width, ellipse_height, facecolor=rgba, zorder=2))
 
        
         # Add the patch to the Axes

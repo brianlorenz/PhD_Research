@@ -9,6 +9,8 @@ import matplotlib.patheffects as path_effects
 from matplotlib.gridspec import GridSpec
 from brokenaxes import brokenaxes
 
+titlefont=18
+
 def plot_overlaid_spectra(savename, plot_cont_sub=False, paper_fig=False):
     """Make the plot
 
@@ -21,7 +23,7 @@ def plot_overlaid_spectra(savename, plot_cont_sub=False, paper_fig=False):
     
     # Start the figure
     # fig, axarr = plt.subplots(3, 2, figsize=(14,10))
-    fig = plt.figure(figsize=(10, 8))
+    fig = plt.figure(figsize=(16, 8))
     
     n_rows = int(len(summary_df) / 6)
     if savename=='both_sfms_6bin_median_2axis':
@@ -34,10 +36,11 @@ def plot_overlaid_spectra(savename, plot_cont_sub=False, paper_fig=False):
         n_rows = 2
     if len(summary_df) == 4:
         n_rows = 2
-    axarr = GridSpec(n_rows, 2, left=0.1, right=0.8, wspace=0.4, hspace=0.6)
+    axarr = GridSpec(n_rows, 2, left=0.08, right=0.92, wspace=0.4, hspace=0.5)
 
 
-    plot_lims = ((4850, 4875), (6540, 6590))
+    # plot_lims = ((4850, 4875), (6540, 6590))
+    plot_lims = ((4850, 5020), (6540, 6590))
 
     if n_rows == 1:
         bax_0 = brokenaxes(xlims=plot_lims, subplot_spec=axarr[0,0])
@@ -64,22 +67,22 @@ def plot_overlaid_spectra(savename, plot_cont_sub=False, paper_fig=False):
             ax = bax_0
             ax.set_title('Sorted 0', color = row['color'])
             if paper_fig == True:
-                 ax.set_title('$\log(M_*) < 10$, below SFMS', color = row['color'])
+                 ax.set_title('$\log(M_*) < 10$, below SF Main Sequence', color = row['color'], fontsize=titlefont)
         if row['key'] == 'sorted1':
             ax = bax_1
             ax.set_title('Sorted 1', color = row['color'])
             if paper_fig == True:
-                 ax.set_title('$\log(M_*) < 10$, above SFMS', color = row['color'])
+                 ax.set_title('$\log(M_*) < 10$, above SF Main Sequence', color = row['color'], fontsize=titlefont)
         if row['key'] == 'sorted2':
             ax = bax_2
             ax.set_title('Sorted 2', color = row['color'])
             if paper_fig == True:
-                 ax.set_title('$\log(M_*) > 10$, below SFMS', color = row['color'])
+                 ax.set_title('$\log(M_*) > 10$, below SF Main Sequence', color = row['color'], fontsize=titlefont)
         if row['key'] == 'sorted3':
             ax = bax_3
             ax.set_title('Sorted 3', color = row['color'])
             if paper_fig == True:
-                 ax.set_title('$\log(M_*) > 10$, above SFMS', color = row['color'])
+                 ax.set_title('$\log(M_*) > 10$, above SF Main Sequence', color = row['color'], fontsize=titlefont)
         if row['key'] == 'sorted4':
             ax = bax_4
             ax.set_title('Sorted 4', color = row['color'])
@@ -124,12 +127,13 @@ def plot_overlaid_spectra(savename, plot_cont_sub=False, paper_fig=False):
         ax.set_ylabel(f'Normalized F$_\\lambda${add_str}')
         ax.set_xlabel('Wavelength ($\AA$)')
         if paper_fig == True:
-            ax.set_ylabel(f'Normalized Flux')
-            ax.set_xlabel('Wavelength ($\AA$)')
+            ax.set_ylabel(f'Normalized Flux', fontsize=18, labelpad=45)
+            ax.set_xlabel('Wavelength ($\AA$)', fontsize=18, labelpad=25)
+            ax.tick_params(labelsize=18)
 
         if paper_fig==True:
             if i == 5:
-                ax.legend(bbox_to_anchor=(0.36, 0.85, 0.20, 0.15), loc='upper right')
+                ax.legend(bbox_to_anchor=(0.20, 0.85, 0.20, 0.15), loc='upper right', fontsize=14)
 
         
     if paper_fig==True:

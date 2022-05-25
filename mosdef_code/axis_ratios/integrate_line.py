@@ -59,4 +59,4 @@ def integrate_line(fluxes, resolution = 0.5):
 
 
 # re_calc_emission_flux(8, 'both_sfms_4bin_median_2axis_boot100')
-re_calc_emission_flux(8, 'both_sfms_4bin_median_2axis_boot100', bootstrap=100)
+# re_calc_emission_flux(8, 'both_sfms_4bin_median_2axis_boot100', bootstrap=100)

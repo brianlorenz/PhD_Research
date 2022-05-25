@@ -84,6 +84,7 @@ def stack_all_and_plot_all(param_class):
         time_emfit = time.time()
         print(f'Emission fitting took {time_emfit-time_stack}')     
     plot_sample_split(nbins, save_name, ratio_bins, starting_points, mass_width, split_width, nbins, sfms_bins)
+    sys.exit()
     # plot_sample_split(nbins, save_name, ratio_bins, starting_points, mass_width, split_width, nbins, sfms_bins, plot_sfr_and_ssfr=True)
     plot_overlaid_spectra(save_name, plot_cont_sub=True)
     plot_metals(save_name)
