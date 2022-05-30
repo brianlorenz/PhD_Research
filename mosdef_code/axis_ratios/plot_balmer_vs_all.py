@@ -40,8 +40,8 @@ def plot_balmer_vs_all(save_name):
         for i in range(len(summary_df)):
             row = summary_df.iloc[i]
 
-            ax.set_ylim(2, 7)
-            ax_y_len = 5
+            ax.set_ylim(2.7, 5.5)
+            ax_y_len = 5.5-2.7
             if x_points == 'metallicity_median':
                 ax.set_xlim(8.2, 8.8)
                 ax_x_len = 0.6
@@ -140,5 +140,5 @@ def plot_balmer_vs_all(save_name):
 
 
 
-# plot_balmer_vs_all('both_sfms_4bin_median_2axis_boot100')
+plot_balmer_vs_all('both_sfms_4bin_median_2axis_boot100')
 # plot_balmer_vs_all('both_sfms_4bin_median_2axis_boot100_retest')

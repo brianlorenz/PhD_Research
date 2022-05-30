@@ -6,6 +6,61 @@ import matplotlib.pyplot as plt
 import matplotlib as mpl
 import initialize_mosdef_dirs as imd
 import matplotlib.patheffects as path_effects
+from ellipses_for_plotting import get_ellipse_shapes
+from matplotlib.patches import Ellipse
+
+
+
+def plot_median_uvj(n_bins, save_name):
+    """UVJ diagram with medians from each group
+    
+    """
+    fig, ax = plt.subplots(figsize=(8,8))
+
+    summary_df = ascii.read(imd.axis_cluster_data_dir + f'/{save_name}/summary.csv').to_pandas()
+
+    for axis_group in range(n_bins):
+        ar_df = ascii.read(imd.axis_cluster_data_dir + f'/{save_name}/{save_name}_group_dfs/{axis_group}_df.csv').to_pandas()
+        U_V_point = np.median(ar_df['U_V'])
+        V_J_point = np.median(ar_df['V_J'])
+
+        row = summary_df.iloc[axis_group]
+        shape = row['shape']
+
+        xlims = (-0.5, 2.0)
+        ylims = (0, 2.5)
+        ax.set_ylim(ylims)
+        ax.set_xlim(xlims)
+        cmap = mpl.cm.gist_heat_r 
+        norm = mpl.colors.Normalize(vmin=0, vmax=2.5) 
+
+        rgba = cmap(norm(row['log_use_sfr_median']))
+
+        ellipse_width, ellipse_height = get_ellipse_shapes(xlims[1]-xlims[0], np.abs(ylims[1]-ylims[0]), shape, scale_factor=0.025)
+        
+        if row['log_mass_median'] > 10:
+            size = 1.5
+        else:
+            size = 1
+        ax.add_artist(Ellipse((V_J_point, U_V_point), size*ellipse_width, size*ellipse_height, facecolor=rgba, zorder=2))
+
+    # UVJ diagram lines
+    ax.plot((-100, 0.69), (1.3, 1.3), color='black')
+    ax.plot((1.5, 1.5), (2.01, 100), color='black')
+    xline = np.arange(0.69, 1.5, 0.001)
+    yline = xline * 0.88 + 0.69
+    ax.plot(xline, yline, color='black')
+
+    cbar = fig.colorbar(mpl.cm.ScalarMappable(norm=norm, cmap=cmap), ax=ax)
+    cbar.set_label('SFR median', fontsize=14)
+    ax.set_xlabel('V-J', fontsize=14) 
+    ax.set_ylabel('U-V', fontsize=14)
+    ax.tick_params(labelsize=12)
+    ax.set_aspect(ellipse_width/ellipse_height)
+
+
+    fig.savefig(imd.axis_cluster_data_dir + f'/{save_name}/median_uvjs.pdf')
+
 
 
 def plot_uvj_ar():
@@ -253,4 +308,5 @@ def filter_uvj_df(df):
 
 
 
-plot_uvj_ar()
+# plot_uvj_ar()
+plot_median_uvj(8, 'both_sfms_4bin_median_2axis_boot100')

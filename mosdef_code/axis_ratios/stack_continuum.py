@@ -11,8 +11,14 @@ from cross_correlate import get_cross_cor
 
 
 line_regions = [
-    (6450, 6650),
-    (4700, 5200)
+    (6300, 6900),
+    (4600, 5200)
+]
+
+mask_regions = [
+    (4800, 4900),
+    (4920, 5040),
+    (6500, 6600)
 ]
 
 # Run in the order - stack, plot
@@ -90,7 +96,7 @@ def plot_spec_with_cont(axis_group, save_name, bootstrap_num=-1, sum_cont_df='No
     else:
         spec_df = ascii.read(imd.axis_cluster_data_dir + f'/{save_name}/{save_name}_spectra/{axis_group}_spectrum.csv').to_pandas()
     # spec_df, sum_cont_df = scale_continuum(spec_df, sum_cont_df)
-    spec_df, sum_cont_df = scale_cont_to_lines(spec_df, sum_cont_df, line_regions)
+    spec_df, sum_cont_df = scale_cont_to_lines(spec_df, sum_cont_df, line_regions, mask_regions)
 
     # Save the scaled continuum
     if bootstrap_num>-1:
@@ -139,18 +145,35 @@ def plot_all_spec_with_cont(n_clusters, save_name):
 
 
 
-def scale_cont_to_lines(spec_df, cont_df, line_regions):
+def scale_cont_to_lines(spec_df, cont_df, line_regions, mask_regions):
     '''Scales the continuum separately around each emission line region, then adds them back together and saves
     
+    Parameters:
+    spec_df (pd.Dataframe): spectrum
+    cont_df (pd.Dataframe): continuum
+    line_regions (list of tuples):each tuple corresponds to a region where you want the continuum scaled to
+    mask_regions (list of tuples):each tuple corresponds is of the form (start, end) where to mask out lines
     '''
     cont_df['f_lambda_scaled'] = cont_df['f_lambda']
+    spec_df['rest_wavelength'] = spec_df['wavelength']
     for line in line_regions:
         region_start = line[0]
         region_end = line[1]
-        # Only use the middle section (5k to 7k angstroms) when matching
+        # Only use the region sections defined at the top of code when matching
         def get_region(df):
             middle_idx = np.logical_and(df['rest_wavelength']>region_start, df['rest_wavelength']<region_end)
             return middle_idx
+
+        # Only use the region sections defined at the top of code when matching
+        def apply_mask(df, mask_regions):
+            unmasked_points = []
+            for k in range(len(mask_regions)):
+                unmasked_point = np.logical_not(np.logical_and(df['rest_wavelength']>mask_regions[k][0], df['rest_wavelength']<mask_regions[k][1]))
+                if len(unmasked_points) == 0:
+                    unmasked_points = [unmasked_point]
+                else:
+                    unmasked_points = [np.logical_and(unmasked_points[0], unmasked_point)]
+            return df[unmasked_points[0]]
 
         # Clip the extreme points - only use the median 16-84th percentile across both for correlation
         def clip_extremes(df, cutoff_pct=(16, 84)):
@@ -165,8 +188,11 @@ def scale_cont_to_lines(spec_df, cont_df, line_regions):
         
         region_idxs = get_region(cont_df)
 
-        med_spec_idx = clip_extremes(spec_df[region_idxs])
-        med_cont_idx = clip_extremes(cont_df[region_idxs])
+        spec_df_masked = apply_mask(spec_df[region_idxs], mask_regions)
+        cont_df_masked = apply_mask(cont_df[region_idxs], mask_regions)
+
+        med_spec_idx = clip_extremes(spec_df_masked)
+        med_cont_idx = clip_extremes(cont_df_masked)
         med_both_idx = np.logical_and(med_spec_idx, med_cont_idx)
 
         # a12, b12 = get_cross_cor(cont_df[region_idxs][med_both_idx], spec_df[region_idxs][med_both_idx])
@@ -174,7 +200,7 @@ def scale_cont_to_lines(spec_df, cont_df, line_regions):
         # print(f'Scale factor: {a12}')
 
         # scale by the medians
-        cont_df.loc[region_idxs, 'f_lambda_scaled'] = cont_df[region_idxs]['f_lambda'] * np.median(spec_df[region_idxs][med_both_idx]['f_lambda']) / np.median(cont_df[region_idxs][med_both_idx]['f_lambda'])
+        cont_df.loc[region_idxs, 'f_lambda_scaled'] = cont_df[region_idxs]['f_lambda'] * np.median(spec_df_masked[med_both_idx]['f_lambda']) / np.median(cont_df_masked[med_both_idx]['f_lambda'])
     return spec_df, cont_df
 
 
@@ -225,3 +251,5 @@ def scale_continuum(spec_df, cont_df):
 # plot_all_spec_with_cont(18)
 # plot_spec_with_cont(1, 'both_ssfrs_4bin_median_2axis')
 # scale_all_bootstrapped_conts(8, 'both_ssfrs_4bin_median_2axis', 10, make_plot=False)
+
+plot_all_spec_with_cont(8, 'both_sfms_4bin_median_2axis_boot100')

@@ -8,6 +8,7 @@ import initialize_mosdef_dirs as imd
 import matplotlib.patheffects as path_effects
 from matplotlib.gridspec import GridSpec
 from brokenaxes import brokenaxes
+import sys
 
 titlefont=18
 
@@ -122,7 +123,7 @@ def plot_overlaid_spectra(savename, plot_cont_sub=False, paper_fig=False):
         halpha_range = np.logical_and(spec_df['wavelength']>6560, spec_df['wavelength']<6570)
         peak_halpha = np.max(spec_df[halpha_range]['f_lambda'])
         scale_factor = 1.0/peak_halpha
-        ax.plot(spec_df['wavelength'], spec_df['f_lambda']*scale_factor, color=color, label = label) 
+        ax.plot(spec_df['wavelength'], spec_df['f_lambda']*scale_factor, color=color, label = label, zorder=2) 
         ax.set_ylim(-0.1, 1.05)
         ax.set_ylabel(f'Normalized F$_\\lambda${add_str}')
         ax.set_xlabel('Wavelength ($\AA$)')
@@ -135,6 +136,22 @@ def plot_overlaid_spectra(savename, plot_cont_sub=False, paper_fig=False):
             if i == 5:
                 ax.legend(bbox_to_anchor=(0.20, 0.85, 0.20, 0.15), loc='upper right', fontsize=14)
 
+    # Add the background
+    if paper_fig==True:
+        if plot_cont_sub ==True:
+            single_stack_save = 'both_singlestack_median'
+            spec_df = ascii.read(imd.axis_cluster_data_dir + f'/{single_stack_save}/{single_stack_save}_cont_subs/0_cont_sub.csv').to_pandas()
+            spec_df = spec_df.rename(columns={"wavelength_cut": "wavelength", "continuum_sub_ydata": "f_lambda"})
+        else:
+            sys.exit('Add patht ot spectrum')
+        # Find the peak of the halpha line so we can normalize it to 10^-17 erg/cm^2/s/anstrom
+        halpha_range = np.logical_and(spec_df['wavelength']>6560, spec_df['wavelength']<6570)
+        peak_halpha = np.max(spec_df[halpha_range]['f_lambda'])
+        scale_factor = 1.0/peak_halpha
+        for ax in [bax_0, bax_1, bax_2, bax_3]:
+            ax.plot(spec_df['wavelength'], spec_df['f_lambda']*scale_factor, color='grey', label = 'Stack of sample', zorder=1) 
+
+
         
     if paper_fig==True:
         fig.savefig(imd.axis_cluster_data_dir + f'/{savename}/overlaid_spectra_paper.pdf')
@@ -142,5 +159,4 @@ def plot_overlaid_spectra(savename, plot_cont_sub=False, paper_fig=False):
         fig.savefig(imd.axis_cluster_data_dir + f'/{savename}/overlaid_spectra.pdf')
     plt.close('all')
 
-# plot_overlaid_spectra('mosdef_ssfr_4bin_mean', plot_cont_sub=True)
 plot_overlaid_spectra('both_sfms_4bin_median_2axis_boot100', plot_cont_sub=True, paper_fig=True)
