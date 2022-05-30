@@ -252,4 +252,4 @@ def scale_continuum(spec_df, cont_df):
 # plot_spec_with_cont(1, 'both_ssfrs_4bin_median_2axis')
 # scale_all_bootstrapped_conts(8, 'both_ssfrs_4bin_median_2axis', 10, make_plot=False)
 
-plot_all_spec_with_cont(8, 'both_sfms_4bin_median_2axis_boot100')
+# plot_all_spec_with_cont(8, 'both_sfms_4bin_median_2axis_boot100')

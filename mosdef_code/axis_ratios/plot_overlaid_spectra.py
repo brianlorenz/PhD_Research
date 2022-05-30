@@ -134,6 +134,7 @@ def plot_overlaid_spectra(savename, plot_cont_sub=False, paper_fig=False):
 
         if paper_fig==True:
             if i == 5:
+                ax.plot([0],[0], color='grey', label = 'Stack of sample', zorder=1) 
                 ax.legend(bbox_to_anchor=(0.20, 0.85, 0.20, 0.15), loc='upper right', fontsize=14)
 
     # Add the background
