@@ -361,6 +361,9 @@ def plot_emission_fit(groupID, norm_method, axis_group=-1, save_name='', scaled=
 
     full_cut = get_fit_range(wavelength)
     gauss_fit = multi_gaussian(wavelength[full_cut], pars, fit=False)
+    gauss_fit_df = pd.DataFrame(zip(wavelength[full_cut], gauss_fit), columns=['rest_wavelength', 'gaussian_fit'])
+    imd.check_and_make_dir(imd.axis_cluster_data_dir + f'/{save_name}/{save_name}_gaussian_fits/')
+    gauss_fit_df.to_csv(imd.axis_cluster_data_dir + f'/{save_name}/{save_name}_gaussian_fits/{axis_group}_gaussian_fit.csv', index=False)
     hb_range = wavelength[full_cut] < 5500
 
     # We add back the continuum, scaled appropriately
