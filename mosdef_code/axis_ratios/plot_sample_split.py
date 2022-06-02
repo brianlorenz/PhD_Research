@@ -210,6 +210,12 @@ def plot_sample_split(n_groups, save_name, ratio_bins, starting_points, mass_wid
             y1 = sfms_slope*x + sfms_yint
             ax.plot(x, y1, color='grey', ls='--')
             ax.axvline(10, color='grey', ls='--')
+
+            a = -24.0415
+            b = 4.1693
+            c = -0.1638
+            y_sfr = a + b*x + c*x**2
+            ax.plot(x, y_sfr, color='black', ls='-.')
         
         # Plots the sfms division line
         add_str=''
@@ -270,3 +276,6 @@ def plot_sample_split(n_groups, save_name, ratio_bins, starting_points, mass_wid
     ax.set_aspect(ellipse_width/ellipse_height)
     if made_new_axis==True:
         fig.savefig(imd.axis_cluster_data_dir + f'/{save_name}/sample_cut{add_str}.pdf')
+
+
+

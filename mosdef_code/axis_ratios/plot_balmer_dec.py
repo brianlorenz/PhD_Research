@@ -6,6 +6,7 @@ import matplotlib.pyplot as plt
 from matplotlib.patches import Ellipse
 from ellipses_for_plotting import get_ellipse_shapes
 import matplotlib.gridspec as gridspec
+from plot_vals import *
 
 
 def plot_balmer_dec(save_name, n_groups, split_by, y_var = 'balmer_dec', color_var='log_ssfr', background_points=True, axarr=['None'], mass_ax='None', fig='None'):
@@ -282,7 +283,9 @@ def plot_balmer_dec(save_name, n_groups, split_by, y_var = 'balmer_dec', color_v
     if made_new_axis==True:
         cbar = fig.colorbar(mpl.cm.ScalarMappable(norm=norm, cmap=cmap), ax=ax)
         cbar.set_label(color_var, fontsize=axis_fontsize)
-    ax.set_xlabel('log(Stellar Mass)', fontsize=axis_fontsize) 
+        if color_var == 'log_use_sfr':
+            cbar.set_label(sfr_label, fontsize=axis_fontsize)
+    ax.set_xlabel(stellar_mass_label, fontsize=axis_fontsize) 
     
     ax.tick_params(labelsize=12)
     ax.set_xlim(9.25, 10.75)

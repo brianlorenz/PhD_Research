@@ -12,6 +12,15 @@ import sys
 
 titlefont=18
 
+line_list = [
+    ('H$_\\alpha$', 6564.61),
+    ('H$_\\beta$', 4862.68),
+    ('O[III]', 5008.24),
+    ('O[III]', 4960.295),
+    ('N[II]', 6549.86),
+    ('N[II]', 6585.27)
+]
+
 def plot_overlaid_spectra(savename, plot_cont_sub=False, paper_fig=False):
     """Make the plot
 
@@ -124,7 +133,7 @@ def plot_overlaid_spectra(savename, plot_cont_sub=False, paper_fig=False):
         peak_halpha = np.max(spec_df[halpha_range]['f_lambda'])
         scale_factor = 1.0/peak_halpha
         ax.plot(spec_df['wavelength'], spec_df['f_lambda']*scale_factor, color=color, label = label, zorder=2) 
-        ax.set_ylim(-0.1, 1.05)
+        ax.set_ylim(-0.1, 1.55)
         ax.set_ylabel(f'Normalized F$_\\lambda${add_str}')
         ax.set_xlabel('Wavelength ($\AA$)')
         if paper_fig == True:
@@ -134,8 +143,21 @@ def plot_overlaid_spectra(savename, plot_cont_sub=False, paper_fig=False):
 
         if paper_fig==True:
             if i == 5:
-                ax.plot([0],[0], color='grey', label = 'Stack of sample', zorder=1) 
+                # ax.plot([0],[0], color='grey', label = 'Stack of sample', zorder=1) 
+                ax.plot([0],[0], color='grey', label = 'Reference', zorder=1) 
                 ax.legend(bbox_to_anchor=(0.20, 0.85, 0.20, 0.15), loc='upper right', fontsize=14)
+            if i == 7:
+                # label the emission lines
+                for line in line_list:
+                    name = line[0]
+                    center = line[1]
+                    ax.axvline(center, color='black', ls='--')
+                    if center == 6564.61:
+                        height = 1.2
+                    else:
+                        height = 1.4
+                    ax.text(center+3, height, name, fontsize=18)
+
 
     # Add the background
     if paper_fig==True:
@@ -145,13 +167,17 @@ def plot_overlaid_spectra(savename, plot_cont_sub=False, paper_fig=False):
             spec_df = spec_df.rename(columns={"wavelength_cut": "wavelength", "continuum_sub_ydata": "f_lambda"})
         else:
             sys.exit('Add patht ot spectrum')
+        
         # Find the peak of the halpha line so we can normalize it to 10^-17 erg/cm^2/s/anstrom
-        halpha_range = np.logical_and(spec_df['wavelength']>6560, spec_df['wavelength']<6570)
-        peak_halpha = np.max(spec_df[halpha_range]['f_lambda'])
-        scale_factor = 1.0/peak_halpha
+        # For median stack of everything
+        # halpha_range = np.logical_and(spec_df['wavelength']>6560, spec_df['wavelength']<6570)
+        # peak_halpha = np.max(spec_df[halpha_range]['f_lambda'])
+        # scale_factor = 1.0/peak_halpha
         for ax in [bax_0, bax_1, bax_2, bax_3]:
-            ax.plot(spec_df['wavelength'], spec_df['f_lambda']*scale_factor, color='grey', label = 'Stack of sample', zorder=1) 
-
+            # ax.plot(spec_df['wavelength'], spec_df['f_lambda']*scale_factor, color='grey', label = 'Stack of sample', zorder=1) 
+            xpoints = np.linspace(4500, 4875, 4)
+            ypoints = np.linspace(0.4, 0.4, 4)
+            ax.plot(xpoints, ypoints, color='grey')
 
         
     if paper_fig==True:

@@ -77,7 +77,7 @@ def make_both_ssfrs_4bin_2axis_median_params(run_stack = False, only_plot = True
 both_ssfrs_4bin_2axis_median_params = make_both_ssfrs_4bin_2axis_median_params()
 
 # Currently the primary one we are using
-def make_both_sfms_4bin_2axis_median_params(run_stack = True, only_plot = False):
+def make_both_sfms_4bin_2axis_median_params(run_stack = True, only_plot = True):
     run_stack = run_stack
     only_plot = only_plot
     mass_width = 1.0

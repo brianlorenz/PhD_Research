@@ -128,10 +128,18 @@ def compare_ar_measurements(col1, err_col1, col2, err_col2):
         row = ar_df.iloc[i]
         rgba = cmap(norm(row['z']))
 
-        ax.errorbar(row[col1], row[col2], xerr=row[err_col1], yerr=row[ err_col2], marker='o', ls='None', color=rgba)
+        ax.errorbar(row[col1], row[col2], xerr=row[err_col1], yerr=row[ err_col2], marker='o', ls='None', color=rgba, zorder=2)
         
-
-    ax.plot((-1,2), (-1, 2), color='red', ls='-')
+    #1-to-1 line
+    ax.plot((-1,2), (-1, 2), color='red', ls='-', zorder=1)
+    # Lines that capture 16th and 84th percentiles
+    differences = ar_df[col1]-ar_df[col2]
+    offsets = np.percentile(differences, [16,84])
+    x = np.linspace(-0.5, 1.5, 100)
+    y0 = x+offsets[0]
+    y1 = x+offsets[1]
+    ax.plot(x, y0, color='red', ls='--', zorder=4)
+    ax.plot(x, y1, color='red', ls='--', zorder=4)
 
     cbar = fig.colorbar(mpl.cm.ScalarMappable(norm=norm, cmap=cmap), ax=ax)
     cbar.set_label('Redshift', fontsize=single_column_axisfont)
@@ -147,8 +155,8 @@ def compare_ar_measurements(col1, err_col1, col2, err_col2):
     ax.set_aspect(1)
     fig.savefig(imd.axis_output_dir + f'/ar_compare_{col1}_{col2}.pdf')
 
-# compare_ar_measurements('F125_axis_ratio', 'F125_err_axis_ratio', 'F160_axis_ratio', 'F160_err_axis_ratio')
-plot_ar_hist(use_column = 'use_ratio')
+compare_ar_measurements('F125_axis_ratio', 'F125_err_axis_ratio', 'F160_axis_ratio', 'F160_err_axis_ratio')
+# plot_ar_hist(use_column = 'use_ratio')
 
 # compare_ar_measurements('use_ratio', 'err_use_ratio', 'F160_axis_ratio', 'F160_err_axis_ratio')
 # compare_ar_measurements('use_ratio', 'err_use_ratio', 'F125_axis_ratio', 'F125_err_axis_ratio')

@@ -79,6 +79,10 @@ def plot_balmer_vs_all(save_name):
                 cmap = mpl.cm.inferno
                 norm = mpl.colors.Normalize(vmin=9, vmax=11) 
                 rgba = cmap(norm(row['log_mass_median']))
+            elif color=='sfr':
+                cmap = mpl.cm.viridis
+                norm = mpl.colors.Normalize(vmin=0, vmax=2) 
+                rgba = cmap(norm(row['log_use_sfr_median']))
             else:
                 cmap = mpl.cm.inferno
                 norm = mpl.colors.Normalize(vmin=-9.3, vmax=-8.1) 
@@ -107,6 +111,8 @@ def plot_balmer_vs_all(save_name):
             cbar.set_label('log_ssfr', fontsize=fontsize)
             if color=='mass':
                 cbar.set_label('Median ' + stellar_mass_label, fontsize=fontsize)
+            if color=='sfr':
+                cbar.set_label('Median ' + sfr_label, fontsize=fontsize)
         ax.tick_params(labelsize=12)
         ax.set_aspect(ellipse_width/ellipse_height)
         
@@ -124,18 +130,19 @@ def plot_balmer_vs_all(save_name):
     fig.savefig(imd.axis_cluster_data_dir + f'/{save_name}/balmer_plots/balmer_plots.pdf')
 
     ## PAPER FIGURE
-    fig, axarr = plt.subplots(1, 2, figsize=(15,8))
-    ax_balmer_mass = axarr[0]
-    ax_balmer_ssfr = axarr[1]
-    fig.subplots_adjust(right=0.85)
-    ax_cbar = fig.add_axes([0.90, 0.2, 0.02, 0.60])
-    plot_balmer_on_axis(ax_balmer_mass, 'log_mass_median', color='mass', colorbar=False)
-    plot_balmer_on_axis(ax_balmer_ssfr, 'log_use_sfr_median', color='mass', use_cbar_axis=True, cbar_axis = ax_cbar)
+    # fig, axarr = plt.subplots(1, 2, figsize=(15,8))
+    # ax_balmer_mass = axarr[0]
+    # ax_balmer_ssfr = axarr[1]
+    # fig.subplots_adjust(right=0.85)
+    # ax_cbar = fig.add_axes([0.90, 0.2, 0.02, 0.60])
+    fig = plt.figure(figsize=(17, 8))
+    ax_balmer_mass = fig.add_axes([0.01, 0.2, 0.45, 0.6])
+    ax_balmer_ssfr = fig.add_axes([0.50, 0.2, 0.45, 0.6])
+    ax_cbar_mass = fig.add_axes([0.40, 0.2, 0.02, 0.60])
+    ax_cbar_ssfr = fig.add_axes([0.89, 0.2, 0.02, 0.60])
+    plot_balmer_on_axis(ax_balmer_mass, 'log_mass_median', color='sfr', use_cbar_axis=True, cbar_axis=ax_cbar_mass)
+    plot_balmer_on_axis(ax_balmer_ssfr, 'log_use_sfr_median', color='mass', use_cbar_axis=True, cbar_axis = ax_cbar_ssfr)
     fig.savefig(imd.axis_cluster_data_dir + f'/{save_name}/balmer_plots/balmer_ssfr_mass_color.pdf')
-
-
-
-
 
 
 
