@@ -19,7 +19,7 @@ from itertools import *
 from matplotlib import patches
 from read_FAST_spec import read_FAST_file
 from cosmology_calcs import flux_to_luminosity
-from sfms_bins import sfms_slope, sfms_yint
+from sfms_bins import *
 
 axis_ratio_catalog = ascii.read(imd.loc_axis_ratio_cat).to_pandas()
 
@@ -645,7 +645,7 @@ def perform_stack(stack_type, interp_cluster_spectra_dfs, norm_factors):
 
 
 
-def stack_axis_ratio(mass_width, split_width, starting_points, ratio_bins, save_name, split_by, stack_type, sfms_bins, use_whitaker_sfms, re_filter=False, bootstrap=0):
+def stack_axis_ratio(mass_width, split_width, starting_points, ratio_bins, save_name, split_by, stack_type, sfms_bins, use_whitaker_sfms, use_z_dependent_sfms, re_filter=False, bootstrap=0):
     """Stacks galaxies in groups by axis ratio
 
     old params: , l_mass_cutoff=0, l_ssfr_cutoff=0, l_mass_bins=0, l_ssfr_bins=0, scale_ha=0
@@ -740,6 +740,11 @@ def stack_axis_ratio(mass_width, split_width, starting_points, ratio_bins, save_
                 c = -0.1638
                 low_idx = df[split_by] < a + b*df['log_mass'] + c*df['log_mass']**2
                 high_idx = df[split_by] >= a + b*df['log_mass'] + c*df['log_mass']**2
+            elif use_z_dependent_sfms==True:
+                low_z = df['Z_MOSFIRE'] < 1.8
+                high_z = df['Z_MOSFIRE'] > 1.8
+                low_idx = pd.concat([df[low_z][split_by] < sfms_lowz_slope*df[low_z]['log_mass']+sfms_lowz_yint, df[high_z][split_by] < sfms_highz_slope*df[high_z]['log_mass']+sfms_highz_yint])
+                high_idx = pd.concat([df[low_z][split_by] >= sfms_lowz_slope*df[low_z]['log_mass']+sfms_lowz_yint, df[high_z][split_by] >= sfms_highz_slope*df[high_z]['log_mass']+sfms_highz_yint])
             else:
                 low_idx = df[split_by] < sfms_slope*df['log_mass']+sfms_yint
                 high_idx = df[split_by] >= sfms_slope*df['log_mass']+sfms_yint

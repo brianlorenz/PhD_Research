@@ -206,6 +206,9 @@ def filter_ar_df(ar_df, return_std_ar=False):
     ha_bad = ar_df['ha_detflag_sfr'] == -999
     save_count(ar_df[ha_bad], 'ha_negative_flux', 'Halpha not covered')
     ar_df = ar_df[ar_df['ha_detflag_sfr'] != -999]
+    ha_nondet = ar_df['ha_detflag_sfr'] == 1.0
+    save_count(ar_df[ha_nondet], 'ha_nondetected_flux', 'Halpha not detected')
+    ar_df = ar_df[ar_df['ha_detflag_sfr'] != 1.0]
 
     hb_bad = ar_df['hb_detflag_sfr'] == -999
     save_count(ar_df[hb_bad], 'hb_negative_flux', 'Hbeta not covered')

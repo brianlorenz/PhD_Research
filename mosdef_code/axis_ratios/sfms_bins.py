@@ -7,12 +7,24 @@ import matplotlib.pyplot as plt
 import initialize_mosdef_dirs as imd
 from axis_ratio_funcs import read_interp_axis_ratio, filter_ar_df, read_filtered_ar_df
 
+### OUTDATED
 sfms_slope = 0.598 
 sfms_yint = -4.745
 
+# 06/03/22
+sfms_lowz_slope = 0.604
+sfms_lowz_yint = -4.98
+sfms_highz_slope = 0.645
+sfms_highz_yint = -5.115
 
-def find_sfms(divide_axis = True):
-    '''Find the slope and intercept of the sfms in our sample'''
+
+def find_sfms(divide_axis = False, divide_z = False):
+    '''Find the slope and intercept of the sfms in our sample
+    
+    Parameters:
+    divide_axis: Split into axes groups and fit each sfms separately
+    divide_z: Split into redshift groups and fit each sfms separately
+    '''
     
     # ar_df = read_interp_axis_ratio()
     # ar_df = filter_ar_df(ar_df)
@@ -46,7 +58,24 @@ def find_sfms(divide_axis = True):
         plt.plot(x, y1_high, color='darkblue', ls='--', label='high fit')
         ax.text(9, 1.9, f'slope: {round(fit_high.slope, 3)}, yint: {round(fit_high.intercept, 3)}', color='darkblue')
         fit_color = 'black'
-        save_add = '_split'
+        save_add = '_axis_split'
+    elif divide_z == True:
+        # Divide into axis groups and fit inidividual sequences for those
+        low_z = ar_df['Z_MOSFIRE'] < 1.8
+        ax.plot(ar_df[low_z]['log_mass'], ar_df[low_z]['log_use_sfr'], color='orange', ls='None', marker='o', label='redshift < 1.8')
+        ax.plot(ar_df[~low_z]['log_mass'], ar_df[~low_z]['log_use_sfr'], color='blue', ls='None', marker='o', label='redshift > 1.8')
+        
+        fit_low = stats.linregress(ar_df[low_z]['log_mass'], ar_df[low_z]['log_use_sfr'])
+        y1_low = fit_low.slope*x+fit_low.intercept
+        plt.plot(x, y1_low, color='darkorange', ls='--', label='low fit')
+        ax.text(9, 2.1, f'slope: {round(fit_low.slope, 3)}, yint: {round(fit_low.intercept, 3)}', color='darkorange')
+
+        fit_high = stats.linregress(ar_df[~low_z]['log_mass'], ar_df[~low_z]['log_use_sfr'])
+        y1_high = fit_high.slope*x+fit_high.intercept
+        plt.plot(x, y1_high, color='darkblue', ls='--', label='high fit')
+        ax.text(9, 1.9, f'slope: {round(fit_high.slope, 3)}, yint: {round(fit_high.intercept, 3)}', color='darkblue')
+        fit_color = 'black'
+        save_add = '_zsplit'
     else:
         ax.plot(ar_df['log_mass'], ar_df['log_use_sfr'], color='black', ls='None', marker='o')
         fit_color = 'red'
@@ -92,6 +121,8 @@ def plot_sfms_bins(save_name, nbins, split_by):
     fig.savefig(imd.axis_cluster_data_dir + f'/{save_name}/sfr_mass.pdf')
 
 # find_sfms()
+# find_sfms(divide_axis=True)
+# find_sfms(divide_z=True)
 # plot_sfms_bins('both_sfms_6bin_median_2axis', 12, 'log_use_sfr')
 #low cut - (9.5, 0.3), (11.0, 1.9)  y = 1.07x-9.83
 #high cut - (9.0, 0.5), (10.5, 2.0) y = 1.07x-8.6

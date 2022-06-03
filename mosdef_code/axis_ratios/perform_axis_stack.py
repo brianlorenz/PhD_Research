@@ -61,12 +61,13 @@ def stack_all_and_plot_all(param_class):
     ratio_bins = param_class.ratio_bins
     sfms_bins = param_class.sfms_bins
     use_whitaker_sfms = param_class.use_whitaker_sfms
+    use_z_dependent_sfms = param_class.use_z_dependent_sfms
     bootstrap = param_class.bootstrap
     print(f'Running stack {save_name}. Making just the plots: {only_plot}')
     time_start = time.time()
     if only_plot==False:
         setup_new_stack_dir(save_name, param_class)
-        stack_axis_ratio(mass_width, split_width, starting_points, ratio_bins, save_name, split_by, stack_type, sfms_bins, use_whitaker_sfms, re_filter=False, bootstrap=bootstrap)
+        stack_axis_ratio(mass_width, split_width, starting_points, ratio_bins, save_name, split_by, stack_type, sfms_bins, use_whitaker_sfms, use_z_dependent_sfms, re_filter=False, bootstrap=bootstrap)
         stack_all_continuum(nbins, save_name=save_name)
         time_stack = time.time()
         print(f'All stacking took {time_stack-time_start}')
@@ -84,7 +85,7 @@ def stack_all_and_plot_all(param_class):
             compute_bootstrap_uncertainties(nbins, save_name, bootstrap=bootstrap)
         time_emfit = time.time()
         print(f'Emission fitting took {time_emfit-time_stack}')     
-    plot_sample_split(nbins, save_name, ratio_bins, starting_points, mass_width, split_width, nbins, sfms_bins)
+    plot_sample_split(nbins, save_name, ratio_bins, starting_points, mass_width, split_width, nbins, sfms_bins, use_whitaker_sfms, use_z_dependent_sfms)
     # plot_sample_split(nbins, save_name, ratio_bins, starting_points, mass_width, split_width, nbins, sfms_bins, plot_sfr_and_ssfr=True)
     plot_overlaid_spectra(save_name, plot_cont_sub=True)
     plot_metals(save_name)

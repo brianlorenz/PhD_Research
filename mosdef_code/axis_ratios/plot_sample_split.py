@@ -10,7 +10,7 @@ from matplotlib import patches
 import matplotlib.gridspec as gridspec
 from astropy.io import ascii
 import pandas as pd
-from sfms_bins import sfms_slope, sfms_yint
+from sfms_bins import *
 from plot_vals import *
 import cmasher as cmr
 
@@ -18,7 +18,7 @@ import cmasher as cmr
 shapes = {'low': '+', 'mid': 'd', 'high': 'o'}
 colors = {'sorted0': 'red', 'sorted1': 'blue', 'sorted2': 'orange', 'sorted3': 'mediumseagreen', 'sorted4': 'lightskyblue', 'sorted5': 'darkviolet'}
 
-def plot_sample_split(n_groups, save_name, ratio_bins, starting_points, mass_width, split_width, nbins, sfms_bins, use_whitaker_sfms, ax='None', fig='fig', plot_sfr_and_ssfr=False):
+def plot_sample_split(n_groups, save_name, ratio_bins, starting_points, mass_width, split_width, nbins, sfms_bins, use_whitaker_sfms, use_z_dependent_sfms, ax='None', fig='fig', plot_sfr_and_ssfr=False):
     """Plots the way that the sample has been divided in mass/ssfr space
     
     variable(str): Which variable to use for the y-axis
@@ -210,9 +210,16 @@ def plot_sample_split(n_groups, save_name, ratio_bins, starting_points, mass_wid
             ylims = (-0.1, 2.6)
             x = np.linspace(8.8, 11.2, 100)
             print(sfms_slope, sfms_yint)
-            if use_whitaker_sfms==False:
+            if use_whitaker_sfms==False and use_z_dependent_sfms==False:
                 y1 = sfms_slope*x + sfms_yint
                 ax.plot(x, y1, color='grey', ls='--')
+            if use_z_dependent_sfms == True:
+                y1 = sfms_highz_slope*x + sfms_highz_yint
+                ax.plot(x, y1, color='grey', ls='--')
+
+                y2 = sfms_lowz_slope*x + sfms_lowz_yint
+                ax.plot(x, y2, color='grey', ls='--')
+
             ax.axvline(10, color='grey', ls='--')
 
             a = -24.0415

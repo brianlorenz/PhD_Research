@@ -4,7 +4,7 @@ from perform_axis_stack import stack_all_and_plot_all
 
 class stack_params:
     
-    def __init__(self, mass_width, split_width, starting_points, ratio_bins, nbins, split_by, save_name, stack_type, sfms_bins, use_whitaker_sfms, bootstrap, only_plot, run_stack):
+    def __init__(self, mass_width, split_width, starting_points, ratio_bins, nbins, split_by, save_name, stack_type, sfms_bins, use_whitaker_sfms, use_z_dependent_sfms, bootstrap, only_plot, run_stack):
         '''
         
         Parameters:
@@ -33,6 +33,7 @@ class stack_params:
         self.stack_type = stack_type
         self.sfms_bins = sfms_bins
         self.use_whitaker_sfms = use_whitaker_sfms
+        self.use_z_dependent_sfms = use_z_dependent_sfms
         self.bootstrap = bootstrap
         self.only_plot = only_plot
         self.run_stack = run_stack
@@ -57,12 +58,13 @@ def make_both_sfms_4bin_2axis_median_params(run_stack = False, only_plot = True)
     stack_type = 'median'
     sfms_bins = True
     use_whitaker_sfms = False
+    use_z_dependent_sfms = False
     bootstrap = 100
-    both_ssfrs_4bin_mean_params = stack_params(mass_width, split_width, starting_points, ratio_bins, nbins, split_by, save_name, stack_type, sfms_bins, use_whitaker_sfms, bootstrap, only_plot, run_stack)
+    both_ssfrs_4bin_mean_params = stack_params(mass_width, split_width, starting_points, ratio_bins, nbins, split_by, save_name, stack_type, sfms_bins, use_whitaker_sfms, use_z_dependent_sfms, bootstrap, only_plot, run_stack)
     return both_ssfrs_4bin_mean_params
 both_sfms_4bin_2axis_median_params = make_both_sfms_4bin_2axis_median_params()
 
-def both_whitaker_sfms_4bin_median_2axis_params(run_stack = True, only_plot = False):
+def both_whitaker_sfms_4bin_median_2axis_params(run_stack = False, only_plot = True):
     run_stack = run_stack
     only_plot = only_plot
     mass_width = 1.0
@@ -75,10 +77,31 @@ def both_whitaker_sfms_4bin_median_2axis_params(run_stack = True, only_plot = Fa
     stack_type = 'median'
     sfms_bins = True
     use_whitaker_sfms = True
+    use_z_dependent_sfms = False
     bootstrap = 10
-    both_ssfrs_4bin_mean_params = stack_params(mass_width, split_width, starting_points, ratio_bins, nbins, split_by, save_name, stack_type, sfms_bins, use_whitaker_sfms, bootstrap, only_plot, run_stack)
+    both_ssfrs_4bin_mean_params = stack_params(mass_width, split_width, starting_points, ratio_bins, nbins, split_by, save_name, stack_type, sfms_bins, use_whitaker_sfms, use_z_dependent_sfms, bootstrap, only_plot, run_stack)
     return both_ssfrs_4bin_mean_params
 both_whitaker_sfms_4bin_median_2axis = both_whitaker_sfms_4bin_median_2axis_params()
+
+def both_z_divided_sfms_4bin_median_2axis_params(run_stack = True, only_plot = True):
+    run_stack = run_stack
+    only_plot = only_plot
+    mass_width = 1.0
+    split_width = 0.75
+    starting_points = [(9, -8.85), (10, -8.85), (9, -9.6), (10, -9.6)]
+    ratio_bins = [0.55]
+    nbins = 8
+    split_by = 'log_use_sfr'
+    save_name = 'both_z_divided_sfms_4bin_median_2axis_boot10'
+    stack_type = 'median'
+    sfms_bins = True
+    use_whitaker_sfms = False
+    use_z_dependent_sfms = True
+    bootstrap = 10
+    both_ssfrs_4bin_mean_params = stack_params(mass_width, split_width, starting_points, ratio_bins, nbins, split_by, save_name, stack_type, sfms_bins, use_whitaker_sfms, use_z_dependent_sfms, bootstrap, only_plot, run_stack)
+    return both_ssfrs_4bin_mean_params
+both_z_divided_sfms_4bin_median_2axis = both_z_divided_sfms_4bin_median_2axis_params()
+
 
 
 # Single stack, for background of some plots
@@ -95,8 +118,9 @@ def make_both_singlestack_median_params(run_stack = False, only_plot = False):
     stack_type = 'median'
     sfms_bins = False
     use_whitaker_sfms = False
+    use_z_dependent_sfms = False
     bootstrap = 100
-    both_ssfrs_4bin_mean_params = stack_params(mass_width, split_width, starting_points, ratio_bins, nbins, split_by, save_name, stack_type, sfms_bins, use_whitaker_sfms, bootstrap, only_plot, run_stack)
+    both_ssfrs_4bin_mean_params = stack_params(mass_width, split_width, starting_points, ratio_bins, nbins, split_by, save_name, stack_type, sfms_bins, use_whitaker_sfms, use_z_dependent_sfms, bootstrap, only_plot, run_stack)
     return both_ssfrs_4bin_mean_params
 both_singlestack_median_params = make_both_singlestack_median_params()
 
@@ -266,6 +290,7 @@ both_singlestack_median_params = make_both_singlestack_median_params()
 # stack_all_and_plot_all(both_ssfrs_4bin_2axis_median_params)
 stack_all_and_plot_all(both_sfms_4bin_2axis_median_params)
 stack_all_and_plot_all(both_whitaker_sfms_4bin_median_2axis)
+stack_all_and_plot_all(both_z_divided_sfms_4bin_median_2axis)
 # stack_all_and_plot_all(both_sfms_4bin_2axis_median_retest_params)
 # stack_all_and_plot_all(both_sfms_4bin_2axis_mean_params)
 # stack_all_and_plot_all(both_sfms_4bin_2axis_ar_split_median_params)
