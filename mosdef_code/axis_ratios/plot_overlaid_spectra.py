@@ -9,6 +9,7 @@ import matplotlib.patheffects as path_effects
 from matplotlib.gridspec import GridSpec
 from brokenaxes import brokenaxes
 import sys
+from plot_vals import *
 
 titlefont=18
 
@@ -50,7 +51,7 @@ def plot_overlaid_spectra(savename, plot_cont_sub=False, paper_fig=False):
 
 
     # plot_lims = ((4850, 4875), (6540, 6590))
-    plot_lims = ((4850, 5020), (6540, 6590))
+    plot_lims = ((4850, 5020), (6535, 6600))
 
     if n_rows == 1:
         bax_0 = brokenaxes(xlims=plot_lims, subplot_spec=axarr[0,0])
@@ -110,7 +111,7 @@ def plot_overlaid_spectra(savename, plot_cont_sub=False, paper_fig=False):
             spec_df = ascii.read(imd.axis_cluster_data_dir + f'/{savename}/{savename}_spectra/{axis_group}_spectrum.csv').to_pandas()
   
         if row['shape'] == '+': 
-            color = 'red'
+            color = dark_color
             label = 'Axis Ratio < 0.4'
             if paper_fig==True:
                 label = '$(b/a) < 0.55$'
@@ -118,12 +119,12 @@ def plot_overlaid_spectra(savename, plot_cont_sub=False, paper_fig=False):
             color = 'mediumseagreen'
             label = '0.4 < Axis Ratio < 0.7'
         if row['shape'] == 'o':
-            color = 'blue'
+            color = light_color
             label = '0.7 < Axis Ratio'
             if paper_fig==True:
                 label = '$(b/a) > 0.55$'
         if row['shape'] == 1.0: 
-            color = 'red'
+            color = dark_color
             label = ''
 
 
@@ -132,7 +133,7 @@ def plot_overlaid_spectra(savename, plot_cont_sub=False, paper_fig=False):
         halpha_range = np.logical_and(spec_df['wavelength']>6560, spec_df['wavelength']<6570)
         peak_halpha = np.max(spec_df[halpha_range]['f_lambda'])
         scale_factor = 1.0/peak_halpha
-        ax.plot(spec_df['wavelength'], spec_df['f_lambda']*scale_factor, color=color, label = label, zorder=2) 
+        ax.plot(spec_df['wavelength'], spec_df['f_lambda']*scale_factor, color=color, label = label, zorder=2, linewidth=2) 
         ax.set_ylim(-0.1, 1.55)
         ax.set_ylabel(f'Normalized F$_\\lambda${add_str}')
         ax.set_xlabel('Wavelength ($\AA$)')
@@ -152,11 +153,16 @@ def plot_overlaid_spectra(savename, plot_cont_sub=False, paper_fig=False):
                     name = line[0]
                     center = line[1]
                     ax.axvline(center, color='black', ls='--')
+                    offset = 0
                     if center == 6564.61:
-                        height = 1.2
+                        height = 1.3
+                    if name=='O[III]':
+                        offset = -34
+                    if center == 6549.86:
+                        offset = 0
+                        fig.text(0.814, 0.8345, name, fontsize=18)
                     else:
-                        height = 1.4
-                    ax.text(center+3, height, name, fontsize=18)
+                        ax.text(center+3+offset, height, name, fontsize=18)
 
 
     # Add the background
