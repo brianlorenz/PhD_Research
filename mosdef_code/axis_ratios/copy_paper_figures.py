@@ -18,6 +18,7 @@ fig_list = [
     imd.axis_cluster_data_dir + f'/{save_name}/balmer_plots/balmer_ssfr_mass_color.pdf',
     imd.axis_cluster_data_dir + f'/{save_name}/balmer_plots/av_beta_combined.pdf',
     imd.axis_cluster_data_dir + f'/{save_name}/metallicity_sfr.pdf',
+    imd.axis_cluster_data_dir + f'/{save_name}/uvj_ar_groups.pdf',
     imd.axis_cluster_data_dir + f'/{save_name}/overlaid_spectra_paper.pdf'
 ]
 

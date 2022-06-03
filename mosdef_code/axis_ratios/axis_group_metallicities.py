@@ -12,6 +12,7 @@ import matplotlib.patheffects as path_effects
 from matplotlib.gridspec import GridSpec
 from brokenaxes import brokenaxes
 from sympy import symbols, solve
+from plot_vals import *
 
 
 
@@ -210,6 +211,11 @@ def plot_metals(savename, plot_half_light_instead=False, plot_uvj_instead=False,
         ax_1 = axarr[0,0]
         ax_2 = axarr[1,1]
         ax_3 = axarr[0,1]
+        ax_1.set_xticklabels([])
+        ax_2.set_yticklabels([])
+        ax_3.set_xticklabels([])
+        ax_3.set_yticklabels([])
+
     if n_rows > 2:
         ax_0 = axarr[2,0]
         ax_1 = axarr[1,0]
@@ -235,28 +241,28 @@ def plot_metals(savename, plot_half_light_instead=False, plot_uvj_instead=False,
 
         if row['key'] == 'sorted0':
             ax = ax_0
-            ax.set_title('sorted0', color = row['color'], fontsize=14)
+            # ax.set_title('sorted0', color = row['color'], fontsize=14)
         if row['key'] == 'sorted1':
             ax = ax_1
-            ax.set_title('sorted1', color = row['color'], fontsize=14)
+            # ax.set_title('sorted1', color = row['color'], fontsize=14)
         if row['key'] == 'sorted2':
             ax = ax_2
-            ax.set_title('sorted2', color = row['color'], fontsize=14)
+            # ax.set_title('sorted2', color = row['color'], fontsize=14)
         if row['key'] == 'sorted3':
             ax = ax_3
-            ax.set_title('sorted3', color = row['color'], fontsize=14)
+            # ax.set_title('sorted3', color = row['color'], fontsize=14)
         if row['key'] == 'sorted4':
             ax = ax_4
-            ax.set_title('sorted4', color = row['color'], fontsize=14)
+            # ax.set_title('sorted4', color = row['color'], fontsize=14)
         if row['key'] == 'sorted5':
             ax = ax_5
-            ax.set_title('sorted5', color = row['color'], fontsize=14)
+            # ax.set_title('sorted5', color = row['color'], fontsize=14)
         
         ar_df = ascii.read(imd.axis_cluster_data_dir + f'/{savename}/{savename}_group_dfs/{axis_group}_df.csv').to_pandas()
 
 
         if row['shape'] == '+': 
-            color = 'red'
+            color = dark_color
             label = 'Axis Ratio < 0.4'
             if plot_uvj_instead:
                 label = 'Axis Ratio < 0.55'
@@ -264,12 +270,12 @@ def plot_metals(savename, plot_half_light_instead=False, plot_uvj_instead=False,
             color = 'mediumseagreen'
             label = '0.4 < Axis Ratio < 0.7'
         if row['shape'] == 'o':
-            color = 'blue'
+            color = light_color
             label = '0.7 < Axis Ratio'
             if plot_uvj_instead:
                 label = 'Axis Ratio > 0.55'
         if row['shape'] == 1.0: 
-            color = 'red'
+            color = dark_color
             label = ''
 
         if plot_half_light_instead:
@@ -289,17 +295,31 @@ def plot_metals(savename, plot_half_light_instead=False, plot_uvj_instead=False,
         
         elif plot_uvj_instead:
             ax.plot(ar_df['V_J'], ar_df['U_V'], color=color, label = label, marker='o', ls='None') 
-            ax.set_ylabel('U-V', fontsize=14)
-            ax.set_xlabel('V-J', fontsize=14)
-            ax.set_xlim(-0.5, 2)
-            ax.set_ylim(0, 2.5)
+            ax.set_ylabel('U-V', fontsize=22)
+            ax.set_xlabel('V-J', fontsize=22)
+            ax_1.set_xlabel('')
+            ax_2.set_ylabel('')
+            ax_3.set_xlabel('')
+            ax_3.set_ylabel('')
+            plt.subplots_adjust(wspace=0.05, hspace=0.05)
+            ax.set_xlim(-0.5, 1.9)
+            ax.set_ylim(-0.2, 1.9)
+            #Label axes
+            label_loc = (-0.4, 1.8)
+            ax_0.text(label_loc[0], label_loc[1], 'M$_*$<10, SFR<10', fontsize=16)
+            ax_1.text(label_loc[0], label_loc[1], 'M$_*$<10, SFR>10', fontsize=16)
+            ax_2.text(label_loc[0], label_loc[1], 'M$_*$>10, SFR<10', fontsize=16)
+            ax_3.text(label_loc[0], label_loc[1], 'M$_*$>10, SFR>10', fontsize=16)
+            ax.tick_params(labelsize=16)
             # UVJ diagram lines
             ax.plot((-100, 0.69), (1.3, 1.3), color='black')
             ax.plot((1.5, 1.5), (2.01, 100), color='black')
             xline = np.arange(0.69, 1.5, 0.001)
             yline = xline * 0.88 + 0.69
             ax.plot(xline, yline, color='black')
-            ax.legend(loc='upper right')
+            ax_1.legend(fontsize=14, loc='upper left', bbox_to_anchor=(0,0.93))
+
+
         
         elif plot_z_instead:
             ax.plot(ar_df['use_ratio'], ar_df['Z_MOSFIRE'], color=color, label = label, marker='o', ls='None') 
@@ -379,7 +399,7 @@ def add_metals_to_summary_df(save_name, metal_column):
     summary_df.to_csv(imd.axis_cluster_data_dir + f'/{save_name}/summary.csv', index=False)
 
 # plot_metals(savename='both_sfms_4bin_median_2axis_boot100', plot_half_light_instead=True)
-# plot_metals(savename='both_sfms_4bin_median_2axis_boot100', plot_uvj_instead=True)
+plot_metals(savename='both_sfms_4bin_median_2axis_boot100', plot_uvj_instead=True)
 # plot_metals(savename='both_sfms_4bin_median_2axis_boot100', plot_z_instead=True)
 # measure_metals(8, 'both_sfms_4bin_median_2axis_boot100', bootstrap=100)
 # plot_group_metals_compare(12, 'both_ssfrs_4bin_mean')
