@@ -60,12 +60,13 @@ def stack_all_and_plot_all(param_class):
     starting_points = param_class.starting_points
     ratio_bins = param_class.ratio_bins
     sfms_bins = param_class.sfms_bins
+    use_whitaker_sfms = param_class.use_whitaker_sfms
     bootstrap = param_class.bootstrap
     print(f'Running stack {save_name}. Making just the plots: {only_plot}')
     time_start = time.time()
     if only_plot==False:
         setup_new_stack_dir(save_name, param_class)
-        stack_axis_ratio(mass_width, split_width, starting_points, ratio_bins, save_name, split_by, stack_type, sfms_bins, re_filter=False, bootstrap=bootstrap)
+        stack_axis_ratio(mass_width, split_width, starting_points, ratio_bins, save_name, split_by, stack_type, sfms_bins, use_whitaker_sfms, re_filter=False, bootstrap=bootstrap)
         stack_all_continuum(nbins, save_name=save_name)
         time_stack = time.time()
         print(f'All stacking took {time_stack-time_start}')
@@ -106,7 +107,7 @@ def stack_all_and_plot_all(param_class):
     plot_dust_model('both_sfms_4bin_median_2axis_boot100')
     plot_sfr_metals('both_sfms_4bin_median_2axis_boot100')
     print('starting overview plot')
-    plot_overview(nbins, save_name, ratio_bins, starting_points, mass_width, split_width, sfms_bins, split_by)
+    # plot_overview(nbins, save_name, ratio_bins, starting_points, mass_width, split_width, sfms_bins, split_by)
     time_end = time.time()
     print(f'Total program took {time_end-time_start}')
 

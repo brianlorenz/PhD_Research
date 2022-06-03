@@ -645,7 +645,7 @@ def perform_stack(stack_type, interp_cluster_spectra_dfs, norm_factors):
 
 
 
-def stack_axis_ratio(mass_width, split_width, starting_points, ratio_bins, save_name, split_by, stack_type, sfms_bins, re_filter=False, bootstrap=0):
+def stack_axis_ratio(mass_width, split_width, starting_points, ratio_bins, save_name, split_by, stack_type, sfms_bins, use_whitaker_sfms, re_filter=False, bootstrap=0):
     """Stacks galaxies in groups by axis ratio
 
     old params: , l_mass_cutoff=0, l_ssfr_cutoff=0, l_mass_bins=0, l_ssfr_bins=0, scale_ha=0
@@ -734,8 +734,15 @@ def stack_axis_ratio(mass_width, split_width, starting_points, ratio_bins, save_
             # low_idx = df[split_by] < 1.07*df['log_mass']-9.83
             # high_idx = df[split_by] > 1.07*df['log_mass']-9.15
             # mid_idx = np.logical_and(np.logical_not(low_idx), np.logical_not(high_idx))
-            low_idx = df[split_by] < sfms_slope*df['log_mass']+sfms_yint
-            high_idx = df[split_by] >= sfms_slope*df['log_mass']+sfms_yint
+            if use_whitaker_sfms==True:
+                a = -24.0415
+                b = 4.1693
+                c = -0.1638
+                low_idx = df[split_by] < a + b*df['log_mass'] + c*df['log_mass']**2
+                high_idx = df[split_by] >= a + b*df['log_mass'] + c*df['log_mass']**2
+            else:
+                low_idx = df[split_by] < sfms_slope*df['log_mass']+sfms_yint
+                high_idx = df[split_by] >= sfms_slope*df['log_mass']+sfms_yint
 
             low_mass = df['log_mass']<=10
             high_mass = df['log_mass']>10

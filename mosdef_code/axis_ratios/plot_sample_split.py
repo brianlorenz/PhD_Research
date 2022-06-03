@@ -12,11 +12,13 @@ from astropy.io import ascii
 import pandas as pd
 from sfms_bins import sfms_slope, sfms_yint
 from plot_vals import *
+import cmasher as cmr
+
 
 shapes = {'low': '+', 'mid': 'd', 'high': 'o'}
 colors = {'sorted0': 'red', 'sorted1': 'blue', 'sorted2': 'orange', 'sorted3': 'mediumseagreen', 'sorted4': 'lightskyblue', 'sorted5': 'darkviolet'}
 
-def plot_sample_split(n_groups, save_name, ratio_bins, starting_points, mass_width, split_width, nbins, sfms_bins, ax='None', fig='fig', plot_sfr_and_ssfr=False):
+def plot_sample_split(n_groups, save_name, ratio_bins, starting_points, mass_width, split_width, nbins, sfms_bins, use_whitaker_sfms, ax='None', fig='fig', plot_sfr_and_ssfr=False):
     """Plots the way that the sample has been divided in mass/ssfr space
     
     variable(str): Which variable to use for the y-axis
@@ -59,8 +61,9 @@ def plot_sample_split(n_groups, save_name, ratio_bins, starting_points, mass_wid
 
     # Figure 1 - Showing how the sample gets cut
     # cmap = mpl.cm.Reds 
-    cmap = mpl.cm.gist_heat_r 
-    norm = mpl.colors.Normalize(vmin=1, vmax=7) 
+    #cmap = mpl.cm.gist_heat_r 
+    cmap = cmr.get_sub_cmap('gist_heat_r', 0.12, 1.0)
+    norm = mpl.colors.Normalize(vmin=2, vmax=7) 
 
     for axis_group in range(n_groups):
         axis_ratio_df = ascii.read(imd.axis_cluster_data_dir + f'/{save_name}/{save_name}_group_dfs/{axis_group}_df.csv').to_pandas()
@@ -207,8 +210,9 @@ def plot_sample_split(n_groups, save_name, ratio_bins, starting_points, mass_wid
             ylims = (-0.1, 2.6)
             x = np.linspace(8.8, 11.2, 100)
             print(sfms_slope, sfms_yint)
-            y1 = sfms_slope*x + sfms_yint
-            ax.plot(x, y1, color='grey', ls='--')
+            if use_whitaker_sfms==False:
+                y1 = sfms_slope*x + sfms_yint
+                ax.plot(x, y1, color='grey', ls='--')
             ax.axvline(10, color='grey', ls='--')
 
             a = -24.0415
