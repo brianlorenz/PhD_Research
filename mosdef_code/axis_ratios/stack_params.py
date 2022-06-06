@@ -32,8 +32,8 @@ class stack_params:
         self.save_name = save_name
         self.stack_type = stack_type
         self.sfms_bins = sfms_bins
-        self.use_whitaker_sfms = use_whitaker_sfms
-        self.use_z_dependent_sfms = use_z_dependent_sfms
+        self.use_whitaker_sfms = use_whitaker_sfms # Need sfms_bins = True to use
+        self.use_z_dependent_sfms = use_z_dependent_sfms # Need sfms_bins = True to use
         self.bootstrap = bootstrap
         self.only_plot = only_plot
         self.run_stack = run_stack
@@ -45,7 +45,7 @@ class stack_params:
 ## -----------------------------------------------------------------
 
 # Currently the primary one we are using
-def make_both_sfms_4bin_2axis_median_params(run_stack = False, only_plot = True):
+def make_both_sfms_4bin_2axis_median_params(run_stack = True, only_plot = True):
     run_stack = run_stack
     only_plot = only_plot
     mass_width = 1.0
@@ -83,7 +83,7 @@ def both_whitaker_sfms_4bin_median_2axis_params(run_stack = False, only_plot = T
     return both_ssfrs_4bin_mean_params
 both_whitaker_sfms_4bin_median_2axis = both_whitaker_sfms_4bin_median_2axis_params()
 
-def both_z_divided_sfms_4bin_median_2axis_params(run_stack = True, only_plot = True):
+def both_z_divided_sfms_4bin_median_2axis_params(run_stack = False, only_plot = True):
     run_stack = run_stack
     only_plot = only_plot
     mass_width = 1.0
@@ -101,6 +101,46 @@ def both_z_divided_sfms_4bin_median_2axis_params(run_stack = True, only_plot = T
     both_ssfrs_4bin_mean_params = stack_params(mass_width, split_width, starting_points, ratio_bins, nbins, split_by, save_name, stack_type, sfms_bins, use_whitaker_sfms, use_z_dependent_sfms, bootstrap, only_plot, run_stack)
     return both_ssfrs_4bin_mean_params
 both_z_divided_sfms_4bin_median_2axis = both_z_divided_sfms_4bin_median_2axis_params()
+
+
+# 
+def lowz_sample_params(run_stack = False, only_plot = False):
+    run_stack = run_stack
+    only_plot = only_plot
+    mass_width = 1.0
+    split_width = 0.75
+    starting_points = [(9, -8.85), (10, -8.85), (9, -9.6), (10, -9.6)]
+    ratio_bins = [0.55]
+    nbins = 8
+    split_by = 'log_use_sfr'
+    save_name = 'lowz_sample'
+    stack_type = 'median'
+    sfms_bins = True
+    use_whitaker_sfms = False
+    use_z_dependent_sfms = True
+    bootstrap = 10
+    both_ssfrs_4bin_mean_params = stack_params(mass_width, split_width, starting_points, ratio_bins, nbins, split_by, save_name, stack_type, sfms_bins, use_whitaker_sfms, use_z_dependent_sfms, bootstrap, only_plot, run_stack)
+    return both_ssfrs_4bin_mean_params
+lowz_sample = lowz_sample_params()
+
+def highz_sample_params(run_stack = False, only_plot = False):
+    run_stack = run_stack
+    only_plot = only_plot
+    mass_width = 1.0
+    split_width = 0.75
+    starting_points = [(9, -8.85), (10, -8.85), (9, -9.6), (10, -9.6)]
+    ratio_bins = [0.55]
+    nbins = 8
+    split_by = 'log_use_sfr'
+    save_name = 'high_sample'
+    stack_type = 'median'
+    sfms_bins = True
+    use_whitaker_sfms = False
+    use_z_dependent_sfms = True
+    bootstrap = 10
+    both_ssfrs_4bin_mean_params = stack_params(mass_width, split_width, starting_points, ratio_bins, nbins, split_by, save_name, stack_type, sfms_bins, use_whitaker_sfms, use_z_dependent_sfms, bootstrap, only_plot, run_stack)
+    return both_ssfrs_4bin_mean_params
+highz_sample = highz_sample_params()
 
 
 
@@ -291,6 +331,8 @@ both_singlestack_median_params = make_both_singlestack_median_params()
 stack_all_and_plot_all(both_sfms_4bin_2axis_median_params)
 stack_all_and_plot_all(both_whitaker_sfms_4bin_median_2axis)
 stack_all_and_plot_all(both_z_divided_sfms_4bin_median_2axis)
+stack_all_and_plot_all(lowz_sample)
+stack_all_and_plot_all(highz_sample)
 # stack_all_and_plot_all(both_sfms_4bin_2axis_median_retest_params)
 # stack_all_and_plot_all(both_sfms_4bin_2axis_mean_params)
 # stack_all_and_plot_all(both_sfms_4bin_2axis_ar_split_median_params)

@@ -43,8 +43,8 @@ def plot_balmer_dec(save_name, n_groups, split_by, y_var = 'balmer_dec', color_v
     else:
         ylims = {
             'balmer_dec': (2.7, 5.5),
-            'av': (0.25, 1.1),
-            'beta': (-1.9, -0.95),
+            'av': (0.2, 0.95),
+            'beta': (-1.8, -1.1),
             'metallicity': (8.2, 8.9),
             'mips_flux': (0, 0.0063),
             'log_use_sfr': (-0.1, 2.6)

@@ -3,6 +3,8 @@ from plot_sample_split import plot_sample_split
 from plot_balmer_dec import plot_balmer_dec
 import matplotlib.pyplot as plt
 import initialize_mosdef_dirs as imd
+import numpy as np
+from plot_vals import *
 
 def plot_overview(nbins, save_name, ratio_bins, starting_points, mass_width, split_width, sfms_bins, split_by):
     fig, axarr = plt.subplots(2, 5, figsize=(30, 10))
@@ -33,6 +35,8 @@ def plot_overview(nbins, save_name, ratio_bins, starting_points, mass_width, spl
 
 
 def plot_AV_beta_paper(nbins, split_by, save_name):
+    label_font = 18
+
     # fig = plt.figure(figsize=(17, 8))
     # ax_av = fig.add_axes([0.01, 0.2, 0.45, 0.6])
     # ax_beta = fig.add_axes([0.42, 0.2, 0.45, 0.6])
@@ -42,6 +46,12 @@ def plot_AV_beta_paper(nbins, split_by, save_name):
     ax_beta = axarr[1]
     plot_balmer_dec(save_name, nbins, split_by, y_var='av', color_var=split_by, mass_ax=ax_av, fig=fig)
     plot_balmer_dec(save_name, nbins, split_by, y_var='beta', color_var=split_by, mass_ax=ax_beta, fig=fig)
+    for ax in [ax_av, ax_beta]:
+        ax.tick_params(labelsize=18)
+        ax.set_xlabel(stellar_mass_label, fontsize=label_font)
+        scale_aspect(ax)
+    ax_av.set_ylabel('FAST A$_V$', fontsize=label_font)
+    ax_beta.set_ylabel('$\\beta$', fontsize=label_font)
     fig.savefig(imd.axis_cluster_data_dir + f'/{save_name}/balmer_plots/av_beta_combined.pdf')
 
 plot_AV_beta_paper(8, 'log_use_sfr', 'both_sfms_4bin_median_2axis_boot100')

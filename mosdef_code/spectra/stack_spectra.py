@@ -670,6 +670,9 @@ def stack_axis_ratio(mass_width, split_width, starting_points, ratio_bins, save_
     else:
         ar_df = read_filtered_ar_df()
 
+    ### REMOVE - JUST FOR LOW/HIGH REDSHIFT SEPARATION
+    # ar_df = ar_df[ar_df['Z_MOSFIRE']>1.8]
+
 
     # Add a column for ssfr
     ar_df['log_ssfr'] = np.log10((ar_df['sfr'])/(10**ar_df['log_mass']))

@@ -159,3 +159,5 @@ def plot_sfr_metals(save_name, plot_ssfr=False, plot_re=False, plot_sanders=Fals
 # plot_sfr_metals('both_sfms_4bin_median_2axis_boot100', plot_re=True)
 # plot_sfr_metals('both_sfms_4bin_median_2axis_boot100', plot_sanders=True)
 # plot_sfr_metals('both_sfms_4bin_median_2axis_boot100', plot_ssfr=True)
+# plot_sfr_metals('both_whitaker_sfms_4bin_median_2axis_boot10')
+# plot_sfr_metals('both_z_divided_sfms_4bin_median_2axis_boot10')
