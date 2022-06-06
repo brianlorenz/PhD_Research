@@ -95,3 +95,5 @@ def plot_dust_model(save_name):
 # test_dust_model()
 # plot_dust_model('both_sfms_4bin_median_2axis_boot100')
 # plot_dust_model('both_sfms_4bin_median_2axis_boot100_retest')
+# plot_dust_model('both_whitaker_sfms_4bin_median_2axis_boot10')
+# plot_dust_model('both_z_divided_sfms_4bin_median_2axis_boot10')
