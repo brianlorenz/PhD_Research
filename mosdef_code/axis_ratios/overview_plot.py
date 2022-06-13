@@ -41,7 +41,7 @@ def plot_AV_beta_paper(nbins, split_by, save_name):
     # ax_av = fig.add_axes([0.01, 0.2, 0.45, 0.6])
     # ax_beta = fig.add_axes([0.42, 0.2, 0.45, 0.6])
     # ax_cbar = fig.add_axes([0.90, 0.2, 0.02, 0.60])
-    fig, axarr = plt.subplots(1, 2, figsize=(20, 8))
+    fig, axarr = plt.subplots(1, 2, figsize=(21, 8))
     ax_av = axarr[0]
     ax_beta = axarr[1]
     plot_balmer_dec(save_name, nbins, split_by, y_var='av', color_var=split_by, mass_ax=ax_av, fig=fig)
@@ -52,6 +52,6 @@ def plot_AV_beta_paper(nbins, split_by, save_name):
         scale_aspect(ax)
     ax_av.set_ylabel('FAST A$_V$', fontsize=label_font)
     ax_beta.set_ylabel('$\\beta$', fontsize=label_font)
-    fig.savefig(imd.axis_cluster_data_dir + f'/{save_name}/balmer_plots/av_beta_combined.pdf')
+    fig.savefig(imd.axis_cluster_data_dir + f'/{save_name}/balmer_plots/av_beta_combined.pdf',bbox_inches='tight')
 
-plot_AV_beta_paper(8, 'log_use_sfr', 'both_sfms_4bin_median_2axis_boot100')
+# plot_AV_beta_paper(8, 'log_use_sfr', 'both_sfms_4bin_median_2axis_boot100')
