@@ -43,8 +43,8 @@ def plot_balmer_dec(save_name, n_groups, split_by, y_var = 'balmer_dec', color_v
     else:
         ylims = {
             'balmer_dec': (2.7, 5.5),
-            'av': (0.2, 0.95),
-            'beta': (-1.8, -1.1),
+            'av': (0.18, 0.9),
+            'beta': (-1.78, -1.1),
             'metallicity': (8.2, 8.9),
             'mips_flux': (0, 0.0063),
             'log_use_sfr': (-0.1, 2.6)
@@ -150,7 +150,7 @@ def plot_balmer_dec(save_name, n_groups, split_by, y_var = 'balmer_dec', color_v
 
             ellipse_width, ellipse_height = get_ellipse_shapes(1.1, y_axis_len, row['shape'])
 
-            ax.errorbar(x_cord, y_cord, yerr=row['err_beta_median'], marker='None', color=rgba)
+            ax.errorbar(x_cord, y_cord, yerr=np.array([[row['err_beta_median_low'], row['err_beta_median_high']]]).T, marker='None', color=rgba)
             ax.add_artist(Ellipse((x_cord, y_cord), ellipse_width, ellipse_height, facecolor=rgba))
             ax.set_ylabel('Betaphot', fontsize=axis_fontsize)
         elif y_var == 'metallicity':
@@ -202,7 +202,7 @@ def plot_balmer_dec(save_name, n_groups, split_by, y_var = 'balmer_dec', color_v
     if made_new_axis==True:
         fig.savefig(imd.axis_cluster_data_dir + f'/{save_name}/{y_var}_vs_ar{color_str}.pdf', bbox_inches='tight')
     else:
-        return
+        pass
     
 
     # Figure 2 - Decrement vs mass
@@ -249,7 +249,7 @@ def plot_balmer_dec(save_name, n_groups, split_by, y_var = 'balmer_dec', color_v
             
             ellipse_width, ellipse_height = get_ellipse_shapes(1.5, y_axis_len, row['shape'])
 
-            ax.errorbar(x_cord, y_cord, yerr=row['err_beta_median'], marker='None', color=rgba)
+            ax.errorbar(x_cord, y_cord, yerr=np.array([[row['err_beta_median_low'], row['err_beta_median_high']]]).T, marker='None', color=rgba)
             ax.add_artist(Ellipse((x_cord, y_cord), ellipse_width, ellipse_height, facecolor=rgba))
             ax.set_ylabel('Betaphot', fontsize=axis_fontsize)
         elif y_var == 'metallicity':
@@ -281,15 +281,16 @@ def plot_balmer_dec(save_name, n_groups, split_by, y_var = 'balmer_dec', color_v
             ax.set_ylabel('log_use_sfr', fontsize=axis_fontsize)
 
     if made_new_axis==True:
-        cbar = fig.colorbar(mpl.cm.ScalarMappable(norm=norm, cmap=cmap), ax=ax)
+        cbar = fig.colorbar(mpl.cm.ScalarMappable(norm=norm, cmap=cmap), ax=ax, fraction=0.046, pad=0.04)
         cbar.set_label(color_var, fontsize=axis_fontsize)
         if color_var == 'log_use_sfr':
-            cbar.set_label(sfr_label, fontsize=axis_fontsize)
+            cbar.ax.tick_params(labelsize=18)
+            cbar.set_label(sfr_label, fontsize=18)
     ax.set_xlabel(stellar_mass_label, fontsize=axis_fontsize) 
     
     ax.tick_params(labelsize=12)
     ax.set_xlim(9.25, 10.75)
     ax.set_ylim(ylims[y_var])
     if made_new_axis == True:
-        fig.savefig(imd.axis_cluster_data_dir + f'/{save_name}/{y_var}_vs_mass{color_str}.pdf')
+        fig.savefig(imd.axis_cluster_data_dir + f'/{save_name}/{y_var}_vs_mass{color_str}.pdf',bbox_inches='tight')
 

@@ -356,7 +356,7 @@ def plot_metals(savename, plot_half_light_instead=False, plot_uvj_instead=False,
     if plot_half_light_instead==True:
         fig.savefig(imd.axis_cluster_data_dir + f'/{savename}/re_ar.pdf')
     elif plot_uvj_instead==True:
-        fig.savefig(imd.axis_cluster_data_dir + f'/{savename}/uvj_ar_groups.pdf')
+        fig.savefig(imd.axis_cluster_data_dir + f'/{savename}/uvj_ar_groups.pdf',bbox_inches='tight')
     elif plot_z_instead==True:
         fig.savefig(imd.axis_cluster_data_dir + f'/{savename}/ar_z.pdf')
     else:
@@ -383,7 +383,7 @@ def plot_mass_metal(n_groups, save_name):
     ax.set_ylim(8.1, 8.9)
 
 
-    fig.savefig(imd.axis_cluster_data_dir + f'/{save_name}/mass_metallicity.pdf')
+    fig.savefig(imd.axis_cluster_data_dir + f'/{save_name}/mass_metallicity.pdf', bbox_inches='tight')
 
 
 def add_metals_to_summary_df(save_name, metal_column):

@@ -87,12 +87,13 @@ def plot_ar_hist(use_column = 'use_ratio',  mass_split='False'):
         ax.set_xlabel('Axis Ratio', fontsize=single_column_axisfont) 
         ax.set_ylabel('Number of Galaxies', fontsize=single_column_axisfont)
         ax.tick_params(labelsize=single_column_ticksize)
-        ax.text(-0.10, -10, 'Edge-on', fontsize=single_column_axisfont, zorder=100)
-        ax.text(0.92, -10, 'Face-on', fontsize=single_column_axisfont, zorder=100)
+        # ax.text(-0.10, -10, 'Edge-on', fontsize=single_column_axisfont, zorder=100)
+        # ax.text(0.92, -10, 'Face-on', fontsize=single_column_axisfont, zorder=100)
         ax.set_xlim(-0.05, 1.05)
         
     ax.set_aspect(1/60)
-    fig.savefig(imd.axis_output_dir + f'/ar_histogram_{use_column}{savename}.pdf')
+    scale_aspect(ax)
+    fig.savefig(imd.axis_output_dir + f'/ar_histogram_{use_column}{savename}.pdf',bbox_inches='tight')
 
 
 # plot_ar_hist()
@@ -129,34 +130,37 @@ def compare_ar_measurements(col1, err_col1, col2, err_col2):
         rgba = cmap(norm(row['z']))
 
         ax.errorbar(row[col1], row[col2], xerr=row[err_col1], yerr=row[ err_col2], marker='o', ls='None', color=rgba, zorder=2)
+        # ax.plot(row[col1], row[col2], marker='o', ls='None', color=rgba, zorder=2)
         
     #1-to-1 line
-    ax.plot((-1,2), (-1, 2), color='red', ls='-', zorder=1)
+    ax.plot((-1,2), (-1, 2), color='red', ls='-', zorder=1, label='1-1 line')
     # Lines that capture 16th and 84th percentiles
     differences = ar_df[col1]-ar_df[col2]
     offsets = np.percentile(differences, [16,84])
     x = np.linspace(-0.5, 1.5, 100)
     y0 = x+offsets[0]
     y1 = x+offsets[1]
-    ax.plot(x, y0, color='red', ls='--', zorder=4)
+    ax.plot(x, y0, color='red', ls='--', zorder=4, label='1$\\sigma$ region')
     ax.plot(x, y1, color='red', ls='--', zorder=4)
+    ax.legend(loc=0, fontsize=single_column_axisfont-2)
 
-    cbar = fig.colorbar(mpl.cm.ScalarMappable(norm=norm, cmap=cmap), ax=ax)
+    cbar = fig.colorbar(mpl.cm.ScalarMappable(norm=norm, cmap=cmap), ax=ax, fraction=0.046, pad=0.04)
     cbar.set_label('Redshift', fontsize=single_column_axisfont)
     cbar.ax.tick_params(labelsize=single_column_ticksize)
 
     ax.set_xlabel(f'{col1[0:4]} Axis Ratio', fontsize=single_column_axisfont) 
     ax.set_ylabel(f'{col2[0:4]} Axis Ratio', fontsize=single_column_axisfont)
     ax.tick_params(labelsize=single_column_ticksize)
-    ax.text(-0.07, -10, 'Edge-on', fontsize=single_column_axisfont, zorder=100)
-    ax.text(0.95, -10, 'Face-on', fontsize=single_column_axisfont, zorder=100)
+    # ax.text(-0.07, -10, 'Edge-on', fontsize=single_column_axisfont, zorder=100)
+    # ax.text(0.95, -10, 'Face-on', fontsize=single_column_axisfont, zorder=100)
     ax.set_xlim(-0.05, 1.05)
     ax.set_ylim(-0.05, 1.05)
     ax.set_aspect(1)
-    fig.savefig(imd.axis_output_dir + f'/ar_compare_{col1}_{col2}.pdf')
+    scale_aspect(ax)
+    fig.savefig(imd.axis_output_dir + f'/ar_compare_{col1}_{col2}.pdf',bbox_inches='tight')
 
 compare_ar_measurements('F125_axis_ratio', 'F125_err_axis_ratio', 'F160_axis_ratio', 'F160_err_axis_ratio')
-# plot_ar_hist(use_column = 'use_ratio')
+plot_ar_hist(use_column = 'use_ratio')
 
 # compare_ar_measurements('use_ratio', 'err_use_ratio', 'F160_axis_ratio', 'F160_err_axis_ratio')
 # compare_ar_measurements('use_ratio', 'err_use_ratio', 'F125_axis_ratio', 'F125_err_axis_ratio')

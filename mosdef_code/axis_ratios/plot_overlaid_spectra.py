@@ -47,11 +47,11 @@ def plot_overlaid_spectra(savename, plot_cont_sub=False, paper_fig=False):
         n_rows = 2
     if len(summary_df) == 4:
         n_rows = 2
-    axarr = GridSpec(n_rows, 2, left=0.08, right=0.92, wspace=0.4, hspace=0.5)
+    axarr = GridSpec(n_rows, 2, left=0.08, right=0.92, wspace=0.13, hspace=0.15)
 
 
     # plot_lims = ((4850, 4875), (6540, 6590))
-    plot_lims = ((4850, 5020), (6535, 6600))
+    plot_lims = ((4850, 5020), (6535, 6595))
 
     if n_rows == 1:
         bax_0 = brokenaxes(xlims=plot_lims, subplot_spec=axarr[0,0])
@@ -76,24 +76,28 @@ def plot_overlaid_spectra(savename, plot_cont_sub=False, paper_fig=False):
 
         if row['key'] == 'sorted0':
             ax = bax_0
-            ax.set_title('Sorted 0', color = row['color'])
+            # ax.set_title('Sorted 0', color = row['color'])
             if paper_fig == True:
-                 ax.set_title('$\log(M_*) < 10$, below SF Main Sequence', color = row['color'], fontsize=titlefont)
+                pass
+                # ax.set_title('$\log(M_*) < 10$, below SF Main Sequence', color = row['color'], fontsize=titlefont)
         if row['key'] == 'sorted1':
             ax = bax_1
-            ax.set_title('Sorted 1', color = row['color'])
+            # ax.set_title('Sorted 1', color = row['color'])
             if paper_fig == True:
-                 ax.set_title('$\log(M_*) < 10$, above SF Main Sequence', color = row['color'], fontsize=titlefont)
+                pass
+                # ax.set_title('$\log(M_*) < 10$, above SF Main Sequence', color = row['color'], fontsize=titlefont)
         if row['key'] == 'sorted2':
             ax = bax_2
-            ax.set_title('Sorted 2', color = row['color'])
+            # ax.set_title('Sorted 2', color = row['color'])
             if paper_fig == True:
-                 ax.set_title('$\log(M_*) > 10$, below SF Main Sequence', color = row['color'], fontsize=titlefont)
+                pass
+                # ax.set_title('$\log(M_*) > 10$, below SF Main Sequence', color = row['color'], fontsize=titlefont)
         if row['key'] == 'sorted3':
             ax = bax_3
-            ax.set_title('Sorted 3', color = row['color'])
+            # ax.set_title('Sorted 3', color = row['color'])
             if paper_fig == True:
-                 ax.set_title('$\log(M_*) > 10$, above SF Main Sequence', color = row['color'], fontsize=titlefont)
+                pass
+                # ax.set_title('$\log(M_*) > 10$, above SF Main Sequence', color = row['color'], fontsize=titlefont)
         if row['key'] == 'sorted4':
             ax = bax_4
             ax.set_title('Sorted 4', color = row['color'])
@@ -146,27 +150,28 @@ def plot_overlaid_spectra(savename, plot_cont_sub=False, paper_fig=False):
             if i == 5:
                 # ax.plot([0],[0], color='grey', label = 'Stack of sample', zorder=1) 
                 ax.plot([0],[0], color='grey', label = 'Reference', zorder=1) 
-                ax.legend(bbox_to_anchor=(0.20, 0.85, 0.20, 0.15), loc='upper right', fontsize=14)
+                ax.legend(bbox_to_anchor=(0.19, 0.67, 0.20, 0.15), loc='upper right', fontsize=16)
             if i == 7:
                 # label the emission lines
                 for line in line_list:
                     name = line[0]
                     center = line[1]
-                    ax.axvline(center, color='black', ls='--')
+                    ax.axvline(center, ymin=-0, ymax=0.78, color='black', ls='--')
                     offset = 0
                     if center == 6564.61:
-                        height = 1.3
+                        height = 1.1
                     if name=='O[III]':
                         offset = -34
                     if center == 6549.86:
                         offset = 0
-                        fig.text(0.814, 0.8345, name, fontsize=18)
+                        fig.text(0.806, 0.782, name, fontsize=18)
                     else:
                         ax.text(center+3+offset, height, name, fontsize=18)
 
 
     # Add the background
     if paper_fig==True:
+        
         if plot_cont_sub ==True:
             single_stack_save = 'both_singlestack_median'
             spec_df = ascii.read(imd.axis_cluster_data_dir + f'/{single_stack_save}/{single_stack_save}_cont_subs/0_cont_sub.csv').to_pandas()
@@ -187,9 +192,26 @@ def plot_overlaid_spectra(savename, plot_cont_sub=False, paper_fig=False):
 
         
     if paper_fig==True:
-        fig.savefig(imd.axis_cluster_data_dir + f'/{savename}/overlaid_spectra_paper.pdf')
+        # label_loc = (5009, 1.25)
+        label_loc = (4859, 1.35)
+        # fig.text(0.35, 0.415, 'M$_*$<10, SFR<10', fontsize=18)
+        # fig.text(0.35, 0.83, 'M$_*$<10, SFR>10', fontsize=18)
+        # fig.text(0.8, 0.415, 'M$_*$>10, SFR<10', fontsize=18)
+        bax_0.text(label_loc[0], label_loc[1], 'M$_*$<10, SFR<10', fontsize=18)
+        bax_1.text(label_loc[0], label_loc[1], 'M$_*$<10, SFR>10', fontsize=18)
+        bax_2.text(label_loc[0], label_loc[1], 'M$_*$>10, SFR<10', fontsize=18)
+        bax_3.text(label_loc[0], label_loc[1], 'M$_*$>10, SFR>10', fontsize=18)
+        bax_1.set_xticklabels([])
+        bax_2.set_yticklabels([])
+        bax_3.set_xticklabels([])
+        bax_3.set_yticklabels([])
+        bax_2.set_ylabel('')
+        bax_1.set_xlabel('')
+        bax_3.set_ylabel('')
+        bax_3.set_xlabel('')
+        fig.savefig(imd.axis_cluster_data_dir + f'/{savename}/overlaid_spectra_paper.pdf',bbox_inches='tight')
     else:
-        fig.savefig(imd.axis_cluster_data_dir + f'/{savename}/overlaid_spectra.pdf')
+        fig.savefig(imd.axis_cluster_data_dir + f'/{savename}/overlaid_spectra.pdf',bbox_inches='tight')
     plt.close('all')
 
-plot_overlaid_spectra('both_sfms_4bin_median_2axis_boot100', plot_cont_sub=True, paper_fig=True)
+# plot_overlaid_spectra('both_sfms_4bin_median_2axis_boot100', plot_cont_sub=True, paper_fig=True)

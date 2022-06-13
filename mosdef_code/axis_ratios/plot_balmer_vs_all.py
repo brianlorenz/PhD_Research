@@ -110,9 +110,9 @@ def plot_balmer_vs_all(save_name):
                 cbar = fig.colorbar(mpl.cm.ScalarMappable(norm=norm, cmap=cmap), cax=cbar_axis, fraction=0.046, pad=0.04)
             cbar.set_label('log_ssfr', fontsize=fontsize)
             if color=='mass':
-                cbar.set_label('Median ' + stellar_mass_label, fontsize=fontsize)
+                cbar.set_label(stellar_mass_label, fontsize=18)
             if color=='sfr':
-                cbar.set_label('Median ' + sfr_label, fontsize=fontsize)
+                cbar.set_label(sfr_label, fontsize=18)
         ax.tick_params(labelsize=12)
         ax.set_aspect(ellipse_width/ellipse_height)
         
@@ -142,7 +142,15 @@ def plot_balmer_vs_all(save_name):
     ax_cbar_ssfr = fig.add_axes([0.89, 0.2, 0.02, 0.60])
     plot_balmer_on_axis(ax_balmer_mass, 'log_mass_median', color='sfr', use_cbar_axis=True, cbar_axis=ax_cbar_mass)
     plot_balmer_on_axis(ax_balmer_ssfr, 'log_use_sfr_median', color='mass', use_cbar_axis=True, cbar_axis = ax_cbar_ssfr)
-    fig.savefig(imd.axis_cluster_data_dir + f'/{save_name}/balmer_plots/balmer_ssfr_mass_color.pdf')
+    ax_balmer_mass.set_xlabel(stellar_mass_label, fontsize=18)
+    ax_balmer_ssfr.set_xlabel(sfr_label, fontsize=18)
+    ax_balmer_mass.set_ylabel('Balmer Decrement', fontsize=18)
+    ax_balmer_ssfr.set_ylabel('Balmer Decrement', fontsize=18)
+    ax_balmer_mass.tick_params(labelsize=16)
+    ax_balmer_ssfr.tick_params(labelsize=16)
+    ax_cbar_mass.tick_params(labelsize=16)
+    ax_cbar_ssfr.tick_params(labelsize=16)
+    fig.savefig(imd.axis_cluster_data_dir + f'/{save_name}/balmer_plots/balmer_ssfr_mass_color.pdf',bbox_inches='tight')
 
 
 

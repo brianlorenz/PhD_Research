@@ -13,6 +13,7 @@ import pandas as pd
 from sfms_bins import *
 from plot_vals import *
 import cmasher as cmr
+from scipy import stats
 
 
 shapes = {'low': '+', 'mid': 'd', 'high': 'o'}
@@ -288,17 +289,18 @@ def plot_sample_split(n_groups, save_name, ratio_bins, starting_points, mass_wid
         summary_df.to_csv(imd.axis_cluster_data_dir + f'/{save_name}/summary.csv', index=False)
 
 
-    ax.set_xlabel(stellar_mass_label, fontsize=16) 
-    ax.set_ylabel(variable, fontsize=16)
+    ax.set_xlabel(stellar_mass_label, fontsize=14) 
+    ax.set_ylabel(variable, fontsize=14)
     if variable=='log_use_sfr':
-        ax.set_ylabel(sfr_label, fontsize=16)
-    ax.tick_params(labelsize=12)
+        ax.set_ylabel(sfr_label, fontsize=14)
+    ax.tick_params(labelsize=14)
     cbar = fig.colorbar(mpl.cm.ScalarMappable(norm=norm, cmap=cmap), ax=ax, fraction=0.046, pad=0.04)
     cbar.set_label('Balmer Decrement', fontsize=14)
-    cbar.ax.tick_params(labelsize=12)
+    cbar.ax.tick_params(labelsize=14)
     ax.set_aspect(ellipse_width/ellipse_height)
+    scale_aspect(ax)
     if made_new_axis==True:
-        fig.savefig(imd.axis_cluster_data_dir + f'/{save_name}/sample_cut{add_str}.pdf')
+        fig.savefig(imd.axis_cluster_data_dir + f'/{save_name}/sample_cut{add_str}.pdf',bbox_inches='tight')
 
 
 
