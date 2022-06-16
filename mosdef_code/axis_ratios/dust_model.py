@@ -39,10 +39,18 @@ def fundamental_plane(m, s):
     metallicity = fm_const + fm_const_m*m + fm_const_s*s + fm_const_m2*(m**2) + fm_const_ms*m*s + fm_const_s2*(s**2)
     return metallicity
 
+def fundamental_metallictiy(log_mass,log_sfr):
+    u = log_mass - 0.32*log_sfr
+    x = u-10
+    print(u)
+    metallicity = 8.9 + 0.47*x
+    return metallicity
+
+
 def sanders_plane(log_mass, log_sfr):
     u60 = log_mass - 0.6*log_sfr
     y = u60 - 10
-    metallicity = 8.8 + 1.88*y - 0.22 * y**2 - 0.0531 * y**3
+    metallicity = 8.8 + (0.188*y) - (0.22 * y**2) - (0.0531 * y**3)
     return metallicity
 
 def test_dust_model():

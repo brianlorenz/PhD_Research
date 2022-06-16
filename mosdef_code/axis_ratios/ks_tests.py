@@ -11,8 +11,22 @@ import matplotlib.pyplot as plt
 from plot_vals import *
 
 
-def run_ks_tests():
+def run_ks_tests(cut_middle=True):
+    '''
+    
+    Parameters:
+    cut_middle (boolean): Set to True to remove the middle set of axis ratios, from 0.4 to 0.7
+    '''
     ar_df = read_filtered_ar_df()
+    print(len(ar_df))
+    save_str = ''
+
+    if cut_middle == True:
+        middle_idxs = np.logical_and(ar_df['use_ratio']>0.4, ar_df['use_ratio']<0.7)
+        ar_df = ar_df[middle_idxs]
+        print(len(ar_df))
+        save_str = '_mid_cut'
+
     
     low_axis = ar_df['use_ratio']<0.55
     high_axis = ~low_axis
@@ -22,14 +36,15 @@ def run_ks_tests():
     high_mass = ar_df[high_axis]['log_mass']
     ks_stat, pvalue = run_one_ks_test(low_mass, high_mass, 'low axis mass', 'high axis mass')
     bins = np.arange(9, 11, 0.05)
-    histogram_of_samples(low_mass, high_mass, 'low axis mass', 'high axis mass', bins, stellar_mass_label, ks_stat, pvalue, fig_savename='axis_ratio_mass_kstest')
+    histogram_of_samples(low_mass, high_mass, 'low axis mass', 'high axis mass', bins, stellar_mass_label, ks_stat, pvalue, fig_savename=f'axis_ratio_mass_kstest{save_str}')
 
     # Are the sfr distributions the same between axis ratios? 
     low_sfr = np.log10(ar_df[low_axis]['use_sfr'])
     high_sfr = np.log10(ar_df[high_axis]['use_sfr'])
     ks_stat, pvalue = run_one_ks_test(low_sfr, high_sfr, 'low axis sfr', 'high axis sfr')
     bins = np.arange(0, 3, 0.1)
-    histogram_of_samples(low_sfr, high_sfr, 'low axis sfr', 'high axis sfr', bins, sfr_label, ks_stat, pvalue, fig_savename='axis_ratio_logsfr_kstest')
+    histogram_of_samples(low_sfr, high_sfr, 'low axis sfr', 'high axis sfr', bins, sfr_label, ks_stat, pvalue, fig_savename=f'axis_ratio_logsfr_kstest{save_str}')
+
 def run_one_ks_test(data1, data2, name1, name2):
     """Runs a ks_test between the two columns:
 
@@ -65,4 +80,3 @@ def histogram_of_samples(data1, data2, name1, name2, bins, xlabel, ks_stat, pval
     fig.savefig(imd.axis_output_dir + f'/ks_tests/{fig_savename}.pdf')
 
 
-run_ks_tests()

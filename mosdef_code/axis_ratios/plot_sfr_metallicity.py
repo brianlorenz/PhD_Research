@@ -96,45 +96,47 @@ def plot_sfr_metals(save_name, plot_ssfr=False, plot_re=False, plot_sanders=Fals
     if plot_ssfr == True:
         pass
     else:
-        A_lambda = 2.0
-        re = 0.5
-        sfrs = [float(solve(const2 * 10**(a*metal_vals[i]) * (x/(re**2))**(1/n) - A_lambda, x)[0]) for i in range(len(metal_vals))] #Dust
-        sfrs=np.array(sfrs)
-        log_sfrs = np.log10(sfrs)
-        if plot_re==True:
-            log_sfrs = np.log10(10**np.log10(sfrs)/re)
-        ax.plot(log_sfrs, metal_vals, ls='--', color='skyblue', marker='None', label='$R_\mathrm{eff} = 0.5$, $A_\mathrm{balmer} = 2.0$')
+        pass
+        # A_lambda = 2.0
+        # re = 0.5
+        # sfrs = [float(solve(const2 * 10**(a*metal_vals[i]) * (x/(re**2))**(1/n) - A_lambda, x)[0]) for i in range(len(metal_vals))] #Dust
+        # sfrs=np.array(sfrs)
+        # log_sfrs = np.log10(sfrs)
+        # if plot_re==True:
+        #     log_sfrs = np.log10(10**np.log10(sfrs)/re)
+        # ax.plot(log_sfrs, metal_vals, ls='--', color='skyblue', marker='None', label='$R_\mathrm{eff} = 0.5$, $A_\mathrm{balmer} = 2.0$')
 
 
     # mass/metal/sfr relation
+    def compute_metals(log_mass, fm_s):
+        '''
+        Parameters:
+        log_mass: Log stellar mass
+        fm_s: log sfrs (array)
+        '''
+        fm_m = (log_mass-10)*np.ones(len(fm_s))
+        fm_metals = fundamental_plane(fm_m, fm_s)
+        add_str2 = ''
+        if plot_sanders==True:
+            fm_metals = sanders_plane(log_mass, fm_s)
+            add_str2 = '_sanders'
+        if plot_ssfr == True:
+            x_plot = np.log10(10**fm_s/(10**log_mass))
+        else:
+            x_plot = fm_s
+        return x_plot, fm_metals, add_str2
+
     fm_s = np.arange(0, 3, 0.1)
-    log_mass = 9.45
-    fm_m = (log_mass-10)*np.ones(len(fm_s))
-    fm_metals = fundamental_plane(fm_m, fm_s)
-    add_str2 = ''
-    if plot_sanders==True:
-        fm_metals = sanders_plane(log_mass, fm_s)
-        print(fm_metals)
-        add_str2 = '_sanders'
-    if plot_ssfr == True:
-        x_plot = np.log10(10**fm_s/(10**log_mass))
-    else:
-        x_plot = fm_s
+    log_mass = 9.7
+    x_plot, fm_metals, add_str2 = compute_metals(log_mass, fm_s) 
     ax.plot(x_plot, fm_metals, ls='--', color='red', marker='None', label=f'Stellar Mass = {log_mass}, {add_str2}')
-    # mass/metal/sfr relation
-    fm_s = np.arange(0, 3, 0.1)
-    log_mass = 10.2
-    fm_m = (log_mass-10)*np.ones(len(fm_s))
-    fm_metals = fundamental_plane(fm_m, fm_s)
-    add_str2 = ''
-    if plot_sanders==True:
-        fm_metals = sanders_plane(log_mass, fm_s)
-        add_str2 = '_sanders'
-    if plot_ssfr == True:
-        x_plot = np.log10(10**fm_s/(10**log_mass))
-    else:
-        x_plot = fm_s
+    
+    log_mass = 10.3
+    x_plot, fm_metals, add_str2 = compute_metals(log_mass, fm_s) 
     ax.plot(x_plot, fm_metals, ls='--', color='orange', marker='None', label=f'Stellar Mass = {log_mass}, {add_str2}')
+    log_mass = 10.2
+    x_plot, fm_metals, add_str2 = compute_metals(log_mass, fm_s) 
+    ax.plot(x_plot, fm_metals, ls='--', color='black', marker='None', label=f'Stellar Mass = {log_mass}, {add_str2}')
     
     cbar = fig.colorbar(mpl.cm.ScalarMappable(norm=norm, cmap=cmap), ax=ax, fraction=0.046, pad=0.04)
     cbar.set_label('Balmer Decrement', fontsize=fontsize)
@@ -155,9 +157,9 @@ def plot_sfr_metals(save_name, plot_ssfr=False, plot_re=False, plot_sanders=Fals
     fig.savefig(imd.axis_cluster_data_dir + f'/{save_name}/metallicity_sfr{add_str}.pdf')
 
 
-# plot_sfr_metals('both_sfms_4bin_median_2axis_boot100')
+plot_sfr_metals('both_sfms_4bin_median_2axis_boot100')
 # plot_sfr_metals('both_sfms_4bin_median_2axis_boot100', plot_re=True)
-# plot_sfr_metals('both_sfms_4bin_median_2axis_boot100', plot_sanders=True)
+plot_sfr_metals('both_sfms_4bin_median_2axis_boot100', plot_sanders=True)
 # plot_sfr_metals('both_sfms_4bin_median_2axis_boot100', plot_ssfr=True)
 # plot_sfr_metals('both_whitaker_sfms_4bin_median_2axis_boot10')
 # plot_sfr_metals('both_z_divided_sfms_4bin_median_2axis_boot10')

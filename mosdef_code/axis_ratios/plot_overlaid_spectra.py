@@ -142,31 +142,48 @@ def plot_overlaid_spectra(savename, plot_cont_sub=False, paper_fig=False):
         ax.set_ylabel(f'Normalized F$_\\lambda${add_str}')
         ax.set_xlabel('Wavelength ($\AA$)')
         if paper_fig == True:
-            ax.set_ylabel(f'Normalized Flux', fontsize=18, labelpad=45)
+            ax.set_ylabel('F$_\\lambda$ / F$_{\\lambda, 6565}$', fontsize=18, labelpad=45)
             ax.set_xlabel('Wavelength ($\AA$)', fontsize=18, labelpad=25)
             ax.tick_params(labelsize=18)
 
         if paper_fig==True:
-            if i == 5:
-                # ax.plot([0],[0], color='grey', label = 'Stack of sample', zorder=1) 
-                ax.plot([0],[0], color='grey', label = 'Reference', zorder=1) 
-                ax.legend(bbox_to_anchor=(0.19, 0.67, 0.20, 0.15), loc='upper right', fontsize=16)
-            if i == 7:
+            if i == 2:
                 # label the emission lines
                 for line in line_list:
                     name = line[0]
                     center = line[1]
-                    ax.axvline(center, ymin=-0, ymax=0.78, color='black', ls='--')
-                    offset = 0
-                    if center == 6564.61:
-                        height = 1.1
-                    if name=='O[III]':
-                        offset = -34
-                    if center == 6549.86:
-                        offset = 0
-                        fig.text(0.806, 0.782, name, fontsize=18)
+                    # line_range = np.logical_and(spec_df['wavelength']>(center-5), spec_df['wavelength']<(center+5))
+                    line_range = np.logical_and(spec_df['wavelength']>(center-1), spec_df['wavelength']<(center+1))
+                    height = np.max(spec_df[line_range]['f_lambda']*scale_factor)
+                    ylims = ax.get_ylim()[0]
+                    height_pct = (height-ylims[0]) / (ylims[1]-ylims[0])
+                    # ax.axvline(center, ymin=-0, ymax=0.78, color='black', ls='--')
+                    ax.axvline(center, ymin=height_pct+0.1, ymax=height_pct+0.15, color='black', ls='-')
+                    if len(name) > 8:
+                        offset = -8
                     else:
-                        ax.text(center+3+offset, height, name, fontsize=18)
+                        offset = len(name)*-2.7
+                    ax.text(center+3+offset, height+0.3, name, fontsize=18)
+                
+                # ax.plot([0],[0], color='grey', label = 'Stack of sample', zorder=1) 
+                # ax.plot([0],[0], color='grey', label = 'Reference', zorder=1) 
+                # ax.legend(bbox_to_anchor=(0.19, 0.67, 0.20, 0.15), loc='upper right', fontsize=16)
+            if i == 7:
+                ax.plot([0],[0], color='grey', label = 'Reference', zorder=1)
+                ax.legend(bbox_to_anchor=(0.81, 1.04, 0.20, 0.15), loc='upper right', fontsize=16)
+                
+                    
+                    
+                    # offset = 0
+                    # if center == 6564.61:
+                    #     height = 1.1
+                    # if name=='O[III]':
+                    #     offset = -34
+                    # if center == 6549.86:
+                    #     offset = 0
+                    #     fig.text(0.806, 0.782, name, fontsize=18)
+                    # else:
+                    #     ax.text(center+3+offset, height, name, fontsize=18)
 
 
     # Add the background
@@ -197,10 +214,10 @@ def plot_overlaid_spectra(savename, plot_cont_sub=False, paper_fig=False):
         # fig.text(0.35, 0.415, 'M$_*$<10, SFR<10', fontsize=18)
         # fig.text(0.35, 0.83, 'M$_*$<10, SFR>10', fontsize=18)
         # fig.text(0.8, 0.415, 'M$_*$>10, SFR<10', fontsize=18)
-        bax_0.text(label_loc[0], label_loc[1], 'M$_*$<10, SFR<10', fontsize=18)
-        bax_1.text(label_loc[0], label_loc[1], 'M$_*$<10, SFR>10', fontsize=18)
-        bax_2.text(label_loc[0], label_loc[1], 'M$_*$>10, SFR<10', fontsize=18)
-        bax_3.text(label_loc[0], label_loc[1], 'M$_*$>10, SFR>10', fontsize=18)
+        bax_0.text(label_loc[0], label_loc[1], 'Low mass, low SFR', fontsize=18)
+        bax_1.text(label_loc[0], label_loc[1], 'Low mass, high SFR', fontsize=18)
+        bax_2.text(label_loc[0], label_loc[1], 'High mass, low SFR', fontsize=18)
+        bax_3.text(label_loc[0], label_loc[1], 'High mass, high SFR', fontsize=18)
         bax_1.set_xticklabels([])
         bax_2.set_yticklabels([])
         bax_3.set_xticklabels([])
@@ -214,4 +231,4 @@ def plot_overlaid_spectra(savename, plot_cont_sub=False, paper_fig=False):
         fig.savefig(imd.axis_cluster_data_dir + f'/{savename}/overlaid_spectra.pdf',bbox_inches='tight')
     plt.close('all')
 
-# plot_overlaid_spectra('both_sfms_4bin_median_2axis_boot100', plot_cont_sub=True, paper_fig=True)
+plot_overlaid_spectra('both_sfms_4bin_median_2axis_boot100', plot_cont_sub=True, paper_fig=True)
