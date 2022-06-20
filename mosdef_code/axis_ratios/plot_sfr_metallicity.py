@@ -139,7 +139,7 @@ def plot_sfr_metals(save_name, plot_ssfr=False, plot_re=False, plot_sanders=Fals
     ax.plot(x_plot, fm_metals, ls='--', color='black', marker='None', label=f'Stellar Mass = {log_mass}, {add_str2}')
     
     cbar = fig.colorbar(mpl.cm.ScalarMappable(norm=norm, cmap=cmap), ax=ax, fraction=0.046, pad=0.04)
-    cbar.set_label('Balmer Decrement', fontsize=fontsize)
+    cbar.set_label(balmer_label, fontsize=fontsize)
     ax.tick_params(labelsize=12)
     ax.set_aspect(ellipse_width/ellipse_height)
     ax.legend()

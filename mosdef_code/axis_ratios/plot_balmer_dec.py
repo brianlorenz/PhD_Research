@@ -134,7 +134,7 @@ def plot_balmer_dec(save_name, n_groups, split_by, y_var = 'balmer_dec', color_v
 
             ax.errorbar(x_cord, y_cord, yerr=np.array([[row['err_balmer_dec_low'], row['err_balmer_dec_high']]]).T, marker='None', color=rgba)
             ax.add_artist(Ellipse((x_cord, y_cord), ellipse_width, ellipse_height, facecolor=rgba))
-            ax.set_ylabel('Balmer Decrement', fontsize=axis_fontsize)
+            ax.set_ylabel(balmer_label, fontsize=axis_fontsize)
         elif y_var == 'av':
             x_cord = row['use_ratio_median']
             y_cord = row['av_median']
@@ -233,7 +233,7 @@ def plot_balmer_dec(save_name, n_groups, split_by, y_var = 'balmer_dec', color_v
             
             ax.errorbar(x_cord, y_cord, yerr=np.array([[row['err_balmer_dec_low'], row['err_balmer_dec_high']]]).T, marker='None', color=rgba)
             ax.add_artist(Ellipse((x_cord, y_cord), ellipse_width, ellipse_height, facecolor=rgba))
-            ax.set_ylabel('Balmer Decrement', fontsize=axis_fontsize)
+            ax.set_ylabel(balmer_label, fontsize=axis_fontsize)
         elif y_var == 'av':
             x_cord = row['log_mass_median']
             y_cord = row['av_median']

@@ -100,7 +100,7 @@ def plot_balmer_vs_all(save_name):
             ax.errorbar(row[x_points], row['balmer_dec'], yerr=np.array([[row['err_balmer_dec_low'], row['err_balmer_dec_high']]]).T, xerr=xerr, color=rgba, marker='None', ls='None')
             ax.add_artist(Ellipse((row[x_points], row['balmer_dec']), ellipse_width, ellipse_height, facecolor=rgba))
             ax.set_xlabel(xlabel, fontsize=fontsize)
-            ax.set_ylabel('Balmer Decrement', fontsize=fontsize)
+            ax.set_ylabel(balmer_label, fontsize=fontsize)
         
         if colorbar==True:
             if use_cbar_axis==False:
@@ -144,8 +144,8 @@ def plot_balmer_vs_all(save_name):
     plot_balmer_on_axis(ax_balmer_ssfr, 'log_use_sfr_median', color='mass', use_cbar_axis=True, cbar_axis = ax_cbar_ssfr)
     ax_balmer_mass.set_xlabel(stellar_mass_label, fontsize=18)
     ax_balmer_ssfr.set_xlabel(sfr_label, fontsize=18)
-    ax_balmer_mass.set_ylabel('Balmer Decrement', fontsize=18)
-    ax_balmer_ssfr.set_ylabel('Balmer Decrement', fontsize=18)
+    ax_balmer_mass.set_ylabel(balmer_label, fontsize=18)
+    ax_balmer_ssfr.set_ylabel(balmer_label, fontsize=18)
     ax_balmer_mass.tick_params(labelsize=16)
     ax_balmer_ssfr.tick_params(labelsize=16)
     ax_cbar_mass.tick_params(labelsize=16)
