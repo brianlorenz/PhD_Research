@@ -10,6 +10,16 @@ import matplotlib.patheffects as path_effects
 from plot_vals import *
 
 
+def read_rodriguez_data():
+    data_loc = imd.mosdef_dir + '/axis_ratio_data/rodriguez2013_weighted_data.csv'
+    rod_df = ascii.read(data_loc).to_pandas()
+    xvals = np.arange(0, 1, 0.025)
+    rod_df = rod_df.rename(columns={"col1": "a", "col2": "yvals"})
+    rod_df['xvals'] = xvals
+    rod_df['normalized_yvals'] = rod_df['yvals'] / np.max(rod_df['yvals'])
+    return rod_df
+
+
 def plot_ar_hist(use_column = 'use_ratio',  mass_split='False'):
     '''Makes an axis ratio hisogram
 
@@ -20,6 +30,8 @@ def plot_ar_hist(use_column = 'use_ratio',  mass_split='False'):
 
     ar_df = read_filtered_ar_df()
     bins = np.arange(0, 1, 0.05)
+
+    rod_df = read_rodriguez_data()
     
     if mass_split=='True':
         fig, axarr = plt.subplots(1, 2, figsize=(16,8))
@@ -76,6 +88,7 @@ def plot_ar_hist(use_column = 'use_ratio',  mass_split='False'):
     else:
         fig, ax = plt.subplots(figsize=(8,8))
         ax.hist(ar_df[use_column], bins=bins, color='black')
+        ax.plot(rod_df['xvals'], rod_df['normalized_yvals']*50, color='darkblue', ls='-', marker='None')
         axarr = [ax]
         savename = ''
         ax.set_ylim(0, 60)
@@ -159,7 +172,7 @@ def compare_ar_measurements(col1, err_col1, col2, err_col2):
     scale_aspect(ax)
     fig.savefig(imd.axis_output_dir + f'/ar_compare_{col1}_{col2}.pdf',bbox_inches='tight')
 
-compare_ar_measurements('F125_axis_ratio', 'F125_err_axis_ratio', 'F160_axis_ratio', 'F160_err_axis_ratio')
+# compare_ar_measurements('F125_axis_ratio', 'F125_err_axis_ratio', 'F160_axis_ratio', 'F160_err_axis_ratio')
 plot_ar_hist(use_column = 'use_ratio')
 
 # compare_ar_measurements('use_ratio', 'err_use_ratio', 'F160_axis_ratio', 'F160_err_axis_ratio')

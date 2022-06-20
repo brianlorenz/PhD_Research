@@ -6,6 +6,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import initialize_mosdef_dirs as imd
 from axis_ratio_funcs import read_interp_axis_ratio, filter_ar_df, read_filtered_ar_df
+from scipy.optimize import curve_fit
 
 ### OUTDATED
 sfms_slope = 0.598 
@@ -17,13 +18,25 @@ sfms_lowz_yint = -4.98
 sfms_highz_slope = 0.645
 sfms_highz_yint = -5.115
 
+# 06/17/22
+a_lowz_fit = -24.228
+a_highz_fit = -23.943
 
-def find_sfms(divide_axis = False, divide_z = False):
+def whitaker_sfms(mass, a):
+    # a = -24.0415
+    b = 4.1693
+    c = -0.1638
+    sfms = a + b*mass + c*mass**2
+    return sfms
+
+
+def find_sfms(divide_axis = False, divide_z = False, whitaker_z = False):
     '''Find the slope and intercept of the sfms in our sample
     
     Parameters:
     divide_axis: Split into axes groups and fit each sfms separately
     divide_z: Split into redshift groups and fit each sfms separately
+    whitaker_z: Split into redshift groups and find the best fitting whitaker curve to each of them
     '''
     
     # ar_df = read_interp_axis_ratio()
@@ -76,6 +89,25 @@ def find_sfms(divide_axis = False, divide_z = False):
         ax.text(9, 1.9, f'slope: {round(fit_high.slope, 3)}, yint: {round(fit_high.intercept, 3)}', color='darkblue')
         fit_color = 'black'
         save_add = '_zsplit'
+    elif whitaker_z == True:
+        low_z = ar_df['Z_MOSFIRE'] < 1.8
+        ax.plot(ar_df[low_z]['log_mass'], ar_df[low_z]['log_use_sfr'], color='orange', ls='None', marker='o', label='redshift < 1.8')
+        ax.plot(ar_df[~low_z]['log_mass'], ar_df[~low_z]['log_use_sfr'], color='blue', ls='None', marker='o', label='redshift > 1.8')
+    
+        popt, pcov = curve_fit(whitaker_sfms, ar_df[low_z]['log_mass'], ar_df[low_z]['log_use_sfr'])
+        a_lowz = popt[0]
+        y1_low = whitaker_sfms(x, a_lowz)
+        plt.plot(x, y1_low, color='darkorange', ls='--', label='low fit')
+        ax.text(9, 2.1, f'a value: {round(a_lowz, 3)}', color='darkorange')
+
+        popt, pcov = curve_fit(whitaker_sfms, ar_df[~low_z]['log_mass'], ar_df[~low_z]['log_use_sfr'])
+        a_highz = popt[0]
+        y1_high = whitaker_sfms(x, a_highz)
+        plt.plot(x, y1_high, color='darkblue', ls='--', label='high fit')
+        ax.text(9, 1.9, f'a value: {round(a_highz, 3)}', color='darkblue')
+        fit_color = 'black'
+        save_add = '_whitaker_zsplit'
+
     else:
         ax.plot(ar_df['log_mass'], ar_df['log_use_sfr'], color='black', ls='None', marker='o')
         fit_color = 'red'
@@ -123,6 +155,7 @@ def plot_sfms_bins(save_name, nbins, split_by):
 # find_sfms()
 # find_sfms(divide_axis=True)
 # find_sfms(divide_z=True)
+find_sfms(whitaker_z=True)
 # plot_sfms_bins('both_sfms_6bin_median_2axis', 12, 'log_use_sfr')
 #low cut - (9.5, 0.3), (11.0, 1.9)  y = 1.07x-9.83
 #high cut - (9.0, 0.5), (10.5, 2.0) y = 1.07x-8.6

@@ -295,7 +295,7 @@ def plot_sample_split(n_groups, save_name, ratio_bins, starting_points, mass_wid
         ax.set_ylabel(sfr_label, fontsize=14)
     ax.tick_params(labelsize=14)
     cbar = fig.colorbar(mpl.cm.ScalarMappable(norm=norm, cmap=cmap), ax=ax, fraction=0.046, pad=0.04)
-    cbar.set_label('Balmer Decrement', fontsize=14)
+    cbar.set_label(balmer_label, fontsize=14)
     cbar.ax.tick_params(labelsize=14)
     ax.set_aspect(ellipse_width/ellipse_height)
     scale_aspect(ax)

@@ -3,6 +3,7 @@ import numpy as np
 stellar_mass_label = 'log$_{10}$(M$_*$ / M$_\odot$)'
 sfr_label = 'log$_{10}$(SFR) (M$_\odot$ / yr)'
 ssfr_label = 'log$_{10}$(sSFR) (yr$^{-1}$)'
+balmer_label = 'Balmer decrement (H$_\\alpha$ / H$_\\beta$)'
 
 single_column_axisfont = 20
 single_column_ticksize = 20

@@ -8,7 +8,7 @@ import initialize_mosdef_dirs as imd
 import matplotlib.patheffects as path_effects
 from ellipses_for_plotting import get_ellipse_shapes
 from matplotlib.patches import Ellipse
-
+from plot_vals import *
 
 
 def plot_median_uvj(n_bins, save_name):
@@ -259,7 +259,7 @@ def plot_uvj_ar():
 
 
         cbar = fig.colorbar(mpl.cm.ScalarMappable(norm=norm, cmap=cmap), ax=ax)
-        cbar.set_label('Balmer Decrement', fontsize=14)
+        cbar.set_label(balmer_label, fontsize=14)
         if plot_num == 1:
             fig.savefig(imd.axis_output_dir + f'/uvj_balmer.pdf')
         if plot_num == 2:
