@@ -226,11 +226,16 @@ def plot_sample_split(n_groups, save_name, ratio_bins, starting_points, mass_wid
             if use_whitaker_sfms==False and use_z_dependent_sfms==False:
                 y1 = sfms_slope*x + sfms_yint
                 ax.plot(x, y1, color='grey', ls='--')
-            if use_z_dependent_sfms == True:
+            if use_z_dependent_sfms == True and use_whitaker_sfms==False:
                 y1 = sfms_highz_slope*x + sfms_highz_yint
                 ax.plot(x, y1, color='grey', ls='--')
 
                 y2 = sfms_lowz_slope*x + sfms_lowz_yint
+                ax.plot(x, y2, color='grey', ls='--')
+            if use_z_dependent_sfms == True and use_whitaker_sfms==True:
+                y1 = whitaker_sfms(x, a_lowz_fit)
+                y2 = whitaker_sfms(x, a_highz_fit)
+                ax.plot(x, y1, color='grey', ls='--')
                 ax.plot(x, y2, color='grey', ls='--')
 
             ax.axvline(10, color='grey', ls='--')

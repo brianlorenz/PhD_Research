@@ -50,8 +50,24 @@ def plot_AV_beta_paper(nbins, split_by, save_name):
         ax.tick_params(labelsize=18)
         ax.set_xlabel(stellar_mass_label, fontsize=label_font)
         scale_aspect(ax)
-    ax_av.set_ylabel('FAST A$_V$', fontsize=label_font)
+    ax_av.set_ylabel('A$_V$', fontsize=label_font)
     ax_beta.set_ylabel('$\\beta$', fontsize=label_font)
     fig.savefig(imd.axis_cluster_data_dir + f'/{save_name}/balmer_plots/av_beta_combined.pdf',bbox_inches='tight')
 
-# plot_AV_beta_paper(8, 'log_use_sfr', 'both_sfms_4bin_median_2axis_boot100')
+def plot_mass_met_paper(nbins, split_by, save_name):
+    label_font = 18
+
+    # fig = plt.figure(figsize=(17, 8))
+    # ax_av = fig.add_axes([0.01, 0.2, 0.45, 0.6])
+    # ax_beta = fig.add_axes([0.42, 0.2, 0.45, 0.6])
+    # ax_cbar = fig.add_axes([0.90, 0.2, 0.02, 0.60])
+    fig, ax = plt.subplots(1, 1, figsize=(9, 8))
+    plot_balmer_dec(save_name, nbins, split_by, y_var='metallicity', color_var=split_by, mass_ax=ax, fig=fig)
+    ax.tick_params(labelsize=18)
+    ax.set_xlabel(stellar_mass_label, fontsize=label_font)
+    scale_aspect(ax)
+    ax.set_ylabel(metallicity_label, fontsize=label_font)
+    fig.savefig(imd.axis_cluster_data_dir + f'/{save_name}/balmer_plots/mass_metallicity.pdf',bbox_inches='tight')
+
+# plot_AV_beta_paper(8, 'log_use_sfr', 'zdep_whitaker_sfms_boot100')
+plot_mass_met_paper(8, 'log_use_sfr', 'zdep_whitaker_sfms_boot100')

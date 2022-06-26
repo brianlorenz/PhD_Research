@@ -45,7 +45,7 @@ class stack_params:
 ## -----------------------------------------------------------------
 
 # PRimary as of 6/17/22
-def make_zdep_whitaker_sfms_boot100(run_stack = True, only_plot = False):
+def make_zdep_whitaker_sfms_boot100(run_stack = True, only_plot = True):
     run_stack = run_stack
     only_plot = only_plot
     mass_width = 1.0

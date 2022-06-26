@@ -231,4 +231,4 @@ def plot_overlaid_spectra(savename, plot_cont_sub=False, paper_fig=False):
         fig.savefig(imd.axis_cluster_data_dir + f'/{savename}/overlaid_spectra.pdf',bbox_inches='tight')
     plt.close('all')
 
-plot_overlaid_spectra('both_sfms_4bin_median_2axis_boot100', plot_cont_sub=True, paper_fig=True)
+# plot_overlaid_spectra('zdep_whitaker_sfms_boot100', plot_cont_sub=True, paper_fig=True)

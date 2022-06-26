@@ -157,9 +157,9 @@ def plot_sfr_metals(save_name, plot_ssfr=False, plot_re=False, plot_sanders=Fals
     fig.savefig(imd.axis_cluster_data_dir + f'/{save_name}/metallicity_sfr{add_str}.pdf')
 
 
-plot_sfr_metals('both_sfms_4bin_median_2axis_boot100')
+plot_sfr_metals('zdep_whitaker_sfms_boot100')
 # plot_sfr_metals('both_sfms_4bin_median_2axis_boot100', plot_re=True)
-plot_sfr_metals('both_sfms_4bin_median_2axis_boot100', plot_sanders=True)
+plot_sfr_metals('zdep_whitaker_sfms_boot100', plot_sanders=True)
 # plot_sfr_metals('both_sfms_4bin_median_2axis_boot100', plot_ssfr=True)
 # plot_sfr_metals('both_whitaker_sfms_4bin_median_2axis_boot10')
 # plot_sfr_metals('both_z_divided_sfms_4bin_median_2axis_boot10')

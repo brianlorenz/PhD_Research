@@ -19,6 +19,14 @@ def read_rodriguez_data():
     rod_df['normalized_yvals'] = rod_df['yvals'] / np.max(rod_df['yvals'])
     return rod_df
 
+def read_law_data():
+    data_loc = imd.mosdef_dir + '/axis_ratio_data/law2011_data.csv'
+    law_df = ascii.read(data_loc).to_pandas()
+    xvals = np.arange(0, 1, 0.1)
+    law_df = law_df.rename(columns={"col1": "a", "col2": "yvals"})
+    law_df['xvals'] = xvals
+    return law_df
+
 
 def plot_ar_hist(use_column = 'use_ratio',  mass_split='False'):
     '''Makes an axis ratio hisogram
@@ -32,7 +40,8 @@ def plot_ar_hist(use_column = 'use_ratio',  mass_split='False'):
     bins = np.arange(0, 1, 0.05)
 
     rod_df = read_rodriguez_data()
-    
+    law_df = read_law_data()
+
     if mass_split=='True':
         fig, axarr = plt.subplots(1, 2, figsize=(16,8))
         ax_low = axarr[0]
@@ -88,7 +97,11 @@ def plot_ar_hist(use_column = 'use_ratio',  mass_split='False'):
     else:
         fig, ax = plt.subplots(figsize=(8,8))
         ax.hist(ar_df[use_column], bins=bins, color='black')
-        ax.plot(rod_df['xvals'], rod_df['normalized_yvals']*50, color='darkblue', ls='-', marker='None')
+        ax.plot(rod_df['xvals'], rod_df['normalized_yvals']*50, color='white', ls='-', lw=6, marker='None')
+        ax.plot(rod_df['xvals'], rod_df['normalized_yvals']*50, color=dark_color, ls='-', lw=4, marker='None')
+        bins_law = np.arange(0, 1, 0.1)
+        ax.bar(bins_law, law_df['yvals']*1.5, color='red', alpha=0.5, width=0.1)
+        # ax.hist(law_df['yvals'], bins=bins_law, color='red', alpha=0.5)
         axarr = [ax]
         savename = ''
         ax.set_ylim(0, 60)
