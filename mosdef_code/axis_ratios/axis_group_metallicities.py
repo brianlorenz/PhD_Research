@@ -263,6 +263,7 @@ def plot_metals(savename, plot_half_light_instead=False, plot_uvj_instead=False,
 
         if row['shape'] == '+': 
             color = dark_color
+            # color = 'black'
             label = 'Axis Ratio < 0.4'
             if plot_uvj_instead:
                 label = 'Axis Ratio < 0.55'
@@ -271,6 +272,7 @@ def plot_metals(savename, plot_half_light_instead=False, plot_uvj_instead=False,
             label = '0.4 < Axis Ratio < 0.7'
         if row['shape'] == 'o':
             color = light_color
+            # color = 'grey'
             label = '0.7 < Axis Ratio'
             if plot_uvj_instead:
                 label = 'Axis Ratio > 0.55'
@@ -294,7 +296,7 @@ def plot_metals(savename, plot_half_light_instead=False, plot_uvj_instead=False,
                 ax.legend(bbox_to_anchor=(1.5, 4.5, 0.20, 0.15), loc='upper right')
         
         elif plot_uvj_instead:
-            ax.plot(ar_df['V_J'], ar_df['U_V'], color=color, label = label, marker='o', ls='None') 
+            ax.plot(ar_df['V_J'], ar_df['U_V'], color=color, label = label, marker='o', ls='None', markersize=6) 
             uvjfontsize = 26
             ax.set_ylabel('U-V', fontsize=uvjfontsize+4)
             ax.set_xlabel('V-J', fontsize=uvjfontsize+4)
@@ -307,10 +309,14 @@ def plot_metals(savename, plot_half_light_instead=False, plot_uvj_instead=False,
             ax.set_ylim(-0.2, 1.9)
             #Label axes
             label_loc = (-0.45, 1.7)
-            ax_0.text(label_loc[0], label_loc[1], 'M$_*$<10, SFR<10', fontsize=uvjfontsize)
-            ax_1.text(label_loc[0], label_loc[1], 'M$_*$<10, SFR>10', fontsize=uvjfontsize)
-            ax_2.text(label_loc[0], label_loc[1], 'M$_*$>10, SFR<10', fontsize=uvjfontsize)
-            ax_3.text(label_loc[0], label_loc[1], 'M$_*$>10, SFR>10', fontsize=uvjfontsize)
+            # ax_0.text(label_loc[0], label_loc[1], 'M$_*$<10, SFR<10', fontsize=uvjfontsize)
+            # ax_1.text(label_loc[0], label_loc[1], 'M$_*$<10, SFR>10', fontsize=uvjfontsize)
+            # ax_2.text(label_loc[0], label_loc[1], 'M$_*$>10, SFR<10', fontsize=uvjfontsize)
+            # ax_3.text(label_loc[0], label_loc[1], 'M$_*$>10, SFR>10', fontsize=uvjfontsize)
+            fig.text(0.24, 0.9, 'Low mass', fontsize=uvjfontsize)
+            fig.text(0.64, 0.9, 'High mass', fontsize=uvjfontsize)
+            fig.text(0.92, 0.25, 'Low SFR', fontsize=uvjfontsize, rotation=270)
+            fig.text(0.92, 0.64, 'High SFR', fontsize=uvjfontsize, rotation=270)
             ax.tick_params(labelsize=uvjfontsize)
             # UVJ diagram lines
             ax.plot((-100, 0.69), (1.3, 1.3), color='black')
@@ -400,11 +406,9 @@ def add_metals_to_summary_df(save_name, metal_column):
 
     summary_df.to_csv(imd.axis_cluster_data_dir + f'/{save_name}/summary.csv', index=False)
 
-# plot_metals(savename='both_sfms_4bin_median_2axis_boot100', plot_half_light_instead=True)
-# plot_metals(savename='both_sfms_4bin_median_2axis_boot100', plot_uvj_instead=True)
-# plot_metals(savename='both_sfms_4bin_median_2axis_boot100', plot_z_instead=True)
 # measure_metals(8, 'both_sfms_4bin_median_2axis_boot100', bootstrap=100)
 # plot_group_metals_compare(12, 'both_ssfrs_4bin_mean')
 # plot_mass_metal(12, 'both_ssfrs_4bin_mean')
 # add_metals_to_summary_df('both_sfms_4bin_median_2axis_boot100', metal_column='O3N2_metallicity')
-plot_metals(savename='zdep_whitaker_sfms_boot100', plot_uvj_instead=True)
+
+# plot_metals(savename='whitaker_sfms_boot100', plot_uvj_instead=True)

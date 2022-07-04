@@ -8,6 +8,7 @@ from matplotlib.patches import Ellipse
 from ellipses_for_plotting import get_ellipse_shapes
 import sys
 from scipy.optimize import curve_fit
+from plot_vals import *
 
 n = 1.4
 a = 1.77
@@ -100,8 +101,39 @@ def plot_dust_model(save_name):
     # plt.show()
     fig.savefig(imd.axis_cluster_data_dir + f'/{save_name}/dust_model.pdf')
 
+def plot_on_fmr(save_name):
+    fig, ax = plt.subplots(figsize=(8,8))
+    summary_df = ascii.read(imd.axis_cluster_data_dir + f'/{save_name}/summary.csv').to_pandas()
+    metallicities = summary_df['metallicity_median']
+    log_sfrs = summary_df['log_use_sfr_median']
+    log_masses = summary_df['log_mass_median']
+    high_mass = log_masses>10
+    u60s = log_masses - 0.6 * log_sfrs
+
+    ax.plot(u60s, metallicities, color=light_color, ls='None', marker='o', markersize=8, label='Low mass')
+    ax.plot(u60s[high_mass], metallicities[high_mass], color=dark_color, ls='None', marker='o', markersize=8, label='High mass')
+    
+    ax.set_xlim(8.0, 11.25)
+    ax.set_ylim(7.9, 8.9)
+
+    
+    def sanders_plane2(u60s):
+        y = u60s - 10
+        metallicity = 8.8 + (0.188*y) - (0.22 * y**2) - (0.0531 * y**3)
+        return metallicity
+    u60s_xrange = np.arange(8.2, 11, 0.02)
+    yrange = sanders_plane2(u60s_xrange)
+    ax.plot(u60s_xrange, yrange, color='black', ls='--', marker='None', label='Sanders FMR')
+    ax.tick_params(labelsize=16)
+    ax.legend(fontsize=16)
+    ax.set_xlabel('$\\mu_{60}$ = log(mass) - 0.6*log(SFR)', fontsize=16)
+    ax.set_ylabel(metallicity_label, fontsize=16)
+    scale_aspect(ax)
+    fig.savefig(imd.axis_cluster_data_dir + f'/{save_name}/fmr.pdf')
+    
+
+
+
+# plot_on_fmr('whitaker_sfms_boot100')
 # test_dust_model()
 # plot_dust_model('both_sfms_4bin_median_2axis_boot100')
-# plot_dust_model('both_sfms_4bin_median_2axis_boot100_retest')
-# plot_dust_model('both_whitaker_sfms_4bin_median_2axis_boot10')
-# plot_dust_model('both_z_divided_sfms_4bin_median_2axis_boot10')

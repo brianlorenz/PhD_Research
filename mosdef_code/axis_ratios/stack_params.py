@@ -44,8 +44,8 @@ class stack_params:
 ## USING
 ## -----------------------------------------------------------------
 
-# PRimary as of 6/17/22
-def make_zdep_whitaker_sfms_boot100(run_stack = True, only_plot = True):
+# PRimary as of 6/26/22
+def make_zdep_whitaker_sfms_boot100(run_stack = False, only_plot = False):
     run_stack = run_stack
     only_plot = only_plot
     mass_width = 1.0
@@ -54,7 +54,7 @@ def make_zdep_whitaker_sfms_boot100(run_stack = True, only_plot = True):
     ratio_bins = [0.55]
     nbins = 8
     split_by = 'log_use_sfr'
-    save_name = 'zdep_whitaker_sfms_boot100'
+    save_name = 'zdep_whitaker_sfms_boot100_masscorr'
     stack_type = 'median'
     sfms_bins = True
     use_whitaker_sfms = True
@@ -63,6 +63,25 @@ def make_zdep_whitaker_sfms_boot100(run_stack = True, only_plot = True):
     both_ssfrs_4bin_mean_params = stack_params(mass_width, split_width, starting_points, ratio_bins, nbins, split_by, save_name, stack_type, sfms_bins, use_whitaker_sfms, use_z_dependent_sfms, bootstrap, only_plot, run_stack)
     return both_ssfrs_4bin_mean_params
 zdep_whitaker_sfms_boot100 = make_zdep_whitaker_sfms_boot100()
+
+def make_whitaker_sfms_boot100(run_stack = True, only_plot = False):
+    run_stack = run_stack
+    only_plot = only_plot
+    mass_width = 1.0
+    split_width = 0.75
+    starting_points = [(9, -8.85), (10, -8.85), (9, -9.6), (10, -9.6)]
+    ratio_bins = [0.55]
+    nbins = 8
+    split_by = 'log_use_sfr'
+    save_name = 'whitaker_sfms_boot100'
+    stack_type = 'median'
+    sfms_bins = True
+    use_whitaker_sfms = True
+    use_z_dependent_sfms = False
+    bootstrap = 100
+    both_ssfrs_4bin_mean_params = stack_params(mass_width, split_width, starting_points, ratio_bins, nbins, split_by, save_name, stack_type, sfms_bins, use_whitaker_sfms, use_z_dependent_sfms, bootstrap, only_plot, run_stack)
+    return both_ssfrs_4bin_mean_params
+whitaker_sfms_boot100 = make_whitaker_sfms_boot100()
 
 
 # Currently the primary one we are using
@@ -350,6 +369,7 @@ both_singlestack_median_params = make_both_singlestack_median_params()
 # stack_all_and_plot_all(both_ssfrs_4bin_median_params)
 # stack_all_and_plot_all(both_ssfrs_4bin_2axis_median_params)
 stack_all_and_plot_all(zdep_whitaker_sfms_boot100)
+stack_all_and_plot_all(whitaker_sfms_boot100)
 stack_all_and_plot_all(both_sfms_4bin_2axis_median_params)
 stack_all_and_plot_all(both_whitaker_sfms_4bin_median_2axis)
 stack_all_and_plot_all(both_z_divided_sfms_4bin_median_2axis)

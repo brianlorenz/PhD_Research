@@ -96,16 +96,16 @@ def interpolate_axis_ratio():
     F125_df = read_axis_ratio(125, zobjs)
     F140_df = read_axis_ratio(140, zobjs)
     F160_df = read_axis_ratio(160, zobjs)
-    F125_df[['F125_axis_ratio', 'F125_err_axis_ratio']
-            ] = F125_df[['axis_ratio', 'err_axis_ratio']]
-    F140_df[['F140_axis_ratio', 'F140_err_axis_ratio']
-            ] = F140_df[['axis_ratio', 'err_axis_ratio']]
-    F160_df[['F160_axis_ratio', 'F160_err_axis_ratio']
-            ] = F160_df[['axis_ratio', 'err_axis_ratio']]
-    all_axis_ratios_df = pd.concat([F125_df[['F125_axis_ratio', 'F125_err_axis_ratio']], F140_df[
-                                   ['F140_axis_ratio', 'F140_err_axis_ratio']]], axis=1)
+    F125_df[['F125_axis_ratio', 'F125_err_axis_ratio', 'F125_flag']
+            ] = F125_df[['axis_ratio', 'err_axis_ratio', 'f']]
+    F140_df[['F140_axis_ratio', 'F140_err_axis_ratio', 'F140_flag']
+            ] = F140_df[['axis_ratio', 'err_axis_ratio', 'f']]
+    F160_df[['F160_axis_ratio', 'F160_err_axis_ratio', 'F160_flag']
+            ] = F160_df[['axis_ratio', 'err_axis_ratio', 'f']]
+    all_axis_ratios_df = pd.concat([F125_df[['F125_axis_ratio', 'F125_err_axis_ratio', 'F125_flag']], F140_df[
+                                   ['F140_axis_ratio', 'F140_err_axis_ratio', 'F140_flag']]], axis=1)
     all_axis_ratios_df = pd.concat([all_axis_ratios_df, F160_df[
-                                   ['F160_axis_ratio', 'F160_err_axis_ratio']]], axis=1)
+                                   ['F160_axis_ratio', 'F160_err_axis_ratio', 'F160_flag']]], axis=1)
     zs = []
     fields = []
     v4ids = []
@@ -123,37 +123,70 @@ def interpolate_axis_ratio():
     use_ratios = []
     use_errors = []
     # Now ignores F140
-    for i in range(len(all_axis_ratios_df)):
-        F125W_peak = 12471.0
-        #F140W_peak = 13924.0
-        F160W_peak = 15396.0
-        peaks = [F125W_peak, F160W_peak]  # F140W_peak,
-        rest_waves = np.array([peak / (1 + all_axis_ratios_df.iloc[i]['Z_MOSFIRE'])
-                               for peak in peaks])
-        filters = ['125', '160']  # '140',
-        axis_ratios = np.array([all_axis_ratios_df.iloc[i][f'F{j}_axis_ratio'] for j in filters])
-        axis_errors = np.array([all_axis_ratios_df.iloc[i][f'F{j}_err_axis_ratio'] for j in filters])
-        good_ratios = [ratio > -0.1 for ratio in axis_ratios]
-        if len(axis_ratios[good_ratios]) == 1:
-            use_ratio = axis_ratios[good_ratios]
-            use_error = axis_errors[good_ratios]
-            use_ratios.append(float(use_ratio))
-            use_errors.append(float(use_error))
+    for i in range(len(all_axis_ratios_df)):   
+        # New method, accounts for flags and uses F125 at lowz, F160 at highz
+        row = all_axis_ratios_df.iloc[i]
+        redshift = row['Z_MOSFIRE']
+        
+        # If low redshift, check F125 first then check F160, and vice versa
+        if redshift < 1.9:
+            try_first = 'F125'
+            try_second = 'F160'
+        else:
+            try_first = 'F160'
+            try_second = 'F125'
+        
+        # Check the appropriate filter first - if no flags, use that one and loop
+        if row[f'{try_first}_flag'] == 0:
+            use_ratios.append(float(row[f'{try_first}_axis_ratio']))
+            use_errors.append(float(row[f'{try_first}_err_axis_ratio']))
             continue
-        if len(axis_ratios[good_ratios]) == 0:
-            use_ratio = -999.0
-            use_error = -999.0
-            use_ratios.append(float(use_ratio))
-            use_errors.append(float(use_error))
-            continue
-        axis_interp = interpolate.interp1d(rest_waves[good_ratios], axis_ratios[good_ratios], fill_value=(
-            axis_ratios[good_ratios][0], axis_ratios[good_ratios][-1]), bounds_error=False)
-        err_interp = interpolate.interp1d(rest_waves[good_ratios], axis_errors[good_ratios], fill_value=(
-            axis_errors[good_ratios][0], axis_errors[good_ratios][-1]), bounds_error=False)
-        use_ratio = axis_interp(5000)
-        use_error = err_interp(5000)
-        use_ratios.append(float(use_ratio))
-        use_errors.append(float(use_error))
+        # If there was a flag, try the other filter 
+        else:
+            # If the second one is ok, use that and loop
+            if row[f'{try_second}_flag'] == 0:
+                use_ratios.append(float(row[f'{try_second}_axis_ratio']))
+                use_errors.append(float(row[f'{try_second}_err_axis_ratio']))
+                continue
+            #If it's not ok, then append a -999
+            else:
+                use_ratios.append(float(-999))
+                use_errors.append(float(-999))
+                continue
+
+
+
+        ### Previous way with interpolation
+        # F125W_peak = 12471.0
+        # #F140W_peak = 13924.0
+        # F160W_peak = 15396.0
+        # peaks = [F125W_peak, F160W_peak]  # F140W_peak,
+        # rest_waves = np.array([peak / (1 + all_axis_ratios_df.iloc[i]['Z_MOSFIRE'])
+        #                        for peak in peaks])
+        # filters = ['125', '160']  # '140',
+        # axis_ratios = np.array([all_axis_ratios_df.iloc[i][f'F{j}_axis_ratio'] for j in filters])
+        # axis_errors = np.array([all_axis_ratios_df.iloc[i][f'F{j}_err_axis_ratio'] for j in filters])
+        # good_ratios = [ratio > -0.1 for ratio in axis_ratios]
+        # if len(axis_ratios[good_ratios]) == 1:
+        #     use_ratio = axis_ratios[good_ratios]
+        #     use_error = axis_errors[good_ratios]
+        #     use_ratios.append(float(use_ratio))
+        #     use_errors.append(float(use_error))
+        #     continue
+        # if len(axis_ratios[good_ratios]) == 0:
+        #     use_ratio = -999.0
+        #     use_error = -999.0
+        #     use_ratios.append(float(use_ratio))
+        #     use_errors.append(float(use_error))
+        #     continue
+        # axis_interp = interpolate.interp1d(rest_waves[good_ratios], axis_ratios[good_ratios], fill_value=(
+        #     axis_ratios[good_ratios][0], axis_ratios[good_ratios][-1]), bounds_error=False)
+        # err_interp = interpolate.interp1d(rest_waves[good_ratios], axis_errors[good_ratios], fill_value=(
+        #     axis_errors[good_ratios][0], axis_errors[good_ratios][-1]), bounds_error=False)
+        # use_ratio = axis_interp(5000)
+        # use_error = err_interp(5000)
+        # use_ratios.append(float(use_ratio))
+        # use_errors.append(float(use_error))
     all_axis_ratios_df['use_ratio'] = use_ratios
     all_axis_ratios_df['err_use_ratio'] = use_errors
     all_axis_ratios_df['field'] = fields
@@ -185,30 +218,11 @@ def filter_ar_df(ar_df, return_std_ar=False):
     save_count(ar_df[z_qual_bad], 'z_qual_bad', 'z_qual flag from mosdef')
     #Remove low quality galaxies
     ar_df = ar_df[ar_df['z_qual_flag'] == 7]
-    
-    #For counting purposes
-    AGN = ar_df['agn_flag'] != 0
-    save_count(ar_df[AGN], 'agn', 'AGN flag from mosdef')
-    # Remove AGN
-    ar_df = ar_df[ar_df['agn_flag'] == 0]
-    
-    #For counting purposes
-    bad_ar_flag = ar_df['axis_ratio_flag'] == -999
-    save_count(ar_df[bad_ar_flag], 'axis_ratio_bad_ar_flag', 'F125 or F160 is not detected')
-    # Remove objects flagged for axis ratio inconsistencies (1 is F160-F125 > std, and -999 has measurements missing)
-    ar_df = ar_df[ar_df['axis_ratio_flag'] != -999]
 
-
-
-
-    
     #For counting purposes
     ha_bad = ar_df['ha_detflag_sfr'] == -999
     save_count(ar_df[ha_bad], 'ha_negative_flux', 'Halpha not covered')
     ar_df = ar_df[ar_df['ha_detflag_sfr'] != -999]
-    ha_nondet = ar_df['ha_detflag_sfr'] == 1.0
-    save_count(ar_df[ha_nondet], 'ha_nondetected_flux', 'Halpha not detected')
-    ar_df = ar_df[ar_df['ha_detflag_sfr'] != 1.0]
 
     hb_bad = ar_df['hb_detflag_sfr'] == -999
     save_count(ar_df[hb_bad], 'hb_negative_flux', 'Hbeta not covered')
@@ -220,6 +234,27 @@ def filter_ar_df(ar_df, return_std_ar=False):
     save_count(ar_df[ha_SN_low], 'ha_SN_low', 'Halpha Signal/Noise less or equal 3')
     # Add filtering for Halpha S/N,
     ar_df = ar_df[(ar_df['ha_flux'] / ar_df['err_ha_flux']) > 3]
+    ha_nondet = ar_df['ha_detflag_sfr'] == 1.0
+    save_count(ar_df[ha_nondet], 'ha_nondetected_flux', 'Halpha not detected')
+    ar_df = ar_df[ar_df['ha_detflag_sfr'] != 1.0]
+
+    
+    
+    #For counting purposes
+    AGN = ar_df['agn_flag'] != 0
+    save_count(ar_df[AGN], 'agn', 'AGN flag from mosdef')
+    # Remove AGN
+    ar_df = ar_df[ar_df['agn_flag'] == 0]
+    
+    #For counting purposes
+    bad_ar_flag = ar_df['use_ratio'] == -999
+    save_count(ar_df[bad_ar_flag], 'axis_ratio_bad', 'F125 and F160 are flagged in GALFIT')
+    # Remove objects flagged for axis ratio inconsistencies (1 is F160-F125 > std, and -999 has measurements missing)
+    ar_df = ar_df[ar_df['use_ratio'] != -999]
+
+    
+
+    
     
    
 
@@ -296,6 +331,8 @@ def read_filtered_ar_df():
     modificationTime = time.ctime(fileStatsObj[stat.ST_MTIME])
     print("Last Filtered ar_df: ", modificationTime)
     return ar_df
+
+# interpolate_axis_ratio()
 
 # ar_df = read_interp_axis_ratio()
 # ar_df = filter_ar_df(ar_df)

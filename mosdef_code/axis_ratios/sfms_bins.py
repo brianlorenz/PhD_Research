@@ -19,8 +19,12 @@ sfms_highz_slope = 0.645
 sfms_highz_yint = -5.115
 
 # 06/17/22
-a_lowz_fit = -24.228
-a_highz_fit = -23.943
+# a_lowz_fit = -24.228
+# a_highz_fit = -23.943
+
+# 06/26/22 -- after mass correction
+a_lowz_fit = -24.167
+a_highz_fit = -23.874
 
 def whitaker_sfms(mass, a):
     # a = -24.0415

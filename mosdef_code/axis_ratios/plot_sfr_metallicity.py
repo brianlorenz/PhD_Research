@@ -57,26 +57,25 @@ def plot_sfr_metals(save_name, plot_ssfr=False, plot_re=False, plot_sanders=Fals
     
     # Plot lines on constant dust
     metal_vals = np.arange(8.1, 8.9, 0.1)
-    res = 0.5 * np.ones(len(metal_vals))
     x = Symbol('x')
     # low mass
-    A_lambda = 0.7
-    re = 0.3
+    A_lambda = 0.85
+    re = 0.25
     sfrs = [float(solve(const2 * 10**(a*metal_vals[i]) * (x/(re**2))**(1/n) - A_lambda, x)[0]) for i in range(len(metal_vals))] #Dust
     sfrs=np.array(sfrs)
     log_sfrs = np.log10(sfrs)
     if plot_ssfr == True:
         log_mass = 9.75
         x_plot = np.log10(sfrs/(10**log_mass))
-        label = '$R_\mathrm{eff} = 0.25$, $A_\mathrm{balmer} = 0.7$' + f', mass={log_mass}'
+        label = '$R_\mathrm{eff} = 0.25$, $A_\mathrm{balmer} = 0.85$' + f', mass={log_mass}'
     else:
         x_plot = log_sfrs
         if plot_re==True:
             x_plot = np.log10(10**log_sfrs/re)
-        label = '$R_\mathrm{eff} = 0.25$, $A_\mathrm{balmer} = 0.7$'
+        label = '$R_\mathrm{eff} = 0.25$, $A_\mathrm{balmer} = 0.85$'
     ax.plot(x_plot, metal_vals, ls='--', color='black', marker='None', label=label)
     # high mass
-    A_lambda = 2.0
+    A_lambda = 1.9
     re = 0.4
     sfrs = [float(solve(const2 * 10**(a*metal_vals[i]) * (x/(re**2))**(1/n) - A_lambda, x)[0]) for i in range(len(metal_vals))] #Dust
     sfrs=np.array(sfrs)
@@ -84,10 +83,10 @@ def plot_sfr_metals(save_name, plot_ssfr=False, plot_re=False, plot_sanders=Fals
     if plot_ssfr == True:
         log_mass = 10.25
         x_plot = np.log10(sfrs/(10**log_mass))
-        label = '$R_\mathrm{eff} = 0.4$, $A_\mathrm{balmer} = 2.0$' + f', mass={log_mass}'
+        label = '$R_\mathrm{eff} = 0.4$, $A_\mathrm{balmer} = 1.9$' + f', mass={log_mass}'
     else:
         x_plot = log_sfrs
-        label = '$R_\mathrm{eff} = 0.4$, $A_\mathrm{balmer} = 2.0$'
+        label = '$R_\mathrm{eff} = 0.4$, $A_\mathrm{balmer} = 1.9$'
         if plot_re==True:
             x_plot = np.log10(10**log_sfrs/re)
     ax.plot(x_plot, metal_vals, ls='--', color='blue', marker='None', label=label)
@@ -127,16 +126,19 @@ def plot_sfr_metals(save_name, plot_ssfr=False, plot_re=False, plot_sanders=Fals
         return x_plot, fm_metals, add_str2
 
     fm_s = np.arange(0, 3, 0.1)
-    log_mass = 9.7
+    log_mass = 9.55
+    x_plot, fm_metals, add_str2 = compute_metals(log_mass, fm_s) 
+    ax.plot(x_plot, fm_metals, ls='--', color='red', marker='None', label=f'Stellar Mass = {log_mass}, {add_str2}')
+    log_mass = 9.8
     x_plot, fm_metals, add_str2 = compute_metals(log_mass, fm_s) 
     ax.plot(x_plot, fm_metals, ls='--', color='red', marker='None', label=f'Stellar Mass = {log_mass}, {add_str2}')
     
     log_mass = 10.3
     x_plot, fm_metals, add_str2 = compute_metals(log_mass, fm_s) 
     ax.plot(x_plot, fm_metals, ls='--', color='orange', marker='None', label=f'Stellar Mass = {log_mass}, {add_str2}')
-    log_mass = 10.2
-    x_plot, fm_metals, add_str2 = compute_metals(log_mass, fm_s) 
-    ax.plot(x_plot, fm_metals, ls='--', color='black', marker='None', label=f'Stellar Mass = {log_mass}, {add_str2}')
+    # log_mass = 10.2
+    # x_plot, fm_metals, add_str2 = compute_metals(log_mass, fm_s) 
+    # ax.plot(x_plot, fm_metals, ls='--', color='black', marker='None', label=f'Stellar Mass = {log_mass}, {add_str2}')
     
     cbar = fig.colorbar(mpl.cm.ScalarMappable(norm=norm, cmap=cmap), ax=ax, fraction=0.046, pad=0.04)
     cbar.set_label(balmer_label, fontsize=fontsize)
@@ -154,12 +156,9 @@ def plot_sfr_metals(save_name, plot_ssfr=False, plot_re=False, plot_sanders=Fals
     else:
         add_str = ''
 
-    fig.savefig(imd.axis_cluster_data_dir + f'/{save_name}/metallicity_sfr{add_str}.pdf')
+    fig.savefig(imd.axis_cluster_data_dir + f'/{save_name}/metallicity_sfr{add_str}.pdf',bbox_inches='tight')
 
 
-plot_sfr_metals('zdep_whitaker_sfms_boot100')
-# plot_sfr_metals('both_sfms_4bin_median_2axis_boot100', plot_re=True)
-plot_sfr_metals('zdep_whitaker_sfms_boot100', plot_sanders=True)
-# plot_sfr_metals('both_sfms_4bin_median_2axis_boot100', plot_ssfr=True)
-# plot_sfr_metals('both_whitaker_sfms_4bin_median_2axis_boot10')
-# plot_sfr_metals('both_z_divided_sfms_4bin_median_2axis_boot10')
+# plot_sfr_metals('whitaker_sfms_boot100')
+# plot_sfr_metals('whitaker_sfms_boot100', plot_sanders=True)
+# plot_sfr_metals('whitaker_sfms_boot100', plot_re=True)

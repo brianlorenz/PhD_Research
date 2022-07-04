@@ -30,4 +30,4 @@ def plot_mass_size_contours():
     ax.legend(fontsize = single_column_axisfont-4)
     fig.savefig(imd.axis_output_dir + '/mass_size_contour.pdf')
 
-plot_mass_size_contours()
+# plot_mass_size_contours()
