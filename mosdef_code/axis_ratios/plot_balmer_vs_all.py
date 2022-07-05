@@ -200,14 +200,13 @@ def plot_balmer_vs_all(save_name):
     ax_balmer_metallicity.tick_params(labelsize=16)
     ax_cbar_sfr.tick_params(labelsize=16)
     ax_cbar_metallicity.tick_params(labelsize=16)
-    ax_balmer_sfr.axhline(0.85, ls='--', color='black')
-    ax_balmer_metallicity.axhline(0.85, ls='--', color='black')
-    ax_balmer_sfr.axhline(1.9, ls='--', color='blue')
-    ax_balmer_metallicity.axhline(1.9, ls='--', color='blue')
+    ax_balmer_sfr.axhline(0.85, ls='--', color='#8E248C')
+    ax_balmer_metallicity.axhline(0.85, ls='--', color='#8E248C')
+    ax_balmer_sfr.axhline(1.9, ls='--', color='#FF640A')
+    ax_balmer_metallicity.axhline(1.9, ls='--', color='#FF640A')
     fig.savefig(imd.axis_cluster_data_dir + f'/{save_name}/balmer_plots/balmer_sfr_metallicity.pdf',bbox_inches='tight')
     plt.close('all')
 
 
 
-# plot_balmer_vs_all('whitaker_sfms_boot100')
-# plot_balmer_vs_all('both_sfms_4bin_median_2axis_boot100_retest')
+plot_balmer_vs_all('whitaker_sfms_boot100')

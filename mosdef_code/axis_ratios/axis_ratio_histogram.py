@@ -97,8 +97,14 @@ def plot_ar_hist(use_column = 'use_ratio',  mass_split='False'):
     else:
         fig, ax = plt.subplots(figsize=(8,8))
         ax.hist(ar_df[use_column], bins=bins, color='black')
-        ax.plot(rod_df['xvals'], rod_df['normalized_yvals']*50, color='white', ls='-', lw=6, marker='None')
-        ax.plot(rod_df['xvals'], rod_df['normalized_yvals']*50, color=dark_color, ls='-', lw=4, marker='None', label="Rodríguez+ 2013, n=92923, low redshift")
+        def get_rodscale():
+            n_gals = len(ar_df)
+            n_rod = np.sum(rod_df['normalized_yvals'])
+            rodscale = n_gals / n_rod
+            return rodscale*2
+        rodscale = get_rodscale()
+        ax.plot(rod_df['xvals'], rod_df['normalized_yvals']*rodscale, color='white', ls='-', lw=6, marker='None')
+        ax.plot(rod_df['xvals'], rod_df['normalized_yvals']*rodscale, color=dark_color, ls='-', lw=4, marker='None', label="Rodríguez+ 2013, n=92923, low redshift")
         bins_law = np.arange(0, 1, 0.1)
         # ax.plot(bins_law+0.05, law_df['yvals']*1.5, color='white', ls='-', lw=6, marker='None')
         # ax.plot(bins_law+0.05, law_df['yvals']*1.5, color='red', ls='-', lw=4, marker='None', label='Law+ 2011, n=306, 1.5<z<3.6')
@@ -188,7 +194,7 @@ def compare_ar_measurements(col1, err_col1, col2, err_col2):
     scale_aspect(ax)
     fig.savefig(imd.axis_output_dir + f'/ar_compare_{col1}_{col2}.pdf',bbox_inches='tight')
 
-compare_ar_measurements('F125_axis_ratio', 'F125_err_axis_ratio', 'F160_axis_ratio', 'F160_err_axis_ratio')
+# compare_ar_measurements('F125_axis_ratio', 'F125_err_axis_ratio', 'F160_axis_ratio', 'F160_err_axis_ratio')
 plot_ar_hist(use_column = 'use_ratio')
 
 # compare_ar_measurements('use_ratio', 'err_use_ratio', 'F160_axis_ratio', 'F160_err_axis_ratio')

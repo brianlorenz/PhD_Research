@@ -51,7 +51,7 @@ def fundamental_metallictiy(log_mass,log_sfr):
 def sanders_plane(log_mass, log_sfr):
     u60 = log_mass - 0.6*log_sfr
     y = u60 - 10
-    metallicity = 8.8 + (0.188*y) - (0.22 * y**2) - (0.0531 * y**3)
+    metallicity = 8.8 + (0.188*y) + (-0.22 * y**2) + (-0.0531 * y**3)
     return metallicity
 
 def test_dust_model():
@@ -108,7 +108,7 @@ def plot_on_fmr(save_name):
     log_sfrs = summary_df['log_use_sfr_median']
     log_masses = summary_df['log_mass_median']
     high_mass = log_masses>10
-    u60s = log_masses - 0.6 * log_sfrs
+    u60s = log_masses - (0.6 * log_sfrs)
 
     ax.plot(u60s, metallicities, color=light_color, ls='None', marker='o', markersize=8, label='Low mass')
     ax.plot(u60s[high_mass], metallicities[high_mass], color=dark_color, ls='None', marker='o', markersize=8, label='High mass')

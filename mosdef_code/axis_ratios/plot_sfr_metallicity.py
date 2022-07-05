@@ -25,8 +25,8 @@ def plot_sfr_metals(save_name, plot_ssfr=False, plot_re=False, plot_sanders=Fals
     for i in range(len(summary_df)):
         row = summary_df.iloc[i]
 
-        ax.set_ylim(8.2, 8.9)
-        ax_y_len = 0.7
+        ax.set_ylim(8.2, 8.95)
+        ax_y_len = 0.75
         if plot_ssfr==True:
             ax.set_xlim(-9.6, -8.1)
             ax_x_len = 1.5
@@ -37,7 +37,7 @@ def plot_sfr_metals(save_name, plot_ssfr=False, plot_re=False, plot_sanders=Fals
         fontsize=14
 
         cmap = mpl.cm.inferno
-        norm = mpl.colors.Normalize(vmin=3, vmax=7) 
+        norm = mpl.colors.Normalize(vmin=3, vmax=5.5) 
         rgba = cmap(norm(row['balmer_dec']))
         
         ellipse_width, ellipse_height = get_ellipse_shapes(ax_x_len, ax_y_len, row['shape'])
@@ -47,17 +47,18 @@ def plot_sfr_metals(save_name, plot_ssfr=False, plot_re=False, plot_sanders=Fals
             ax.set_xlabel('log(sSFR)', fontsize=fontsize)
         else:
             x_points = row['log_use_sfr_median']
-            ax.set_xlabel('log(SFR)', fontsize=fontsize)
+            ax.set_xlabel(sfr_label, fontsize=fontsize)
             if plot_re==True:
                 x_points = np.log10(10**row['log_use_sfr_median'] / row['re_median'])
                 ax.set_xlabel('log(SFR/R_e)', fontsize=fontsize)
-        ax.errorbar(x_points, row['metallicity_median'], yerr=np.array([[row['err_metallicity_median_low'], row['err_metallicity_median_high']]]).T, color=rgba, marker='None', ls='None')
-        ax.add_artist(Ellipse((x_points, row['metallicity_median']), ellipse_width, ellipse_height, facecolor=rgba))
+        ax.errorbar(x_points, row['metallicity_median'], yerr=np.array([[row['err_metallicity_median_low'], row['err_metallicity_median_high']]]).T, color=rgba, marker='None', ls='None', zorder=3)
+        ax.add_artist(Ellipse((x_points, row['metallicity_median']), ellipse_width, ellipse_height, facecolor=rgba, zorder=1))
         ax.set_ylabel('Metallicity', fontsize=fontsize)
     
     # Plot lines on constant dust
-    metal_vals = np.arange(8.1, 8.9, 0.1)
+    metal_vals = np.arange(8.1, 9.0, 0.1)
     x = Symbol('x')
+   
     # low mass
     A_lambda = 0.85
     re = 0.25
@@ -73,7 +74,8 @@ def plot_sfr_metals(save_name, plot_ssfr=False, plot_re=False, plot_sanders=Fals
         if plot_re==True:
             x_plot = np.log10(10**log_sfrs/re)
         label = '$R_\mathrm{eff} = 0.25$, $A_\mathrm{balmer} = 0.85$'
-    ax.plot(x_plot, metal_vals, ls='--', color='black', marker='None', label=label)
+    ax.plot(x_plot, metal_vals, ls='--', color='#8E248C', marker='None', label=label, zorder=2)
+    
     # high mass
     A_lambda = 1.9
     re = 0.4
@@ -89,7 +91,7 @@ def plot_sfr_metals(save_name, plot_ssfr=False, plot_re=False, plot_sanders=Fals
         label = '$R_\mathrm{eff} = 0.4$, $A_\mathrm{balmer} = 1.9$'
         if plot_re==True:
             x_plot = np.log10(10**log_sfrs/re)
-    ax.plot(x_plot, metal_vals, ls='--', color='blue', marker='None', label=label)
+    ax.plot(x_plot, metal_vals, ls='--', color='#FF640A', marker='None', label=label, zorder=2)
     
     # high mass
     if plot_ssfr == True:
@@ -107,7 +109,7 @@ def plot_sfr_metals(save_name, plot_ssfr=False, plot_re=False, plot_sanders=Fals
 
 
     # mass/metal/sfr relation
-    def compute_metals(log_mass, fm_s):
+    def compute_metals(log_mass, fm_s, re):
         '''
         Parameters:
         log_mass: Log stellar mass
@@ -121,30 +123,42 @@ def plot_sfr_metals(save_name, plot_ssfr=False, plot_re=False, plot_sanders=Fals
             add_str2 = '_sanders'
         if plot_ssfr == True:
             x_plot = np.log10(10**fm_s/(10**log_mass))
+        elif plot_re == True:
+            x_plot = np.log10(10**fm_s/(re))
         else:
             x_plot = fm_s
         return x_plot, fm_metals, add_str2
 
     fm_s = np.arange(0, 3, 0.1)
     log_mass = 9.55
-    x_plot, fm_metals, add_str2 = compute_metals(log_mass, fm_s) 
-    ax.plot(x_plot, fm_metals, ls='--', color='red', marker='None', label=f'Stellar Mass = {log_mass}, {add_str2}')
+    re = 0.25
+    x_plot, fm_metals_lowm_bot, add_str2 = compute_metals(log_mass, fm_s, re) 
+    # ax.plot(x_plot, fm_metals_lowm_bot, ls='--', color='black', marker='None', label=f'Stellar Mass = {log_mass}, {add_str2}')
     log_mass = 9.8
-    x_plot, fm_metals, add_str2 = compute_metals(log_mass, fm_s) 
-    ax.plot(x_plot, fm_metals, ls='--', color='red', marker='None', label=f'Stellar Mass = {log_mass}, {add_str2}')
-    
-    log_mass = 10.3
-    x_plot, fm_metals, add_str2 = compute_metals(log_mass, fm_s) 
-    ax.plot(x_plot, fm_metals, ls='--', color='orange', marker='None', label=f'Stellar Mass = {log_mass}, {add_str2}')
-    # log_mass = 10.2
-    # x_plot, fm_metals, add_str2 = compute_metals(log_mass, fm_s) 
-    # ax.plot(x_plot, fm_metals, ls='--', color='black', marker='None', label=f'Stellar Mass = {log_mass}, {add_str2}')
+    x_plot, fm_metals_lowm_top, add_str2 = compute_metals(log_mass, fm_s, re) 
+    # ax.plot(x_plot, fm_metals_lowm_top, ls='--', color='black', marker='None', label=f'Stellar Mass = {log_mass}, {add_str2}')
+    ax.fill_between(x_plot, fm_metals_lowm_bot, fm_metals_lowm_top, color='black', alpha=0.35, zorder=1)
+
+    log_mass = 10.2
+    re = 0.4
+    x_plot, fm_metals_highm_bot, add_str2 = compute_metals(log_mass, fm_s, re) 
+    # ax.plot(x_plot, fm_metals_highm_bot, ls='--', color='blue', marker='None', label=f'Stellar Mass = {log_mass}, {add_str2}')
+    log_mass = 10.35
+    x_plot, fm_metals_highm_top, add_str2 = compute_metals(log_mass, fm_s, re) 
+    # ax.plot(x_plot, fm_metals_highm_top, ls='--', color='blue', marker='None', label=f'Stellar Mass = {log_mass}, {add_str2}')
+    ax.fill_between(x_plot, fm_metals_highm_bot, fm_metals_highm_top, color='black', alpha=0.2, zorder=1)
     
     cbar = fig.colorbar(mpl.cm.ScalarMappable(norm=norm, cmap=cmap), ax=ax, fraction=0.046, pad=0.04)
     cbar.set_label(balmer_label, fontsize=fontsize)
     ax.tick_params(labelsize=12)
     ax.set_aspect(ellipse_width/ellipse_height)
-    ax.legend()
+    # ax.legend()
+
+    ax.text(1.69, 8.21, 'FMR', fontsize=18, rotation=315)
+    ax.text(2.3, 8.33, 'FMR', fontsize=18, rotation=315)
+    ax.text(0.18, 8.65, 'A$_\mathrm{balmer} = 0.85$', fontsize=16, rotation=302, color='#8E248C')
+    ax.text(0.80, 8.78, 'A$_\mathrm{balmer} = 1.9$', fontsize=16, rotation=302, color='#FF640A')
+    
 
 
     if plot_ssfr==True:
@@ -160,5 +174,5 @@ def plot_sfr_metals(save_name, plot_ssfr=False, plot_re=False, plot_sanders=Fals
 
 
 # plot_sfr_metals('whitaker_sfms_boot100')
-# plot_sfr_metals('whitaker_sfms_boot100', plot_sanders=True)
-# plot_sfr_metals('whitaker_sfms_boot100', plot_re=True)
+plot_sfr_metals('whitaker_sfms_boot100', plot_sanders=True)
+plot_sfr_metals('whitaker_sfms_boot100', plot_re=True)

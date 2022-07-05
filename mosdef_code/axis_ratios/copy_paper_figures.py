@@ -8,7 +8,7 @@ import shutil
 
 # Save name of the directory to pull from
 # save_name = 'both_sfms_4bin_median_2axis_boot100'
-save_name = 'whitaker_sfms_boot100_masscorr'
+save_name = 'whitaker_sfms_boot100'
 destination = imd.axis_output_dir + '/paper_figures'
 
 # List of the paths to all the figures
@@ -21,7 +21,7 @@ fig_list = [
     imd.axis_cluster_data_dir + f'/{save_name}/balmer_plots/balmer_mass_solo.pdf',
     imd.axis_cluster_data_dir + f'/{save_name}/balmer_plots/av_beta_combined.pdf',
     imd.axis_cluster_data_dir + f'/{save_name}/balmer_plots/mass_metallicity.pdf',
-    imd.axis_cluster_data_dir + f'/{save_name}/metallicity_sfr.pdf',
+    imd.axis_cluster_data_dir + f'/{save_name}/metallicity_sfr_sanders.pdf',
     imd.axis_cluster_data_dir + f'/{save_name}/uvj_ar_groups.pdf',
     imd.axis_cluster_data_dir + f'/{save_name}/overlaid_spectra_paper.pdf'
 ]

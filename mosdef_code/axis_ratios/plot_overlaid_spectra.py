@@ -189,12 +189,12 @@ def plot_overlaid_spectra(savename, plot_cont_sub=False, paper_fig=False):
     # Add the background
     if paper_fig==True:
         
-        if plot_cont_sub ==True:
-            single_stack_save = 'both_singlestack_median'
-            spec_df = ascii.read(imd.axis_cluster_data_dir + f'/{single_stack_save}/{single_stack_save}_cont_subs/0_cont_sub.csv').to_pandas()
-            spec_df = spec_df.rename(columns={"wavelength_cut": "wavelength", "continuum_sub_ydata": "f_lambda"})
-        else:
-            sys.exit('Add patht ot spectrum')
+        # if plot_cont_sub ==True:
+        #     single_stack_save = 'both_singlestack_median'
+        #     spec_df = ascii.read(imd.axis_cluster_data_dir + f'/{single_stack_save}/{single_stack_save}_cont_subs/0_cont_sub.csv').to_pandas()
+        #     spec_df = spec_df.rename(columns={"wavelength_cut": "wavelength", "continuum_sub_ydata": "f_lambda"})
+        # else:
+        #     sys.exit('Add patht ot spectrum')
         
         # Find the peak of the halpha line so we can normalize it to 10^-17 erg/cm^2/s/anstrom
         # For median stack of everything
@@ -232,4 +232,4 @@ def plot_overlaid_spectra(savename, plot_cont_sub=False, paper_fig=False):
         fig.savefig(imd.axis_cluster_data_dir + f'/{savename}/overlaid_spectra.pdf',bbox_inches='tight')
     plt.close('all')
 
-# plot_overlaid_spectra('whitaker_sfms_boot100', plot_cont_sub=True, paper_fig=True)
+plot_overlaid_spectra('whitaker_sfms_boot100', plot_cont_sub=True, paper_fig=True)
