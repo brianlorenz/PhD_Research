@@ -96,36 +96,41 @@ def plot_ar_hist(use_column = 'use_ratio',  mass_split='False'):
         
     else:
         fig, ax = plt.subplots(figsize=(8,8))
-        ax.hist(ar_df[use_column], bins=bins, color='black')
+        ax.hist(ar_df[use_column], bins=bins, color='dimgrey', label='MOSDEF Sample, 1.3<z<2.7', zorder=1)
         def get_rodscale():
             n_gals = len(ar_df)
             n_rod = np.sum(rod_df['normalized_yvals'])
             rodscale = n_gals / n_rod
             return rodscale*2
         rodscale = get_rodscale()
-        ax.plot(rod_df['xvals'], rod_df['normalized_yvals']*rodscale, color='white', ls='-', lw=6, marker='None')
-        ax.plot(rod_df['xvals'], rod_df['normalized_yvals']*rodscale, color=dark_color, ls='-', lw=4, marker='None', label="Rodríguez+ 2013, n=92923, low redshift")
+        ax.plot(rod_df['xvals'], rod_df['normalized_yvals']*rodscale, color='black', ls='-', lw=6, marker='None',zorder=3)
+        ax.plot(rod_df['xvals'], rod_df['normalized_yvals']*rodscale, color=light_color, ls='-', lw=4, marker='None', label="Rodríguez+ 2013, n=92923, low redshift", zorder=3)
         bins_law = np.arange(0, 1, 0.1)
         # ax.plot(bins_law+0.05, law_df['yvals']*1.5, color='white', ls='-', lw=6, marker='None')
         # ax.plot(bins_law+0.05, law_df['yvals']*1.5, color='red', ls='-', lw=4, marker='None', label='Law+ 2011, n=306, 1.5<z<3.6')
         # ax.bar(bins_law+0.05, law_df['yvals']*1.5, color='red', alpha=0.5, width=0.1)
         # ax.hist(law_df['yvals'], bins=bins_law, color='red', alpha=0.5)
-        ax.legend(fontsize=14)
         axarr = [ax]
         savename = ''
         ax.set_ylim(0, 60)
     
     for ax in axarr:
         # ax.axvline(0.4, ls='--', color='red')
-        ax.axvline(0.55, ls='--', color='red')
+        ax.axvline(0.55, ymin=0, ymax=0.88, ls='--', color=dark_color, label='Median b/a = 0.55', zorder=2)
 
-        ax.set_xlabel('Axis Ratio', fontsize=single_column_axisfont) 
+        ax.set_xlabel('Axis Ratio (b/a)', fontsize=single_column_axisfont) 
         ax.set_ylabel('Number of Galaxies', fontsize=single_column_axisfont)
         ax.tick_params(labelsize=single_column_ticksize)
         # ax.text(-0.10, -10, 'Edge-on', fontsize=single_column_axisfont, zorder=100)
         # ax.text(0.92, -10, 'Face-on', fontsize=single_column_axisfont, zorder=100)
         ax.set_xlim(-0.05, 1.05)
-        
+    
+    #get handles and labels
+    handles, labels = ax.get_legend_handles_labels()
+    #specify order of items in legend
+    order = [2,0,1]
+    #add legend to plot
+    ax.legend([handles[idx] for idx in order],[labels[idx] for idx in order], fontsize=14, framealpha=1)
     ax.set_aspect(1/60)
     scale_aspect(ax)
     fig.savefig(imd.axis_output_dir + f'/ar_histogram_{use_column}{savename}.pdf',bbox_inches='tight')
