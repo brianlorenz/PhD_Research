@@ -74,7 +74,7 @@ def plot_sfr_metals(save_name, plot_ssfr=False, plot_re=False, plot_sanders=Fals
         if plot_re==True:
             x_plot = np.log10(10**log_sfrs/re)
         label = '$R_\mathrm{eff} = 0.25$, $A_\mathrm{balmer} = 0.85$'
-    ax.plot(x_plot, metal_vals, ls='--', color='#8E248C', marker='None', label=label, zorder=2)
+    ax.plot(x_plot, metal_vals, ls='--', color='#8E248C', marker='None', zorder=2)
     
     # high mass
     A_lambda = 1.9
@@ -91,7 +91,7 @@ def plot_sfr_metals(save_name, plot_ssfr=False, plot_re=False, plot_sanders=Fals
         label = '$R_\mathrm{eff} = 0.4$, $A_\mathrm{balmer} = 1.9$'
         if plot_re==True:
             x_plot = np.log10(10**log_sfrs/re)
-    ax.plot(x_plot, metal_vals, ls='--', color='#FF640A', marker='None', label=label, zorder=2)
+    ax.plot(x_plot, metal_vals, ls='--', color='#FF640A', marker='None', zorder=2)
     
     # high mass
     if plot_ssfr == True:
@@ -154,11 +154,13 @@ def plot_sfr_metals(save_name, plot_ssfr=False, plot_re=False, plot_sanders=Fals
     ax.set_aspect(ellipse_width/ellipse_height)
     # ax.legend()
 
-    ax.text(1.69, 8.21, 'FMR', fontsize=18, rotation=315)
-    ax.text(2.3, 8.33, 'FMR', fontsize=18, rotation=315)
+    ax.text(1.345, 8.21, 'Low M$_*$ FMR', fontsize=18, rotation=315)
+    ax.text(1.91, 8.33, 'High M$_*$ FMR', fontsize=18, rotation=315)
     ax.text(0.18, 8.65, 'A$_\mathrm{balmer} = 0.85$', fontsize=16, rotation=302, color='#8E248C')
     ax.text(0.80, 8.78, 'A$_\mathrm{balmer} = 1.9$', fontsize=16, rotation=302, color='#FF640A')
     
+    ax.plot([0],[0],ls='--',color='dimgrey',marker='None',label='Dust Model')
+    ax.legend(fontsize=16)
 
 
     if plot_ssfr==True:
@@ -174,5 +176,5 @@ def plot_sfr_metals(save_name, plot_ssfr=False, plot_re=False, plot_sanders=Fals
 
 
 # plot_sfr_metals('whitaker_sfms_boot100')
-plot_sfr_metals('whitaker_sfms_boot100', plot_sanders=True)
-plot_sfr_metals('whitaker_sfms_boot100', plot_re=True)
+# plot_sfr_metals('whitaker_sfms_boot100', plot_sanders=True)
+# plot_sfr_metals('whitaker_sfms_boot100', plot_re=True)
