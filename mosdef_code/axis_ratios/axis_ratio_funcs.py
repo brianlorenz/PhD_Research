@@ -148,11 +148,21 @@ def interpolate_axis_ratio():
                 use_ratios.append(float(row[f'{try_second}_axis_ratio']))
                 use_errors.append(float(row[f'{try_second}_err_axis_ratio']))
                 continue
-            #If it's not ok, then append a -999
+            #If it's not ok, then see if they both agree to within 0.08:
             else:
-                use_ratios.append(float(-999))
-                use_errors.append(float(-999))
-                continue
+                
+                value_difference = np.abs(row[f'{try_second}_flag'] - row[f'{try_first}_flag'])
+                # If they agree, use the first one
+                if value_difference < 0.08:
+                    print('here')
+                    use_ratios.append(float(row[f'{try_first}_axis_ratio']))
+                    use_errors.append(float(row[f'{try_first}_err_axis_ratio']))
+                    continue
+                # If they don't agree, append -999
+                else:
+                    use_ratios.append(float(-999))
+                    use_errors.append(float(-999))
+                    continue
 
 
 

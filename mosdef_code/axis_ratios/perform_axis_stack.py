@@ -107,6 +107,7 @@ def stack_all_and_plot_all(param_class):
     plot_balmer_stellar_avs(save_name)
     plot_dust_model(save_name)
     plot_sfr_metals(save_name)
+    plot_sfr_metals(save_name, plot_sanders=True)
     print('starting overview plot')
     # plot_overview(nbins, save_name, ratio_bins, starting_points, mass_width, split_width, sfms_bins, split_by)
     time_end = time.time()

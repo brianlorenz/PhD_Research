@@ -145,7 +145,7 @@ def plot_ar_hist(use_column = 'use_ratio',  mass_split='False'):
 
 
 
-def compare_ar_measurements(col1, err_col1, col2, err_col2):
+def compare_ar_measurements(col1, err_col1, col2, err_col2, save=True, ar_df_provided=0):
     '''Makes an axis ratio plot comparing two methods of determining ar
 
     Parameters: 
@@ -154,7 +154,12 @@ def compare_ar_measurements(col1, err_col1, col2, err_col2):
     '''
 
     # ar_df = ascii.read(imd.loc_axis_ratio_cat).to_pandas()
-    ar_df = read_filtered_ar_df()
+    if save==True:
+        ar_df = read_filtered_ar_df()
+    else:
+        ar_df = ar_df_provided
+
+
 
     cmap = mpl.cm.viridis 
     norm = mpl.colors.Normalize(vmin=1.3, vmax=2.8) 
@@ -177,6 +182,7 @@ def compare_ar_measurements(col1, err_col1, col2, err_col2):
     # Lines that capture 16th and 84th percentiles
     differences = ar_df[col1]-ar_df[col2]
     offsets = np.percentile(differences, [16,84])
+    print(offsets)
     x = np.linspace(-0.5, 1.5, 100)
     y0 = x+offsets[0]
     y1 = x+offsets[1]
@@ -197,10 +203,13 @@ def compare_ar_measurements(col1, err_col1, col2, err_col2):
     ax.set_ylim(-0.05, 1.05)
     ax.set_aspect(1)
     scale_aspect(ax)
-    fig.savefig(imd.axis_output_dir + f'/ar_compare_{col1}_{col2}.pdf',bbox_inches='tight')
+    if save == True:
+        fig.savefig(imd.axis_output_dir + f'/ar_compare_{col1}_{col2}.pdf',bbox_inches='tight')
+    else:
+        return fig
 
 # compare_ar_measurements('F125_axis_ratio', 'F125_err_axis_ratio', 'F160_axis_ratio', 'F160_err_axis_ratio')
-plot_ar_hist(use_column = 'use_ratio')
+# plot_ar_hist(use_column = 'use_ratio')
 
 # compare_ar_measurements('use_ratio', 'err_use_ratio', 'F160_axis_ratio', 'F160_err_axis_ratio')
 # compare_ar_measurements('use_ratio', 'err_use_ratio', 'F125_axis_ratio', 'F125_err_axis_ratio')
