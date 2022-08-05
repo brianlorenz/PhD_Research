@@ -133,7 +133,7 @@ def plot_balmer_dec(save_name, n_groups, split_by, y_var = 'balmer_dec', color_v
 
 
             ax.errorbar(x_cord, y_cord, yerr=np.array([[row['err_balmer_dec_low'], row['err_balmer_dec_high']]]).T, marker='None', color=rgba)
-            ax.add_artist(Ellipse((x_cord, y_cord), ellipse_width, ellipse_height, facecolor=rgba))
+            ax.add_artist(Ellipse((x_cord, y_cord), ellipse_width, ellipse_height, facecolor=rgba, edgecolor='black'))
             ax.set_ylabel(balmer_label, fontsize=axis_fontsize)
         elif y_var == 'av':
             x_cord = row['use_ratio_median']
@@ -142,7 +142,7 @@ def plot_balmer_dec(save_name, n_groups, split_by, y_var = 'balmer_dec', color_v
             ellipse_width, ellipse_height = get_ellipse_shapes(1.1, y_axis_len, row['shape'])
 
             ax.errorbar(x_cord, y_cord, yerr=row['err_av_median'], marker='None', color=rgba)
-            ax.add_artist(Ellipse((x_cord, y_cord), ellipse_width, ellipse_height, facecolor=rgba))
+            ax.add_artist(Ellipse((x_cord, y_cord), ellipse_width, ellipse_height, facecolor=rgba, edgecolor='black', zorder=3))
             ax.set_ylabel('FAST AV', fontsize=axis_fontsize)
         elif y_var == 'beta':
             x_cord = row['use_ratio_median']
@@ -151,7 +151,7 @@ def plot_balmer_dec(save_name, n_groups, split_by, y_var = 'balmer_dec', color_v
             ellipse_width, ellipse_height = get_ellipse_shapes(1.1, y_axis_len, row['shape'])
 
             ax.errorbar(x_cord, y_cord, yerr=np.array([[row['err_beta_median_low'], row['err_beta_median_high']]]).T, marker='None', color=rgba)
-            ax.add_artist(Ellipse((x_cord, y_cord), ellipse_width, ellipse_height, facecolor=rgba))
+            ax.add_artist(Ellipse((x_cord, y_cord), ellipse_width, ellipse_height, facecolor=rgba, edgecolor='black', zorder=3))
             ax.set_ylabel('Betaphot', fontsize=axis_fontsize)
         elif y_var == 'metallicity':
             x_cord = row['use_ratio_median']
@@ -160,7 +160,7 @@ def plot_balmer_dec(save_name, n_groups, split_by, y_var = 'balmer_dec', color_v
             ellipse_width, ellipse_height = get_ellipse_shapes(1.1, y_axis_len, row['shape'])
 
             ax.errorbar(x_cord, y_cord, yerr=np.array([[row['err_metallicity_median_low'], row['err_metallicity_median_high']]]).T, marker='None', color=rgba)
-            ax.add_artist(Ellipse((x_cord, y_cord), ellipse_width, ellipse_height, facecolor=rgba))
+            ax.add_artist(Ellipse((x_cord, y_cord), ellipse_width, ellipse_height, facecolor=rgba, edgecolor='black', zorder=3))
             ax.set_ylabel('Metallicity', fontsize=axis_fontsize)
         elif y_var == 'mips_flux':
             x_cord = row['use_ratio_median']
@@ -169,7 +169,7 @@ def plot_balmer_dec(save_name, n_groups, split_by, y_var = 'balmer_dec', color_v
             ellipse_width, ellipse_height = get_ellipse_shapes(1.1, y_axis_len, row['shape'])
 
             ax.errorbar(x_cord, y_cord, yerr=row['err_mips_flux_median'], marker='None', color=rgba)
-            ax.add_artist(Ellipse((x_cord, y_cord), ellipse_width, ellipse_height, facecolor=rgba))
+            ax.add_artist(Ellipse((x_cord, y_cord), ellipse_width, ellipse_height, facecolor=rgba, edgecolor='black', zorder=3))
             ax.set_ylabel('MIPS Flux', fontsize=axis_fontsize)
         elif y_var == 'log_use_sfr':
             x_cord = row['use_ratio_median']
@@ -178,7 +178,7 @@ def plot_balmer_dec(save_name, n_groups, split_by, y_var = 'balmer_dec', color_v
             ellipse_width, ellipse_height = get_ellipse_shapes(1.1, y_axis_len, row['shape'])
 
             ax.errorbar(x_cord, y_cord, marker='None', color=rgba)
-            ax.add_artist(Ellipse((x_cord, y_cord), ellipse_width, ellipse_height, facecolor=rgba))
+            ax.add_artist(Ellipse((x_cord, y_cord), ellipse_width, ellipse_height, facecolor=rgba, edgecolor='black', zorder=3))
             ax.set_ylabel('log_use_sfr', fontsize=axis_fontsize)
     
 
@@ -232,7 +232,7 @@ def plot_balmer_dec(save_name, n_groups, split_by, y_var = 'balmer_dec', color_v
             ellipse_width, ellipse_height = get_ellipse_shapes(1.5, y_axis_len, row['shape'])
             
             ax.errorbar(x_cord, y_cord, yerr=np.array([[row['err_balmer_dec_low'], row['err_balmer_dec_high']]]).T, marker='None', color=rgba)
-            ax.add_artist(Ellipse((x_cord, y_cord), ellipse_width, ellipse_height, facecolor=rgba))
+            ax.add_artist(Ellipse((x_cord, y_cord), ellipse_width, ellipse_height, facecolor=rgba, edgecolor='black', zorder=3))
             ax.set_ylabel(balmer_label, fontsize=axis_fontsize)
         elif y_var == 'av':
             x_cord = row['log_mass_median']
@@ -241,7 +241,7 @@ def plot_balmer_dec(save_name, n_groups, split_by, y_var = 'balmer_dec', color_v
             ellipse_width, ellipse_height = get_ellipse_shapes(1.5, y_axis_len, row['shape'])
 
             ax.errorbar(x_cord, y_cord, yerr=row['err_av_median'], marker='None', color=rgba)
-            ax.add_artist(Ellipse((x_cord, y_cord), ellipse_width, ellipse_height, facecolor=rgba))
+            ax.add_artist(Ellipse((x_cord, y_cord), ellipse_width, ellipse_height, facecolor=rgba, edgecolor='black', zorder=3))
             ax.set_ylabel('FAST AV', fontsize=axis_fontsize)
         elif y_var == 'beta':
             x_cord = row['log_mass_median']
@@ -250,7 +250,7 @@ def plot_balmer_dec(save_name, n_groups, split_by, y_var = 'balmer_dec', color_v
             ellipse_width, ellipse_height = get_ellipse_shapes(1.5, y_axis_len, row['shape'])
 
             ax.errorbar(x_cord, y_cord, yerr=np.array([[row['err_beta_median_low'], row['err_beta_median_high']]]).T, marker='None', color=rgba)
-            ax.add_artist(Ellipse((x_cord, y_cord), ellipse_width, ellipse_height, facecolor=rgba))
+            ax.add_artist(Ellipse((x_cord, y_cord), ellipse_width, ellipse_height, facecolor=rgba, edgecolor='black', zorder=3))
             ax.set_ylabel('Betaphot', fontsize=axis_fontsize)
         elif y_var == 'metallicity':
             x_cord = row['log_mass_median']
@@ -259,7 +259,7 @@ def plot_balmer_dec(save_name, n_groups, split_by, y_var = 'balmer_dec', color_v
             ellipse_width, ellipse_height = get_ellipse_shapes(1.5, y_axis_len, row['shape'])
 
             ax.errorbar(x_cord, y_cord, yerr=np.array([[row['err_metallicity_median_low'], row['err_metallicity_median_high']]]).T, marker='None', color=rgba)
-            ax.add_artist(Ellipse((x_cord, y_cord), ellipse_width, ellipse_height, facecolor=rgba))
+            ax.add_artist(Ellipse((x_cord, y_cord), ellipse_width, ellipse_height, facecolor=rgba, edgecolor='black', zorder=3))
             ax.set_ylabel('Metallcity', fontsize=axis_fontsize)
         elif y_var == 'mips_flux':
             x_cord = row['log_mass_median']
@@ -268,7 +268,7 @@ def plot_balmer_dec(save_name, n_groups, split_by, y_var = 'balmer_dec', color_v
             ellipse_width, ellipse_height = get_ellipse_shapes(1.5, y_axis_len, row['shape'])
 
             ax.errorbar(x_cord, y_cord, yerr=row['err_mips_flux_median'], marker='None', color=rgba)
-            ax.add_artist(Ellipse((x_cord, y_cord), ellipse_width, ellipse_height, facecolor=rgba))
+            ax.add_artist(Ellipse((x_cord, y_cord), ellipse_width, ellipse_height, facecolor=rgba, edgecolor='black', zorder=3))
             ax.set_ylabel('MIPS Flux', fontsize=axis_fontsize)
         elif y_var == 'log_use_sfr':
             x_cord = row['use_ratio_median']
@@ -277,7 +277,7 @@ def plot_balmer_dec(save_name, n_groups, split_by, y_var = 'balmer_dec', color_v
             ellipse_width, ellipse_height = get_ellipse_shapes(1.1, y_axis_len, row['shape'])
 
             ax.errorbar(x_cord, y_cord, marker='None', color=rgba)
-            ax.add_artist(Ellipse((x_cord, y_cord), ellipse_width, ellipse_height, facecolor=rgba))
+            ax.add_artist(Ellipse((x_cord, y_cord), ellipse_width, ellipse_height, facecolor=rgba, edgecolor='black', zorder=3))
             ax.set_ylabel('log_use_sfr', fontsize=axis_fontsize)
 
     if made_new_axis==True:
@@ -294,3 +294,7 @@ def plot_balmer_dec(save_name, n_groups, split_by, y_var = 'balmer_dec', color_v
     if made_new_axis == True:
         fig.savefig(imd.axis_cluster_data_dir + f'/{save_name}/{y_var}_vs_mass{color_str}.pdf',bbox_inches='tight')
 
+
+
+
+# plot_balmer_dec('whitaker_sfms_boot100', 8, 'log_use_sfr', y_var='balmer_dec', color_var='log_use_sfr')
