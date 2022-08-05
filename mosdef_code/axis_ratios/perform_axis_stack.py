@@ -12,11 +12,11 @@ import time
 import json
 from plot_sample_split import plot_sample_split
 from plot_balmer_dec import plot_balmer_dec
-from overview_plot import plot_overview
+from overview_plot import plot_overview, plot_AV_beta_paper, plot_mass_met_paper
 from integrate_line import re_calc_emission_flux
 from dust_model import plot_dust_model
 from plot_sfr_metallicity import plot_sfr_metals
-
+from plot_balmer_vs_all import plot_balmer_vs_all
 
 random.seed(3284923)
 
@@ -108,6 +108,11 @@ def stack_all_and_plot_all(param_class):
     plot_dust_model(save_name)
     plot_sfr_metals(save_name)
     plot_sfr_metals(save_name, plot_sanders=True)
+    plot_overlaid_spectra(save_name, plot_cont_sub=True, paper_fig=True)
+    plot_balmer_vs_all(save_name)
+    plot_AV_beta_paper(nbins, 'log_use_sfr', save_name)
+    plot_mass_met_paper(nbins, 'log_use_sfr', save_name)
+    plot_metals(savename=save_name, plot_uvj_instead=True)
     print('starting overview plot')
     # plot_overview(nbins, save_name, ratio_bins, starting_points, mass_width, split_width, sfms_bins, split_by)
     time_end = time.time()

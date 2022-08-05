@@ -7,8 +7,8 @@ balmer_label = 'Balmer decrement (H$_\\alpha$ / H$_\\beta$)'
 balmer_av_label = 'A$_\mathrm{Balmer}$'
 metallicity_label = '12 + log(O/H)'
 
-single_column_axisfont = 20
-single_column_ticksize = 20
+single_column_axisfont = 24
+single_column_ticksize = 24
 
 light_color = '#DF7B15'
 dark_color = '#2D1B99'

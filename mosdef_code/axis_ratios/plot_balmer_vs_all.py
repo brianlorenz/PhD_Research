@@ -8,6 +8,7 @@ from matplotlib.patches import Ellipse
 from ellipses_for_plotting import get_ellipse_shapes
 import matplotlib as mpl
 from plot_vals import *
+from a_balmer_to_balmer_dec import convert_attenuation_to_dec
 
 def plot_balmer_vs_all(save_name):
     """Plots balmer decrement vs a variety of measured galaxy propertties
@@ -28,6 +29,8 @@ def plot_balmer_vs_all(save_name):
     fig, axarr = plt.subplots(3,3,figsize = (20,20))
 
     colors = ['black', 'blue', 'orange', 'mediumseagreen', 'red', 'violet', 'grey', 'pink', 'cyan', 'darkblue', 'brown', 'darkgreen']
+
+    axis_fontsize = 24
 
     def plot_balmer_on_axis(ax, x_points, err_x_points='None', err_x_points_high='None', color='None', colorbar=True, use_cbar_axis=False, cbar_axis = 'None', use_balmer_av=False):
         """Makes one of the plots
@@ -108,7 +111,8 @@ def plot_balmer_vs_all(save_name):
             
             ax.errorbar(row[x_points], row[balmer_str], yerr=np.array([[row[f'err_{balmer_str}_low'], row[f'err_{balmer_str}_high']]]).T, xerr=xerr, color=rgba, marker='None', ls='None')
             
-            ax.add_artist(Ellipse((row[x_points], row[balmer_str]), ellipse_width, ellipse_height, facecolor=rgba))
+            zorder = 10-i
+            ax.add_artist(Ellipse((row[x_points], row[balmer_str]), ellipse_width, ellipse_height, facecolor=rgba, edgecolor='black', zorder=zorder))
             ax.set_xlabel(xlabel, fontsize=fontsize)
             ax.set_ylabel(balmer_label, fontsize=fontsize)
         
@@ -120,15 +124,15 @@ def plot_balmer_vs_all(save_name):
                 cbar = fig.colorbar(mpl.cm.ScalarMappable(norm=norm, cmap=cmap), cax=cbar_axis, fraction=0.046, pad=0.04)
             cbar.set_label('log_ssfr', fontsize=fontsize)
             if color=='mass':
-                cbar.set_label(stellar_mass_label, fontsize=18)
+                cbar.set_label(stellar_mass_label, fontsize=axis_fontsize)
             if color=='sfr':
-                cbar.set_label(sfr_label, fontsize=18)
+                cbar.set_label(sfr_label, fontsize=axis_fontsize)
         ax.tick_params(labelsize=12)
         ax.set_aspect(ellipse_width/ellipse_height)
         
             
     
-
+    
     plot_balmer_on_axis(axarr[0,0], 'log_mass_median')
     plot_balmer_on_axis(axarr[0,1], 'metallicity_median', 'err_metallicity_median_low', 'err_metallicity_median_high')
     plot_balmer_on_axis(axarr[0,2], 'log_use_sfr_median')
@@ -152,29 +156,50 @@ def plot_balmer_vs_all(save_name):
     ax_cbar_ssfr = fig.add_axes([0.89, 0.2, 0.02, 0.60])
     plot_balmer_on_axis(ax_balmer_mass, 'log_mass_median', color='sfr', use_cbar_axis=True, cbar_axis=ax_cbar_mass)
     plot_balmer_on_axis(ax_balmer_ssfr, 'log_use_sfr_median', color='mass', use_cbar_axis=True, cbar_axis = ax_cbar_ssfr)
-    ax_balmer_mass.set_xlabel(stellar_mass_label, fontsize=18)
-    ax_balmer_ssfr.set_xlabel(sfr_label, fontsize=18)
-    ax_balmer_mass.set_ylabel(balmer_label, fontsize=18)
-    ax_balmer_ssfr.set_ylabel(balmer_label, fontsize=18)
-    ax_balmer_mass.tick_params(labelsize=16)
-    ax_balmer_ssfr.tick_params(labelsize=16)
-    ax_cbar_mass.tick_params(labelsize=16)
-    ax_cbar_ssfr.tick_params(labelsize=16)
+    ax_balmer_mass.set_xlabel(stellar_mass_label, fontsize=axis_fontsize)
+    ax_balmer_ssfr.set_xlabel(sfr_label, fontsize=axis_fontsize)
+    ax_balmer_mass.set_ylabel(balmer_label, fontsize=axis_fontsize)
+    ax_balmer_ssfr.set_ylabel(balmer_label, fontsize=axis_fontsize)
+    ax_balmer_mass.tick_params(labelsize=axis_fontsize)
+    ax_balmer_ssfr.tick_params(labelsize=axis_fontsize)
+    ax_cbar_mass.tick_params(labelsize=axis_fontsize)
+    ax_cbar_ssfr.tick_params(labelsize=axis_fontsize)
     fig.savefig(imd.axis_cluster_data_dir + f'/{save_name}/balmer_plots/balmer_ssfr_mass_color.pdf',bbox_inches='tight')
     plt.close('all')
 
 
+    def garn_best_curve(log_mass):
+        mass = 10**log_mass
+        x = np.log10(mass / 10**10)
+        A_Balmer = 0.91 + 0.77*x + 0.11*x**2 + (-0.09*x**3)
+        balmer_dec = convert_attenuation_to_dec(A_Balmer)
+        return balmer_dec
+    garn_masses = np.arange(9, 11, 0.02)
+    garn_balmer_decs = garn_best_curve(garn_masses)
+    
+
+
+    def battisti_curve():
+        battisti_df = ascii.read(imd.mosdef_dir + '/axis_ratio_data/Battisti_2021_data.csv').to_pandas()
+        battisti_df.rename(columns = {'col1':'log_mass', 'col2':'tau_balmer'}, inplace = True)
+        battisti_df['A_Balmer'] = 1.086*battisti_df['tau_balmer']
+        battisti_df['balmer_dec'] = convert_attenuation_to_dec(battisti_df['A_Balmer'])
+        return battisti_df
+
+    battisti_df = battisti_curve()
     sdss_balmer_df = ascii.read(imd.mosdef_dir + '/axis_ratio_data/sdss_decs.csv').to_pandas()
     sdss_balmer_df = sdss_balmer_df.rename(columns={'col1': 'mass', 'col2': 'balmer_dec'})
     fig = plt.figure(figsize=(8, 8))
     ax_balmer_mass = fig.add_axes([0.01, 0.01, 0.9, 0.9])
     ax_cbar_mass = fig.add_axes([0.92, 0.01, 0.04, 0.9])
     ax_balmer_mass.plot(sdss_balmer_df['mass'], sdss_balmer_df['balmer_dec'], color='grey', marker='o', markersize=10, label='SDSS median, z~0')
+    ax_balmer_mass.plot(garn_masses, garn_balmer_decs, color='grey', marker='None', markersize=10, label='Garn & Best 2010')
+    # ax_balmer_mass.plot(battisti_df['log_mass'], battisti_df['balmer_dec'], color='red', marker='None', markersize=10, label='Battisti 2021')
     plot_balmer_on_axis(ax_balmer_mass, 'log_mass_median', color='sfr', use_cbar_axis=True, cbar_axis=ax_cbar_mass)
-    ax_balmer_mass.set_xlabel(stellar_mass_label, fontsize=18)
-    ax_balmer_mass.set_ylabel(balmer_label, fontsize=18)
-    ax_balmer_mass.tick_params(labelsize=16)
-    ax_cbar_mass.tick_params(labelsize=16)
+    ax_balmer_mass.set_xlabel(stellar_mass_label, fontsize=axis_fontsize)
+    ax_balmer_mass.set_ylabel(balmer_label, fontsize=axis_fontsize)
+    ax_balmer_mass.tick_params(labelsize=axis_fontsize)
+    ax_cbar_mass.tick_params(labelsize=axis_fontsize)
     ax_balmer_mass.legend(fontsize=16, loc=2)
     fig.savefig(imd.axis_cluster_data_dir + f'/{save_name}/balmer_plots/balmer_mass_solo.pdf',bbox_inches='tight')
     plt.close('all')
@@ -186,20 +211,20 @@ def plot_balmer_vs_all(save_name):
     # fig.subplots_adjust(right=0.85)
     # ax_cbar = fig.add_axes([0.90, 0.2, 0.02, 0.60])
     fig = plt.figure(figsize=(17, 8))
-    ax_balmer_sfr = fig.add_axes([0.01, 0.2, 0.45, 0.6])
-    ax_balmer_metallicity = fig.add_axes([0.50, 0.2, 0.45, 0.6])
+    ax_balmer_metallicity = fig.add_axes([0.01, 0.2, 0.45, 0.6])
+    ax_balmer_sfr = fig.add_axes([0.50, 0.2, 0.45, 0.6])
     ax_cbar_sfr = fig.add_axes([0.40, 0.2, 0.02, 0.60])
     ax_cbar_metallicity = fig.add_axes([0.89, 0.2, 0.02, 0.60])
     plot_balmer_on_axis(ax_balmer_sfr, 'log_use_sfr_median', color='mass', use_cbar_axis=True, cbar_axis=ax_cbar_sfr, use_balmer_av=True)
     plot_balmer_on_axis(ax_balmer_metallicity, 'metallicity_median', color='mass', use_cbar_axis=True, cbar_axis = ax_cbar_metallicity, use_balmer_av=True)
-    ax_balmer_sfr.set_xlabel(sfr_label, fontsize=18)
-    ax_balmer_metallicity.set_xlabel(metallicity_label, fontsize=18)
-    ax_balmer_sfr.set_ylabel(balmer_av_label, fontsize=18)
-    ax_balmer_metallicity.set_ylabel(balmer_av_label, fontsize=18)
-    ax_balmer_sfr.tick_params(labelsize=16)
-    ax_balmer_metallicity.tick_params(labelsize=16)
-    ax_cbar_sfr.tick_params(labelsize=16)
-    ax_cbar_metallicity.tick_params(labelsize=16)
+    ax_balmer_sfr.set_xlabel(sfr_label, fontsize=axis_fontsize)
+    ax_balmer_metallicity.set_xlabel(metallicity_label, fontsize=axis_fontsize)
+    ax_balmer_sfr.set_ylabel(balmer_av_label, fontsize=axis_fontsize)
+    ax_balmer_metallicity.set_ylabel(balmer_av_label, fontsize=axis_fontsize)
+    ax_balmer_sfr.tick_params(labelsize=axis_fontsize)
+    ax_balmer_metallicity.tick_params(labelsize=axis_fontsize)
+    ax_cbar_sfr.tick_params(labelsize=axis_fontsize)
+    ax_cbar_metallicity.tick_params(labelsize=axis_fontsize)
     ax_balmer_sfr.axhline(0.85, ls='--', color='#8E248C')
     ax_balmer_metallicity.axhline(0.85, ls='--', color='#8E248C')
     ax_balmer_sfr.axhline(1.9, ls='--', color='#FF640A')

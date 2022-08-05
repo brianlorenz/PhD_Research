@@ -64,7 +64,7 @@ def make_zdep_whitaker_sfms_boot100(run_stack = False, only_plot = False):
     return both_ssfrs_4bin_mean_params
 zdep_whitaker_sfms_boot100 = make_zdep_whitaker_sfms_boot100()
 
-def make_whitaker_sfms_boot100(run_stack = True, only_plot = False):
+def make_whitaker_sfms_boot100(run_stack = True, only_plot = True):
     run_stack = run_stack
     only_plot = only_plot
     mass_width = 1.0

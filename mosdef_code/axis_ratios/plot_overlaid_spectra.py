@@ -11,7 +11,7 @@ from brokenaxes import brokenaxes
 import sys
 from plot_vals import *
 
-titlefont=18
+titlefont=single_column_axisfont
 
 line_list = [
     ('H$_\\alpha$', 6564.61),
@@ -211,10 +211,10 @@ def plot_overlaid_spectra(savename, plot_cont_sub=False, paper_fig=False):
     if paper_fig==True:
         # label_loc = (5009, 1.25)
         label_loc = (4859, 1.35)
-        fig.text(0.25, 0.93, 'Low mass', fontsize=18)
-        fig.text(0.685, 0.93, 'High mass', fontsize=18)
-        fig.text(0.95, 0.7, 'High SFR', fontsize=18, rotation=270)
-        fig.text(0.95, 0.25, 'Low SFR', fontsize=18, rotation=270)
+        fig.text(0.25, 0.93, 'Low mass', fontsize=single_column_axisfont)
+        fig.text(0.685, 0.93, 'High mass', fontsize=single_column_axisfont)
+        fig.text(0.95, 0.7, 'High SFR', fontsize=single_column_axisfont, rotation=270)
+        fig.text(0.95, 0.25, 'Low SFR', fontsize=single_column_axisfont, rotation=270)
         # bax_0.text(label_loc[0], label_loc[1], 'Low mass, low SFR', fontsize=18)
         # bax_1.text(label_loc[0], label_loc[1], 'Low mass, high SFR', fontsize=18)
         # bax_2.text(label_loc[0], label_loc[1], 'High mass, low SFR', fontsize=18)
@@ -232,4 +232,4 @@ def plot_overlaid_spectra(savename, plot_cont_sub=False, paper_fig=False):
         fig.savefig(imd.axis_cluster_data_dir + f'/{savename}/overlaid_spectra.pdf',bbox_inches='tight')
     plt.close('all')
 
-plot_overlaid_spectra('whitaker_sfms_boot100', plot_cont_sub=True, paper_fig=True)
+# plot_overlaid_spectra('whitaker_sfms_boot100', plot_cont_sub=True, paper_fig=True)

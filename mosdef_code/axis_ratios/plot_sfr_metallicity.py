@@ -34,7 +34,7 @@ def plot_sfr_metals(save_name, plot_ssfr=False, plot_re=False, plot_sanders=Fals
             ax.set_xlim(0, 2.6)
             ax_x_len = 2.6
        
-        fontsize=14
+        fontsize=single_column_axisfont
 
         cmap = mpl.cm.inferno
         norm = mpl.colors.Normalize(vmin=3, vmax=5.5) 
@@ -52,7 +52,8 @@ def plot_sfr_metals(save_name, plot_ssfr=False, plot_re=False, plot_sanders=Fals
                 x_points = np.log10(10**row['log_use_sfr_median'] / row['re_median'])
                 ax.set_xlabel('log(SFR/R_e)', fontsize=fontsize)
         ax.errorbar(x_points, row['metallicity_median'], yerr=np.array([[row['err_metallicity_median_low'], row['err_metallicity_median_high']]]).T, color=rgba, marker='None', ls='None', zorder=3)
-        ax.add_artist(Ellipse((x_points, row['metallicity_median']), ellipse_width, ellipse_height, facecolor=rgba, zorder=1))
+        zorder=15-i
+        ax.add_artist(Ellipse((x_points, row['metallicity_median']), ellipse_width, ellipse_height, facecolor=rgba, edgecolor='black', zorder=zorder))
         ax.set_ylabel('Metallicity', fontsize=fontsize)
     
     # Plot lines on constant dust
@@ -178,3 +179,53 @@ def plot_sfr_metals(save_name, plot_ssfr=False, plot_re=False, plot_sanders=Fals
 # plot_sfr_metals('whitaker_sfms_boot100')
 # plot_sfr_metals('whitaker_sfms_boot100', plot_sanders=True)
 # plot_sfr_metals('whitaker_sfms_boot100', plot_re=True)
+
+
+def plot_sfr_times_metals(save_name):
+    summary_df = ascii.read(imd.axis_cluster_data_dir + f'/{save_name}/summary.csv').to_pandas()
+    fig, ax = plt.subplots(figsize = (8,8))
+
+    # Plot the points
+    for i in range(len(summary_df)):
+        row = summary_df.iloc[i]
+
+        ax.set_ylim(8, 9)
+        ax_y_len = 1
+        
+        ax.set_xlim(9.5, 10.5)
+        ax_x_len = 1
+    
+        fontsize=14
+
+        cmap = mpl.cm.inferno
+        norm = mpl.colors.Normalize(vmin=3, vmax=5.5) 
+        rgba = cmap(norm(row['balmer_dec']))
+        
+        ellipse_width, ellipse_height = get_ellipse_shapes(ax_x_len, ax_y_len, row['shape'])
+
+        x_points = row['log_mass_median']
+        ax.set_xlabel(stellar_mass_label, fontsize=fontsize)
+        row_err = np.array([[row['err_metallicity_median_low'], row['err_metallicity_median_high']]]).T
+        ax.errorbar(x_points, row['metallicity_median']*row['log_use_sfr_median'], yerr=row_err, color=rgba, marker='None', ls='None', zorder=3)
+        zorder=15-i
+        ax.add_artist(Ellipse((x_points, row['metallicity_median']), ellipse_width, ellipse_height, facecolor=rgba, edgecolor='black', zorder=zorder))
+        ax.set_ylabel('Metallicity*log SFR', fontsize=fontsize)
+
+
+        # Plot lines on constant dust
+        metal_vals = np.arange(8.1, 9.0, 0.1)
+        x = Symbol('x')
+    
+        # low mass
+        A_lambda = 0.85
+        re = 0.25
+        sfrs = [float(solve(const2 * 10**(a*metal_vals[i]) * (x/(re**2))**(1/n) - A_lambda, x)[0]) for i in range(len(metal_vals))] #Dust
+        sfrs=np.array(sfrs)
+        log_sfrs = np.log10(sfrs)
+        x_plot = log_sfrs*metal_vals
+        print(x_plot)
+        # ax.plot(x_plot, metal_vals, ls='--', color='#8E248C', marker='None', zorder=2)
+
+    ax.tick_params(labelsize=14)
+    fig.savefig(imd.axis_cluster_data_dir + f'/{save_name}/metallicity_times_sfr.pdf',bbox_inches='tight')
+# plot_sfr_times_metals('whitaker_sfms_boot100')

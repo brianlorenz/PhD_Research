@@ -294,14 +294,14 @@ def plot_sample_split(n_groups, save_name, ratio_bins, starting_points, mass_wid
         summary_df.to_csv(imd.axis_cluster_data_dir + f'/{save_name}/summary.csv', index=False)
 
 
-    ax.set_xlabel(stellar_mass_label, fontsize=14) 
-    ax.set_ylabel(variable, fontsize=14)
+    ax.set_xlabel(stellar_mass_label, fontsize=single_column_axisfont) 
+    ax.set_ylabel(variable, fontsize=single_column_axisfont)
     if variable=='log_use_sfr':
-        ax.set_ylabel(sfr_label, fontsize=14)
-    ax.tick_params(labelsize=14)
+        ax.set_ylabel(sfr_label, fontsize=single_column_axisfont)
+    ax.tick_params(labelsize=single_column_axisfont)
     cbar = fig.colorbar(mpl.cm.ScalarMappable(norm=norm, cmap=cmap), ax=ax, fraction=0.046, pad=0.04)
-    cbar.set_label(balmer_label, fontsize=14)
-    cbar.ax.tick_params(labelsize=14)
+    cbar.set_label(balmer_label, fontsize=single_column_axisfont)
+    cbar.ax.tick_params(labelsize=single_column_axisfont)
     ax.set_aspect(ellipse_width/ellipse_height)
     scale_aspect(ax)
     if made_new_axis==True:
