@@ -12,6 +12,7 @@ import sys
 from plot_vals import *
 
 titlefont=single_column_axisfont
+axisfont=full_page_axisfont
 
 line_list = [
     ('H$_\\alpha$', 6564.61),
@@ -142,8 +143,8 @@ def plot_overlaid_spectra(savename, plot_cont_sub=False, paper_fig=False):
         ax.set_ylabel(f'Normalized F$_\\lambda${add_str}')
         ax.set_xlabel('Wavelength ($\AA$)')
         if paper_fig == True:
-            ax.set_ylabel('F$_\\lambda$ / F$_{\\lambda, 6565}$', fontsize=18, labelpad=45)
-            ax.set_xlabel('Wavelength ($\AA$)', fontsize=18, labelpad=25)
+            ax.set_ylabel('F$_\\lambda$ / F$_{\\lambda, 6565}$', fontsize=axisfont, labelpad=45)
+            ax.set_xlabel('Wavelength ($\AA$)', fontsize=axisfont, labelpad=25)
             ax.tick_params(labelsize=18)
 
         if paper_fig==True:
@@ -163,7 +164,7 @@ def plot_overlaid_spectra(savename, plot_cont_sub=False, paper_fig=False):
                         offset = -8
                     else:
                         offset = len(name)*-2.7
-                    ax.text(center+3+offset, height+0.3, name, fontsize=18)
+                    ax.text(center+3+offset, height+0.3, name, fontsize=axisfont)
                 
                 # ax.plot([0],[0], color='grey', label = 'Stack of sample', zorder=1) 
                 # ax.plot([0],[0], color='grey', label = 'Reference', zorder=1) 

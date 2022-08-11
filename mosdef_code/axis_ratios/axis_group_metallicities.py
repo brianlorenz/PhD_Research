@@ -181,10 +181,13 @@ def plot_group_metals_compare(n_groups, save_name):
 
 
 
-def plot_metals(savename, plot_half_light_instead=False, plot_uvj_instead=False, plot_z_instead=False):
+def plot_metals(savename, plot_half_light_instead=False, plot_uvj_instead=False, plot_z_instead=False, plot_uvj_axis_instead=False):
     """Make the plot of individual galaxy metallicities
     
     """
+    if plot_uvj_axis_instead==True:
+        plot_uvj_instead = True
+
     summary_df = ascii.read(imd.axis_cluster_data_dir + f'/{savename}/summary.csv').to_pandas()
     
 
@@ -296,9 +299,15 @@ def plot_metals(savename, plot_half_light_instead=False, plot_uvj_instead=False,
                 ax.legend(bbox_to_anchor=(1.5, 4.5, 0.20, 0.15), loc='upper right')
         
         elif plot_uvj_instead:
-            ax.plot(ar_df['V_J'], ar_df['U_V'], color=color, label = label, marker='o', ls='None', markersize=6) 
             uvjfontsize = 26
-            ax.set_ylabel('U-V', fontsize=uvjfontsize+4)
+            if plot_uvj_axis_instead:
+                ax.plot(ar_df['V_J'], ar_df['use_ratio'], color=color, label = label, marker='o', ls='None', markersize=6) 
+                ax.set_ylabel('Axis Ratio', fontsize=uvjfontsize+4)
+                ax.set_ylim(-0.05, 1.05)
+            else:
+                ax.plot(ar_df['V_J'], ar_df['U_V'], color=color, label = label, marker='o', ls='None', markersize=6) 
+                ax.set_ylabel('U-V', fontsize=uvjfontsize+4)
+                ax.set_ylim(-0.2, 1.9)
             ax.set_xlabel('V-J', fontsize=uvjfontsize+4)
             ax_1.set_xlabel('')
             ax_2.set_ylabel('')
@@ -306,7 +315,6 @@ def plot_metals(savename, plot_half_light_instead=False, plot_uvj_instead=False,
             ax_3.set_ylabel('')
             plt.subplots_adjust(wspace=0.05, hspace=0.05)
             ax.set_xlim(-0.5, 1.9)
-            ax.set_ylim(-0.2, 1.9)
             #Label axes
             label_loc = (-0.45, 1.7)
             # ax_0.text(label_loc[0], label_loc[1], 'M$_*$<10, SFR<10', fontsize=uvjfontsize)
@@ -363,6 +371,8 @@ def plot_metals(savename, plot_half_light_instead=False, plot_uvj_instead=False,
 
     if plot_half_light_instead==True:
         fig.savefig(imd.axis_cluster_data_dir + f'/{savename}/re_ar.pdf')
+    elif plot_uvj_axis_instead==True:
+        fig.savefig(imd.axis_cluster_data_dir + f'/{savename}/vj_ar_groups.pdf',bbox_inches='tight')
     elif plot_uvj_instead==True:
         fig.savefig(imd.axis_cluster_data_dir + f'/{savename}/uvj_ar_groups.pdf',bbox_inches='tight')
     elif plot_z_instead==True:
@@ -412,3 +422,4 @@ def add_metals_to_summary_df(save_name, metal_column):
 # add_metals_to_summary_df('both_sfms_4bin_median_2axis_boot100', metal_column='O3N2_metallicity')
 
 # plot_metals(savename='whitaker_sfms_boot100', plot_uvj_instead=True)
+plot_metals(savename='whitaker_sfms_boot100', plot_uvj_axis_instead=True)

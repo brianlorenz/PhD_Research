@@ -283,6 +283,7 @@ def filter_ar_df(ar_df, return_std_ar=False):
     ar_df = ar_df[ar_df['log_mass'] > 0]
 
     #For counting purposes
+    # print(ar_df[ar_df['log_mass']>11]['log_mass'])
     mass_out = np.logical_or(ar_df['log_mass'] <= 9.0, ar_df['log_mass'] >= 11.00)
     save_count(ar_df[mass_out], 'mass_out_of_range', 'mass out of range')
     # Remove anything outside of our mass limits

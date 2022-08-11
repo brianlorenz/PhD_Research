@@ -9,6 +9,7 @@ from ellipses_for_plotting import get_ellipse_shapes
 import matplotlib as mpl
 from plot_vals import *
 from a_balmer_to_balmer_dec import convert_attenuation_to_dec
+from read_sdss import read_and_filter_sdss
 
 def plot_balmer_vs_all(save_name):
     """Plots balmer decrement vs a variety of measured galaxy propertties
@@ -192,9 +193,31 @@ def plot_balmer_vs_all(save_name):
     fig = plt.figure(figsize=(8, 8))
     ax_balmer_mass = fig.add_axes([0.01, 0.01, 0.9, 0.9])
     ax_cbar_mass = fig.add_axes([0.92, 0.01, 0.04, 0.9])
-    ax_balmer_mass.plot(sdss_balmer_df['mass'], sdss_balmer_df['balmer_dec'], color='grey', marker='o', markersize=10, label='SDSS median, z~0')
-    ax_balmer_mass.plot(garn_masses, garn_balmer_decs, color='grey', marker='None', markersize=10, label='Garn & Best 2010')
+    # ax_balmer_mass.plot(sdss_balmer_df['mass'], sdss_balmer_df['balmer_dec'], color='black', marker='o', markersize=10, label='SDSS median, z~0')
+    # ax_balmer_mass.plot(garn_masses, garn_balmer_decs, color='grey', marker='None', markersize=10, label='Garn & Best 2010')
     # ax_balmer_mass.plot(battisti_df['log_mass'], battisti_df['balmer_dec'], color='red', marker='None', markersize=10, label='Battisti 2021')
+
+    # Add SDSS galaxies
+    sdss_df = read_and_filter_sdss()
+    sdss_df = sdss_df[sdss_df['balmer_dec']>2.7]
+    sdss_df = sdss_df[sdss_df['balmer_dec']<5.5]
+    sdss_df = sdss_df[sdss_df['log_mass']>9.5]
+    sdss_df = sdss_df[sdss_df['log_mass']<10.5]
+    # sdss_df = sdss_df[sdss_df['LGM_FIB_P50']>9.5]
+    # sdss_df = sdss_df[sdss_df['LGM_FIB_P50']<10.5]
+    # ax.plot(extra_df['log_mass'], extra_df['balmer_dec'], ls='None', marker='o', color='black', alpha=0.01)
+    # ax_balmer_mass.hist2d(sdss_df['LGM_FIB_P50'], sdss_df['balmer_dec'], bins=(100, 100), cmap=plt.cm.gray_r)
+    def truncate_colormap(cmap, minval=0.0, maxval=1.0, n=100):
+        new_cmap = mpl.colors.LinearSegmentedColormap.from_list(
+        'trunc({n},{a:.2f},{b:.2f})'.format(n=cmap.name, a=minval, b=maxval),
+        cmap(np.linspace(minval, maxval, n)))
+        return new_cmap
+    cmap = plt.get_cmap('gray_r')
+    new_cmap = truncate_colormap(cmap, 0, 0.7)
+    # ax_balmer_mass.hexbin(sdss_df['log_mass'], sdss_df['balmer_dec'], gridsize=20, cmap=plt.cm.gray_r, alpha = 0.75)
+    ax_balmer_mass.hexbin(sdss_df['log_mass'], sdss_df['balmer_dec'], gridsize=20, cmap=new_cmap)
+    ax_balmer_mass.plot([0], [0], marker='h', label='SDSS, z~0', ls='None', color='gray', markersize=25)
+
     plot_balmer_on_axis(ax_balmer_mass, 'log_mass_median', color='sfr', use_cbar_axis=True, cbar_axis=ax_cbar_mass)
     ax_balmer_mass.set_xlabel(stellar_mass_label, fontsize=axis_fontsize)
     ax_balmer_mass.set_ylabel(balmer_label, fontsize=axis_fontsize)

@@ -1,5 +1,6 @@
 # Re-compute sfrs using new method from Av, useful for galaxies with lower limits of SFR_CORR
 from astropy.io import ascii
+from axis_ratio_funcs import read_filtered_ar_df
 import pandas as pd
 import numpy as np
 import initialize_mosdef_dirs as imd
@@ -153,14 +154,14 @@ def plot_sfrs():
 
     high_sfrs_bad =  ar_df[hb_flag_filt]['sfr'] > 100
 
-    ax.plot(ar_df[~hb_flag_filt]['sfr2'], ar_df[~hb_flag_filt]['halpha_sfrs'], color='black', marker='o', ls='None', label = 'H$_\\beta$ > 3 sigma')
-    ax.plot(ar_df[hb_flag_filt]['sfr2'], ar_df[hb_flag_filt]['halpha_sfrs'], color='orange', marker='o', ls='None', label = 'H$_\\beta$ < 3 sigma')
-    ax.plot(ar_df[hb_flag_filt][high_sfrs_bad]['sfr2'], ar_df[hb_flag_filt][high_sfrs_bad]['halpha_sfrs'], color='mediumseagreen', marker='o', ls='None', label = 'H$_\\beta$ < 3 sigma')
+    ax.plot(ar_df[~hb_flag_filt]['sfr'], ar_df[~hb_flag_filt]['halpha_sfrs'], color='black', marker='o', ls='None', label = 'H$_\\beta$ > 3 sigma')
+    ax.plot(ar_df[hb_flag_filt]['sfr'], ar_df[hb_flag_filt]['halpha_sfrs'], color='orange', marker='o', ls='None', label = 'H$_\\beta$ < 3 sigma')
+    ax.plot(ar_df[hb_flag_filt][high_sfrs_bad]['sfr'], ar_df[hb_flag_filt][high_sfrs_bad]['halpha_sfrs'], color='mediumseagreen', marker='o', ls='None', label = 'H$_\\beta$ < 3 sigma')
     ax.plot((0.001, 10**5), (0.001, 10**5), ls='--', color='blue')
 
     ax.set_xscale('log')
     ax.set_yscale('log')
-    ax.set_xlabel('SFR2', fontsize=14)
+    ax.set_xlabel('SFR', fontsize=14)
     ax.set_xlim(0.1, 10000)
     ax.set_ylim(0.1, 10000)
     ax.set_ylabel('SFR from H$_\\alpha$', fontsize=14)
@@ -210,12 +211,12 @@ def plot_sfrs():
 
     
 
-    ax.hist(ar_df[~hb_flag_filt]['sfr2'], bins=bins, color='black', label = 'H$_\\beta$ > 3 sigma')
-    ax.hist(ar_df[hb_flag_filt]['sfr2'], bins=bins, color='orange', alpha=0.5, label = 'H$_\\beta$ < 3 sigma')
-    ax.hist(ar_df[hb_flag_filt][high_sfrs_bad]['sfr2'], bins=bins, color='mediumseagreen', alpha=1, label = 'H$_\\beta$ < 3 sigma')
+    ax.hist(ar_df[~hb_flag_filt]['sfr'], bins=bins, color='black', label = 'H$_\\beta$ > 3 sigma')
+    ax.hist(ar_df[hb_flag_filt]['sfr'], bins=bins, color='orange', alpha=0.5, label = 'H$_\\beta$ < 3 sigma')
+    ax.hist(ar_df[hb_flag_filt][high_sfrs_bad]['sfr'], bins=bins, color='mediumseagreen', alpha=1, label = 'H$_\\beta$ < 3 sigma')
     
     
-    ax.set_xlabel('SFR2', fontsize=14)
+    ax.set_xlabel('SFR', fontsize=14)
     ax.set_ylabel('Count', fontsize=14)
     ax.legend(fontsize=14)
     ax.tick_params(labelsize=12)
@@ -286,6 +287,21 @@ def plot_sfrs():
     fig.savefig(imd.axis_output_dir + '/sfr_diagnostics/sfr_haflux_hbflux.pdf')
 
 
+def sfr_diff_quantified():
+    ar_df = read_filtered_ar_df()
+    ar_df = ar_df[ar_df['sfr']>-0.1]
+    ar_df = ar_df[ar_df['ha_detflag_sfr']==0]
+    ar_df = ar_df[ar_df['hb_detflag_sfr']==0]
+    
+    old_mean = np.mean(ar_df['sfr'])
+    old_std = np.std(ar_df['sfr'])
+    halpha_mean = np.mean(ar_df['halpha_sfrs'])
+    halpha_std = np.std(ar_df['halpha_sfrs'])
+    print(f'old mean:{old_mean}, old std: {old_std}')
+    print(f'halpha mean:{halpha_mean}, halpha std: {halpha_std}')
+
+
+sfr_diff_quantified()
 
 # convert_ha_to_sfr()
 # add_use_sfr()

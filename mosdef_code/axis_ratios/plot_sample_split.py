@@ -15,7 +15,6 @@ from plot_vals import *
 import cmasher as cmr
 from scipy import stats
 
-
 shapes = {'low': '+', 'mid': 'd', 'high': 'o'}
 colors = {'sorted0': 'red', 'sorted1': 'blue', 'sorted2': 'orange', 'sorted3': 'mediumseagreen', 'sorted4': 'lightskyblue', 'sorted5': 'darkviolet'}
 
@@ -244,7 +243,7 @@ def plot_sample_split(n_groups, save_name, ratio_bins, starting_points, mass_wid
             b = 4.1693
             c = -0.1638
             y_sfr = a + b*x + c*x**2
-            ax.plot(x, y_sfr, color='black', ls='-.')
+            ax.plot(x, y_sfr, color='grey', ls='-.')
         
         # Plots the sfms division line
         add_str=''
@@ -253,7 +252,7 @@ def plot_sample_split(n_groups, save_name, ratio_bins, starting_points, mass_wid
             print(sfms_slope, sfms_yint)
             y1 = sfms_slope*x + sfms_yint
             y_ssfr = np.log10((10**y1)/(10**x))
-            ax.plot(x, y_ssfr, color='black', ls='--')
+            ax.plot(x, y_ssfr, color='grey', ls='--')
             # ax.axvline(10, color='black', ls='--')
             add_str = '_bothcuts'
         
@@ -294,14 +293,16 @@ def plot_sample_split(n_groups, save_name, ratio_bins, starting_points, mass_wid
         summary_df.to_csv(imd.axis_cluster_data_dir + f'/{save_name}/summary.csv', index=False)
 
 
-    ax.set_xlabel(stellar_mass_label, fontsize=single_column_axisfont) 
-    ax.set_ylabel(variable, fontsize=single_column_axisfont)
+    
+
+    ax.set_xlabel(stellar_mass_label, fontsize=full_page_axisfont) 
+    ax.set_ylabel(variable, fontsize=full_page_axisfont)
     if variable=='log_use_sfr':
-        ax.set_ylabel(sfr_label, fontsize=single_column_axisfont)
-    ax.tick_params(labelsize=single_column_axisfont)
+        ax.set_ylabel(sfr_label, fontsize=full_page_axisfont)
+    ax.tick_params(labelsize=full_page_axisfont)
     cbar = fig.colorbar(mpl.cm.ScalarMappable(norm=norm, cmap=cmap), ax=ax, fraction=0.046, pad=0.04)
-    cbar.set_label(balmer_label, fontsize=single_column_axisfont)
-    cbar.ax.tick_params(labelsize=single_column_axisfont)
+    cbar.set_label(balmer_label, fontsize=full_page_axisfont)
+    cbar.ax.tick_params(labelsize=full_page_axisfont)
     ax.set_aspect(ellipse_width/ellipse_height)
     scale_aspect(ax)
     if made_new_axis==True:

@@ -34,7 +34,7 @@ def plot_sfr_metals(save_name, plot_ssfr=False, plot_re=False, plot_sanders=Fals
             ax.set_xlim(0, 2.6)
             ax_x_len = 2.6
        
-        fontsize=single_column_axisfont
+        fontsize=full_page_axisfont
 
         cmap = mpl.cm.inferno
         norm = mpl.colors.Normalize(vmin=3, vmax=5.5) 
@@ -151,7 +151,7 @@ def plot_sfr_metals(save_name, plot_ssfr=False, plot_re=False, plot_sanders=Fals
     
     cbar = fig.colorbar(mpl.cm.ScalarMappable(norm=norm, cmap=cmap), ax=ax, fraction=0.046, pad=0.04)
     cbar.set_label(balmer_label, fontsize=fontsize)
-    ax.tick_params(labelsize=12)
+    ax.tick_params(labelsize=full_page_axisfont)
     ax.set_aspect(ellipse_width/ellipse_height)
     # ax.legend()
 

@@ -25,7 +25,7 @@ def plot_balmer_dec(save_name, n_groups, split_by, y_var = 'balmer_dec', color_v
     '''
 
     # Fontsizes
-    axis_fontsize = 14
+    axis_fontsize = single_column_axisfont
     default_size = 7
     larger_size = 12
 
@@ -63,7 +63,7 @@ def plot_balmer_dec(save_name, n_groups, split_by, y_var = 'balmer_dec', color_v
         norm = mpl.colors.Normalize(vmin=-9.3, vmax=-8.1) 
     elif color_var=='log_use_sfr':
         # ssfr color map
-        norm = mpl.colors.Normalize(vmin=0, vmax=2.5) 
+        norm = mpl.colors.Normalize(vmin=0, vmax=2.0) 
         color_str='_log_use_sfr_color'
     elif color_var=='metallicity':
         # metallicity color map
@@ -284,8 +284,8 @@ def plot_balmer_dec(save_name, n_groups, split_by, y_var = 'balmer_dec', color_v
         cbar = fig.colorbar(mpl.cm.ScalarMappable(norm=norm, cmap=cmap), ax=ax, fraction=0.046, pad=0.04)
         cbar.set_label(color_var, fontsize=axis_fontsize)
         if color_var == 'log_use_sfr':
-            cbar.ax.tick_params(labelsize=18)
-            cbar.set_label(sfr_label, fontsize=18)
+            cbar.ax.tick_params(labelsize=axis_fontsize)
+            cbar.set_label(sfr_label, fontsize=axis_fontsize)
     ax.set_xlabel(stellar_mass_label, fontsize=axis_fontsize) 
     
     ax.tick_params(labelsize=12)
