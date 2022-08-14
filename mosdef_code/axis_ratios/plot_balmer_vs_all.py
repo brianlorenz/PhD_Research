@@ -113,6 +113,7 @@ def plot_balmer_vs_all(save_name):
             ax.errorbar(row[x_points], row[balmer_str], yerr=np.array([[row[f'err_{balmer_str}_low'], row[f'err_{balmer_str}_high']]]).T, xerr=xerr, color=rgba, marker='None', ls='None')
             
             zorder = 10-i
+            ax.add_artist(Ellipse((row[x_points], row[balmer_str]), ellipse_width*1.1, ellipse_height*1.1, facecolor='white', edgecolor='white', zorder=zorder))
             ax.add_artist(Ellipse((row[x_points], row[balmer_str]), ellipse_width, ellipse_height, facecolor=rgba, edgecolor='black', zorder=zorder))
             ax.set_xlabel(xlabel, fontsize=fontsize)
             ax.set_ylabel(balmer_label, fontsize=fontsize)
@@ -252,6 +253,7 @@ def plot_balmer_vs_all(save_name):
     ax_balmer_metallicity.axhline(0.85, ls='--', color='#8E248C')
     ax_balmer_sfr.axhline(1.9, ls='--', color='#FF640A')
     ax_balmer_metallicity.axhline(1.9, ls='--', color='#FF640A')
+    plt.setp(ax_balmer_metallicity.get_yticklabels()[0], visible=False)   
     fig.savefig(imd.axis_cluster_data_dir + f'/{save_name}/balmer_plots/balmer_sfr_metallicity.pdf',bbox_inches='tight')
     plt.close('all')
 

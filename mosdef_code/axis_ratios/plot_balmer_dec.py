@@ -25,7 +25,7 @@ def plot_balmer_dec(save_name, n_groups, split_by, y_var = 'balmer_dec', color_v
     '''
 
     # Fontsizes
-    axis_fontsize = single_column_axisfont
+    axis_fontsize = single_column_axisfont+4
     default_size = 7
     larger_size = 12
 

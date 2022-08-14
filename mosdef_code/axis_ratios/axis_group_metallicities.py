@@ -422,4 +422,4 @@ def add_metals_to_summary_df(save_name, metal_column):
 # add_metals_to_summary_df('both_sfms_4bin_median_2axis_boot100', metal_column='O3N2_metallicity')
 
 # plot_metals(savename='whitaker_sfms_boot100', plot_uvj_instead=True)
-plot_metals(savename='whitaker_sfms_boot100', plot_uvj_axis_instead=True)
+# plot_metals(savename='whitaker_sfms_boot100', plot_uvj_axis_instead=True)

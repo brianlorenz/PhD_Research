@@ -151,6 +151,7 @@ def plot_sfr_metals(save_name, plot_ssfr=False, plot_re=False, plot_sanders=Fals
     
     cbar = fig.colorbar(mpl.cm.ScalarMappable(norm=norm, cmap=cmap), ax=ax, fraction=0.046, pad=0.04)
     cbar.set_label(balmer_label, fontsize=fontsize)
+    cbar.ax.tick_params(labelsize=fontsize)
     ax.tick_params(labelsize=full_page_axisfont)
     ax.set_aspect(ellipse_width/ellipse_height)
     # ax.legend()
@@ -162,6 +163,7 @@ def plot_sfr_metals(save_name, plot_ssfr=False, plot_re=False, plot_sanders=Fals
     
     ax.plot([0],[0],ls='--',color='dimgrey',marker='None',label='Dust Model')
     ax.legend(fontsize=16)
+    plt.setp(ax.get_yticklabels()[0], visible=False)   
 
 
     if plot_ssfr==True:
@@ -177,7 +179,7 @@ def plot_sfr_metals(save_name, plot_ssfr=False, plot_re=False, plot_sanders=Fals
 
 
 # plot_sfr_metals('whitaker_sfms_boot100')
-# plot_sfr_metals('whitaker_sfms_boot100', plot_sanders=True)
+plot_sfr_metals('whitaker_sfms_boot100', plot_sanders=True)
 # plot_sfr_metals('whitaker_sfms_boot100', plot_re=True)
 
 

@@ -164,7 +164,7 @@ def compare_ar_measurements(col1, err_col1, col2, err_col2, save=True, ar_df_pro
     cmap = mpl.cm.viridis 
     norm = mpl.colors.Normalize(vmin=1.3, vmax=2.8) 
     
-    fig, ax = plt.subplots(figsize=(9,8))
+    fig, ax = plt.subplots(figsize=(8,7))
 
     ar_df = ar_df[ar_df[col1]>-90]
     ar_df = ar_df[ar_df[col2]>-90]
@@ -188,7 +188,7 @@ def compare_ar_measurements(col1, err_col1, col2, err_col2, save=True, ar_df_pro
     y1 = x+offsets[1]
     ax.plot(x, y0, color='red', ls='--', zorder=4, label='1$\\sigma$ region')
     ax.plot(x, y1, color='red', ls='--', zorder=4)
-    ax.legend(loc=0, fontsize=single_column_axisfont-2)
+    ax.legend(loc=0, fontsize=single_column_axisfont-4)
 
     cbar = fig.colorbar(mpl.cm.ScalarMappable(norm=norm, cmap=cmap), ax=ax, fraction=0.046, pad=0.04)
     cbar.set_label('Redshift', fontsize=single_column_axisfont)

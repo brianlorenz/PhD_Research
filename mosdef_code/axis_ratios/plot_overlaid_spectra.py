@@ -12,7 +12,7 @@ import sys
 from plot_vals import *
 
 titlefont=single_column_axisfont
-axisfont=full_page_axisfont
+axisfont=full_page_axisfont+4
 
 line_list = [
     ('H$_\\alpha$', 6564.61),
@@ -145,7 +145,7 @@ def plot_overlaid_spectra(savename, plot_cont_sub=False, paper_fig=False):
         if paper_fig == True:
             ax.set_ylabel('F$_\\lambda$ / F$_{\\lambda, 6565}$', fontsize=axisfont, labelpad=45)
             ax.set_xlabel('Wavelength ($\AA$)', fontsize=axisfont, labelpad=25)
-            ax.tick_params(labelsize=18)
+            ax.tick_params(labelsize=axisfont)
 
         if paper_fig==True:
             if i == 2:
@@ -233,4 +233,4 @@ def plot_overlaid_spectra(savename, plot_cont_sub=False, paper_fig=False):
         fig.savefig(imd.axis_cluster_data_dir + f'/{savename}/overlaid_spectra.pdf',bbox_inches='tight')
     plt.close('all')
 
-# plot_overlaid_spectra('whitaker_sfms_boot100', plot_cont_sub=True, paper_fig=True)
+plot_overlaid_spectra('whitaker_sfms_boot100', plot_cont_sub=True, paper_fig=True)
