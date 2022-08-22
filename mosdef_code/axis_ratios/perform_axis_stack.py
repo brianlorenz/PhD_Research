@@ -82,9 +82,9 @@ def stack_all_and_plot_all(param_class):
         re_calc_emission_flux(nbins, save_name)
         if bootstrap > 0:
             re_calc_emission_flux(nbins, save_name, bootstrap=bootstrap)
-            compute_bootstrap_uncertainties(nbins, save_name, bootstrap=bootstrap)
+        compute_bootstrap_uncertainties(nbins, save_name, bootstrap=bootstrap)
         time_emfit = time.time()
-        print(f'Emission fitting took {time_emfit-time_stack}')     
+        # print(f'Emission fitting took {time_emfit-time_stack}')     
     plot_sample_split(nbins, save_name, ratio_bins, starting_points, mass_width, split_width, nbins, sfms_bins, use_whitaker_sfms, use_z_dependent_sfms)
     # plot_sample_split(nbins, save_name, ratio_bins, starting_points, mass_width, split_width, nbins, sfms_bins, plot_sfr_and_ssfr=True)
     plot_overlaid_spectra(save_name, plot_cont_sub=True)
