@@ -87,16 +87,16 @@ def plot_mass_met_paper(nbins, split_by, save_name):
     plot_balmer_dec(save_name, nbins, split_by, y_var='metallicity', color_var=split_by, mass_ax=ax, fig=fig)
     
     #Add results from sanders papers?
-    ax.plot(masses, metals, marker='None', ls='--', label='Sanders+ 2021', color='grey', lw=3)
+    # ax.plot(masses, metals, marker='None', ls='--', label='Sanders+ 2021', color='grey', lw=3)
     # ax.errorbar(sanders_low_sfr_mass, sanders_low_sfr_metal, xerr=sanders_low_sfr_mass_err, yerr=np.array([sanders_low_sfr_metal_err_low, sanders_low_sfr_metal_err_high]), marker='o', label='Sanders+ (2015) Low SFR', color='blue', ls='None')
     # ax.errorbar(sanders_high_sfr_mass, sanders_high_sfr_metal, xerr=sanders_high_sfr_mass_err, yerr=np.array([sanders_high_sfr_metal_err_low, sanders_high_sfr_metal_err_high]), marker='o', label='Sanders+ (2015) High SFR', color='orange', ls='None')
     
     ax.tick_params(labelsize=label_font)
     ax.set_xlabel(stellar_mass_label, fontsize=label_font)
     scale_aspect(ax)
-    ax.legend(fontsize=16, loc=2)
+    # ax.legend(fontsize=16, loc=2)
     ax.set_ylabel(metallicity_label, fontsize=label_font)
     fig.savefig(imd.axis_cluster_data_dir + f'/{save_name}/balmer_plots/mass_metallicity.pdf',bbox_inches='tight')
 
 # plot_AV_beta_paper(8, 'log_use_sfr', 'whitaker_sfms_boot100')
-plot_mass_met_paper(8, 'log_use_sfr', 'whitaker_sfms_boot100')
+# plot_mass_met_paper(8, 'log_use_sfr', 'whitaker_sfms_boot100')

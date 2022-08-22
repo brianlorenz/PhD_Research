@@ -259,4 +259,4 @@ def plot_balmer_vs_all(save_name):
 
 
 
-plot_balmer_vs_all('whitaker_sfms_boot100')
+# plot_balmer_vs_all('whitaker_sfms_boot100')

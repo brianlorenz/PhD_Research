@@ -1,8 +1,11 @@
 # Codes for any cosmological calculations
 
 import numpy as np
-from astropy.cosmology import WMAP9 as cosmo
+# from astropy.cosmology import WMAP9 as cosmo
 from astropy import units as u
+from astropy.cosmology import FlatLambdaCDM
+
+cosmo = FlatLambdaCDM(H0=70, Om0=0.3)
 
 
 def luminosity_to_flux(luminosities, redshift):

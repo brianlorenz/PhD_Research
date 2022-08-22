@@ -54,7 +54,7 @@ def plot_sfr_metals(save_name, plot_ssfr=False, plot_re=False, plot_sanders=Fals
         ax.errorbar(x_points, row['metallicity_median'], yerr=np.array([[row['err_metallicity_median_low'], row['err_metallicity_median_high']]]).T, color=rgba, marker='None', ls='None', zorder=3)
         zorder=15-i
         ax.add_artist(Ellipse((x_points, row['metallicity_median']), ellipse_width, ellipse_height, facecolor=rgba, edgecolor='black', zorder=zorder))
-        ax.set_ylabel('Metallicity', fontsize=fontsize)
+        ax.set_ylabel('12 + log(O/H)', fontsize=fontsize)
     
     # Plot lines on constant dust
     metal_vals = np.arange(8.1, 9.0, 0.1)
@@ -179,7 +179,7 @@ def plot_sfr_metals(save_name, plot_ssfr=False, plot_re=False, plot_sanders=Fals
 
 
 # plot_sfr_metals('whitaker_sfms_boot100')
-plot_sfr_metals('whitaker_sfms_boot100', plot_sanders=True)
+# plot_sfr_metals('whitaker_sfms_boot100', plot_sanders=True)
 # plot_sfr_metals('whitaker_sfms_boot100', plot_re=True)
 
 
