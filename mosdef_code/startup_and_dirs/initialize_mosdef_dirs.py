@@ -10,7 +10,7 @@ import pandas as pd
 home_dir = str(Path.home())
 mosdef_dir = home_dir + '/mosdef'
 
-cluster_dir = mosdef_dir + '/Clustering_2'
+cluster_dir = mosdef_dir + '/Clustering'
 spectra_dir = mosdef_dir + '/Spectra/1D'
 sed_csvs_dir = mosdef_dir + '/sed_csvs'
 norm_sed_csvs_dir = mosdef_dir + '/norm_sed_csvs'
@@ -23,6 +23,7 @@ composite_sed_images_dir = composite_seds_dir + '/composite_sed_images'
 total_sed_csvs_dir = composite_seds_dir + '/total_sed_csvs'
 mock_composite_sed_csvs_dir = composite_seds_dir + '/mock_composite_sed_csvs'
 mock_composite_sed_images_dir = composite_seds_dir + '/mock_composite_sed_images'
+cluster_indiv_dfs_dir = cluster_dir + '/cluster_indiv_dfs'
 
 # Composite filter curves
 composite_filters_dir = cluster_dir + '/composite_filters'
@@ -32,6 +33,9 @@ composite_filter_sedpy_dir = composite_filters_dir + '/sedpy_par_files'
 
 # Composite spectra
 composite_spec_dir = cluster_dir + '/composite_spectra'
+
+#Dataframe for galaxies in seds
+loc_filtered_gal_df = cluster_dir + '/filtered_gal_df.csv'
 
 # Emission fitting
 emission_fit_dir = cluster_dir + '/emission_fitting'
@@ -147,6 +151,7 @@ def reset_cluster_dirs(cluster_dir):
     check_and_make_dir(cluster_dir + '/composite_spectra/cluster_norm')
     check_and_make_dir(cluster_dir + '/composite_spectra/composite_sed_norm')
     check_and_make_dir(cluster_dir + '/emission_fitting')
+    check_and_make_dir(cluster_indiv_dfs_dir)
 
 
 def reset_sed_dirs(mosdef_dir):

@@ -24,7 +24,7 @@ log_filter_centers = np.linspace(np.log10(1300), np.log10(20000), 20)
 width = 0.25
 
 
-def gen_mock_sed(field, v4id, log_filter_centers=log_filter_centers, width=width, groupID=-99):
+def gen_mock_sed(field, v4id, log_filter_centers=log_filter_centers, width=width, groupID=-99, vis=False):
     """Create a mock SED at standard wavelengths
 
     Parameters:
@@ -33,6 +33,7 @@ def gen_mock_sed(field, v4id, log_filter_centers=log_filter_centers, width=width
     log_filter_centers (list): peak wavelengths of the centers, in log space
     width (float): size in log space to search for points around the filter center
     groupID (int): Set to the groupID of the composite to make a mock composite SED
+    vis (boolean): Set to true to plot the fit
 
     Returns:
     """
@@ -144,15 +145,16 @@ def gen_mock_sed(field, v4id, log_filter_centers=log_filter_centers, width=width
         mock_sed_u_errs.append(mock_sed_u_err)
         mock_sed_l_errs.append(mock_sed_l_err)
         mock_wave_centers.append(10**log_center_wave)
-    vis_fit(field, v4id, sed, points, mock_wave_centers, width,
-            fit_wavelengths, fit_points, filter_size, mock_sed, mock_sed_u_errs, mock_sed_l_errs, good_idxs, groupID)
     sed_df = pd.DataFrame(np.transpose([10**log_filter_centers, mock_sed,
                                         mock_sed_u_errs, mock_sed_l_errs]), columns=['rest_wavelength', 'f_lambda', 'err_f_lambda_u', 'err_f_lambda_d'])
     if groupID > -1:
         sed_df.to_csv(imd.mock_composite_sed_csvs_dir + f'/{groupID}_mock_sed.csv', index=False)
     else:
         sed_df.to_csv(imd.home_dir + f'/mosdef/mock_sed_csvs/{field}_{v4id}_sed.csv', index=False)
-    return None
+    
+    if vis==True:
+        vis_fit(field, v4id, sed, points, mock_wave_centers, width,
+                fit_wavelengths, fit_points, filter_size, mock_sed, mock_sed_u_errs, mock_sed_l_errs, good_idxs, groupID)
 
 
 def fit_uncertainty(points, lower_wave, upper_wave, log_center_wave, filter_size):
@@ -258,7 +260,7 @@ def gen_all_seds(zobjs):
             counter = counter + 1
             continue
         try:
-            gen_mock_sed(field, v4id)
+            gen_mock_sed(field, v4id, vis=True)
         except Exception as excpt:
             print(f'Couldnt create SED for {field}_{v4id}')
             print(excpt)

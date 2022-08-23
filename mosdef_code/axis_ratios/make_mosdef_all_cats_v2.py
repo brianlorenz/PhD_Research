@@ -50,6 +50,12 @@ def make_mosdef_all_cats_2():
     hb_errs = []
     ha_values = []
     ha_errs = []
+    nii_6585_values = []
+    nii_6585_errs = []
+    oiii_5008_values = []
+    oiii_5008_errs = []
+    nii_ha_values = []
+    nii_ha_errs = []
 
     zs = []
     z_quals = []
@@ -146,6 +152,13 @@ def make_mosdef_all_cats_2():
         hb_errs.append(linemeas_df[linemeas_slice].iloc[0]['HB4863_FLUX_ERR'])
         ha_values.append(linemeas_df[linemeas_slice].iloc[0]['HA6565_FLUX'])
         ha_errs.append(linemeas_df[linemeas_slice].iloc[0]['HA6565_FLUX_ERR'])
+        nii_6585_values.append(linemeas_df[linemeas_slice].iloc[0]['NII6585_FLUX'])
+        nii_6585_errs.append(linemeas_df[linemeas_slice].iloc[0]['NII6585_FLUX_ERR'])
+        oiii_5008_values.append(linemeas_df[linemeas_slice].iloc[0]['OIII5008_FLUX'])
+        oiii_5008_errs.append(linemeas_df[linemeas_slice].iloc[0]['OIII5008_FLUX_ERR'])
+        nii_ha_values.append(linemeas_df[linemeas_slice].iloc[0]['NIIHA'])
+        nii_ha_errs.append(linemeas_df[linemeas_slice].iloc[0]['NIIHA_ERR'])
+        
 
         avs.append(get_AV(fields, av_dfs, obj))
         
@@ -215,7 +228,7 @@ def make_mosdef_all_cats_2():
 
 
 
-    to_merge_df = pd.DataFrame(zip(fields, v4ids, agn_flags, masses, err_l_masses, err_h_masses, sfrs, err_sfrs, sfrs_corrs, ha_det_sfrs, hb_det_sfrs, res, err_res, zs, z_quals, avs, betas, hb_values, hb_errs, ha_values, ha_errs, logoh_pps, logoh_pps_ulims, logoh_pps_llims, n2_lim_flag, eqwidth_has, err_eqwidth_has, eqwidth_hbs, err_eqwidth_hbs, mips_fluxes, err_mips_fluxes, mips_corr24s, mips_exp24s, u_vs, v_js, masses_uncorr, err_l_masses_uncorr, err_h_masses_uncorr), columns=['field', 'v4id', 'agn_flag', 'log_mass', 'err_log_mass_d', 'err_log_mass_u', 'sfr', 'err_sfr', 'sfr_corr', 'ha_detflag_sfr', 'hb_detflag_sfr', 'half_light', 'err_half_light', 'z', 'z_qual_flag', 'AV', 'beta', 'hb_flux', 'err_hb_flux', 'ha_flux', 'err_ha_flux', 'logoh_pp_n2', 'u68_logoh_pp_n2', 'l68_logoh_pp_n2', 'n2flag_metals', 'eq_width_ha', 'err_eq_width_ha', 'eq_width_hb', 'err_eq_width_hb', 'mips_flux', 'err_mips_flux', 'mips_corr24', 'mips_exp24', 'U_V', 'V_J', 'LMASS_uncorr', 'err_LMASS_uncorr_l', 'err_LMASS_uncorr_h'])
+    to_merge_df = pd.DataFrame(zip(fields, v4ids, agn_flags, masses, err_l_masses, err_h_masses, sfrs, err_sfrs, sfrs_corrs, ha_det_sfrs, hb_det_sfrs, res, err_res, zs, z_quals, avs, betas, hb_values, hb_errs, ha_values, ha_errs, nii_6585_values, nii_6585_errs, oiii_5008_values, oiii_5008_errs, nii_ha_values, nii_ha_errs, logoh_pps, logoh_pps_ulims, logoh_pps_llims, n2_lim_flag, eqwidth_has, err_eqwidth_has, eqwidth_hbs, err_eqwidth_hbs, mips_fluxes, err_mips_fluxes, mips_corr24s, mips_exp24s, u_vs, v_js, masses_uncorr, err_l_masses_uncorr, err_h_masses_uncorr), columns=['field', 'v4id', 'agn_flag', 'log_mass', 'err_log_mass_d', 'err_log_mass_u', 'sfr', 'err_sfr', 'sfr_corr', 'ha_detflag_sfr', 'hb_detflag_sfr', 'half_light', 'err_half_light', 'z', 'z_qual_flag', 'AV', 'beta', 'hb_flux', 'err_hb_flux', 'ha_flux', 'err_ha_flux', 'nii_6585_flux', 'err_nii_6585_flux', 'oiii_5008_flux', 'err_oiii_5008_flux', 'nii_ha', 'err_nii_ha', 'logoh_pp_n2', 'u68_logoh_pp_n2', 'l68_logoh_pp_n2', 'n2flag_metals', 'eq_width_ha', 'err_eq_width_ha', 'eq_width_hb', 'err_eq_width_hb', 'mips_flux', 'err_mips_flux', 'mips_corr24', 'mips_exp24', 'U_V', 'V_J', 'LMASS_uncorr', 'err_LMASS_uncorr_l', 'err_LMASS_uncorr_h'])
     merged_all_cats = all_cats_df.merge(to_merge_df, left_on=['v4id', 'field'], right_on=['v4id', 'field']) 
     merged_all_cats.to_csv(imd.loc_axis_ratio_cat, index=False)
 

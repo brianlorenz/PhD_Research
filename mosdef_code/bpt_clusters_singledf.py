@@ -1,0 +1,166 @@
+# Deals with the BPT of the seds and composites.
+
+import numpy as np
+import pandas as pd
+from read_data import mosdef_df
+from emission_measurements import read_emission_df, get_emission_measurements
+import matplotlib.pyplot as plt
+import initialize_mosdef_dirs as imd
+import cluster_data_funcs as cdf
+from axis_ratio_funcs import read_filtered_ar_df, read_interp_axis_ratio
+
+
+def get_bpt_coords(gal_df):
+    """Gets the row(s) corresponding to one object
+
+    Parameters:
+    gal_df (pd.DataFrame): Dataframe containting all objects
+
+    Returns:
+    bpt_df (pd.DataFrame): Dataframe of values to plot on the bpt diagram
+    """
+
+    # Will be used to store results
+    fields = []
+    v4ids = []
+    log_NII_Has = []
+    log_NII_Ha_errs = []
+    log_OIII_Hbs = []
+    log_OIII_Hb_errs = []
+
+    # Re-name them
+    Ha_flux, Ha_err = gal_df['ha_flux'], gal_df['err_ha_flux']
+    NII_flux, NII_err = gal_df['nii_6585_flux'], gal_df['err_nii_6585_flux']
+    Hb_flux, Hb_err = gal_df['hb_flux'], gal_df['err_hb_flux']
+    OIII_flux, OIII_err = gal_df[
+        'oiii_5008_flux'], gal_df['err_oiii_5008_flux']
+    NII_Ha, NII_Ha_err = gal_df['nii_ha'], gal_df['err_nii_ha']
+
+
+    # Calculate ratios and uncertainties
+    # log_NII_Ha, log_NII_Ha_err = calc_log_ratio(
+    #     NII_flux, NII_err, Ha_flux, Ha_err)
+    log_NII_Ha = np.log10(NII_Ha)
+    log_NII_Ha_err = 0.434 * (NII_Ha_err / NII_Ha)
+    NII_Ha_err = gal_df['nii_ha'], gal_df['err_nii_ha']
+    log_OIII_Hb, log_OIII_Hb_err = calc_log_ratio(
+        OIII_flux, OIII_err, Hb_flux, Hb_err)
+
+    gal_df['log_NII_Ha'] = log_NII_Ha
+    gal_df['log_NII_Ha_err'] = log_NII_Ha_err
+    gal_df['log_OIII_Hb'] = log_OIII_Hb
+    gal_df['log_OIII_Hb_err'] = log_OIII_Hb_err
+
+    return gal_df
+
+
+def calc_log_ratio(top_flux, top_err, bot_flux, bot_err):
+    """Calculates np.log10(top/bot) and its uncertainty
+
+    Parameters:
+    Fluxes an errors for each of the lines
+
+    Returns:
+    log_ratio (float): np.log10(top/bot)
+    log_ratio_err (float): uncertainty in np.log10(top/bot)
+    """
+    log_ratio = np.log10(top_flux / bot_flux)
+    log_ratio_err = (1 / np.log(10)) * (bot_flux / top_flux) * np.sqrt(
+        ((1 / bot_flux) * top_err)**2 + ((-top_flux / (bot_flux**2)) * bot_err)**2)
+    return log_ratio, log_ratio_err
+
+
+def plot_bpt(savename='None', axis_obj='False', composite_bpt_point=[-47], composite_bpt_errs=0):
+    """Plots the bpt diagram for the objects in zobjs
+
+    Parameters:
+    emission_df (pd.DataFrame): Dataframe containing emission line measurements and info
+    zobjs (list): list of tuples of the form (field, v4id)
+    savename (str): location with name ot save the file
+    axis_obj (matplotlib_axis): Replace with an axis to plot on an existing axis
+    composite_bpt_point (): Set to the point if using a composite sed and you want to plot the bpt point of that
+
+    Returns:
+    """
+
+    axisfont = 14
+    ticksize = 12
+    ticks = 8
+
+    gal_df = read_interp_axis_ratio()
+    # gal_df = read_filtered_ar_df()
+
+    # Get the bpt valeus to plot for all objects
+    gal_df = get_bpt_coords(gal_df)
+    
+    if axis_obj == 'False':
+        fig, ax = plt.subplots(figsize=(8, 7))
+    else:
+        ax = axis_obj
+
+    # Bpt diagram lines
+    xline = np.arange(-3.0, 0.469, 0.001)
+    yline = 0.61 / (xline - 0.47) + 1.19  # Kewley (2001)
+    xlineemp = np.arange(-3.0, 0.049, 0.001)
+    ylineemp = 0.61 / (xlineemp - 0.05) + 1.3  # Kauffman (2003)
+    ax.plot(xline, yline, color='dimgrey', lw=2,
+            ls='--', label='Kewley+ (2001)')
+    ax.plot(xlineemp, ylineemp, color='dimgrey',
+            lw=2, ls='-', label='Kauffmann+ (2003)')
+
+    ax.errorbar(gal_df['log_NII_Ha'], gal_df['log_OIII_Hb'], xerr=gal_df[
+                    'log_NII_Ha_err'], yerr=gal_df['log_OIII_Hb_err'], marker='o', color='black', ecolor='grey', ls='None')
+    
+    gal_df_2 = gal_df[gal_df['agn_flag']>3]
+    ax.errorbar(gal_df_2['log_NII_Ha'], gal_df_2['log_OIII_Hb'], xerr=gal_df_2[
+                    'log_NII_Ha_err'], yerr=gal_df_2['log_OIII_Hb_err'], marker='o', color='orange', ecolor='grey', ls='None')
+
+    if composite_bpt_point[0] != -47:
+        ax.errorbar(composite_bpt_point[0], composite_bpt_point[
+            1], xerr=np.array([composite_bpt_errs[0]]).T, yerr=np.array([composite_bpt_errs[1]]).T, marker='o', color='red', ecolor='red')
+
+    ax.set_xlim(-2, 1)
+    ax.set_ylim(-1.2, 1.5)
+
+    if axis_obj == 'False':
+        ax.set_xlabel('log(N[II] 6583 / H$\\alpha$)', fontsize=axisfont)
+        ax.set_ylabel('log(O[III] 5007 / H$\\beta$)', fontsize=axisfont)
+        ax.tick_params(labelsize=ticksize, size=ticks)
+
+        if savename != 'None':
+            fig.savefig(savename)
+        else:
+            plt.show()
+
+
+
+def plot_all_bpt_clusters(n_clusters):
+    """Plots the bpt diagram for every cluster
+
+    Parameters:
+    n_clusters (int): Number of clusters
+
+    Returns:
+    """
+    # Read in the emission lines dataframe
+    emission_df = read_emission_df()
+    for groupID in range(n_clusters):
+        plot_bpt_cluster(emission_df, groupID)
+        
+
+
+def plot_bpt_cluster(emission_df, groupID, axis_obj = 'False'):
+    """Plots the bpt diagram for one cluster, given emission df
+    
+    Parameters:
+    emission_df (pd.DataFrame): Use read_emission_df
+    groupID (int): ID number of the group to plot for
+    """
+    # Get the names of all galaxies in the cluster
+    cluster_names, fields_ids = cdf.get_cluster_fields_ids(groupID)
+    fields_ids = [(obj[0], int(obj[1])) for obj in fields_ids]
+    # Location to save the file
+    savename = imd.cluster_bpt_plots_dir + f'/{groupID}_BPT.pdf'
+    plot_bpt(emission_df, fields_ids, savename=savename, axis_obj=axis_obj)
+
+plot_bpt()
