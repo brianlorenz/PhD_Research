@@ -53,6 +53,8 @@ def gen_mock_sed(field, v4id, log_filter_centers=log_filter_centers, width=width
     # than 0 fluxes? Set them to zero?
     good_idxs = np.logical_and(
         sed['f_lambda'] > -99, sed['err_f_lambda'] >= 0)
+    good_idxs = np.logical_and(
+        good_idxs, sed['err_f_lambda'] <= 10**(-19))
 
     # SED that only contains the good indexes, use this for fitting
     sed_fit = sed[good_idxs]

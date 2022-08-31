@@ -27,8 +27,8 @@ cluster_indiv_dfs_dir = cluster_dir + '/cluster_indiv_dfs'
 
 # Composite filter curves
 composite_filters_dir = cluster_dir + '/composite_filters'
-composite_filter_csvs_dir = composite_filters_dir + '/composite_filter_csvs'
-composite_filter_images_dir = composite_filters_dir + '/composite_filter_images'
+composite_filter_csvs_dir = composite_filters_dir + '/composite_filters_csvs'
+composite_filter_images_dir = composite_filters_dir + '/composite_filters_images'
 composite_filter_sedpy_dir = composite_filters_dir + '/sedpy_par_files'
 
 # Composite spectra
@@ -36,6 +36,8 @@ composite_spec_dir = cluster_dir + '/composite_spectra'
 
 #Dataframe for galaxies in seds
 loc_filtered_gal_df = cluster_dir + '/filtered_gal_df.csv'
+#Dataframe for summarized bulk proerties of clusters
+loc_cluster_summary_df = cluster_dir + '/cluster_summary.csv'
 
 # Emission fitting
 emission_fit_dir = cluster_dir + '/emission_fitting'

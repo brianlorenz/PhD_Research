@@ -7,6 +7,7 @@ from emission_measurements import read_emission_df, get_emission_measurements
 import matplotlib.pyplot as plt
 import initialize_mosdef_dirs as imd
 import cluster_data_funcs as cdf
+from astropy.io import ascii
 from axis_ratio_funcs import read_filtered_ar_df, read_interp_axis_ratio
 
 
@@ -70,7 +71,7 @@ def calc_log_ratio(top_flux, top_err, bot_flux, bot_err):
     return log_ratio, log_ratio_err
 
 
-def plot_bpt(savename='None', axis_obj='False', composite_bpt_point=[-47], composite_bpt_errs=0):
+def plot_bpt(savename='None', axis_obj='False', composite_bpt_point=[-47], composite_bpt_errs=0, use_other_df = 0, use_df='False', add_background=False):
     """Plots the bpt diagram for the objects in zobjs
 
     Parameters:
@@ -79,6 +80,9 @@ def plot_bpt(savename='None', axis_obj='False', composite_bpt_point=[-47], compo
     savename (str): location with name ot save the file
     axis_obj (matplotlib_axis): Replace with an axis to plot on an existing axis
     composite_bpt_point (): Set to the point if using a composite sed and you want to plot the bpt point of that
+    use_other_df (boolean): Set to one to use another df, and then specify with use_df
+    use_df (pd.DataFrame): Set to a dataframe to plot that instead of gal_df
+    small (boolean): Set to true to make the points small and grey
 
     Returns:
     """
@@ -87,11 +91,15 @@ def plot_bpt(savename='None', axis_obj='False', composite_bpt_point=[-47], compo
     ticksize = 12
     ticks = 8
 
-    gal_df = read_interp_axis_ratio()
-    # gal_df = read_filtered_ar_df()
-
+    if use_other_df == 0:
+        gal_df = read_interp_axis_ratio()
+        # gal_df = read_filtered_ar_df()
+    else:
+        gal_df = use_df
+    
     # Get the bpt valeus to plot for all objects
     gal_df = get_bpt_coords(gal_df)
+
     
     if axis_obj == 'False':
         fig, ax = plt.subplots(figsize=(8, 7))
@@ -108,12 +116,16 @@ def plot_bpt(savename='None', axis_obj='False', composite_bpt_point=[-47], compo
     ax.plot(xlineemp, ylineemp, color='dimgrey',
             lw=2, ls='-', label='Kauffmann+ (2003)')
 
+    if add_background==True:
+        filtered_gal_df = ascii.read(imd.loc_filtered_gal_df).to_pandas()
+        filtered_gal_df = get_bpt_coords(filtered_gal_df)
+        ax.plot(filtered_gal_df['log_NII_Ha'], filtered_gal_df['log_OIII_Hb'], marker='o', color='grey', ls='None', markersize=1.5)
     ax.errorbar(gal_df['log_NII_Ha'], gal_df['log_OIII_Hb'], xerr=gal_df[
                     'log_NII_Ha_err'], yerr=gal_df['log_OIII_Hb_err'], marker='o', color='black', ecolor='grey', ls='None')
     
-    gal_df_2 = gal_df[gal_df['agn_flag']>3]
-    ax.errorbar(gal_df_2['log_NII_Ha'], gal_df_2['log_OIII_Hb'], xerr=gal_df_2[
-                    'log_NII_Ha_err'], yerr=gal_df_2['log_OIII_Hb_err'], marker='o', color='orange', ecolor='grey', ls='None')
+    # gal_df_2 = gal_df[gal_df['agn_flag']>3]
+    # ax.errorbar(gal_df_2['log_NII_Ha'], gal_df_2['log_OIII_Hb'], xerr=gal_df_2[
+    #                 'log_NII_Ha_err'], yerr=gal_df_2['log_OIII_Hb_err'], marker='o', color='orange', ecolor='grey', ls='None')
 
     if composite_bpt_point[0] != -47:
         ax.errorbar(composite_bpt_point[0], composite_bpt_point[
@@ -131,6 +143,8 @@ def plot_bpt(savename='None', axis_obj='False', composite_bpt_point=[-47], compo
             fig.savefig(savename)
         else:
             plt.show()
+    if use_other_df != 0:
+        return gal_df
 
 
 
@@ -163,4 +177,4 @@ def plot_bpt_cluster(emission_df, groupID, axis_obj = 'False'):
     savename = imd.cluster_bpt_plots_dir + f'/{groupID}_BPT.pdf'
     plot_bpt(emission_df, fields_ids, savename=savename, axis_obj=axis_obj)
 
-plot_bpt()
+# plot_bpt()

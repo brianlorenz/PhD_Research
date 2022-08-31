@@ -30,9 +30,13 @@ Specify the directories in initialize_mosdef_dirs
 # Make sure to go to initialize_mosdef_dirs to set all the directories properly
 
 # Set the total number of clusters
-n_clusters = 29
+n_clusters = 23
 # Set the name of the prospector run
-run_name = 'redshift_maggies'
+run_name = 'test'
+
+imd.check_and_make_dir(imd.composite_filter_csvs_dir)
+imd.check_and_make_dir(imd.composite_filter_images_dir)
+imd.check_and_make_dir(imd.composite_filter_sedpy_dir)
 
 # Begin running all the functions
 print('Generating composite seds...')
@@ -56,6 +60,8 @@ observe_all_uvj(n_clusters, individual_gals=False, composite_uvjs=True)
 
 generate_all_cluster_plots(n_clusters)
 
+
+'''
 # Prepare for prospector:
 print('Preparing data for Prospector')
 convert_all_folders_to_sedpy(n_clusters)
@@ -71,4 +77,5 @@ scale_all_spectra(n_clusters)
 
 setup_all_prospector_fit_csvs(29, run_name)
 fit_all_prospector_emission(29, run_name)
+'''
 

@@ -435,3 +435,6 @@ def get_good_idx(sed):
     """
     good_idx = np.logical_and(sed['f_lambda'] > -98, sed['err_f_lambda'] > 0)
     return good_idx
+
+
+get_normalized_sed('GOODS-N', 26304, 'GOODS-N', 15096)

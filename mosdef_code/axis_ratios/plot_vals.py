@@ -24,4 +24,9 @@ def scale_aspect(ax):
     xdiff = np.abs(xlims[1]-xlims[0])
     ax.set_aspect(xdiff/ydiff)
 
+def set_aspect_1(ax):
+    """Forces the axis into a square"""
+    ax.set_aspect(1./ax.get_data_ratio())
+
+
 # cbar = fig.colorbar(mpl.cm.ScalarMappable(norm=norm, cmap=cmap), ax=ax, fraction=0.046, pad=0.04)

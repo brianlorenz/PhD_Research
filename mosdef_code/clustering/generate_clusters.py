@@ -1,3 +1,5 @@
+# Code to generate clusters from scratch
+
 import initialize_mosdef_dirs as imd
 from query_funcs import get_zobjs
 from axis_ratio_funcs import read_interp_axis_ratio
@@ -34,7 +36,8 @@ def generate_clusters(n_clusters, stop_to_eval=False, skip_slow_steps=False):
 
     # Cross-correlate the mock seds
     if skip_slow_steps==False:
-        correlate_all_seds(zobjs)
+        pass
+    correlate_all_seds(zobjs)
     affinity_matrix = ascii.read(imd.cluster_dir + '/similarity_matrix.csv').to_pandas().to_numpy()
 
     # Evaluate how many clusters to make
@@ -46,7 +49,8 @@ def generate_clusters(n_clusters, stop_to_eval=False, skip_slow_steps=False):
     
     # Make the clusters
     if skip_slow_steps==False:
-        cluster_seds(n_clusters)
+        pass
+    cluster_seds(n_clusters)
 
     # Make dataframes for each cluster with galaxy properties
     make_cluster_dfs(n_clusters, gal_df)
