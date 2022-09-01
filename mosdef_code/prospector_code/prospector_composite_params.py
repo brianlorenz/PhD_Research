@@ -244,8 +244,12 @@ def build_model(object_redshift=0.0, fixed_metallicity=None, add_duste=True,
 
 def build_sps(zcontinuous=1, compute_vega_mags=False, **extras):
     from prospect.sources import CSPSpecBasis
-    sps = FastStepBasis(zcontinuous=zcontinuous,
+    # Parametric
+    sps = CSPSpecBasis(zcontinuous=zcontinuous,
                        compute_vega_mags=compute_vega_mags)
+    # Non=parametric
+    # sps = FastStepBasis(zcontinuous=zcontinuous,
+    #                    compute_vega_mags=compute_vega_mags)
     return sps
 
 # -----------------

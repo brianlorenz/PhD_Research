@@ -14,15 +14,18 @@ from sfms_bins import *
 from plot_vals import *
 import cmasher as cmr
 from scipy import stats
+from mpl_toolkits.axes_grid1 import make_axes_locatable
+
 
 shapes = {'low': '+', 'mid': 'd', 'high': 'o'}
 colors = {'sorted0': 'red', 'sorted1': 'blue', 'sorted2': 'orange', 'sorted3': 'mediumseagreen', 'sorted4': 'lightskyblue', 'sorted5': 'darkviolet'}
 
-def plot_sample_split(n_groups, save_name, ratio_bins, starting_points, mass_width, split_width, nbins, sfms_bins, use_whitaker_sfms, use_z_dependent_sfms, ax='None', fig='fig', plot_sfr_and_ssfr=False):
+def plot_sample_split(n_groups, save_name, ratio_bins, starting_points, mass_width, split_width, nbins, sfms_bins, use_whitaker_sfms, use_z_dependent_sfms, ax='None', fig='fig', plot_sfr_and_ssfr=False, panels=False):
     """Plots the way that the sample has been divided in mass/ssfr space
     
     variable(str): Which variable to use for the y-axis
     plot_sfr_and_ssfr (boolean): If true, will take the sfms cut and plot it on the ssfr axis
+    panels (boolean): Set to true to plot 2 panels instead of 1
     """
 
     # If there isn't an axis set, make one - otherwise, use the one provided
@@ -31,6 +34,8 @@ def plot_sample_split(n_groups, save_name, ratio_bins, starting_points, mass_wid
         made_new_axis = True
     else:
         made_new_axis = False
+
+    
     
     
     group_num = []
@@ -309,4 +314,86 @@ def plot_sample_split(n_groups, save_name, ratio_bins, starting_points, mass_wid
         fig.savefig(imd.axis_cluster_data_dir + f'/{save_name}/sample_cut{add_str}.pdf',bbox_inches='tight')
 
 
+def make_sample_split_twopanel(save_name, n_groups):
+    fig, axarr = plt.subplots(1, 2, figsize=(17,8))
+    plt.subplots_adjust(left=0.125, bottom=0.1, right=0.9, top=0.9, wspace=0.1, hspace=0.2)
 
+    ax_edgeon = axarr[0]
+    ax_faceon = axarr[1]
+
+    cmap = cmr.get_sub_cmap('gist_heat_r', 0.12, 1.0)
+    norm = mpl.colors.Normalize(vmin=2, vmax=7) 
+
+    
+
+    xlims = (9.0, 11.0)
+    ylims = (-0.1, 2.6)
+
+    number_color = 'blue'
+
+    for axis_group in range(n_groups):
+        axis_ratio_df = ascii.read(imd.axis_cluster_data_dir + f'/{save_name}/{save_name}_group_dfs/{axis_group}_df.csv').to_pandas()
+        axis_ratio_df['balmer_dec'] = (axis_ratio_df['ha_flux'] / axis_ratio_df['hb_flux'])
+        for i in range(len(axis_ratio_df)):
+            row = axis_ratio_df.iloc[i]
+            if row['use_ratio'] < 0.55:
+                ax = ax_edgeon
+                shape = shapes['low']
+            else:
+                ax = ax_faceon
+                shape = shapes['high']
+
+            ellipse_width, ellipse_height = get_ellipse_shapes(xlims[1]-xlims[0], np.abs(ylims[1]-ylims[0]), shape, scale_factor=0.025)
+            rgba = cmap(norm(row['balmer_dec']))
+            # ax.plot(row['log_mass'], row['log_ssfr'], color = rgba, ls='None', marker=shape)
+            if row['hb_detflag_sfr'] == 1.0:
+                ax.add_artist(Ellipse((row['log_mass'], row['log_use_sfr']), ellipse_width, ellipse_height, edgecolor=rgba, zorder=2, fill=False, linewidth=2))
+            else:
+                ax.add_artist(Ellipse((row['log_mass'], row['log_use_sfr']), ellipse_width, ellipse_height, facecolor=rgba, zorder=2))
+
+        med_mass = np.median(axis_ratio_df['log_mass'])
+        med_sfr = np.median(axis_ratio_df['log_use_sfr'])
+        ax.plot(med_mass, med_sfr, marker='x', mew=3, color=number_color, ls='None', zorder=20, markersize=8)
+
+    for ax in axarr:
+        x = np.linspace(8.8, 11.2, 100)
+        ax.axvline(10, color='grey', ls='--')
+        a = -24.0415
+        b = 4.1693
+        c = -0.1638
+        y_sfr = a + b*x + c*x**2
+        ax.plot(x, y_sfr, color='grey', ls='-.')
+
+        ax.set_ylim(ylims)
+        ax.set_xlim(xlims)
+        ax.set_xlabel(stellar_mass_label, fontsize=full_page_axisfont) 
+        ax.set_ylabel(sfr_label, fontsize=full_page_axisfont)
+        ax.tick_params(labelsize=full_page_axisfont)
+        ax.set_aspect(ellipse_width/ellipse_height)
+        scale_aspect(ax) 
+
+    hlow = 0.03
+    hhigh = 0.91
+    vlow = 0.04
+    vhigh = 0.93
+    ax_edgeon.text(hlow, vhigh, 'II', fontsize=24, transform=ax_edgeon.transAxes, color=number_color)
+    ax_edgeon.text(hlow, vlow, 'I', fontsize=24, transform=ax_edgeon.transAxes, color=number_color)
+    ax_edgeon.text(hhigh, vlow, 'III', fontsize=24, transform=ax_edgeon.transAxes, color=number_color)
+    ax_edgeon.text(hhigh, vhigh, 'IV', fontsize=24, transform=ax_edgeon.transAxes, color=number_color)     
+    ax_faceon.text(hlow, vhigh, 'VI', fontsize=24, transform=ax_faceon.transAxes, color=number_color) 
+    ax_faceon.text(hlow, vlow, 'V', fontsize=24, transform=ax_faceon.transAxes, color=number_color) 
+    ax_faceon.text(hhigh, vlow, 'VII', fontsize=24, transform=ax_faceon.transAxes, color=number_color) 
+    ax_faceon.text(hhigh-0.015, vhigh, 'VIII', fontsize=24, transform=ax_faceon.transAxes, color=number_color)     
+    
+    ax_faceon.set_ylabel('')
+    # ax_faceon.set_yticks([])
+    ax_faceon.tick_params(labelleft=False)
+
+    cbar = fig.colorbar(mpl.cm.ScalarMappable(norm=norm, cmap=cmap), ax=axarr, fraction=0.046, pad=0.04)
+    cbar.set_label(balmer_label, fontsize=full_page_axisfont)
+    cbar.ax.tick_params(labelsize=full_page_axisfont)
+
+    fig.savefig(imd.axis_cluster_data_dir + f'/{save_name}/sample_cut_2panel.pdf',bbox_inches='tight')
+
+
+make_sample_split_twopanel('whitaker_sfms_boot100', 8)
