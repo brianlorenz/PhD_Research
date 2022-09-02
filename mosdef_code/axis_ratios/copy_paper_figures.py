@@ -13,7 +13,7 @@ destination = imd.axis_output_dir + '/paper_figures'
 
 # List of the paths to all the figures
 fig_list = [
-    imd.axis_cluster_data_dir + f'/{save_name}/sample_cut.pdf',
+    imd.axis_cluster_data_dir + f'/{save_name}/sample_cut_2panel.pdf',
     imd.axis_output_dir + f'/ar_compare_F125_axis_ratio_F160_axis_ratio.pdf',
     imd.axis_output_dir + f'/ar_histogram_use_ratio.pdf',
     imd.axis_output_dir + f'/Dust_Diagram1.pdf',
@@ -25,7 +25,7 @@ fig_list = [
     imd.axis_cluster_data_dir + f'/{save_name}/balmer_plots/mass_metallicity.pdf',
     imd.axis_cluster_data_dir + f'/{save_name}/metallicity_sfr_sanders.pdf',
     imd.axis_cluster_data_dir + f'/{save_name}/uvj_ar_groups.pdf',
-    imd.axis_cluster_data_dir + f'/{save_name}/overlaid_spectra_paper.pdf'
+    imd.axis_cluster_data_dir + f'/{save_name}/overlaid_spectra_paper_8panel.pdf'
 ]
 
 

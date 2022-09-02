@@ -48,10 +48,10 @@ def main_process(groupID, run_name):
     print(f'found {target_file}')
     res, obs, mod, sps, file = read_output(savio_prospect_out_dir + f'/{run_name}_h5s' + '/' + target_file[0])
 
-    tfig = reader.traceplot(res)
-    tfig.savefig(prospector_plots_dir + f'/{run_name}_plots' + f'/group{groupID}_tfig.pdf')
-    cfig = reader.subcorner(res)
-    cfig.savefig(prospector_plots_dir + f'/{run_name}_plots' + f'/group{groupID}_cfig.pdf')
+    # tfig = reader.traceplot(res)
+    # tfig.savefig(prospector_plots_dir + f'/{run_name}_plots' + f'/group{groupID}_tfig.pdf')
+    # cfig = reader.subcorner(res)
+    # cfig.savefig(prospector_plots_dir + f'/{run_name}_plots' + f'/group{groupID}_cfig.pdf')
 
     all_spec, all_phot, all_mfrac, all_line_fluxes, all_line_fluxes_erg, line_waves, weights, idx_high_weights = gen_phot(res, obs, mod, sps)
     compute_quantiles(res, obs, mod, sps, all_spec, all_phot, all_mfrac, all_line_fluxes, all_line_fluxes_erg, line_waves, weights, idx_high_weights, groupID)

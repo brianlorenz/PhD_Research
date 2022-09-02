@@ -15,6 +15,8 @@ from plot_vals import *
 import cmasher as cmr
 from scipy import stats
 from mpl_toolkits.axes_grid1 import make_axes_locatable
+import matplotlib.patheffects as pe
+
 
 
 shapes = {'low': '+', 'mid': 'd', 'high': 'o'}
@@ -329,8 +331,6 @@ def make_sample_split_twopanel(save_name, n_groups):
     xlims = (9.0, 11.0)
     ylims = (-0.1, 2.6)
 
-    number_color = 'blue'
-
     for axis_group in range(n_groups):
         axis_ratio_df = ascii.read(imd.axis_cluster_data_dir + f'/{save_name}/{save_name}_group_dfs/{axis_group}_df.csv').to_pandas()
         axis_ratio_df['balmer_dec'] = (axis_ratio_df['ha_flux'] / axis_ratio_df['hb_flux'])
@@ -353,7 +353,8 @@ def make_sample_split_twopanel(save_name, n_groups):
 
         med_mass = np.median(axis_ratio_df['log_mass'])
         med_sfr = np.median(axis_ratio_df['log_use_sfr'])
-        ax.plot(med_mass, med_sfr, marker='x', mew=3, color=number_color, ls='None', zorder=20, markersize=8)
+        ax.plot(med_mass, med_sfr, marker='+', mew=2, color=number_color, ls='None', zorder=20, markersize=20)
+        ax.plot(med_mass, med_sfr, marker='+', mew=4, color='black', ls='None', zorder=19, markersize=22)
 
     for ax in axarr:
         x = np.linspace(8.8, 11.2, 100)
@@ -376,20 +377,20 @@ def make_sample_split_twopanel(save_name, n_groups):
     hhigh = 0.91
     vlow = 0.04
     vhigh = 0.93
-    ax_edgeon.text(hlow, vhigh, 'II', fontsize=24, transform=ax_edgeon.transAxes, color=number_color)
-    ax_edgeon.text(hlow, vlow, 'I', fontsize=24, transform=ax_edgeon.transAxes, color=number_color)
-    ax_edgeon.text(hhigh, vlow, 'III', fontsize=24, transform=ax_edgeon.transAxes, color=number_color)
-    ax_edgeon.text(hhigh, vhigh, 'IV', fontsize=24, transform=ax_edgeon.transAxes, color=number_color)     
-    ax_faceon.text(hlow, vhigh, 'VI', fontsize=24, transform=ax_faceon.transAxes, color=number_color) 
-    ax_faceon.text(hlow, vlow, 'V', fontsize=24, transform=ax_faceon.transAxes, color=number_color) 
-    ax_faceon.text(hhigh, vlow, 'VII', fontsize=24, transform=ax_faceon.transAxes, color=number_color) 
-    ax_faceon.text(hhigh-0.015, vhigh, 'VIII', fontsize=24, transform=ax_faceon.transAxes, color=number_color)     
+    ax_edgeon.text(hlow, vhigh, 'II', fontsize=24, transform=ax_edgeon.transAxes, color=number_color, path_effects=[pe.withStroke(linewidth=2, foreground="black")])
+    ax_edgeon.text(hlow, vlow, 'I', fontsize=24, transform=ax_edgeon.transAxes, color=number_color, path_effects=[pe.withStroke(linewidth=2, foreground="black")])
+    ax_edgeon.text(hhigh, vlow, 'III', fontsize=24, transform=ax_edgeon.transAxes, color=number_color, path_effects=[pe.withStroke(linewidth=2, foreground="black")])
+    ax_edgeon.text(hhigh, vhigh, 'IV', fontsize=24, transform=ax_edgeon.transAxes, color=number_color, path_effects=[pe.withStroke(linewidth=2, foreground="black")])     
+    ax_faceon.text(hlow, vhigh, 'VI', fontsize=24, transform=ax_faceon.transAxes, color=number_color, path_effects=[pe.withStroke(linewidth=2, foreground="black")]) 
+    ax_faceon.text(hlow, vlow, 'V', fontsize=24, transform=ax_faceon.transAxes, color=number_color, path_effects=[pe.withStroke(linewidth=2, foreground="black")]) 
+    ax_faceon.text(hhigh, vlow, 'VII', fontsize=24, transform=ax_faceon.transAxes, color=number_color, path_effects=[pe.withStroke(linewidth=2, foreground="black")]) 
+    ax_faceon.text(hhigh-0.015, vhigh, 'VIII', fontsize=24, transform=ax_faceon.transAxes, color=number_color, path_effects=[pe.withStroke(linewidth=2, foreground="black")])     
     
     ax_faceon.set_ylabel('')
     # ax_faceon.set_yticks([])
     ax_faceon.tick_params(labelleft=False)
 
-    cbar = fig.colorbar(mpl.cm.ScalarMappable(norm=norm, cmap=cmap), ax=axarr, fraction=0.046, pad=0.04)
+    cbar = fig.colorbar(mpl.cm.ScalarMappable(norm=norm, cmap=cmap), ax=axarr, fraction=0.046, pad=0.04, shrink=0.90)
     cbar.set_label(balmer_label, fontsize=full_page_axisfont)
     cbar.ax.tick_params(labelsize=full_page_axisfont)
 
