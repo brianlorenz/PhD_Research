@@ -20,7 +20,7 @@ def load_obj(name, run_name):
         return pickle.load(f)
 
 
-def make_plots(groupID, run_name, mask=False, savename='False'):
+def make_plots(groupID, run_name, mask=False, savename='False', trial=1):
     """Plots the observations vs the sps model
 
     Parameters:
@@ -30,19 +30,21 @@ def make_plots(groupID, run_name, mask=False, savename='False'):
     savename (str): Set to the name you want to save the file under
 
     """
+    save_str = f'group{groupID}_trial{trial}'
+
     # res = load_obj(f'{groupID}_res')
-    obs = load_obj(f'{groupID}_obs', run_name)
+    obs = load_obj(f'{save_str}_obs', run_name)
 
     spec_df = ascii.read(imd.prospector_fit_csvs_dir + f'/{run_name}_csvs' + 
-                         f'/{groupID}_spec.csv').to_pandas()
+                         f'/{save_str}_spec.csv').to_pandas()
     phot_df = ascii.read(imd.prospector_fit_csvs_dir + f'/{run_name}_csvs' +
-                         f'/{groupID}_phot.csv').to_pandas()
+                         f'/{save_str}_phot.csv').to_pandas()
     lines_df = ascii.read(imd.prospector_fit_csvs_dir + f'/{run_name}_csvs' +
-                          f'/{groupID}_lines.csv').to_pandas()
+                          f'/{save_str}_lines.csv').to_pandas()
 
     save_dir = imd.prospector_plot_dir + f'/{run_name}_plots'
     if savename == 'False':
-        savename = f'group{groupID}'
+        savename = save_str
 
     # Read in nebular emission lines from mosdef
     mosdef_lines_df = ascii.read(imd.loc_mosdef_elines).to_pandas()
@@ -56,10 +58,10 @@ def make_plots(groupID, run_name, mask=False, savename='False'):
     spectra_axes = [ax_main, ax_zoomHa, ax_zoomHb]
 
     # Plot the UVJ diagram
-    ax_UVJ = fig.add_axes([0.76, 0.08, 0.20, 0.25])
-    plot_uvj_cluster(groupID, ax_UVJ)
-    ax_UVJ.set_xlabel('V-J')
-    ax_UVJ.set_ylabel('U-V')
+    # ax_UVJ = fig.add_axes([0.76, 0.08, 0.20, 0.25])
+    # plot_uvj_cluster(groupID, ax_UVJ)
+    # ax_UVJ.set_xlabel('V-J')
+    # ax_UVJ.set_ylabel('U-V')
 
     # Setup the BPT Diagram
     ax_BPT = fig.add_axes([0.76, 0.38, 0.20, 0.25])
@@ -82,38 +84,41 @@ def make_plots(groupID, run_name, mask=False, savename='False'):
         spec_df['rest_wavelength'] > start_spec, spec_df['rest_wavelength'] < end_spec)
 
     # Plot the BPT diagram:
-    bpt_lines = [6585, 6563, 5008, 4861]
-    bpt_names = ['NII', 'Ha', 'OIII', 'Hb']
-    bpt_fluxes = []
-    bpt_errs_pct = []
-    # Compute the BPT value for our composite
-    for bpt_line in bpt_lines:
-        # Find the nearest line in cloudy:
-        idx_nearest = np.argmin(np.abs(lines_df['rest_wavelength'] - bpt_line))
-        line_wave = lines_df['rest_wavelength'].iloc[idx_nearest]
-        line_flux = lines_df['lines50_erg'].iloc[idx_nearest]
-        line_errs_pct = (((line_flux - lines_df['lines16_erg'].iloc[idx_nearest]) / line_flux),
-                         ((lines_df['lines84_erg'].iloc[idx_nearest] - line_flux) / line_flux))
-        bpt_fluxes.append(line_flux)
-        bpt_errs_pct.append(line_errs_pct)
-    # Calculate the bpt points
-    bpt_x_rat = np.log10(bpt_fluxes[0] / bpt_fluxes[1])
-    err_bpt_x_rat = (0.434 * np.sqrt(bpt_errs_pct[0][0]**2 + bpt_errs_pct[1][
-                     0]**2), 0.434 * np.sqrt(bpt_errs_pct[0][1]**2 + bpt_errs_pct[1][1]**2))
-    bpt_y_rat = np.log10(bpt_fluxes[2] / bpt_fluxes[3])
-    err_bpt_y_rat = (0.434 * np.sqrt(bpt_errs_pct[2][0]**2 + bpt_errs_pct[3][
-                     0]**2), 0.434 * np.sqrt(bpt_errs_pct[2][1]**2 + bpt_errs_pct[3][1]**2))
-    composite_bpt_point = [bpt_x_rat, bpt_y_rat]
-    composite_bpt_errs = [err_bpt_x_rat, err_bpt_y_rat]
-    # Read in the emission for cluster galaxies
-    emission_df = read_emission_df()
-    # Find the names and ids of cluster galaxies
-    cluster_names, fields_ids = cdf.get_cluster_fields_ids(groupID)
-    fields_ids = [(obj[0], int(obj[1])) for obj in fields_ids]
-    plot_bpt(emission_df, fields_ids, axis_obj=ax_BPT,
-             composite_bpt_point=composite_bpt_point, composite_bpt_errs=composite_bpt_errs)
-    ax_BPT.set_xlabel('log(N[II] 6583 / H$\\alpha$)')
-    ax_BPT.set_ylabel('log(O[III] 5007 / H$\\beta$)')
+    try:
+        bpt_lines = [6585, 6563, 5008, 4861]
+        bpt_names = ['NII', 'Ha', 'OIII', 'Hb']
+        bpt_fluxes = []
+        bpt_errs_pct = []
+        # Compute the BPT value for our composite
+        for bpt_line in bpt_lines:
+            # Find the nearest line in cloudy:
+            idx_nearest = np.argmin(np.abs(lines_df['rest_wavelength'] - bpt_line))
+            line_wave = lines_df['rest_wavelength'].iloc[idx_nearest]
+            line_flux = lines_df['lines50_erg'].iloc[idx_nearest]
+            line_errs_pct = (((line_flux - lines_df['lines16_erg'].iloc[idx_nearest]) / line_flux),
+                            ((lines_df['lines84_erg'].iloc[idx_nearest] - line_flux) / line_flux))
+            bpt_fluxes.append(line_flux)
+            bpt_errs_pct.append(line_errs_pct)
+        # Calculate the bpt points
+        bpt_x_rat = np.log10(bpt_fluxes[0] / bpt_fluxes[1])
+        err_bpt_x_rat = (0.434 * np.sqrt(bpt_errs_pct[0][0]**2 + bpt_errs_pct[1][
+                        0]**2), 0.434 * np.sqrt(bpt_errs_pct[0][1]**2 + bpt_errs_pct[1][1]**2))
+        bpt_y_rat = np.log10(bpt_fluxes[2] / bpt_fluxes[3])
+        err_bpt_y_rat = (0.434 * np.sqrt(bpt_errs_pct[2][0]**2 + bpt_errs_pct[3][
+                        0]**2), 0.434 * np.sqrt(bpt_errs_pct[2][1]**2 + bpt_errs_pct[3][1]**2))
+        composite_bpt_point = [bpt_x_rat, bpt_y_rat]
+        composite_bpt_errs = [err_bpt_x_rat, err_bpt_y_rat]
+        # Read in the emission for cluster galaxies
+        emission_df = read_emission_df()
+        # Find the names and ids of cluster galaxies
+        cluster_names, fields_ids = cdf.get_cluster_fields_ids(groupID)
+        fields_ids = [(obj[0], int(obj[1])) for obj in fields_ids]
+        plot_bpt(emission_df, fields_ids, axis_obj=ax_BPT,
+                composite_bpt_point=composite_bpt_point, composite_bpt_errs=composite_bpt_errs)
+        ax_BPT.set_xlabel('log(N[II] 6583 / H$\\alpha$)')
+        ax_BPT.set_ylabel('log(O[III] 5007 / H$\\beta$)')
+    except:
+        print('bpt error, skipping')
 
     # Find the ranges for Ha and Hb
     Ha_range = [6500, 6625]
@@ -143,9 +148,10 @@ def make_plots(groupID, run_name, mask=False, savename='False'):
         ax.errorbar(np.array(phot_df['rest_wavelength']), y_model,
                     ls='-', marker='o', yerr=model_errs, color='blue', label='Model')
 
+        ## SPECTRUM IS HERE
         # Plot spectrum
-        ax.plot(spec_df['rest_wavelength'][spec_idxs], spec_df['rest_wavelength'][spec_idxs] * spec_df['spec50_flambda'][spec_idxs], '-',
-                color='orange', label='Model spectrum', zorder=3)
+        # ax.plot(spec_df['rest_wavelength'][spec_idxs], spec_df['rest_wavelength'][spec_idxs] * spec_df['spec50_flambda'][spec_idxs], '-',
+        #         color='orange', label='Model spectrum', zorder=3)
 
         # Plot Emission line and labels - plots all from CLOUDY
         # for i in range(len(line_waves)):
@@ -199,8 +205,8 @@ def make_plots(groupID, run_name, mask=False, savename='False'):
     # 1.1 * np.percentile(z0_spec_wavelength[spec_idxs] * spectrum, 99))
     ax_main.set_ylim(0.8 * np.percentile(spec_df['rest_wavelength'][spec_idxs] * spec_df['spec50_flambda'][spec_idxs], 1),
                      1.1 * np.percentile(spec_df['rest_wavelength'][spec_idxs] * spec_df['spec50_flambda'][spec_idxs], 99))
-    ax_main.set_xlim(spec_df['rest_wavelength'][spec_idxs].iloc[0] -
-                     30, spec_df['rest_wavelength'][spec_idxs].iloc[-1] + 3000)
+    ax_main.set_xlim(phot_df['rest_wavelength'].iloc[0] -
+                     30, phot_df['rest_wavelength'].iloc[-1] + 3000)
 
     ax_zoomHa.set_xlim(Ha_range[0], Ha_range[1])
     ax_zoomHb.set_xlim(Hb_range[0], Hb_range[1])
@@ -239,7 +245,24 @@ def make_all_prospector_plots(n_clusters, run_name):
             print(f'Making plot for group {groupID}')
             make_plots(groupID, run_name)
 
+def make_all_prospector_plots_2groups(groupID1, groupID2, run_name):
+    '''Makes the plots from the outputs of the prospector run on Savio
+    
+    n_clusters (int): Number of composite clusters
+    run_name (str): Name of the current run, used to sort folders
 
 
-make_all_prospector_plots(29, 'sfh_1')
+    '''
+    for i in range(20):
+        if i>9:
+            groupID = groupID2
+        else:
+            groupID = groupID1
+        if os.path.exists(imd.prospector_fit_csvs_dir + f'/{run_name}_csvs/group{groupID}_trial{i}_phot.csv'):
+            print(f'Making plot for group {groupID}, trial {i}')
+            make_plots(groupID, run_name, trial=i)
+
+
+make_all_prospector_plots_2groups(1, 2, 'raised_post_thresh')
+# make_all_prospector_plots(29, 'sfh_1')
 

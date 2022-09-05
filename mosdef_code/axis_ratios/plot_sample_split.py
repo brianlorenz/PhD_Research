@@ -397,4 +397,4 @@ def make_sample_split_twopanel(save_name, n_groups):
     fig.savefig(imd.axis_cluster_data_dir + f'/{save_name}/sample_cut_2panel.pdf',bbox_inches='tight')
 
 
-make_sample_split_twopanel('whitaker_sfms_boot100', 8)
+make_sample_split_twopanel('whitaker_sfms_boot100_lumin_norm', 8)

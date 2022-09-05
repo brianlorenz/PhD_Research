@@ -173,20 +173,18 @@ def build_model(object_redshift=0.0, fixed_metallicity=None, add_duste=True,
     #                                "init": luminosity_distance, "units": "Mpc"}
 
     
+    ### ADD THESE BACK IN FOR FINER CONTROL OF DUST
+    # true_param = {'N': 1, 'isfree': False, 'init': True}
+    # false_param = {'N': 1, 'isfree': False, 'init': False}
+    # # sfh_param = {'N': 1, 'isfree': False, 'init': 1}
 
-    true_param = {'N': 1, 'isfree': False, 'init': True}
-    false_param = {'N': 1, 'isfree': False, 'init': False}
-    # sfh_param = {'N': 1, 'isfree': False, 'init': 1}
-
-    model_params["dust_type"] = 4
-
-    model_params['add_agb_dust_model'] = false_param
-    model_params['add_igm_absorption'] = true_param
-    model_params['add_neb_emission'] = true_param
-    model_params['add_neb_continuum'] = true_param
-    model_params['nebemlineinspec'] = true_param
-    model_params['add_dust_emission'] = true_param
-    # model_params['sfh'] = sfh_param
+    # model_params['add_agb_dust_model'] = false_param
+    # model_params['add_igm_absorption'] = true_param
+    # model_params['add_neb_emission'] = true_param
+    # model_params['add_neb_continuum'] = true_param
+    # model_params['nebemlineinspec'] = true_param
+    # model_params['add_dust_emission'] = true_param
+    # # model_params['sfh'] = sfh_param
 
     # Adjust model initial values (only important for optimization or emcee)
     model_params["dust2"]["init"] = 0.1

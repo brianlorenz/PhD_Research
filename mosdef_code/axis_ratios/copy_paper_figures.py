@@ -8,7 +8,7 @@ import shutil
 
 # Save name of the directory to pull from
 # save_name = 'both_sfms_4bin_median_2axis_boot100'
-save_name = 'whitaker_sfms_boot100'
+save_name = 'whitaker_sfms_boot100_lumin_norm'
 destination = imd.axis_output_dir + '/paper_figures'
 
 # List of the paths to all the figures

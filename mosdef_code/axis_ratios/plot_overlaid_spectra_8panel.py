@@ -251,4 +251,5 @@ def plot_overlaid_spectra(savename, plot_cont_sub=False, paper_fig=False):
         fig.savefig(imd.axis_cluster_data_dir + f'/{savename}/overlaid_spectra_8panel.pdf',bbox_inches='tight')
     plt.close('all')
 
-plot_overlaid_spectra('whitaker_sfms_boot100', plot_cont_sub=True, paper_fig=True)
+# plot_overlaid_spectra('whitaker_sfms_boot100', plot_cont_sub=True, paper_fig=True)
+plot_overlaid_spectra('whitaker_sfms_boot100_lumin_norm', plot_cont_sub=True, paper_fig=True)
