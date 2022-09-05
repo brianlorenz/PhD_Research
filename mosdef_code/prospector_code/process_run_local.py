@@ -28,4 +28,10 @@ def make_tfig_cfig(run_name):
         cfig = reader.subcorner(res)
         cfig.savefig(imd.prospector_plot_dir + f'/{run_name}_plots' + f'/{file_shortname}_cfig.pdf')
 
+
+
+
+
+
+
 make_tfig_cfig(run_name)

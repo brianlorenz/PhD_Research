@@ -206,25 +206,30 @@ def compute_quantiles(res, obs, mod, sps, all_spec, all_phot, all_mfrac, all_lin
     line_df = pd.DataFrame(zip(line_waves, lines16_erg, lines50_erg, lines84_erg), columns=['rest_wavelength', 'lines16_erg', 'lines50_erg', 'lines84_erg'])
     
 
+
+    ### EDIT SAVE NAME HERE
+    save_str = f'group{groupID}'
+
+
     if cont==False:
-        phot_df.to_csv(prospector_csvs_dir + f'/{run_name}_csvs' + f'/{groupID}_phot.csv', index=False)
-        spec_df.to_csv(prospector_csvs_dir + f'/{run_name}_csvs' + f'/{groupID}_spec.csv', index=False)
-        line_df.to_csv(prospector_csvs_dir + f'/{run_name}_csvs' + f'/{groupID}_lines.csv', index=False)
+        phot_df.to_csv(prospector_csvs_dir + f'/{run_name}_csvs' + f'/{save_str}_phot.csv', index=False)
+        spec_df.to_csv(prospector_csvs_dir + f'/{run_name}_csvs' + f'/{save_str}_spec.csv', index=False)
+        line_df.to_csv(prospector_csvs_dir + f'/{run_name}_csvs' + f'/{save_str}_lines.csv', index=False)
 
         def save_obj(obj, name, run_name):
             with open(prospector_csvs_dir + f'/{run_name}_csvs' + '/' + name + '.pkl', 'wb+') as f:
                 pickle.dump(obj, f, pickle.HIGHEST_PROTOCOL)
 
         try:
-            save_obj(obs, f'{groupID}_obs', run_name)
+            save_obj(obs, f'{save_str}_obs', run_name)
         except:
             print('Could not pickle obs')
         try:
-            save_obj(res, f'{groupID}_res', run_name)
+            save_obj(res, f'{save_str}_res', run_name)
         except:
             print('Could not pickle res')        
         try:
-            save_obj(mod, f'{groupID}_mod', run_name)
+            save_obj(mod, f'{save_str}_mod', run_name)
         except:
             print('Could not pickle mod')
     
