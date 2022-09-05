@@ -65,7 +65,7 @@ class stack_params:
 # zdep_whitaker_sfms_boot100 = make_zdep_whitaker_sfms_boot100()
 
 #PRimary as of 8/20/22
-def make_whitaker_sfms_boot100(run_stack = True, only_plot = True):
+def make_whitaker_sfms_boot100(run_stack = True, only_plot = False):
     run_stack = run_stack
     only_plot = only_plot
     mass_width = 1.0
@@ -74,7 +74,7 @@ def make_whitaker_sfms_boot100(run_stack = True, only_plot = True):
     ratio_bins = [0.55]
     nbins = 8
     split_by = 'log_use_sfr'
-    save_name = 'whitaker_sfms_boot100'
+    save_name = 'whitaker_sfms_boot100_lumin_norm'
     stack_type = 'median'
     sfms_bins = True
     use_whitaker_sfms = True

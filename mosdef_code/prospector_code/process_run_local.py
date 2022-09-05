@@ -10,12 +10,14 @@ import pandas as pd
 import pickle
 import initialize_mosdef_dirs as imd
 
-run_name = 'two_groups_2nd_test'
+run_name = 'raised_post_thresh'
 
 
 def make_tfig_cfig(run_name):
     all_files = os.listdir(imd.prospector_h5_dir + f'/{run_name}_h5s')
     all_files = [file for file in all_files if '.h5' in file]
+
+    imd.check_and_make_dir(imd.prospector_plot_dir + f'/{run_name}_plots')
     for file in all_files:
         file_shortname = file[:-19]
 

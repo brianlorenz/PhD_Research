@@ -515,10 +515,12 @@ def clip_spectrum(spectrum_df, padded_mask, spectrum_wavelength, spectrum_flux_n
 def norm_axis_stack(ha_flux, z_spec):
     """To keep them all at the same area under the curve of the halpha line, we should normalize by flux and NOT luminosity
     """
-    # ha_luminosity = flux_to_luminosity(ha_flux, z_spec)
-    # norm_factor = 3e41 / ha_luminosity
-    norm_factor = 1e-17/ha_flux
+    ha_luminosity = flux_to_luminosity(ha_flux, z_spec)
+    norm_factor = 3e41 / ha_luminosity
+    # norm_factor = 1e-17/ha_flux
     return norm_factor
+
+
 
 
 def perform_stack(stack_type, interp_cluster_spectra_dfs, norm_factors):
