@@ -252,4 +252,4 @@ def plot_overlaid_spectra(savename, plot_cont_sub=False, paper_fig=False):
     plt.close('all')
 
 # plot_overlaid_spectra('whitaker_sfms_boot100', plot_cont_sub=True, paper_fig=True)
-plot_overlaid_spectra('whitaker_sfms_boot100_lumin_norm', plot_cont_sub=True, paper_fig=True)
+# plot_overlaid_spectra('whitaker_sfms_boot100_area_norm_zdep', plot_cont_sub=True, paper_fig=True)

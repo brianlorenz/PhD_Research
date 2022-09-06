@@ -120,7 +120,12 @@ def plot_sample_split(n_groups, save_name, ratio_bins, starting_points, mass_wid
 
         #Compute the mips flux, normalized int he same way we normalized the spectra
         # Old way was just axis_ratio_df['mips_flux']
-        axis_ratio_df['norm_factor'] = norm_axis_stack(axis_ratio_df['ha_flux'], axis_ratio_df['Z_MOSFIRE'])
+        norm_factors = []
+        for k in range(len(axis_ratio_df)):
+            axis_row = axis_ratio_df.iloc[k]
+            row_norm_factor = norm_axis_stack(axis_row['ha_flux'], axis_row['Z_MOSFIRE'], axis_row['field'], axis_row['v4id'])
+            norm_factors.append(row_norm_factor)
+        axis_ratio_df['norm_factor'] = norm_factors# axis_ratio_df['norm_factor'] = norm_axis_stack(axis_ratio_df['ha_flux'], axis_ratio_df['Z_MOSFIRE'], axis_ratio_df['field'], axis_ratio_df['v4id'])
         axis_ratio_df.to_csv(imd.axis_cluster_data_dir + f'/{save_name}/{save_name}_group_dfs/{axis_group}_df.csv', index=False)
         # print(f'Group: {axis_group}, median_norm: {np.median(axis_ratio_df["norm_factor"])}')
         good_mips_idxs = axis_ratio_df['mips_flux'] > -98
@@ -397,4 +402,4 @@ def make_sample_split_twopanel(save_name, n_groups):
     fig.savefig(imd.axis_cluster_data_dir + f'/{save_name}/sample_cut_2panel.pdf',bbox_inches='tight')
 
 
-make_sample_split_twopanel('whitaker_sfms_boot100_lumin_norm', 8)
+# make_sample_split_twopanel('whitaker_sfms_boot100_lumin_norm', 8)

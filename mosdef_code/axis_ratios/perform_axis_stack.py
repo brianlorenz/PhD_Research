@@ -10,7 +10,7 @@ from balmer_avs import plot_balmer_stellar_avs
 import random
 import time
 import json
-from plot_sample_split import plot_sample_split
+from plot_sample_split import plot_sample_split, make_sample_split_twopanel
 from plot_balmer_dec import plot_balmer_dec
 from overview_plot import plot_overview, plot_AV_beta_paper, plot_mass_met_paper
 from integrate_line import re_calc_emission_flux
@@ -85,6 +85,7 @@ def stack_all_and_plot_all(param_class):
         compute_bootstrap_uncertainties(nbins, save_name, bootstrap=bootstrap)
         time_emfit = time.time()
         # print(f'Emission fitting took {time_emfit-time_stack}')     
+    make_sample_split_twopanel(save_name, nbins)
     plot_sample_split(nbins, save_name, ratio_bins, starting_points, mass_width, split_width, nbins, sfms_bins, use_whitaker_sfms, use_z_dependent_sfms)
     # plot_sample_split(nbins, save_name, ratio_bins, starting_points, mass_width, split_width, nbins, sfms_bins, plot_sfr_and_ssfr=True)
     plot_overlaid_spectra(save_name, plot_cont_sub=True)
