@@ -43,6 +43,11 @@ loc_cluster_summary_df = cluster_dir + '/cluster_summary.csv'
 emission_fit_dir = cluster_dir + '/emission_fitting'
 emission_fit_csvs_dir = emission_fit_dir + '/emission_fitting_csvs'
 emission_fit_images_dir = emission_fit_dir + '/emission_fitting_images'
+# Emission for individual spectra
+emission_fit_indiv_dir = mosdef_dir + '/Spectra/indiv_emission_fits'
+emission_fit_indiv_dir_images = mosdef_dir + '/Spectra/indiv_emission_fits_images'
+
+
 
 # Cluster plots
 cluster_plot_dir = cluster_dir + '/cluster_plots'

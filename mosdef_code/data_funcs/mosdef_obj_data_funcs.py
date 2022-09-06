@@ -123,6 +123,7 @@ def read_fast_continuum(mosdef_obj):
     cont['rest_wavelength'] = cont['observed_wavelength'] / \
         (1 + mosdef_obj['Z_MOSFIRE'])
     cont['f_lambda'] = 10**(-19) * cont['f_lambda']
+    cont['f_lambda_rest'] = cont['f_lambda'] * (1 + mosdef_obj['Z_MOSFIRE'])
     return cont
 
 
