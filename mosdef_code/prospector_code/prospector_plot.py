@@ -263,6 +263,6 @@ def make_all_prospector_plots_2groups(groupID1, groupID2, run_name):
             make_plots(groupID, run_name, trial=i)
 
 
-make_all_prospector_plots_2groups(1, 2, 'raised_post_thresh')
+# make_all_prospector_plots_2groups(1, 2, 'raised_post_thresh')
 # make_all_prospector_plots(29, 'sfh_1')
 

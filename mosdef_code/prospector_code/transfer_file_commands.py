@@ -1,6 +1,6 @@
 import initialize_mosdef_dirs as imd
 
-run_name = 'raised_post_thresh'
+run_name = 'dust_and_masking'
 
 print('')
 print('')
