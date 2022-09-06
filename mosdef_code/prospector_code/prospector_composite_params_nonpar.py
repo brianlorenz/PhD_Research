@@ -110,7 +110,12 @@ def build_obs(**kwargs):
     # Add 5 percent in quadrature to errors
     data_05p = (sed_data['f_maggies_red']) * 0.05
     obs['maggies_unc'] = (np.sqrt(data_05p**2 + (sed_data['err_f_maggies_avg_red'])**2)).to_numpy()
+    
+    # Mask (currently masks nothing)
     obs["phot_mask"] = np.array([m > 0 for m in obs['maggies']])
+    # Apply this mask to cut out the emission line region
+    # rest_wave = obs['phot_wave'] / (1+obs['z'])  
+    # obs["phot_mask"] = np.array(np.logical_or(rest_wave<3000,rest_wave>10000))
 
     # Add unessential bonus info.  This will be stored in output
     obs['groupID'] = groupID
@@ -181,7 +186,6 @@ def build_model(object_redshift=0.0, fixed_metallicity=None, add_duste=True,
 
     return model
 
-    return model
 
 # --------------
 # SPS Object
