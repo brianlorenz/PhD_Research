@@ -20,6 +20,7 @@ from matplotlib import patches
 from read_FAST_spec import read_FAST_file
 from cosmology_calcs import flux_to_luminosity
 from sfms_bins import *
+from spectra_funcs import get_indiv_halpha_norm_factor
 
 axis_ratio_catalog = ascii.read(imd.loc_axis_ratio_cat).to_pandas()
 
@@ -186,7 +187,7 @@ def stack_spectra(groupID, norm_method, re_observe=False, mask_negatives=False, 
             if axis_stack:
                 axis_idx = np.logical_and(axis_ratio_catalog['field'] == field, axis_ratio_catalog['v4id'] == v4id)
                 ha_flux = axis_ratio_catalog[axis_idx].iloc[0]['ha_flux']
-                norm_factor = norm_axis_stack(ha_flux, z_spec)  
+                norm_factor = norm_axis_stack(ha_flux, z_spec, field, v4id)  
 
                 # Also, grab the FAST continuum and normalize it in the same way, will be used later
                 fast_file_df = read_FAST_file(field, v4id)
@@ -202,7 +203,9 @@ def stack_spectra(groupID, norm_method, re_observe=False, mask_negatives=False, 
             if norm_method == 'manual':
                 norm_factor = scale_factors.iloc[loop_count]
 
+            print(f'    Field: {field}, v4id: {v4id}')
             print(f'    Norm factor: {norm_factor}')
+            print(f'')
             # Read in the continuum and normalize that
             continuum_df = read_fast_continuum(mosdef_obj)
             continuum_df['f_lambda_norm'] = continuum_df[
@@ -512,12 +515,18 @@ def clip_spectrum(spectrum_df, padded_mask, spectrum_wavelength, spectrum_flux_n
         0], spectrum_wavelength < waves[1]) for waves in mins_maxs]
     return idx_clips
 
-def norm_axis_stack(ha_flux, z_spec):
+def norm_axis_stack(ha_flux, z_spec, field, v4id):
     """To keep them all at the same area under the curve of the halpha line, we should normalize by flux and NOT luminosity
     """
-    ha_luminosity = flux_to_luminosity(ha_flux, z_spec)
-    norm_factor = 3e41 / ha_luminosity
+    ### Luminosity way
+    # ha_luminosity = flux_to_luminosity(ha_flux, z_spec)
+    # norm_factor = 3e41 / ha_luminosity
+
+    ### Flux way
     # norm_factor = 1e-17/ha_flux
+
+    ## Area under the curve
+    norm_factor= get_indiv_halpha_norm_factor(field, v4id)
     return norm_factor
 
 

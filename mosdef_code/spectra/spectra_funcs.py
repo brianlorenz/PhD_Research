@@ -566,3 +566,12 @@ def plot_coverage(spectrum_dfs, line_list, check_range, lines_ok):
 
     # fig.savefig(imd.cluster_dir +
     # f'/composite_spectra/{groupID}_spectrum.pdf')
+
+def get_indiv_halpha_norm_factor(field, v4id):
+    """Must run fit_indiv_halpha prior to this. This will get the flux, then compute a normalization factor for the galaxy"""
+    fit_df = ascii.read(imd.emission_fit_indiv_dir + f'/{field}_{v4id}_halpha_fit.csv').to_pandas()
+    halpha_line_row = fit_df[fit_df['line_name']=='Halpha']
+    halpha_flux = halpha_line_row['flux'].iloc[0]
+    norm_factor = 1e-17/halpha_flux
+    return norm_factor
+
