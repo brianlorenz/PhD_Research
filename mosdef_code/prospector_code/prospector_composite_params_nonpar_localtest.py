@@ -363,3 +363,10 @@ def check_filt_transmission(target_folder, redshift, transmission_threshold = 0.
                 mask_bool = True
         phot_mask.append(mask_bool)
     phot_mask = np.array(phot_mask)
+    breakpoint()
+
+groupID = 2
+filt_folder = composite_filter_sedpy_dir + f'/{groupID}_sedpy_pars'
+zs_df = ascii.read(median_zs_file).to_pandas()
+redshift = zs_df[zs_df['groupID'] == groupID]['median_z'].iloc[0]
+check_filt_transmission(filt_folder, redshift, transmission_threshold = 0.70)

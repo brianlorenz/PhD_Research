@@ -115,6 +115,11 @@ def build_obs(**kwargs):
     # obs["phot_mask"] = np.array([m > 0 for m in obs['maggies']])
     # Phot mask around emission lines
     obs["phot_mask"] = check_filt_transmission(filt_folder, obs['z'])
+    # rest_wave = obs['phot_wave'] / (1+obs['z'])  
+    # obs["phot_mask"] = np.array(np.logical_or(rest_wave<3000,rest_wave>10000))
+    obs["phot_mask"][49:56] = False
+    obs["phot_mask"][58:62] = False
+
 
     # Add unessential bonus info.  This will be stored in output
     obs['groupID'] = groupID
@@ -222,7 +227,7 @@ def build_model(object_redshift=0.0, fixed_metallicity=None, add_duste=True,
     model_params["zred"]['init'] = median_z
 
 
-    # model_params.update(TemplateLibrary["nebular"])
+    model_params.update(TemplateLibrary["nebular"])
     # model_params.update(TemplateLibrary["dust_emission"])
 
     # if add_duste:
