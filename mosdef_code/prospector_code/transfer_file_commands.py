@@ -1,6 +1,6 @@
 import initialize_mosdef_dirs as imd
 
-run_name = 'dust_and_masking'
+run_name = 'nonpar_sfh_2group'
 
 print('')
 print('')

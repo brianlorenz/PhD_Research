@@ -111,11 +111,10 @@ def build_obs(**kwargs):
     data_05p = (sed_data['f_maggies_red']) * 0.05
     obs['maggies_unc'] = (np.sqrt(data_05p**2 + (sed_data['err_f_maggies_avg_red'])**2)).to_numpy()
     
-    # Mask (currently masks nothing)
-    obs["phot_mask"] = np.array([m > 0 for m in obs['maggies']])
-    # Apply this mask to cut out the emission line region
-    # rest_wave = obs['phot_wave'] / (1+obs['z'])  
-    # obs["phot_mask"] = np.array(np.logical_or(rest_wave<3000,rest_wave>10000))
+    # Phot mask that allows everything
+    # obs["phot_mask"] = np.array([m > 0 for m in obs['maggies']])
+    # Phot mask around emission lines
+    obs["phot_mask"] = check_filt_transmission(filt_folder, obs['z'])
 
     # Add unessential bonus info.  This will be stored in output
     obs['groupID'] = groupID
@@ -177,7 +176,7 @@ def build_model(object_redshift=0.0, fixed_metallicity=None, add_duste=True,
     #                                                               df=np.full(nbins_sfh-1,2))
                        
     # Can add dust parameters
-    # model_params.update(TemplateLibrary["nebular"])
+    model_params.update(TemplateLibrary["nebular"])
     # model_params.update(TemplateLibrary["dust_emission"])
 
     # Now instantiate the model using this new dictionary of parameter
@@ -253,3 +252,33 @@ def get_filt_list(target_folder):
     filt_files.sort()
     filt_list = observate.load_filters(filt_files, directory=target_folder)
     return filt_list
+
+
+def check_filt_transmission(target_folder, redshift, transmission_threshold = 0.70):
+    """Makes a photometric mask from the filters by checking if each filter has a line with high transmission
+    
+    Parameters:
+    target_folder: folder where the _zred.par files are stored
+    redshift: z
+    transmission_threshold: If line transmission is greater than this value, mask the pixel
+    """
+    emission_lines = [4863, 5008, 6565]
+    filt_files = [file for file in os.listdir(target_folder) if '_red.par' in file]
+    filt_files.sort()
+    phot_mask = []
+    for i in range(len(filt_files)):
+        filt_df = ascii.read(target_folder + '/' + filt_files[i]).to_pandas()
+        filt_df = filt_df.rename(columns={'col1':'obs_wave', 'col2':'transmission'})
+        filt_df['rest_wave'] = filt_df['obs_wave']/(1+redshift)
+        for line_center in emission_lines:
+            abs = np.argmin(np.abs(filt_df['rest_wave']-line_center))
+            line_transmission = filt_df.iloc[abs]['transmission']
+            if line_transmission > transmission_threshold:
+                # Mask the point and leave this loop
+                mask_bool = False
+                break
+            else:
+                # Don't mask 
+                mask_bool = True
+        phot_mask.append(mask_bool)
+    phot_mask = np.array(phot_mask)
