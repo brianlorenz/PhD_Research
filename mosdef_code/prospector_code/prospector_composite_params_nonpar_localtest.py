@@ -343,7 +343,7 @@ def check_filt_transmission(target_folder, redshift, transmission_threshold = 0.
     redshift: z
     transmission_threshold: If line transmission is greater than this value, mask the pixel
     """
-    emission_lines = [4863, 5008, 6565]
+    emission_lines = [4969, 5008]
     filt_files = [file for file in os.listdir(target_folder) if '_red.par' in file]
     filt_files.sort()
     phot_mask = []

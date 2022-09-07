@@ -112,9 +112,9 @@ def build_obs(**kwargs):
     obs['maggies_unc'] = (np.sqrt(data_05p**2 + (sed_data['err_f_maggies_avg_red'])**2)).to_numpy()
         
     # Phot mask that allows everything
-    # obs["phot_mask"] = np.array([m > 0 for m in obs['maggies']])
+    obs["phot_mask"] = np.array([m > 0 for m in obs['maggies']])
     # Phot mask around emission lines
-    obs["phot_mask"] = check_filt_transmission(filt_folder, obs['z'])
+    # obs["phot_mask"] = check_filt_transmission(filt_folder, obs['z'])
     # rest_wave = obs['phot_wave'] / (1+obs['z'])  
     # obs["phot_mask"] = np.array(np.logical_or(rest_wave<3000,rest_wave>10000))
     obs["phot_mask"][49:56] = False
