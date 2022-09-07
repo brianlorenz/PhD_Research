@@ -26,9 +26,9 @@ from astropy.io import fits
 
 
 # Directory locations on savio
-composite_sed_csvs_dir = '/global/scratch/users/brianlorenz/composite_sed_csvs'
-composite_filter_sedpy_dir = '/global/scratch/users/brianlorenz/sedpy_par_files'
-median_zs_file = '/global/scratch/users/brianlorenz/median_zs.csv'
+composite_sed_csvs_dir = '/Users/brianlorenz/mosdef/Clustering_2/composite_seds/composite_sed_csvs'
+composite_filter_sedpy_dir = '/Users/brianlorenz/mosdef/Clustering_2/composite_filters/sedpy_par_files'
+median_zs_file = '/Users/brianlorenz/mosdef/Clustering_2/composite_seds/median_zs.csv'
 
 # Directory locations on home
 # import initialize_mosdef_dirs as imd
@@ -72,7 +72,7 @@ run_params = {'verbose': True,
               'add_duste': False,
               # SPS parameters
               'zcontinuous': 1,
-              'groupID': -1,
+              'groupID': 1,
               }
 
 # --------------
