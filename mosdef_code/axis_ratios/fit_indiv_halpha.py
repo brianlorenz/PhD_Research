@@ -49,7 +49,7 @@ def fit_emission(spectrum_df, fast_continuum_df, save_name='', scaled='False', r
     Saves a csv of the fits for all of the lines
     """
     # Number of loops in Monte Carlo
-    n_loops = 0
+    n_loops = 100
 
     line_names = [line_list[i][0] for i in range(len(line_list))]
 
@@ -151,16 +151,15 @@ def fit_emission(spectrum_df, fast_continuum_df, save_name='', scaled='False', r
     # all_ha_fluxes = [get_flux(ha_amps[i], ha_sigs[i])
     #                  for i in range(len(arr_popt))]
 
-    # if n_loops == 0:
-    #     err_ha_scales = -99*np.ones(len(all_ha_fluxes))
-    #     err_sigs = -99*np.ones(len(all_ha_fluxes))
-    #     err_amps = -99*np.ones(len(all_ha_fluxes))
-    #     err_fluxes = -99*np.ones(len(all_ha_fluxes))
-    err_ha_scales = [-99]
-    err_amps = [-99]
-    err_sigs = [-99]
-    err_fluxes = [-99]
-
+    if n_loops == 0:
+        err_ha_scales = [-99]
+        err_amps = [-99]
+        err_sigs = [-99]
+        err_fluxes = [-99]
+        #     err_ha_scales = -99*np.ones(len(all_ha_fluxes))
+        #     err_sigs = -99*np.ones(len(all_ha_fluxes))
+        #     err_amps = -99*np.ones(len(all_ha_fluxes))
+        #     err_fluxes = -99*np.ones(len(all_ha_fluxes))
     fit_df = pd.DataFrame(zip(line_names, line_centers_rest,
                               z_offset, err_z_offset, ha_scales, err_ha_scales, velocity, err_velocity, amps, err_amps, sigs, err_sigs, fluxes, err_fluxes), columns=['line_name', 'line_center_rest', 'z_offset', 'err_z_offset', 'ha_scale', 'err_ha_scale', 'fixed_velocity', 'err_fixed_velocity', 'amplitude', 'err_amplitude', 'sigma', 'err_sigma', 'flux', 'err_flux'])
     fit_df['signal_noise_ratio'] = fit_df['flux']/fit_df['err_flux']
@@ -191,6 +190,7 @@ def fit_emission(spectrum_df, fast_continuum_df, save_name='', scaled='False', r
     ax.set_xlabel('Rest Wavelength', fontsize=18)
     ax.set_ylabel('Flux', fontsize=18)
     ax.text(0.05, 0.95, f'Flux: {round(fit_df["flux"].iloc[0]*10**17, 3)} e-17', transform=ax.transAxes, fontsize=16)
+    ax.text(0.05, 0.89, f'S/N: {round(fit_df["signal_noise_ratio"].iloc[0], 3)}', transform=ax.transAxes, fontsize=16)
     ax.tick_params(labelsize=18)
     imd.check_and_make_dir(imd.emission_fit_indiv_dir_images)
     fig.savefig(imd.emission_fit_indiv_dir_images + f'/{save_name}.pdf')
@@ -477,6 +477,8 @@ def fit_all_indiv_halpha():
     ar_df = read_filtered_ar_df()
 
     for i in range(len(ar_df)):
+        if i < 30:
+            continue
         field = ar_df.iloc[i]['field']
         v4id = ar_df.iloc[i]['v4id']
         mosdef_obj = get_mosdef_obj(field, v4id)
@@ -487,8 +489,13 @@ def fit_all_indiv_halpha():
         for spectrum_file in spectra_files:
             spectrum_df = read_spectrum(mosdef_obj, spectrum_file) # units already corrected by 1+z
             if spectrum_df.iloc[0]['rest_wavelength']<line_centers_rest[0]<spectrum_df.iloc[-1]['rest_wavelength']:
-                fit_emission(spectrum_df, fast_continuum_df, save_name = f'{field}_{v4id}_halpha_fit')                # 
+                try:
+                    print(f'Fitting {field} {v4id}, number {i}')
+                    fit_emission(spectrum_df, fast_continuum_df, save_name = f'{field}_{v4id}_halpha_fit')
+                except RuntimeError:
+                    print(f'Could not fit {field} {v4id}')
+                    continue                # 
             else:
                 continue
 
-fit_all_indiv_halpha()
+# fit_all_indiv_halpha()

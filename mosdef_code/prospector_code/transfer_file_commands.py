@@ -1,6 +1,6 @@
 import initialize_mosdef_dirs as imd
 
-run_name = 'nonpar_sfh_2group'
+run_name = 'systematic_line_mask'
 
 print('')
 print('')

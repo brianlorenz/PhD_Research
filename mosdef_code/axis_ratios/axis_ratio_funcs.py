@@ -247,7 +247,6 @@ def filter_ar_df(ar_df, return_std_ar=False):
     ha_nondet = ar_df['ha_detflag_sfr'] == 1.0
     save_count(ar_df[ha_nondet], 'ha_nondetected_flux', 'Halpha not detected')
     ar_df = ar_df[ar_df['ha_detflag_sfr'] != 1.0]
-
     
     
     #For counting purposes
@@ -343,7 +342,42 @@ def read_filtered_ar_df():
     print("Last Filtered ar_df: ", modificationTime)
     return ar_df
 
+
+def filter_ar_df_by_ha_sn(sn_thresh=3):
+    """Re-filters the ar_df by the measured S/N from halpha individual fits"""
+    ar_path = imd.mosdef_dir + '/axis_ratio_data/Merged_catalogs/filtered_ar_df.csv'
+    ar_df = ascii.read(ar_path).to_pandas()
+
+    measured_ha_fluxes = []
+    measured_snrs = []
+    for i in range(len(ar_df)):
+        field = ar_df.iloc[i]['field']
+        v4id = ar_df.iloc[i]['v4id']
+        save_name = f'{field}_{v4id}_halpha_fit'
+
+        emission_df = ascii.read(imd.emission_fit_indiv_dir + f'/{save_name}.csv').to_pandas()
+        ha_row_idx = emission_df[emission_df['line_name'] == 'Halpha'].index[0]
+        ha_flux = emission_df.iloc[ha_row_idx]['flux']
+        ha_snr = emission_df.iloc[ha_row_idx]['signal_noise_ratio']
+        measured_ha_fluxes.append(ha_flux)
+        measured_snrs.append(ha_snr)
+    ar_df['indiv_measured_ha_flux'] = measured_ha_fluxes
+    ar_df['indiv_measured_ha_signal_noise_ratio'] = measured_snrs
+
+    breakpoint()
+
+    ha_indiv_sn_low = ar_df['indiv_measured_ha_signal_noise_ratio'] < sn_thresh
+    save_count(ar_df[ha_indiv_sn_low], 'ha_indiv_sn_low', f'Inidivdually measured halpha S/N less than {sn_thresh}')
+    ar_df = ar_df[ar_df['indiv_measured_ha_signal_noise_ratio'] >= sn_thresh]
+
+    breakpoint()
+    
+    ar_df.to_csv(ar_path, index=False) # Overwrites the old ar_df
+
+    
 # interpolate_axis_ratio()
 
 # ar_df = read_interp_axis_ratio()
 # ar_df = filter_ar_df(ar_df)
+# Then, after fitting the halpha lines individually separtely
+# filter_ar_df_by_ha_sn(sn_thresh=3)

@@ -41,7 +41,7 @@ class stack_params:
 
 
 #PRimary as of 8/20/22
-def make_whitaker_sfms_boot100(run_stack = True, only_plot = True):
+def make_whitaker_sfms_boot100(run_stack = False, only_plot = True):
     run_stack = run_stack
     only_plot = only_plot
     mass_width = 1.0
@@ -60,7 +60,7 @@ def make_whitaker_sfms_boot100(run_stack = True, only_plot = True):
     return both_ssfrs_4bin_mean_params
 whitaker_sfms_boot100 = make_whitaker_sfms_boot100()
 
-def make_whitaker_sfms_boot100_zdep(run_stack = True, only_plot = True):
+def make_whitaker_sfms_boot100_zdep(run_stack = True, only_plot = False):
     run_stack = run_stack
     only_plot = only_plot
     mass_width = 1.0
@@ -73,7 +73,7 @@ def make_whitaker_sfms_boot100_zdep(run_stack = True, only_plot = True):
     stack_type = 'median'
     sfms_bins = True
     use_whitaker_sfms = True
-    use_z_dependent_sfms = False
+    use_z_dependent_sfms = True
     bootstrap = 100
     both_ssfrs_4bin_mean_params = stack_params(mass_width, split_width, starting_points, ratio_bins, nbins, split_by, save_name, stack_type, sfms_bins, use_whitaker_sfms, use_z_dependent_sfms, bootstrap, only_plot, run_stack)
     return both_ssfrs_4bin_mean_params

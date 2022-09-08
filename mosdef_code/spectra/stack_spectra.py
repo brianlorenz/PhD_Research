@@ -753,12 +753,16 @@ def stack_axis_ratio(mass_width, split_width, starting_points, ratio_bins, save_
                 high_z = df['Z_MOSFIRE'] > 1.8
                 low_idx = pd.concat([df[low_z][split_by] < whitaker_sfms(df[low_z]['log_mass'], a_lowz_fit), df[high_z][split_by] < whitaker_sfms(df[high_z]['log_mass'], a_highz_fit)])
                 high_idx = pd.concat([df[low_z][split_by] >= whitaker_sfms(df[low_z]['log_mass'], a_lowz_fit), df[high_z][split_by] >= whitaker_sfms(df[high_z]['log_mass'], a_highz_fit)])
+                # print('evolving cut')
+                # breakpoint()
             elif use_whitaker_sfms==True:
                 a = -24.0415
                 b = 4.1693
                 c = -0.1638
                 low_idx = df[split_by] < a + b*df['log_mass'] + c*df['log_mass']**2
                 high_idx = df[split_by] >= a + b*df['log_mass'] + c*df['log_mass']**2
+                # print('static cut')
+                # breakpoint()
             elif use_z_dependent_sfms==True:
                 low_z = df['Z_MOSFIRE'] < 1.8
                 high_z = df['Z_MOSFIRE'] > 1.8
