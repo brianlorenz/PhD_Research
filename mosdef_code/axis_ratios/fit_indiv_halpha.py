@@ -3,6 +3,7 @@
 
 
 from ensurepip import bootstrap
+from re import fullmatch
 import sys
 import os
 import string
@@ -100,9 +101,13 @@ def fit_emission(spectrum_df, fast_continuum_df, save_name='', scaled='False', r
     fast_continuum_cut = fast_continuum[full_cut]
     # print(bounds)
     # print(guess)
+
+    full_spec = spectrum_df['f_lambda'] * scale_factor
+    full_spec_err = spectrum_df['err_f_lambda'] * scale_factor
+    full_cont = fast_continuum * scale_factor
     
     popt, arr_popt, cont_scale_out, y_data_cont_sub = monte_carlo_fit(multi_gaussian, wavelength_cut, scale_factor * fast_continuum_cut, scale_factor * spectrum_df[full_cut][
-        'f_lambda'], scale_factor * spectrum_df[full_cut]['err_f_lambda'], np.array(guess), bounds, n_loops)
+        'f_lambda'], scale_factor * spectrum_df[full_cut]['err_f_lambda'], np.array(guess), bounds, n_loops, wavelength, full_spec, full_spec_err, full_cont, save_name)
     
     err_popt = np.std(arr_popt, axis=0)
     # If we're not doing the monte carlo fitting, just return -99s for all the uncertainties. These can be updated laters
@@ -176,15 +181,17 @@ def fit_emission(spectrum_df, fast_continuum_df, save_name='', scaled='False', r
 
     full_cut = get_fit_range(wavelength)
     gauss_fit = multi_gaussian(wavelength[full_cut], pars, fit=False)
+    ha_scale = fit_df['ha_scale'].iloc[0]
 
     fig, ax = plt.subplots(figsize=(9,8))
-    plot_ranges = [6540, 6590]
+    plot_ranges = [6520, 6620]
     spec_plot_vals = fast_continuum[full_cut]+y_data_cont_sub/scale_factor
     plot_idx = np.logical_and(wavelength_cut > plot_ranges[0], wavelength_cut<plot_ranges[1])
     ax.plot(wavelength_cut, spec_plot_vals, color='black', label='spectrum')
-    ax.plot(wavelength_cut, fast_continuum[full_cut]+gauss_fit, color='orange', label='gaussian fit')
-    ax.plot(wavelength_cut, fast_continuum[full_cut], color='blue', label='model continuum')
-    ax.legend(fontsize=16)
+    ax.plot(wavelength_cut, ha_scale*fast_continuum[full_cut]+gauss_fit, color='orange', label='gaussian fit')
+    ax.plot(wavelength_cut, fast_continuum[full_cut], color='purple', label='original model continuum')
+    ax.plot(wavelength_cut, ha_scale*fast_continuum[full_cut], color='blue', label='scaled model continuum')
+    ax.legend(fontsize=12, loc=1)
     ax.set_xlim(plot_ranges)
     ax.set_ylim(np.min(spec_plot_vals[plot_idx])*1.05, np.max(spec_plot_vals[plot_idx])*1.05)
     ax.set_xlabel('Rest Wavelength', fontsize=18)
@@ -228,7 +235,7 @@ def gaussian_func(wavelength, peak_wavelength, amp, sig):
     return amp * np.exp(-(wavelength - peak_wavelength)**2 / (2 * sig**2))
 
 
-def monte_carlo_fit(func, wavelength_cut, fast_continuum, y_data, y_err, guess, bounds, n_loops):
+def monte_carlo_fit(func, wavelength_cut, fast_continuum, y_data, y_err, guess, bounds, n_loops, wavelength, full_spec, full_spec_err, full_cont, save_name):
     '''Fit the multi-gaussian to the data, use monte carlo to get uncertainties
 
     Parameters:
@@ -246,8 +253,8 @@ def monte_carlo_fit(func, wavelength_cut, fast_continuum, y_data, y_err, guess, 
     popt (list): List of the fit parameters
     err_popt (list): Uncertainties on these parameters
     '''
-    # Ranges for ha and hb    
-    y_data_cont_sub, ha_scale = fast_continuum_subtract(y_data, fast_continuum)
+    ignore, ha_scale = scale_continuum_to_data(wavelength, full_spec, full_spec_err, full_cont, save_name)
+    y_data_cont_sub, ha_scale = fast_continuum_subtract(y_data, fast_continuum, ha_scale)
     
     start = time.time()
 
@@ -266,8 +273,7 @@ def monte_carlo_fit(func, wavelength_cut, fast_continuum, y_data, y_err, guess, 
         y_data.index)['flux'] for new_y in new_y_datas]
     # Scale and subtract the continuum of of each
     
-   
-    new_cont_tuples = [fast_continuum_subtract(new_y_data_dfs[i], fast_continuum) for i in range(len(new_y_data_dfs))]
+    new_cont_tuples = [fast_continuum_subtract(new_y_data_dfs[i], fast_continuum, ha_scale) for i in range(len(new_y_data_dfs))]
   
     
     new_y_datas_cont_sub = [cont_tuple[0] for cont_tuple in new_cont_tuples]
@@ -409,7 +415,7 @@ def multi_gaussian(wavelength_cut, *pars, fit=True):
     return combined_gauss
 
 
-def scale_continuum(y_data_cut, continuum_cut):
+def scale_continuum_to_data(wavelength, y_data, y_data_err, continuum, save_name, scale_region = [(5865, 7265), (6365, 6765)]):
     """Scales the continuum around the h_alpha and h_beta regions independently,k the n returns a subtracted version
 
     Parameters:
@@ -423,16 +429,48 @@ def scale_continuum(y_data_cut, continuum_cut):
     Returns:
     y_data_cont_sub (array): Continuum subtracted y_data, only in the regions around h_alpha and h_beta
     """
+    first_half_idx = np.logical_and(wavelength > scale_region[0][0], wavelength<scale_region[1][0])
+    second_half_idx = np.logical_and(wavelength > scale_region[1][1], wavelength<scale_region[0][1])
+    region_idxs = np.logical_or(first_half_idx, second_half_idx)
+    full_idx = first_half_idx = np.logical_and(wavelength > scale_region[0][0], wavelength<scale_region[0][1])
 
-    ha_cont = continuum_cut
-    ha_data = y_data_cut
+    median_err = np.median(y_data_err[region_idxs])
+    # median_val = np.median(y_data[region_idxs])
+    skyline_mask = y_data_err[region_idxs] < 3*median_err
+    zero_mask = y_data_err[region_idxs] != 0
+    clipped_region_idxs = np.logical_and(skyline_mask, zero_mask)
+    
+
+    y_data_cut = y_data[region_idxs]
+    continuum_cut = continuum[region_idxs]
+
+    ha_cont = continuum_cut[clipped_region_idxs]
+    ha_data = y_data_cut[clipped_region_idxs]
     ha_scale = np.sum(ha_data * ha_cont) / np.sum(ha_cont**2)
+    # ha_scale = np.median(ha_data) / np.median(ha_cont)
 
-    y_data_cut = y_data_cut - continuum_cut * ha_scale
+    if ha_scale < 0:
+        ha_scale = 0
+
+    print(f'ha scale found to be: {ha_scale}')
+
+    fig, ax = plt.subplots(figsize=(9, 8))
+    ax.plot(wavelength[full_idx], y_data[full_idx], color='red')
+    ax.plot(wavelength[region_idxs], y_data[region_idxs], color='black')
+    ax.plot(wavelength[region_idxs][~clipped_region_idxs], continuum[region_idxs][~clipped_region_idxs], color='red', marker='o', ls=None)
+    ax.plot(wavelength[region_idxs], continuum[region_idxs], color='blue')
+    ax.plot(wavelength[region_idxs], ha_scale*continuum[region_idxs], color='orange')
+    ax.text(0.05, 0.95, f'Scale: {ha_scale}')
+    ax.set_ylim(np.percentile(y_data[full_idx], [5,98]))
+    
+    fig.savefig(imd.emission_fit_indiv_dir_images + f'/{save_name}_cont_scale.pdf')
+
+
+    
 
     return (y_data_cut, ha_scale)
 
-def fast_continuum_subtract(y_data_cut, fast_continuum_cut):
+def fast_continuum_subtract(y_data_cut, fast_continuum_cut, ha_scale):
     """Uses the FAST continuum as the basis for subtraction, then returns the continuum subtacted data in just the ha and hb regions
 
     Parameters:
@@ -444,7 +482,6 @@ def fast_continuum_subtract(y_data_cut, fast_continuum_cut):
     Returns:
     y_data_cont_sub (array): Continuum subtracted y_data, only in the regions around h_alpha and h_beta
     """
-    ha_scale = 1
     y_data_cut = y_data_cut - fast_continuum_cut * ha_scale
 
     return (y_data_cut, ha_scale)
@@ -477,8 +514,6 @@ def fit_all_indiv_halpha():
     ar_df = read_filtered_ar_df()
 
     for i in range(len(ar_df)):
-        if i < 30:
-            continue
         field = ar_df.iloc[i]['field']
         v4id = ar_df.iloc[i]['v4id']
         mosdef_obj = get_mosdef_obj(field, v4id)
@@ -498,4 +533,4 @@ def fit_all_indiv_halpha():
             else:
                 continue
 
-# fit_all_indiv_halpha()
+fit_all_indiv_halpha()

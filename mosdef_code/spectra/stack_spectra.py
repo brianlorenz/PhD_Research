@@ -756,9 +756,9 @@ def stack_axis_ratio(mass_width, split_width, starting_points, ratio_bins, save_
                 # print('evolving cut')
                 # breakpoint()
             elif use_whitaker_sfms==True:
-                a = -24.0415
-                b = 4.1693
-                c = -0.1638
+                a = a_all_fit
+                b = b_all
+                c = c_all
                 low_idx = df[split_by] < a + b*df['log_mass'] + c*df['log_mass']**2
                 high_idx = df[split_by] >= a + b*df['log_mass'] + c*df['log_mass']**2
                 # print('static cut')

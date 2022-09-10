@@ -370,6 +370,7 @@ def filter_ar_df_by_ha_sn(sn_thresh=3):
     save_count(ar_df[ha_indiv_sn_low], 'ha_indiv_sn_low', f'Inidivdually measured halpha S/N less than {sn_thresh}')
     ar_df = ar_df[ar_df['indiv_measured_ha_signal_noise_ratio'] >= sn_thresh]
 
+    print(len(ar_df))
     breakpoint()
     
     ar_df.to_csv(ar_path, index=False) # Overwrites the old ar_df
@@ -380,4 +381,4 @@ def filter_ar_df_by_ha_sn(sn_thresh=3):
 # ar_df = read_interp_axis_ratio()
 # ar_df = filter_ar_df(ar_df)
 # Then, after fitting the halpha lines individually separtely
-# filter_ar_df_by_ha_sn(sn_thresh=3)
+filter_ar_df_by_ha_sn(sn_thresh=3)

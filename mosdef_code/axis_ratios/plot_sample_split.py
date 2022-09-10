@@ -251,9 +251,9 @@ def plot_sample_split(n_groups, save_name, ratio_bins, starting_points, mass_wid
 
             ax.axvline(10, color='grey', ls='--')
 
-            a = -24.0415
-            b = 4.1693
-            c = -0.1638
+            a = a_all_fit
+            b = b_all
+            c = c_all
             y_sfr = a + b*x + c*x**2
             ax.plot(x, y_sfr, color='grey', ls='-.')
         
@@ -274,6 +274,8 @@ def plot_sample_split(n_groups, save_name, ratio_bins, starting_points, mass_wid
 
         # Get the ellipse shapes for plotting
         ellipse_width, ellipse_height = get_ellipse_shapes(xlims[1]-xlims[0], np.abs(ylims[1]-ylims[0]), shape, scale_factor=0.025)
+        
+
 
         # plot a black point at the median
         # ax.add_artist(Ellipse((mass_median, split_median), ellipse_width, ellipse_height, facecolor='black', zorder=3))
@@ -284,6 +286,10 @@ def plot_sample_split(n_groups, save_name, ratio_bins, starting_points, mass_wid
         for i in range(len(axis_ratio_df)):
             row = axis_ratio_df.iloc[i]
             rgba = cmap(norm(row['balmer_dec']))
+
+            # Use this to scale the shapes with axis ratio
+            # ellipse_width, ellipse_height = get_ellipse_shapes(xlims[1]-xlims[0], np.abs(ylims[1]-ylims[0]), shape, scale_factor=0.025, shape_with_axis=True, axis_ratio=row['use_ratio'])
+
             # ax.plot(row['log_mass'], row['log_ssfr'], color = rgba, ls='None', marker=shape)
             if row['hb_detflag_sfr'] == 1.0:
                 ax.add_artist(Ellipse((row['log_mass'], row[variable]), ellipse_width, ellipse_height, edgecolor=rgba, zorder=2, fill=False, linewidth=2))
@@ -348,7 +354,9 @@ def make_sample_split_twopanel(save_name, n_groups):
                 ax = ax_faceon
                 shape = shapes['high']
 
-            ellipse_width, ellipse_height = get_ellipse_shapes(xlims[1]-xlims[0], np.abs(ylims[1]-ylims[0]), shape, scale_factor=0.025)
+            # ellipse_width, ellipse_height = get_ellipse_shapes(xlims[1]-xlims[0], np.abs(ylims[1]-ylims[0]), shape, scale_factor=0.025)
+            # Use this to scale the shapes with axis ratio
+            ellipse_width, ellipse_height = get_ellipse_shapes(xlims[1]-xlims[0], np.abs(ylims[1]-ylims[0]), shape, scale_factor=0.025, shape_with_axis=True, axis_ratio=row['use_ratio'])
             rgba = cmap(norm(row['balmer_dec']))
             # ax.plot(row['log_mass'], row['log_ssfr'], color = rgba, ls='None', marker=shape)
             if row['hb_detflag_sfr'] == 1.0:
@@ -402,4 +410,4 @@ def make_sample_split_twopanel(save_name, n_groups):
     fig.savefig(imd.axis_cluster_data_dir + f'/{save_name}/sample_cut_2panel.pdf',bbox_inches='tight')
 
 
-# make_sample_split_twopanel('whitaker_sfms_boot100_lumin_norm', 8)
+make_sample_split_twopanel('indiv_fit_norm_filtered', 8)
