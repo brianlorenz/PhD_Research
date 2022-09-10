@@ -526,7 +526,10 @@ def norm_axis_stack(ha_flux, z_spec, field, v4id):
     # norm_factor = 1e-17/ha_flux
 
     ## Area under the curve
-    norm_factor= get_indiv_halpha_norm_factor(field, v4id)
+    # norm_factor= get_indiv_halpha_norm_factor(field, v4id)
+
+    ## Just set to 1
+    norm_factor = 1 
     return norm_factor
 
 

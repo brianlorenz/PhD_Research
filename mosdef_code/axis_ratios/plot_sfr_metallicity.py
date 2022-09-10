@@ -37,8 +37,10 @@ def plot_sfr_metals(save_name, plot_ssfr=False, plot_re=False, plot_sanders=Fals
         fontsize=full_page_axisfont
 
         cmap = mpl.cm.inferno
-        norm = mpl.colors.Normalize(vmin=3, vmax=5.5) 
-        rgba = cmap(norm(row['balmer_dec']))
+        # norm = mpl.colors.Normalize(vmin=3, vmax=5.5) 
+        # rgba = cmap(norm(row['balmer_dec']))
+        norm = mpl.colors.Normalize(vmin=0.5, vmax=2.5) 
+        rgba = cmap(norm(row['balmer_av']))
         
         ellipse_width, ellipse_height = get_ellipse_shapes(ax_x_len, ax_y_len, row['shape'])
 
@@ -150,7 +152,8 @@ def plot_sfr_metals(save_name, plot_ssfr=False, plot_re=False, plot_sanders=Fals
     ax.fill_between(x_plot, fm_metals_highm_bot, fm_metals_highm_top, color='black', alpha=0.2, zorder=1)
     
     cbar = fig.colorbar(mpl.cm.ScalarMappable(norm=norm, cmap=cmap), ax=ax, fraction=0.046, pad=0.04)
-    cbar.set_label(balmer_label, fontsize=fontsize)
+    # cbar.set_label(balmer_label, fontsize=fontsize)
+    cbar.set_label('A$_\mathrm{balmer}$', fontsize=fontsize)
     cbar.ax.tick_params(labelsize=fontsize)
     ax.tick_params(labelsize=full_page_axisfont)
     ax.set_aspect(ellipse_width/ellipse_height)
@@ -200,8 +203,10 @@ def plot_sfr_times_metals(save_name):
         fontsize=14
 
         cmap = mpl.cm.inferno
-        norm = mpl.colors.Normalize(vmin=3, vmax=5.5) 
-        rgba = cmap(norm(row['balmer_dec']))
+        # norm = mpl.colors.Normalize(vmin=3, vmax=5.5) 
+        # rgba = cmap(norm(row['balmer_dec']))
+        norm = mpl.colors.Normalize(vmin=0.5, vmax=2.5) 
+        rgba = cmap(norm(row['balmer_av']))
         
         ellipse_width, ellipse_height = get_ellipse_shapes(ax_x_len, ax_y_len, row['shape'])
 

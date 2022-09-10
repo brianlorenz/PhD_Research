@@ -87,7 +87,7 @@ def make_indiv_fit_norm(run_stack = False, only_plot = False):
     ratio_bins = [0.55]
     nbins = 8
     split_by = 'log_use_sfr'
-    save_name = 'indiv_fit_norm_filtered'
+    save_name = 'norm_1_filtered'
     stack_type = 'median'
     sfms_bins = True
     use_whitaker_sfms = True
@@ -106,7 +106,7 @@ def make_indiv_fit_norm_zdep(run_stack = True, only_plot = False):
     ratio_bins = [0.55]
     nbins = 8
     split_by = 'log_use_sfr'
-    save_name = 'indiv_fit_norm_filtered_zdep'
+    save_name = 'norm_1_filtered_zdep'
     stack_type = 'median'
     sfms_bins = True
     use_whitaker_sfms = True
