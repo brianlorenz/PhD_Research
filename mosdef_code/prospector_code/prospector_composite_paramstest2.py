@@ -36,7 +36,7 @@ median_zs_file = '/Users/brianlorenz/mosdef/Clustering_2/composite_seds/median_z
 # composite_filter_sedpy_dir = imd.composite_filter_sedpy_dir
 # median_zs_file = imd.composite_seds_dir + '/median_zs.csv'
 
-# %run prospector_dynesty.py --param_file='prospector_composite_params_copy.py' --outfile='composite_group0' --debug=True
+# %run prospector_dynesty.py --param_file='prospector_composite_paramstest2.py' --outfile='composite_group0' --debug=True
 
 # set up cosmology
 cosmo = FlatLambdaCDM(H0=70, Om0=.3)
@@ -112,9 +112,12 @@ def build_obs(**kwargs):
     obs['maggies_unc'] = (np.sqrt(data_05p**2 + (sed_data['err_f_maggies_avg_red'])**2)).to_numpy()
         
     # Phot mask that allows everything
-    # obs["phot_mask"] = np.array([m > 0 for m in obs['maggies']])
+    obs["phot_mask"] = np.array([m > 0 for m in obs['maggies']])
     # Phot mask around emission lines
-    obs["phot_mask"] = check_filt_transmission(filt_folder, obs['z'])
+    # obs["phot_mask"] = check_filt_transmission(filt_folder, obs['z'])
+    # shifted_lya = 1216*(1+obs['z'])
+    # obs["phot_mask"] = obs['phot_wave'] < shifted_lya     
+    # obs["phot_mask"] = ~obs["phot_mask"] 
 
     # Add unessential bonus info.  This will be stored in output
     obs['groupID'] = groupID
