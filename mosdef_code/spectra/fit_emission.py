@@ -234,8 +234,8 @@ def fit_emission(groupID, norm_method, constrain_O3=False, axis_group=-1, save_n
             imd.check_and_make_dir(imd.axis_cluster_data_dir + f'/{save_name}/{save_name}_emission_fits_boots/')
             fit_df.to_csv(
                 imd.axis_cluster_data_dir + f'/{save_name}/{save_name}_emission_fits_boots/{axis_group}_emission_fits_{bootstrap_num}.csv', index=False)
-            # plot_emission_fit(groupID, norm_method,
-            #                 axis_group=axis_group, save_name=save_name, bootstrap_num=bootstrap_num)
+            plot_emission_fit(groupID, norm_method,
+                            axis_group=axis_group, save_name=save_name, bootstrap_num=bootstrap_num)
         else:
             fit_df.to_csv(
                 imd.axis_cluster_data_dir + f'/{save_name}/{save_name}_emission_fits/{axis_group}_emission_fits.csv', index=False)
@@ -428,6 +428,10 @@ def plot_emission_fit(groupID, norm_method, axis_group=-1, save_name='', scaled=
 
     set_plot_ranges(ax, ax_Ha, Ha_plot_range, Ha_zoom_box_color)
     set_plot_ranges(ax, ax_Hb, Hb_plot_range, Hb_zoom_box_color)
+
+    ax_Ha.text(0.05, 0.93, f"Ha: {round(10**17*fit_df.iloc[0]['flux'], 4)}", transform=ax_Ha.transAxes)
+    ax_Hb.text(0.05, 0.93, f"Hb: {round(10**17*fit_df.iloc[1]['flux'], 4)}", transform=ax_Hb.transAxes)
+    ax_Hb.text(0.05, 0.83, f"BalmDec: {round(fit_df.iloc[1]['balmer_dec'], 4)}", transform=ax_Hb.transAxes)
 
     # ax.set_ylim(-1 * 10**-20, 1.01 * np.max(spectrum))
     ax.set_ylim(np.percentile(spectrum, [1, 99]))

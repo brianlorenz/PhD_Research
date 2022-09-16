@@ -117,8 +117,14 @@ def build_obs(**kwargs):
     # obs["phot_mask"] = check_filt_transmission(filt_folder, obs['z'])
     # rest_wave = obs['phot_wave'] / (1+obs['z'])  
     # obs["phot_mask"] = np.array(np.logical_or(rest_wave<3000,rest_wave>10000))
-    obs["phot_mask"][49:56] = False
-    obs["phot_mask"][58:62] = False
+    # obs["phot_mask"][49:56] = False
+    # obs["phot_mask"][58:62] = False
+    
+    # Phot mask everying blueward of 1216
+    shifted_lya = 1216*(1+obs['z'])
+    obs["phot_mask"] = obs['phot_wave'] < shifted_lya     
+    obs["phot_mask"] = ~obs["phot_mask"] 
+
 
 
     # Add unessential bonus info.  This will be stored in output

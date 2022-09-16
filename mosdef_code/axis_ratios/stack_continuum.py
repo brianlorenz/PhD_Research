@@ -11,14 +11,14 @@ from cross_correlate import get_cross_cor
 
 
 line_regions = [
-    (6300, 6900),
-    (4600, 5200)
+    (6300, 6850),
+    (4650, 5200)
 ]
 
 mask_regions = [
     (4800, 4900),
     (4920, 5040),
-    (6500, 6600)
+    (6450, 6650)
 ]
 
 # Run in the order - stack, plot
@@ -176,7 +176,7 @@ def scale_cont_to_lines(spec_df, cont_df, line_regions, mask_regions):
             return df[unmasked_points[0]]
 
         # Clip the extreme points - only use the median 16-84th percentile across both for correlation
-        def clip_extremes(df, cutoff_pct=(16, 84)):
+        def clip_extremes(df, cutoff_pct=(5, 95)):
             '''Gets the indicles that cut the dataframe to just the specified percentiles
 
             Parameters:
@@ -200,7 +200,16 @@ def scale_cont_to_lines(spec_df, cont_df, line_regions, mask_regions):
         # print(f'Scale factor: {a12}')
 
         # scale by the medians
-        cont_df.loc[region_idxs, 'f_lambda_scaled'] = cont_df[region_idxs]['f_lambda'] * np.median(spec_df_masked[med_both_idx]['f_lambda']) / np.median(cont_df_masked[med_both_idx]['f_lambda'])
+        # scale = np.median(spec_df_masked[med_both_idx]['f_lambda']) / np.median(cont_df_masked[med_both_idx]['f_lambda'])
+        # cont_df.loc[region_idxs, 'f_lambda_scaled'] = cont_df[region_idxs]['f_lambda'] * scale
+    
+        # scale by the weighted mean of the spectrum
+        weights = 1 / (spec_df_masked[med_both_idx]['err_f_lambda']**2)
+        weighted_mean = np.sum(weights*spec_df_masked[med_both_idx]['f_lambda']) / np.sum(weights)
+        cont_mean = np.mean(cont_df[region_idxs]['f_lambda'])
+        scale = weighted_mean / cont_mean
+
+        cont_df.loc[region_idxs, 'f_lambda_scaled'] = cont_df[region_idxs]['f_lambda'] * scale
     return spec_df, cont_df
 
 

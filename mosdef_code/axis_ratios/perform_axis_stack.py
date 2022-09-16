@@ -73,7 +73,7 @@ def stack_all_and_plot_all(param_class):
         print(f'All stacking took {time_stack-time_start}')
         plot_all_spec_with_cont(nbins, save_name) # This is where the normalized cont is saved
         if bootstrap > 0:
-            scale_all_bootstrapped_conts(nbins, save_name, bootstrap, make_plot=False) # This makes the normalized cont for all of the bootstraps
+            scale_all_bootstrapped_conts(nbins, save_name, bootstrap, make_plot=True) # This makes the normalized cont for all of the bootstraps
         for axis_group in range(nbins):
             fit_emission(0, 'cluster_norm', constrain_O3=False, axis_group=axis_group, save_name=save_name, scaled='False', run_name='False')
             if bootstrap > 0:
