@@ -51,28 +51,6 @@ def measure_metals(n_groups, save_name, bootstrap=-1):
         Ha_row = np.argmin(np.abs(fit_df['line_center_rest'] - 6563))
         N2_6585_row = np.argmin(np.abs(fit_df['line_center_rest'] - 6585))
 
-
-        def compute_err_and_logerr(numerator, denominator, err_numerator, err_denominator):
-            """
-            Parameters:
-            numerator (float): Top part of fraction
-            denominator (float): bottom part
-            err_numerator (float): Uncertainty in the numerator
-            err_denominator (float): same for denominator
-
-            Returns:
-            result (float): Numerator/Denominator
-            log_result (float): np.log10(result)
-            err_result (float): Uncertainty in result
-            err_log_result (float): Uncertainty in np.log10(result)
-            """
-
-            result = numerator/denominator
-            log_result = np.log10(result)
-            err_result = result * np.sqrt((err_numerator / numerator)**2 + (err_denominator / denominator)**2)
-            err_log_result = 0.434294 * (err_result / result)
-            return result, log_result, err_result, err_log_result
-
         O3_numerator = fit_df.iloc[O3_5008_row]['flux']+fit_df.iloc[O3_4960_row]['flux']
         err_O3_numerator = np.sqrt(fit_df.iloc[O3_5008_row]['err_flux']**2+fit_df.iloc[O3_4960_row]['err_flux']**2)
         O3_Hb_measure, log_O3_Hb_measure, err_O3_Hb_measure, err_log_O3_Hb_measure = compute_err_and_logerr(O3_numerator, fit_df.iloc[Hb_row]['flux'], err_O3_numerator, fit_df.iloc[Hb_row]['err_flux'])
@@ -85,11 +63,7 @@ def measure_metals(n_groups, save_name, bootstrap=-1):
         O3N2_numerator, log_O3N2_numerator, err_O3N2_numerator, err_log_O3N2_numerator = compute_err_and_logerr(fit_df.iloc[O3_5008_row]['flux'], fit_df.iloc[Hb_row]['flux'], fit_df.iloc[O3_5008_row]['err_flux'], fit_df.iloc[Hb_row]['err_flux'])
         O3N2_measure, log_O3N2_measure, err_O3N2_measure, err_log_O3N2_measure = compute_err_and_logerr(O3N2_numerator, N2_Ha_measure, err_O3N2_numerator, err_N2_Ha_measure)
 
-        def compute_O3N2_metallicity(log_O3N2_measure, err_log_O3N2_measure):
-            """From Bian 2018"""
-            O3N2_metal = 8.97 - 0.39*log_O3N2_measure
-            err_O3N2_metal = 0.32*err_log_O3N2_measure
-            return O3N2_metal, err_O3N2_metal
+        
 
 
         # Bian 2018 O3N2 metallicity
@@ -139,6 +113,9 @@ def measure_metals(n_groups, save_name, bootstrap=-1):
             boot_err_O3N2_metal_high = np.percentile(boot_O3N2s, 84) - O3N2_metal
             boot_err_O3N2_metal_lows.append(boot_err_O3N2_metal_low)
             boot_err_O3N2_metal_highs.append(boot_err_O3N2_metal_high)
+        else:
+            boot_err_O3N2_metal_lows.append(-99)
+            boot_err_O3N2_metal_highs.append(-99)
 
 
     metals_df = pd.DataFrame(zip(axis_groups, log_03_Hbs, err_log_03_Hbs, O3_Hb_metals, err_O3_Hb_metals, log_N2_Ha_measures, err_log_N2_Ha_measures, N2_Ha_metals, err_N2_Ha_metals, log_O3N2_measures, err_log_O3N2_measures, O3N2_metals, err_O3N2_metals, boot_err_O3N2_metal_lows, boot_err_O3N2_metal_highs), columns=['axis_group', 'log_03_Hb_measure', 'err_log_03_Hb_measure', 'O3_Hb_metallicity', 'err_O3_Hb_metallicity', 'log_N2_Ha_measure', 'err_log_N2_Ha_measure', 'N2_Ha_metallicity', 'err_N2_Ha_metallicity', 'log_O3N2_measure', 'err_log_O3N2_measure', 'O3N2_metallicity', 'err_O3N2_metallicity', 'boot_err_O3N2_metallicity_low', 'boot_err_O3N2_metallicity_high'])
@@ -403,6 +380,32 @@ def plot_mass_metal(n_groups, save_name):
 
     fig.savefig(imd.axis_cluster_data_dir + f'/{save_name}/mass_metallicity.pdf', bbox_inches='tight')
 
+def compute_err_and_logerr(numerator, denominator, err_numerator, err_denominator):
+    """
+    Parameters:
+    numerator (float): Top part of fraction
+    denominator (float): bottom part
+    err_numerator (float): Uncertainty in the numerator
+    err_denominator (float): same for denominator
+
+    Returns:
+    result (float): Numerator/Denominator
+    log_result (float): np.log10(result)
+    err_result (float): Uncertainty in result
+    err_log_result (float): Uncertainty in np.log10(result)
+    """
+
+    result = numerator/denominator
+    log_result = np.log10(result)
+    err_result = result * np.sqrt((err_numerator / numerator)**2 + (err_denominator / denominator)**2)
+    err_log_result = 0.434294 * (err_result / result)
+    return result, log_result, err_result, err_log_result
+
+def compute_O3N2_metallicity(log_O3N2_measure, err_log_O3N2_measure):
+    """From Bian 2018"""
+    O3N2_metal = 8.97 - 0.39*log_O3N2_measure
+    err_O3N2_metal = 0.32*err_log_O3N2_measure
+    return O3N2_metal, err_O3N2_metal
 
 def add_metals_to_summary_df(save_name, metal_column):
     metals_df = ascii.read(imd.axis_cluster_data_dir + f'/{save_name}/group_metallicities.csv').to_pandas()

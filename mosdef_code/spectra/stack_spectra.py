@@ -840,3 +840,7 @@ def stack_axis_ratio(mass_width, split_width, starting_points, ratio_bins, save_
             stack_spectra(0, 'cluster_norm', axis_ratio_df=df,
                         axis_group=axis_group, save_name=cluster_name, stack_type=stack_type, bootstrap=bootstrap)
             axis_group = axis_group + 1
+
+
+# stack_spectra(22, 'cluster_norm', re_observe=False,
+#                       mask_negatives=False, ignore_low_spectra=False)

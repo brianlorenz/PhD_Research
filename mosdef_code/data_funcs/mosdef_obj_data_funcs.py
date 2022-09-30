@@ -100,8 +100,9 @@ def read_mock_composite_sed(groupID):
 
     Returns:
     """
-    sed_location = imd.home_dir + \
-        f'/mosdef/mock_sed_csvs/mock_composite_sed_csvs/{groupID}_mock_sed.csv'
+    sed_location = imd.mock_composite_sed_csvs_dir + f'/{groupID}_mock_sed.csv'
+    # sed_location = imd.home_dir + \
+    #     f'/mosdef/mock_sed_csvs/mock_composite_sed_csvs/{groupID}_mock_sed.csv'
     sed = ascii.read(sed_location).to_pandas()
     return sed
 

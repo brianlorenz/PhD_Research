@@ -50,7 +50,7 @@ def fit_emission(groupID, norm_method, constrain_O3=False, axis_group=-1, save_n
     Saves a csv of the fits for all of the lines
     """
     # Number of loops in Monte Carlo
-    n_loops = 0
+    n_loops = 100
 
     if axis_group > -1:
         if bootstrap_num > -1:
@@ -250,6 +250,8 @@ def fit_emission(groupID, norm_method, constrain_O3=False, axis_group=-1, save_n
         fit_df.to_csv(imd.prospector_emission_fits_dir + f'/{run_name}_emission_fits/{groupID}_emission_fits.csv', index=False)
         plot_emission_fit(groupID, norm_method, run_name=run_name)
     else:
+        imd.check_and_make_dir(imd.emission_fit_csvs_dir)
+        imd.check_and_make_dir(imd.emission_fit_images_dir)
         fit_df.to_csv(imd.emission_fit_csvs_dir +
                       f'/{groupID}_emission_fits.csv', index=False)
         plot_emission_fit(groupID, norm_method)
@@ -596,7 +598,7 @@ def get_amp(flux, sig):
 
 
 
-def fit_all_emission(n_clusters, norm_method, constrain_O3=False):
+def fit_all_emission(n_clusters, norm_method, ignore_groups, constrain_O3=False):
     """Runs the fit_emission() function on every cluster
 
     Parameters:
@@ -606,6 +608,9 @@ def fit_all_emission(n_clusters, norm_method, constrain_O3=False):
     Returns:
     """
     for i in range(n_clusters):
+        if i in ignore_groups:
+            print(f'Ignoring group {i}')
+            continue
         print(f'Fitting emission for {i}')
         fit_emission(i, norm_method, constrain_O3=constrain_O3)
 

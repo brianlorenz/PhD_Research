@@ -78,7 +78,7 @@ class stack_params:
 #     return both_ssfrs_4bin_mean_params
 # whitaker_sfms_boot100_zdep = make_whitaker_sfms_boot100_zdep()
 
-def make_indiv_fit_norm(run_stack = True, only_plot = False):
+def make_indiv_fit_norm(run_stack = True, only_plot = True):
     run_stack = run_stack
     only_plot = only_plot
     mass_width = 1.0
@@ -87,12 +87,12 @@ def make_indiv_fit_norm(run_stack = True, only_plot = False):
     ratio_bins = [0.55]
     nbins = 8
     split_by = 'log_use_sfr'
-    save_name = 'norm_1_sn5_filtered_cont_renorm'
+    save_name = 'norm_1_sn5_filtered_cont_renorm_noboot'
     stack_type = 'median'
     sfms_bins = True
     use_whitaker_sfms = True
     use_z_dependent_sfms = False
-    bootstrap = 100
+    bootstrap = -1
     both_ssfrs_4bin_mean_params = stack_params(mass_width, split_width, starting_points, ratio_bins, nbins, split_by, save_name, stack_type, sfms_bins, use_whitaker_sfms, use_z_dependent_sfms, bootstrap, only_plot, run_stack)
     return both_ssfrs_4bin_mean_params
 indiv_fit_norm = make_indiv_fit_norm()

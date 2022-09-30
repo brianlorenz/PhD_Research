@@ -150,6 +150,7 @@ def gen_mock_sed(field, v4id, log_filter_centers=log_filter_centers, width=width
     sed_df = pd.DataFrame(np.transpose([10**log_filter_centers, mock_sed,
                                         mock_sed_u_errs, mock_sed_l_errs]), columns=['rest_wavelength', 'f_lambda', 'err_f_lambda_u', 'err_f_lambda_d'])
     if groupID > -1:
+        imd.check_and_make_dir(imd.mock_composite_sed_csvs_dir)
         sed_df.to_csv(imd.mock_composite_sed_csvs_dir + f'/{groupID}_mock_sed.csv', index=False)
     else:
         sed_df.to_csv(imd.home_dir + f'/mosdef/mock_sed_csvs/{field}_{v4id}_sed.csv', index=False)

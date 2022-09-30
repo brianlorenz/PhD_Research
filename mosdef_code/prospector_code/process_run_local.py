@@ -11,7 +11,7 @@ import pickle
 import initialize_mosdef_dirs as imd
 from prospector_plot import make_all_prospector_plots_2groups
 
-run_name = 'systematic_line_mask'
+run_name = 'mask_lya'
 groupID1 = 1
 groupID2 = 2
 

@@ -33,31 +33,34 @@ Specify the directories in initialize_mosdef_dirs
 n_clusters = 23
 # Set the name of the prospector run
 run_name = 'test'
+# Set which group numbers to ignore since their data is not good
+ignore_groups = [19]
 
-imd.check_and_make_dir(imd.composite_filter_csvs_dir)
-imd.check_and_make_dir(imd.composite_filter_images_dir)
-imd.check_and_make_dir(imd.composite_filter_sedpy_dir)
+# imd.check_and_make_dir(imd.composite_filter_csvs_dir)
+# imd.check_and_make_dir(imd.composite_filter_images_dir)
+# imd.check_and_make_dir(imd.composite_filter_sedpy_dir)
 
-# Begin running all the functions
-print('Generating composite seds...')
-get_all_composite_seds(n_clusters, run_filters=True)
-print('Generating composite spectra...')
-stack_all_spectra(n_clusters, 'cluster_norm')
-print('Fitting emission lines...')
+# # Begin running all the functions
+# print('Generating composite seds...')
+# get_all_composite_seds(n_clusters, run_filters=True)
+# print('Generating composite spectra...')
+# stack_all_spectra(n_clusters, 'cluster_norm')
+# print('Fitting emission lines...')
 
-#Check for agn and list which groups do not have enough galaxies
-check_for_all_agn(n_clusters)
-generate_skip_file()
+# #Check for agn and list which groups do not have enough galaxies
+# check_for_all_agn(n_clusters)
+# generate_skip_file()
 
 
 # Will break here if one of the spectra is so bad that it can't fit
-fit_all_emission(n_clusters, 'cluster_norm')
+# fit_all_emission(n_clusters, 'cluster_norm', ignore_groups)
 
 # Need to do a few things to composites (measure uvj, generate mocks sed, etc. before we can plot)
-print('Generating plots')
-gen_all_mock_composites(n_clusters)
-observe_all_uvj(n_clusters, individual_gals=False, composite_uvjs=True)
+# print('Generating plots')
+# gen_all_mock_composites(n_clusters)
+# observe_all_uvj(n_clusters, individual_gals=False, composite_uvjs=True)
 
+# BREAKING HERE, haven't set up what was needed 
 generate_all_cluster_plots(n_clusters)
 
 

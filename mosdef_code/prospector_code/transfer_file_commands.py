@@ -1,6 +1,6 @@
 import initialize_mosdef_dirs as imd
 
-run_name = 'systematic_line_mask'
+run_name = 'mask_lya'
 
 print('')
 print('')

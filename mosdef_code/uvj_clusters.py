@@ -141,6 +141,7 @@ def observe_all_uvj(n_clusters, individual_gals=False, composite_uvjs=True):
             groupIDs.append(groupID)
         composite_uvj_df = pd.DataFrame(zip(groupIDs, uvs, vjs), columns=[
             'groupID', 'U_V', 'V_J'])
+        imd.check_and_make_dir(imd.composite_uvj_dir)
         composite_uvj_df.to_csv(
             imd.composite_uvj_dir + '/composite_uvjs.csv', index=False)
 
@@ -280,8 +281,9 @@ def plot_full_uvj(n_clusters):
 
     setup_uvj_plot(ax, galaxy_uvj_df, composite_uvj_df)
 
-    bad_clusters = cdf.find_bad_clusters(n_clusters)
-    bad_uvjs = composite_uvj_df.loc[bad_clusters]
+    # bad_clusters = cdf.find_bad_clusters(n_clusters)
+    # bad_uvjs = composite_uvj_df.loc[bad_clusters]
+    bad_uvjs = composite_uvj_df
 
     ax.plot(bad_uvjs['V_J'], bad_uvjs['U_V'],
             ls='', marker='x', markersize=5, markeredgewidth=2, color='red', label='Bad Composite SEDs')
@@ -335,3 +337,7 @@ def setup_uvj_plot(ax, galaxy_uvj_df, composite_uvj_df, axis_obj='False'):
 
     ax.set_xlim(-0.5, 2)
     ax.set_ylim(0, 2.5)
+
+
+# observe_all_uvj(23, individual_gals=False, composite_uvjs=True)
+plot_full_uvj(23)
