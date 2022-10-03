@@ -419,6 +419,25 @@ def add_metals_to_summary_df(save_name, metal_column):
 
     summary_df.to_csv(imd.axis_cluster_data_dir + f'/{save_name}/summary.csv', index=False)
 
+def add_metals_to_summary_df_noboot(n_bins, save_name):
+    summary_df = ascii.read(imd.axis_cluster_data_dir + f'/{save_name}/summary.csv').to_pandas()
+
+    median_metals = []
+    err_metal_lows = []
+    err_metal_highs = []
+    for axis_group in range(n_bins):
+        emission_df = ascii.read(imd.axis_cluster_data_dir + f'/{save_name}/{save_name}_emission_fits/{axis_group}_emission_fits.csv').to_pandas()
+        median_metals.append(emission_df.iloc[0]['O3N2_metallicity'])
+        err_metal_lows.append(emission_df.iloc[0]['err_O3N2_metallicity_low'])
+        err_metal_highs.append(emission_df.iloc[0]['err_O3N2_metallicity_high'])
+    # Have to name it this way for rest of code to recognize it as a color_var
+    summary_df['metallicity_median'] = median_metals
+    # summary_df['err_metallicity_median'] = metals_df['err_'+metal_column]
+    summary_df['err_metallicity_median_low'] = err_metal_lows
+    summary_df['err_metallicity_median_high'] = err_metal_highs
+
+    summary_df.to_csv(imd.axis_cluster_data_dir + f'/{save_name}/summary.csv', index=False)
+
 # measure_metals(8, 'both_sfms_4bin_median_2axis_boot100', bootstrap=100)
 # plot_group_metals_compare(12, 'both_ssfrs_4bin_mean')
 # plot_mass_metal(12, 'both_ssfrs_4bin_mean')

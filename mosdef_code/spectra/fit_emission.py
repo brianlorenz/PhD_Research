@@ -19,6 +19,7 @@ from query_funcs import get_zobjs
 import initialize_mosdef_dirs as imd
 import cluster_data_funcs as cdf
 from spectra_funcs import read_axis_ratio_spectrum, read_composite_spectrum, get_too_low_gals
+from axis_group_metallicities import compute_err_and_logerr, compute_O3N2_metallicity
 import matplotlib.patches as patches
 import time
 
@@ -197,20 +198,52 @@ def fit_emission(groupID, norm_method, constrain_O3=False, axis_group=-1, save_n
     ha_idx = [idx for idx, name in enumerate(
         line_names) if name == 'Halpha'][0]
     hb_idx = [idx for idx, name in enumerate(line_names) if name == 'Hbeta'][0]
+    oiii_idx = [idx for idx, name in enumerate(line_names) if name == 'O3_5008'][0]
+    nii_idx = [idx for idx, name in enumerate(line_names) if name == 'N2_6585'][0]
     ha_amps = [arr_popt[i][2 + ha_idx] for i in range(len(arr_popt))]
     hb_amps = [arr_popt[i][2 + hb_idx] for i in range(len(arr_popt))]
+    oiii_amps = [arr_popt[i][2 + oiii_idx] for i in range(len(arr_popt))]
+    nii_amps = [arr_popt[i][2 + nii_idx] for i in range(len(arr_popt))]
     ha_sigs = [velocity_to_sig(line_list[ha_idx][1], arr_popt[i][
                                1])for i in range(len(arr_popt))]
     hb_sigs = [velocity_to_sig(line_list[hb_idx][1], arr_popt[i][
                                1])for i in range(len(arr_popt))]
-    all_ha_fluxes = [get_flux(ha_amps[i], ha_sigs[i])
+    oiii_sigs = [velocity_to_sig(line_list[oiii_idx][1], arr_popt[i][
+                               1])for i in range(len(arr_popt))]
+    nii_sigs = [velocity_to_sig(line_list[nii_idx][1], arr_popt[i][
+                               1])for i in range(len(arr_popt))]
+    all_ha_fluxes = [get_flux(ha_amps[i]/scale_factor, ha_sigs[i])
                      for i in range(len(arr_popt))]
-    all_hb_fluxes = [get_flux(hb_amps[i], hb_sigs[i])
+    all_hb_fluxes = [get_flux(hb_amps[i]/scale_factor, hb_sigs[i])
                      for i in range(len(arr_popt))]
+    all_oiii_fluxes = [get_flux(oiii_amps[i]/scale_factor, oiii_sigs[i])
+                     for i in range(len(arr_popt))]
+    all_nii_fluxes = [get_flux(nii_amps[i]/scale_factor, nii_sigs[i]) for i in range(len(arr_popt))]
     all_balmer_decs = [all_ha_fluxes[i][0] / all_hb_fluxes[i][0]
                        for i in range(len(arr_popt))]
     balmer_dec = [fluxes[ha_idx] / fluxes[hb_idx]
                   for i in range(len(line_list))]
+
+    # Compute metallicities
+    N2_Ha_measures, _, _, _ = compute_err_and_logerr(fluxes[nii_idx], fluxes[ha_idx], -99, -99)
+    O3N2_numeratos, _, _, _ = compute_err_and_logerr(fluxes[oiii_idx], fluxes[hb_idx], -99, -99) 
+    O3N2_measures, log_O3N2_measures, _, _ = compute_err_and_logerr(O3N2_numeratos, N2_Ha_measures, -99, -99) 
+    O3N2_metal, _ = compute_O3N2_metallicity(log_O3N2_measures, -99) 
+    measured_O3N2_metal = [O3N2_metal for i in range(len(line_list))]
+    #Metal errors
+    O3N2_metals = []
+    for i in range(len(arr_popt)):
+        N2_Ha_measures, _, _, _ = compute_err_and_logerr(all_nii_fluxes[i][0], all_ha_fluxes[i][0], -99, -99)
+        O3N2_numeratos, _, _, _ = compute_err_and_logerr(all_oiii_fluxes[i][0], all_hb_fluxes[i][0], -99, -99) 
+        O3N2_measures, log_O3N2_measures, _, _ = compute_err_and_logerr(O3N2_numeratos, N2_Ha_measures, -99, -99) 
+        O3N2_metal, _ = compute_O3N2_metallicity(log_O3N2_measures, -99) 
+        O3N2_metals.append(O3N2_metal)
+    err_metal_low, err_metal_high = np.percentile(O3N2_metals, [16, 84])
+    err_metal_low_value = O3N2_metal - err_metal_low
+    err_metal_high_value = err_metal_high - O3N2_metal
+    err_metal_low = [err_metal_low_value for i in range(len(line_list))]
+    err_metal_high = [err_metal_high_value for i in range(len(line_list))]
+
 
     if n_loops == 0:
         err_balmer_dec_low = -99*np.ones(len(balmer_dec))
@@ -225,7 +258,7 @@ def fit_emission(groupID, norm_method, constrain_O3=False, axis_group=-1, save_n
         err_balmer_dec_high = np.percentile(all_balmer_decs, 84) - balmer_dec
 
     fit_df = pd.DataFrame(zip(line_names, line_centers_rest,
-                              z_offset, err_z_offset, hb_scales, err_hb_scales, ha_scales, err_ha_scales, velocity, err_velocity, amps, err_amps, sigs, err_sigs, fluxes, err_fluxes, balmer_dec, err_balmer_dec_low, err_balmer_dec_high), columns=['line_name', 'line_center_rest', 'z_offset', 'err_z_offset', 'hb_scale', 'err_hb_scale', 'ha_scale', 'err_ha_scale', 'fixed_velocity', 'err_fixed_velocity', 'amplitude', 'err_amplitude', 'sigma', 'err_sigma', 'flux', 'err_flux', 'balmer_dec', 'err_balmer_dec_low', 'err_balmer_dec_high'])
+                              z_offset, err_z_offset, hb_scales, err_hb_scales, ha_scales, err_ha_scales, velocity, err_velocity, amps, err_amps, sigs, err_sigs, fluxes, err_fluxes, balmer_dec, err_balmer_dec_low, err_balmer_dec_high, measured_O3N2_metal, err_metal_low, err_metal_high), columns=['line_name', 'line_center_rest', 'z_offset', 'err_z_offset', 'hb_scale', 'err_hb_scale', 'ha_scale', 'err_ha_scale', 'fixed_velocity', 'err_fixed_velocity', 'amplitude', 'err_amplitude', 'sigma', 'err_sigma', 'flux', 'err_flux', 'balmer_dec', 'err_balmer_dec_low', 'err_balmer_dec_high', 'O3N2_metallicity', 'err_O3N2_metallicity_low', 'err_O3N2_metallicity_high'])
     fit_df['signal_noise_ratio'] = fit_df['flux']/fit_df['err_flux']
 
 
@@ -522,8 +555,11 @@ def monte_carlo_fit(func, wavelength_cut, continuum, y_data, y_err, guess, bound
 
     start = time.time()
     # Create a new set of y_datas
+    # np.random.normal(loc=y_data.iloc[627], scale=y_err.iloc[627])
+    # [np.random.normal(loc=y_data.iloc[jsq], scale=y_err.iloc[jsq]) for jsq in range(798)]
     new_y_datas = [[np.random.normal(loc=y_data.iloc[j], scale=y_err.iloc[
                                      j]) for j in range(len(y_data))] for i in range(n_loops)]
+    
     # Turn them into dataframes with matching indicies
     new_y_data_dfs = [pd.DataFrame(new_y, columns=['flux']).set_index(
         y_data.index)['flux'] for new_y in new_y_datas]
@@ -547,6 +583,7 @@ def monte_carlo_fit(func, wavelength_cut, continuum, y_data, y_err, guess, bound
 
     end = time.time()
     print(f'Length of {n_loops} fits: {end-start}')
+
     return popt, new_popts, cont_scale_out, y_data_cont_sub
 
 
@@ -727,12 +764,15 @@ def fast_continuum_subtract(y_data_cut, fast_continuum_cut, hb_half_idx, ha_half
     """
     hb_scale = 1
     ha_scale = 1
-    y_data_cut[hb_half_idx] = y_data_cut[hb_half_idx] - \
+
+    y_data_copy = y_data_cut.copy()
+
+    y_data_copy[hb_half_idx] = y_data_cut[hb_half_idx] - \
         fast_continuum_cut[hb_half_idx] * hb_scale
-    y_data_cut[ha_half_idx] = y_data_cut[ha_half_idx] - \
+    y_data_copy[ha_half_idx] = y_data_cut[ha_half_idx] - \
         fast_continuum_cut[ha_half_idx] * ha_scale
 
-    return (y_data_cut, hb_scale, ha_scale)
+    return (y_data_copy, hb_scale, ha_scale)
 
 
 def get_cuts(wavelength_cut_section, width=7):
@@ -822,3 +862,5 @@ def compute_bootstrap_uncertainties(n_clusters, save_name, bootstrap=-1):
 # compute_bootstrap_uncertainties(8, 'both_ssfrs_4bin_median_2axis', bootstrap=10)
 # for axis_group in range(8):
 #     plot_emission_fit(0, 'cluster_norm', axis_group=axis_group, save_name='both_sfms_4bin_median_2axis_boot100')
+
+# fit_emission(0, 'cluster_norm', constrain_O3=False, axis_group=0, save_name='norm_1_sn3_filtered_cont_renorm', scaled='False', run_name='False')

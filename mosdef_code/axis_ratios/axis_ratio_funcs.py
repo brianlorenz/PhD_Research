@@ -381,4 +381,4 @@ def filter_ar_df_by_ha_sn(sn_thresh=3):
 # ar_df = read_interp_axis_ratio()
 # ar_df = filter_ar_df(ar_df)
 # Then, after fitting the halpha lines individually separtely
-# filter_ar_df_by_ha_sn(sn_thresh=5)
+# filter_ar_df_by_ha_sn(sn_thresh=3)

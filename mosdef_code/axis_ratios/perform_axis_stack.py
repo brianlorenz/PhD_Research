@@ -5,7 +5,7 @@ from fit_emission import fit_emission, compute_bootstrap_uncertainties
 from stack_continuum import stack_all_continuum, plot_all_spec_with_cont, scale_all_bootstrapped_conts
 import matplotlib as mpl
 from plot_overlaid_spectra import plot_overlaid_spectra
-from axis_group_metallicities import add_metals_to_summary_df, plot_metals, measure_metals, plot_group_metals_compare, plot_mass_metal
+from axis_group_metallicities import add_metals_to_summary_df, plot_metals, measure_metals, plot_group_metals_compare, plot_mass_metal, add_metals_to_summary_df_noboot
 from balmer_avs import plot_balmer_stellar_avs
 import random
 import time
@@ -79,9 +79,10 @@ def stack_all_and_plot_all(param_class):
             if bootstrap > 0:
                 for bootstrap_num in range(bootstrap):
                     fit_emission(0, 'cluster_norm', constrain_O3=False, axis_group=axis_group, save_name=save_name, scaled='False', run_name='False', bootstrap_num=bootstrap_num)
-        re_calc_emission_flux(nbins, save_name)
+        # Think we don't want to re_calc the fits anymore
+        # re_calc_emission_flux(nbins, save_name)
         if bootstrap > 0:
-            re_calc_emission_flux(nbins, save_name, bootstrap=bootstrap)
+            # re_calc_emission_flux(nbins, save_name, bootstrap=bootstrap)
             compute_bootstrap_uncertainties(nbins, save_name, bootstrap=bootstrap)
         time_emfit = time.time()
         # print(f'Emission fitting took {time_emfit-time_stack}')     
@@ -90,11 +91,14 @@ def stack_all_and_plot_all(param_class):
     # plot_sample_split(nbins, save_name, ratio_bins, starting_points, mass_width, split_width, nbins, sfms_bins, plot_sfr_and_ssfr=True)
     plot_overlaid_spectra(save_name, plot_cont_sub=True)
     measure_metals(nbins, save_name, bootstrap=bootstrap)
+    if bootstrap <= 0:
+        add_metals_to_summary_df_noboot(nbins, save_name)
+    else:
+        add_metals_to_summary_df(save_name, metal_column='O3N2_metallicity')
     plot_metals(save_name)
     plot_metals(save_name, plot_half_light_instead=True)
     plot_group_metals_compare(nbins, save_name)
     plot_mass_metal(nbins, save_name)
-    add_metals_to_summary_df(save_name, metal_column='O3N2_metallicity')
     plot_balmer_dec(save_name, nbins, split_by, y_var='balmer_dec', color_var=split_by)
     plot_balmer_dec(save_name, nbins, split_by, y_var='balmer_dec', color_var='metallicity')
     plot_balmer_dec(save_name, nbins, split_by, y_var='av', color_var=split_by)
