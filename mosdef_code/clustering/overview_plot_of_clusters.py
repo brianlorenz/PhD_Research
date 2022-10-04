@@ -7,6 +7,7 @@ import pandas as pd
 import initialize_mosdef_dirs as imd
 from plot_vals import *
 from brokenaxes import brokenaxes
+from sklearn import cluster
 from spectra_funcs import read_composite_spectrum
 from matplotlib.gridspec import GridSpec
 from bpt_clusters_singledf import plot_bpt
@@ -166,6 +167,14 @@ def make_overview_plot_clusters(n_clusters):
         n_gals_in_range_bpt = len(group_df[in_both_range_bpt])
         ax.text(0.85, 0.85, f'{n_gals_in_range_bpt}', transform=ax.transAxes, fontsize=fontsize)
         # ax.plot(group_df['log_mass'], group_df['log_use_sfr'], marker='o', color='black', ls='None')
+
+        # Add the median of the cluster
+        log_N2_Ha_group = clusters_summary_df_sorted['log_N2_Ha'].iloc[i]
+        log_O3_Hb_group = clusters_summary_df_sorted['log_O3_Hb'].iloc[i]
+        log_N2_Ha_group_errs = (clusters_summary_df_sorted['err_log_N2_Ha_low'].iloc[i], clusters_summary_df_sorted['err_log_N2_Ha_high'].iloc[i])
+        log_O3_Hb_group_errs = (clusters_summary_df_sorted['err_log_O3_Hb_low'].iloc[i], clusters_summary_df_sorted['err_log_O3_Hb_high'].iloc[i])
+        ax.plot(log_N2_Ha_group, log_O3_Hb_group, marker='x', color='red', markersize=10, mew=3, ls='None', zorder=10000)
+        # ax.errorbar(log_N2_Ha_group, log_O3_Hb_group, xerr=log_N2_Ha_group_errs, yerr=log_O3_Hb_group_errs, marker='x', color='red', markersize=6, mew=3, ls='None')
 
         ax.set_xlabel('log(N[II]/H$\\alpha$)', fontsize=fontsize)
         ax.set_ylabel('log(O[III]/H$\\beta$)', fontsize=fontsize, labelpad=-7)

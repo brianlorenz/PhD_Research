@@ -55,9 +55,9 @@ ignore_groups = [12, 19]
 
 
 # Will break here if one of the spectra is so bad that it can't fit
-fit_all_emission(n_clusters, 'cluster_norm', ignore_groups)
+# fit_all_emission(n_clusters, 'cluster_norm', ignore_groups)
 
-# make_clusters_summary_df(n_clusters, ignore_groups)
+make_clusters_summary_df(n_clusters, ignore_groups)
 
 # Need to do a few things to composites (measure uvj, generate mocks sed, etc. before we can plot)
 # print('Generating plots')
