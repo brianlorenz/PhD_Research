@@ -4,7 +4,7 @@ import numpy as np
 from astropy.io import ascii
 import pandas as pd
 
-def make_clusters_summary_df(n_clusters):
+def make_clusters_summary_df(n_clusters, ignore_groups):
     """Makes a datafrmae with summarized properties from all the clusters
     
     Parameters:
@@ -23,8 +23,22 @@ def make_clusters_summary_df(n_clusters):
     median_sfrs = []
     median_ssfrs = []
 
+    balmer_decs = []
+    err_balmer_dec_lows = []
+    err_balmer_dec_highs = []
+
+
+    O3N2_metallicities = []
+    err_O3N2_metallicity_lows = []
+    err_O3N2_metallicity_highs = []
+
+    
+
     
     for groupID in range(n_clusters):
+        if groupID in ignore_groups:
+            print(f'Ignoring group {groupID}')
+            continue
 
         # Read in the df
         group_df = ascii.read(imd.cluster_indiv_dfs_dir + f'/{groupID}_cluster_df.csv')
@@ -55,8 +69,21 @@ def make_clusters_summary_df(n_clusters):
         median_sfrs.append(median_sfr)
         median_ssfrs.append(median_ssfr)
 
+        # Read in the emission fits:
+        emission_df = ascii.read(imd.emission_fit_csvs_dir + f'/{groupID}_emission_fits.csv').to_pandas()
+        balmer_decs.append(emission_df.iloc[0]['balmer_dec'])
+        err_balmer_dec_lows.append(emission_df.iloc[0]['err_balmer_dec_low'])
+        err_balmer_dec_highs.append(emission_df.iloc[0]['err_balmer_dec_high'])
+
+        O3N2_metallicities.append(emission_df.iloc[0]['O3N2_metallicity'])
+        err_O3N2_metallicity_lows.append(emission_df.iloc[0]['err_O3N2_metallicity_low'])
+        err_O3N2_metallicity_highs.append(emission_df.iloc[0]['err_O3N2_metallicity_high'])
+
+        # Read in metallicity fits
+        metals_df = ascii.read(imd.cluster_dir + f'/cluster_metallicities.csv').to_pandas()
+
     # Build into DataFrame
-    clusters_summary_df = pd.DataFrame(zip(groupIDs, n_galss, median_zs, median_masses, median_sfrs, median_ssfrs, median_vjs, median_uvs), columns=['groupID', 'n_gals', 'redshift', 'log_mass', 'log_sfr', 'log_ssfr', 'median_V_J', 'median_U_V'])
+    clusters_summary_df = pd.DataFrame(zip(groupIDs, n_galss, median_zs, median_masses, median_sfrs, median_ssfrs, median_vjs, median_uvs, balmer_decs, err_balmer_dec_lows, err_balmer_dec_highs, O3N2_metallicities, err_O3N2_metallicity_lows, err_O3N2_metallicity_highs), columns=['groupID', 'n_gals', 'redshift', 'log_mass', 'log_sfr', 'log_ssfr', 'median_V_J', 'median_U_V', 'balmer_dec', 'err_balmer_dec_low', 'err_balmer_dec_high', 'O3N2_metallicity', 'err_O3N2_metallicity_low', 'err_O3N2_metallicity_high'])
     clusters_summary_df.to_csv(imd.loc_cluster_summary_df, index=False)
 
-make_clusters_summary_df(23)
+# make_clusters_summary_df(23)
