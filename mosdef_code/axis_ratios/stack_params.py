@@ -87,7 +87,7 @@ def make_indiv_fit_norm(run_stack = True, only_plot = False):
     ratio_bins = [0.55]
     nbins = 8
     split_by = 'log_use_sfr'
-    save_name = 'norm_1_sn3_filtered_cont_renorm'
+    save_name = 'norm_1_sn5_filtered'
     stack_type = 'median'
     sfms_bins = True
     use_whitaker_sfms = True

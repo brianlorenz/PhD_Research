@@ -229,6 +229,8 @@ def fit_emission(groupID, norm_method, constrain_O3=False, axis_group=-1, save_n
     O3N2_numeratos, _, _, _ = compute_err_and_logerr(fluxes[oiii_idx], fluxes[hb_idx], -99, -99) 
     O3N2_measures, log_O3N2_measures, _, _ = compute_err_and_logerr(O3N2_numeratos, N2_Ha_measures, -99, -99) 
     O3N2_metal, _ = compute_O3N2_metallicity(log_O3N2_measures, -99) 
+    measured_N2_Ha = [N2_Ha_measures for i in range(len(line_list))]
+    measured_O3_Hb = [O3N2_numeratos for i in range(len(line_list))]
     measured_O3N2_metal = [O3N2_metal for i in range(len(line_list))]
     #Metal errors
     O3N2_metals = []
@@ -238,11 +240,17 @@ def fit_emission(groupID, norm_method, constrain_O3=False, axis_group=-1, save_n
         O3N2_measures, log_O3N2_measures, _, _ = compute_err_and_logerr(O3N2_numeratos, N2_Ha_measures, -99, -99) 
         O3N2_metal, _ = compute_O3N2_metallicity(log_O3N2_measures, -99) 
         O3N2_metals.append(O3N2_metal)
+    err_N2_Ha_measures_low, err_N2_Ha_measures_high = np.percentile(N2_Ha_measures, [16, 84])
+    err_O3_Hb_measures_low, err_O3_Hb_measures_high = np.percentile(O3N2_numeratos, [16, 84])
     err_metal_low, err_metal_high = np.percentile(O3N2_metals, [16, 84])
     err_metal_low_value = O3N2_metal - err_metal_low
     err_metal_high_value = err_metal_high - O3N2_metal
     err_metal_low = [err_metal_low_value for i in range(len(line_list))]
     err_metal_high = [err_metal_high_value for i in range(len(line_list))]
+    err_N2_Ha_measures_low = [err_N2_Ha_measures_low for i in range(len(line_list))]
+    err_N2_Ha_measures_high = [err_N2_Ha_measures_high for i in range(len(line_list))]
+    err_O3_Hb_measures_low = [err_O3_Hb_measures_low for i in range(len(line_list))]
+    err_O3_Hb_measures_high = [err_O3_Hb_measures_high for i in range(len(line_list))]
 
 
     if n_loops == 0:
@@ -258,7 +266,7 @@ def fit_emission(groupID, norm_method, constrain_O3=False, axis_group=-1, save_n
         err_balmer_dec_high = np.percentile(all_balmer_decs, 84) - balmer_dec
 
     fit_df = pd.DataFrame(zip(line_names, line_centers_rest,
-                              z_offset, err_z_offset, hb_scales, err_hb_scales, ha_scales, err_ha_scales, velocity, err_velocity, amps, err_amps, sigs, err_sigs, fluxes, err_fluxes, balmer_dec, err_balmer_dec_low, err_balmer_dec_high, measured_O3N2_metal, err_metal_low, err_metal_high), columns=['line_name', 'line_center_rest', 'z_offset', 'err_z_offset', 'hb_scale', 'err_hb_scale', 'ha_scale', 'err_ha_scale', 'fixed_velocity', 'err_fixed_velocity', 'amplitude', 'err_amplitude', 'sigma', 'err_sigma', 'flux', 'err_flux', 'balmer_dec', 'err_balmer_dec_low', 'err_balmer_dec_high', 'O3N2_metallicity', 'err_O3N2_metallicity_low', 'err_O3N2_metallicity_high'])
+                              z_offset, err_z_offset, hb_scales, err_hb_scales, ha_scales, err_ha_scales, velocity, err_velocity, amps, err_amps, sigs, err_sigs, fluxes, err_fluxes, balmer_dec, err_balmer_dec_low, err_balmer_dec_high, measured_O3N2_metal, err_metal_low, err_metal_high, measured_N2_Ha, err_N2_Ha_measures_low, err_N2_Ha_measures_high, measured_O3_Hb, err_O3_Hb_measures_low, err_O3_Hb_measures_high), columns=['line_name', 'line_center_rest', 'z_offset', 'err_z_offset', 'hb_scale', 'err_hb_scale', 'ha_scale', 'err_ha_scale', 'fixed_velocity', 'err_fixed_velocity', 'amplitude', 'err_amplitude', 'sigma', 'err_sigma', 'flux', 'err_flux', 'balmer_dec', 'err_balmer_dec_low', 'err_balmer_dec_high', 'O3N2_metallicity', 'err_O3N2_metallicity_low', 'err_O3N2_metallicity_high', 'N2_Ha', 'err_N2_Ha_low', 'err_N2_Ha_high', 'O3_Hb', 'err_O3_Hb_low', 'err_O3_Hb_high'])
     fit_df['signal_noise_ratio'] = fit_df['flux']/fit_df['err_flux']
 
 
@@ -574,6 +582,8 @@ def monte_carlo_fit(func, wavelength_cut, continuum, y_data, y_err, guess, bound
     new_y_datas_cont_sub = [cont_tuple[0] for cont_tuple in new_cont_tuples]
     hb_scales = [cont_tuple[1] for cont_tuple in new_cont_tuples]
     ha_scales = [cont_tuple[2] for cont_tuple in new_cont_tuples]
+
+    # breakpoint()
 
     fits_out = [curve_fit(func, wavelength_cut, new_y, guess, bounds=bounds)
                 for new_y in new_y_datas_cont_sub]

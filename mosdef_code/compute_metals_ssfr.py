@@ -85,5 +85,5 @@ def compute_metals(n_clusters, ignore_groups):
     breakpoint()
     cluster_summary_df.to_csv(imd.loc_cluster_summary_df, index=False)
 
-ignore_groups = [19]
-compute_metals(23, ignore_groups)
+# ignore_groups = [19]
+# compute_metals(23, ignore_groups)

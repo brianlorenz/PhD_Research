@@ -23,11 +23,11 @@ sfms_highz_yint = -5.115
 # a_highz_fit = -23.943
 
 # 09/09/22 - after re-fitting emission individually
-a_lowz_fit = -24.078
-a_highz_fit = -23.809
+a_lowz_fit = -24.062
+a_highz_fit = -23.770
 
 # 09/09/22 - after re-fitting emission individually
-a_all_fit = -23.894
+a_all_fit = -23.864
 b_all = 4.1693
 c_all = -0.1638
 

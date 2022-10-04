@@ -19,12 +19,13 @@ from scale_spectra import scale_all_spectra
 from fit_prospector_emission import setup_all_prospector_fit_csvs, fit_all_prospector_emission
 from check_for_agn import check_for_all_agn
 from filter_groups import generate_skip_file
+from make_clusters_summary_df import make_clusters_summary_df
 
 '''Starting point: One folder ('cluster_folder') that contains: 
 -folders labeled '0', '1', ..., 'N' where N is the number of clusters-1. These will be the cluster "groups"
 -each of these folders contains images of each of the seds in a given cluster, named as '{field}_{v4id}_mock.pdf'
 
-Specify the directories in initialize_mosdef_dirs
+Specify the directories in initialize_mosdef_dirsl;k
 '''
 
 # Make sure to go to initialize_mosdef_dirs to set all the directories properly
@@ -34,7 +35,8 @@ n_clusters = 23
 # Set the name of the prospector run
 run_name = 'test'
 # Set which group numbers to ignore since their data is not good
-ignore_groups = [19]
+ignore_groups = [12, 19]
+# ignore_groups = [0,1,2,3,4,5,6,7,8,9,10,11,12,19]
 
 # imd.check_and_make_dir(imd.composite_filter_csvs_dir)
 # imd.check_and_make_dir(imd.composite_filter_images_dir)
@@ -53,7 +55,9 @@ ignore_groups = [19]
 
 
 # Will break here if one of the spectra is so bad that it can't fit
-# fit_all_emission(n_clusters, 'cluster_norm', ignore_groups)
+fit_all_emission(n_clusters, 'cluster_norm', ignore_groups)
+
+# make_clusters_summary_df(n_clusters, ignore_groups)
 
 # Need to do a few things to composites (measure uvj, generate mocks sed, etc. before we can plot)
 # print('Generating plots')
@@ -61,7 +65,7 @@ ignore_groups = [19]
 # observe_all_uvj(n_clusters, individual_gals=False, composite_uvjs=True)
 
 # BREAKING HERE, haven't set up what was needed 
-generate_all_cluster_plots(n_clusters)
+# generate_all_cluster_plots(n_clusters)
 
 
 '''
