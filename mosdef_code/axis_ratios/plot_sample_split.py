@@ -98,8 +98,8 @@ def plot_sample_split(n_groups, save_name, ratio_bins, starting_points, mass_wid
         hbeta_snrs.append(emission_df[emission_df['line_name']=='Hbeta']['signal_noise_ratio'].iloc[0])
         # See Price 2014 for the conversion factors:
         balmer_av = 4.05*1.97*np.log10(balmer_dec/2.86)
-        err_balmer_av_low = 1.97*np.sqrt((0.434*((balmer_err_low/balmer_dec)/2.86))**2 + (0.8/4.05)**2)
-        err_balmer_av_high = 1.97*np.sqrt((0.434*((balmer_err_high/balmer_dec)/2.86))**2 + (0.8/4.05)**2)
+        err_balmer_av_low = 1.97*0.434*((balmer_err_low/balmer_dec)/2.86)
+        err_balmer_av_high = 1.97*0.434*((balmer_err_high/balmer_dec)/2.86)
         balmer_avs.append(balmer_av)
         err_balmer_av_lows.append(err_balmer_av_low)
         err_balmer_av_highs.append(err_balmer_av_high)

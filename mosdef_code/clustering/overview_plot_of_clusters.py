@@ -171,6 +171,7 @@ def make_overview_plot_clusters(n_clusters):
         # Add the median of the cluster
         log_N2_Ha_group = clusters_summary_df_sorted['log_N2_Ha'].iloc[i]
         log_O3_Hb_group = clusters_summary_df_sorted['log_O3_Hb'].iloc[i]
+        print(log_N2_Ha_group)
         log_N2_Ha_group_errs = (clusters_summary_df_sorted['err_log_N2_Ha_low'].iloc[i], clusters_summary_df_sorted['err_log_N2_Ha_high'].iloc[i])
         log_O3_Hb_group_errs = (clusters_summary_df_sorted['err_log_O3_Hb_low'].iloc[i], clusters_summary_df_sorted['err_log_O3_Hb_high'].iloc[i])
         ax.plot(log_N2_Ha_group, log_O3_Hb_group, marker='x', color='red', markersize=10, mew=3, ls='None', zorder=10000)

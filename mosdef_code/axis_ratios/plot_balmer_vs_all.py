@@ -54,8 +54,8 @@ def plot_balmer_vs_all(save_name):
                 ax_x_len = 1.0
                 xlabel = 'Median ' + stellar_mass_label
             elif x_points == 'log_use_sfr_median':
-                ax.set_xlim(0.7, 1.9)
-                ax_x_len = 1.2
+                ax.set_xlim(0.7, 2.0)
+                ax_x_len = 1.3
                 xlabel =  'Median ' + sfr_label
             elif x_points == 'av_median':
                 ax.set_xlim(0.2, 0.9)
@@ -93,8 +93,8 @@ def plot_balmer_vs_all(save_name):
 
             if use_balmer_av == False:
                 balmer_str = 'balmer_dec'
-                ax.set_ylim(2.7, 5.5)
-                ax_y_len = 5.5-2.7
+                ax.set_ylim(2.7, 6.0)
+                ax_y_len = 6.0-2.7
             else:
                 balmer_str = 'balmer_av'
                 ax.set_ylim(0, 2.5)

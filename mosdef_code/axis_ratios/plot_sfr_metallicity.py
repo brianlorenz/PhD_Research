@@ -235,4 +235,4 @@ def plot_sfr_times_metals(save_name):
 
     ax.tick_params(labelsize=14)
     fig.savefig(imd.axis_cluster_data_dir + f'/{save_name}/metallicity_times_sfr.pdf',bbox_inches='tight')
-# plot_sfr_times_metals('whitaker_sfms_boot100')
+plot_sfr_metals('norm_1_sn5_filtered')

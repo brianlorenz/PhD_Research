@@ -11,7 +11,7 @@ import pickle
 import initialize_mosdef_dirs as imd
 from prospector_plot import make_all_prospector_plots_2groups
 
-run_name = 'mask_lya'
+run_name = 'nonpar_sfh_2group'
 groupID1 = 1
 groupID2 = 2
 
