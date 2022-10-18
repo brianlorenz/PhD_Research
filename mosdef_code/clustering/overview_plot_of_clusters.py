@@ -110,11 +110,11 @@ def make_overview_plot_clusters(n_clusters):
         ssfrs = [0.1, 1, 10]
         ssfr_l_masses = np.arange(8, 13, 1)
         label_locs = [11.7, 11.7, 10.8]
-        for i in range(len(ssfrs)):
-            ssfr_l_sfrs = np.log10(10**ssfr_l_masses * ssfrs[i] / 10**9)
-            label_loc = np.log10(10**label_locs[i] * ssfrs[i] / 10**9) - 0.1
+        for k in range(len(ssfrs)):
+            ssfr_l_sfrs = np.log10(10**ssfr_l_masses * ssfrs[k] / 10**9)
+            label_loc = np.log10(10**label_locs[k] * ssfrs[k] / 10**9) - 0.1
             ax.plot(ssfr_l_masses, ssfr_l_sfrs, ls='--', color='orange')
-            ax.text(label_locs[i], label_loc, f'{ssfrs[i]} Gyr$^{-1}$', rotation=50)
+            ax.text(label_locs[k], label_loc, f'{ssfrs[k]} Gyr$^{-1}$', rotation=50)
 
         ax.set_xlabel(stellar_mass_label, fontsize=fontsize)
         ax.set_ylabel(sfr_label, fontsize=fontsize)
@@ -158,9 +158,9 @@ def make_overview_plot_clusters(n_clusters):
         ax = fig.add_subplot(gs[plot_row_idx, 4])
         xrange = (-2, 1)
         yrange = (-1.2, 1.5)
-
+        
         group_df_bpt = plot_bpt(axis_obj=ax, use_other_df=1, use_df=group_df, add_background=True)
-
+        
         in_x_range = np.logical_and(group_df_bpt['log_NII_Ha']>xrange[0], group_df_bpt['log_NII_Ha']<xrange[1])
         in_y_range = np.logical_and(group_df_bpt['log_OIII_Hb']>yrange[0], group_df_bpt['log_OIII_Hb']<yrange[1])
         in_both_range_bpt = np.logical_and(in_x_range, in_y_range)
@@ -171,7 +171,7 @@ def make_overview_plot_clusters(n_clusters):
         # Add the median of the cluster
         log_N2_Ha_group = clusters_summary_df_sorted['log_N2_Ha'].iloc[i]
         log_O3_Hb_group = clusters_summary_df_sorted['log_O3_Hb'].iloc[i]
-        print(log_N2_Ha_group)
+        
         log_N2_Ha_group_errs = (clusters_summary_df_sorted['err_log_N2_Ha_low'].iloc[i], clusters_summary_df_sorted['err_log_N2_Ha_high'].iloc[i])
         log_O3_Hb_group_errs = (clusters_summary_df_sorted['err_log_O3_Hb_low'].iloc[i], clusters_summary_df_sorted['err_log_O3_Hb_high'].iloc[i])
         ax.plot(log_N2_Ha_group, log_O3_Hb_group, marker='x', color='red', markersize=10, mew=3, ls='None', zorder=10000)

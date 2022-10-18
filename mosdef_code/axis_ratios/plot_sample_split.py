@@ -98,8 +98,11 @@ def plot_sample_split(n_groups, save_name, ratio_bins, starting_points, mass_wid
         hbeta_snrs.append(emission_df[emission_df['line_name']=='Hbeta']['signal_noise_ratio'].iloc[0])
         # See Price 2014 for the conversion factors:
         balmer_av = 4.05*1.97*np.log10(balmer_dec/2.86)
-        err_balmer_av_low = 1.97*0.434*((balmer_err_low/balmer_dec)/2.86)
-        err_balmer_av_high = 1.97*0.434*((balmer_err_high/balmer_dec)/2.86)
+        # err_balmer_av_low = 4.05*1.97*0.434*((balmer_err_low/balmer_dec)/2.86)
+        # err_balmer_av_high = 4.05*1.97*0.434*((balmer_err_high/balmer_dec)/2.86)
+        pct_errs = (balmer_err_low/balmer_dec, balmer_err_high/balmer_dec)
+        err_balmer_av_low = pct_errs[0]*balmer_av
+        err_balmer_av_high = pct_errs[1]*balmer_av
         balmer_avs.append(balmer_av)
         err_balmer_av_lows.append(err_balmer_av_low)
         err_balmer_av_highs.append(err_balmer_av_high)
@@ -372,9 +375,9 @@ def make_sample_split_twopanel(save_name, n_groups):
     for ax in axarr:
         x = np.linspace(8.8, 11.2, 100)
         ax.axvline(10, color='grey', ls='--')
-        a = -24.0415
-        b = 4.1693
-        c = -0.1638
+        a = a_all_fit
+        b = b_all
+        c = c_all
         y_sfr = a + b*x + c*x**2
         ax.plot(x, y_sfr, color='grey', ls='-.')
 
@@ -410,4 +413,4 @@ def make_sample_split_twopanel(save_name, n_groups):
     fig.savefig(imd.axis_cluster_data_dir + f'/{save_name}/sample_cut_2panel.pdf',bbox_inches='tight')
 
 
-# make_sample_split_twopanel('indiv_fit_norm_filtered_zdep', 8)
+make_sample_split_twopanel('norm_1_sn5_filtered', 8)

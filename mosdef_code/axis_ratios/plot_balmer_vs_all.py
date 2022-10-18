@@ -1,5 +1,6 @@
 # Plots the balmer decrement vs a vairiety of properies
 from tkinter import font
+from axis_ratio_funcs import read_filtered_ar_df
 import initialize_mosdef_dirs as imd
 import matplotlib.pyplot as plt
 from astropy.io import ascii
@@ -201,7 +202,7 @@ def plot_balmer_vs_all(save_name):
     # Add SDSS galaxies
     sdss_df = read_and_filter_sdss()
     sdss_df = sdss_df[sdss_df['balmer_dec']>2.7]
-    sdss_df = sdss_df[sdss_df['balmer_dec']<5.5]
+    sdss_df = sdss_df[sdss_df['balmer_dec']<6.0]
     sdss_df = sdss_df[sdss_df['log_mass']>9.5]
     sdss_df = sdss_df[sdss_df['log_mass']<10.5]
     # sdss_df = sdss_df[sdss_df['LGM_FIB_P50']>9.5]
@@ -259,4 +260,4 @@ def plot_balmer_vs_all(save_name):
 
 
 
-# plot_balmer_vs_all('whitaker_sfms_boot100')
+# plot_balmer_vs_all('norm_1_sn5_filtered')

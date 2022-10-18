@@ -571,6 +571,10 @@ def monte_carlo_fit(func, wavelength_cut, continuum, y_data, y_err, guess, bound
 
     start = time.time()
     # Create a new set of y_datas
+
+    #Fill over nan values with the median error * 3
+    y_err = y_err.fillna(5*y_err.median())
+
     # np.random.normal(loc=y_data.iloc[627], scale=y_err.iloc[627])
     # [np.random.normal(loc=y_data.iloc[jsq], scale=y_err.iloc[jsq]) for jsq in range(798)]
     new_y_datas = [[np.random.normal(loc=y_data.iloc[j], scale=y_err.iloc[
@@ -590,8 +594,6 @@ def monte_carlo_fit(func, wavelength_cut, continuum, y_data, y_err, guess, bound
     new_y_datas_cont_sub = [cont_tuple[0] for cont_tuple in new_cont_tuples]
     hb_scales = [cont_tuple[1] for cont_tuple in new_cont_tuples]
     ha_scales = [cont_tuple[2] for cont_tuple in new_cont_tuples]
-
-    # breakpoint()
 
     fits_out = [curve_fit(func, wavelength_cut, new_y, guess, bounds=bounds)
                 for new_y in new_y_datas_cont_sub]

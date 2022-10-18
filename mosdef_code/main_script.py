@@ -35,8 +35,7 @@ n_clusters = 23
 # Set the name of the prospector run
 run_name = 'test'
 # Set which group numbers to ignore since their data is not good
-ignore_groups = [12, 19]
-# ignore_groups = [0,1,2,3,4,5,6,7,8,9,10,11,12,19]
+ignore_groups = [19]
 
 # imd.check_and_make_dir(imd.composite_filter_csvs_dir)
 # imd.check_and_make_dir(imd.composite_filter_images_dir)
@@ -55,9 +54,9 @@ ignore_groups = [12, 19]
 
 
 # Will break here if one of the spectra is so bad that it can't fit
-# fit_all_emission(n_clusters, 'cluster_norm', ignore_groups)
+fit_all_emission(n_clusters, 'cluster_norm', ignore_groups)
 
-make_clusters_summary_df(n_clusters, ignore_groups)
+# make_clusters_summary_df(n_clusters, ignore_groups)
 
 # Need to do a few things to composites (measure uvj, generate mocks sed, etc. before we can plot)
 # print('Generating plots')
