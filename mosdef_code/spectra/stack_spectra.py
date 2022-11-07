@@ -274,7 +274,10 @@ def stack_spectra(groupID, norm_method, re_observe=False, mask_negatives=False, 
         start_strap = time.time()
         print('Starting bootstrap')
         bootstrap_count = 0
-        imd.check_and_make_dir(imd.axis_cluster_data_dir + f'/{save_name}/{save_name}_spectra_boots/')
+        if axis_stack:
+            imd.check_and_make_dir(imd.axis_cluster_data_dir + f'/{save_name}/{save_name}_spectra_boots/')
+        else:
+            imd.check_and_make_dir(imd.composite_spec_dir + f'/{norm_method}_boot_csvs/')
         while bootstrap_count<bootstrap:
             # Resample the interp_spectrum_dfs and corresponding norm factors to bootstrap with:
             n_gals = len(interp_cluster_spectra_dfs)
@@ -288,7 +291,10 @@ def stack_spectra(groupID, norm_method, re_observe=False, mask_negatives=False, 
             print('Making dataframe...')
             boot_total_spec_df = pd.DataFrame(zip(spectrum_wavelength, boot_total_spec, boot_total_errs, boot_total_cont, boot_number_specs_by_wave, boot_norm_value_specs_by_wave), columns=['wavelength', 'f_lambda', 'err_f_lambda', 'cont_f_lambda', 'n_galaxies', 'norm_value_summed'])
             print('Saving...')
-            boot_total_spec_df.to_csv(imd.axis_cluster_data_dir + f'/{save_name}/{save_name}_spectra_boots/{axis_group}_spectrum_{bootstrap_count}.csv', index=False)
+            if axis_stack:
+                boot_total_spec_df.to_csv(imd.axis_cluster_data_dir + f'/{save_name}/{save_name}_spectra_boots/{axis_group}_spectrum_{bootstrap_count}.csv', index=False)
+            else:
+                boot_total_spec_df.to_csv(imd.composite_spec_dir + f'/{norm_method}_boot_csvs/{groupID}_spectrum_{bootstrap_count}.csv', index=False)
             bootstrap_count=bootstrap_count+1
         end_strap = time.time()
         print(f'Bootstrap took {end_strap-start_strap} seconds')

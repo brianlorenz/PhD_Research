@@ -19,6 +19,8 @@ import scipy.integrate as integrate
 from query_funcs import get_zobjs
 import initialize_mosdef_dirs as imd
 import cluster_data_funcs as cdf
+import matplotlib as mpl
+from plot_vals import *
 
 
 def get_uvj(field, v4id):
@@ -258,7 +260,7 @@ def plot_all_uvj_clusters(n_clusters):
         plot_uvj_cluster(i)
 
 
-def plot_full_uvj(n_clusters):
+def plot_full_uvj(n_clusters, balmer_color=False):
     """Generate one overview UVJ diagram, with clusters marked by low-membership and labeled by number
 
     Parameters:
@@ -272,10 +274,14 @@ def plot_full_uvj(n_clusters):
     # UVJs of all composite SEDs
     composite_uvj_df = ascii.read(
         imd.composite_uvj_dir + '/composite_uvjs.csv').to_pandas()
+    # Cluster summary
+    cluster_summary_df = ascii.read(imd.loc_cluster_summary_df).to_pandas()
 
     ticksize = 12
     ticks = 8
     legendfont = 14
+
+    add_str = ''
 
     fig, ax = plt.subplots(figsize=(8, 7))
 
@@ -285,22 +291,46 @@ def plot_full_uvj(n_clusters):
     # bad_uvjs = composite_uvj_df.loc[bad_clusters]
     bad_uvjs = composite_uvj_df
 
-    ax.plot(bad_uvjs['V_J'], bad_uvjs['U_V'],
-            ls='', marker='x', markersize=5, markeredgewidth=2, color='red', label='Bad Composite SEDs')
+    # ax.plot(bad_uvjs['V_J'], bad_uvjs['U_V'],
+    #         ls='', marker='x', markersize=5, markeredgewidth=2, color='red', label='Bad Composite SEDs')
+
+    ax.plot(composite_uvj_df['V_J'], composite_uvj_df['U_V'],
+            ls='', marker='x', markersize=5, markeredgewidth=2, color='red')
+
+    
+
 
     for groupID in range(n_clusters):
-        ax.text(composite_uvj_df.iloc[groupID]['V_J'] - 0.02, composite_uvj_df.iloc[groupID]
-                ['U_V'] + 0.03, f'{groupID}', size=12, fontweight='bold', color='black')
+        row = composite_uvj_df.iloc[groupID]
+        ax.text(row['V_J'] - 0.02, row['U_V'] + 0.03, f'{groupID}', size=12, fontweight='bold', color='red')
+        if balmer_color == True:
+            cmap = mpl.cm.inferno
+            norm = mpl.colors.Normalize(vmin=2, vmax=10) 
 
-    for groupID in bad_uvjs['groupID']:
-        ax.text(composite_uvj_df.iloc[groupID]['V_J'] - 0.02, composite_uvj_df.iloc[groupID]
-                ['U_V'] + 0.03, f'{groupID}', size=12, fontweight='bold', color='red')
+            cluster_row_idx = cluster_summary_df['groupID'] == groupID
+            cluster_balmer = cluster_summary_df[cluster_row_idx]['balmer_dec']
+        
+            rgba = cmap(norm(cluster_balmer))
+            ax.plot(row['V_J'], row['U_V'],
+                ls='', marker='o', markersize=6, markeredgewidth=2, color=rgba)
+            
+
+    # for groupID in bad_uvjs['groupID']:
+    #     ax.text(composite_uvj_df.iloc[groupID]['V_J'] - 0.02, composite_uvj_df.iloc[groupID]
+    #             ['U_V'] + 0.03, f'{groupID}', size=12, fontweight='bold', color='red')
 
     # Plot the bad composite SEDs as a red X
+    if balmer_color == True:
+        cbar = fig.colorbar(mpl.cm.ScalarMappable(norm=norm, cmap=cmap), ax=ax, fraction=0.046, pad=0.04)
+        cbar.set_label('Balmer Dec', fontsize=full_page_axisfont)
+        cbar.ax.tick_params(labelsize=full_page_axisfont-2)
+        add_str = '_balmer_color'
 
-    ax.legend(fontsize=legendfont - 4)
-    ax.tick_params(labelsize=ticksize, size=ticks)
-    fig.savefig(imd.composite_uvj_dir + f'/Full_UVJ.pdf')
+    # ax.legend(fontsize=full_page_axisfont - 4)
+    ax.tick_params(labelsize=full_page_axisfont)
+    ax.set_xlabel('V-J', fontsize=full_page_axisfont)
+    ax.set_ylabel('U-V', fontsize=full_page_axisfont)
+    fig.savefig(imd.composite_uvj_dir + f'/Full_UVJ{add_str}.pdf')
     plt.close()
 
 
@@ -340,4 +370,4 @@ def setup_uvj_plot(ax, galaxy_uvj_df, composite_uvj_df, axis_obj='False'):
 
 
 # observe_all_uvj(23, individual_gals=False, composite_uvjs=True)
-plot_full_uvj(23)
+plot_full_uvj(23, balmer_color=True)

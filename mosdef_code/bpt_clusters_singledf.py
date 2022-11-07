@@ -8,6 +8,7 @@ import matplotlib.pyplot as plt
 import initialize_mosdef_dirs as imd
 import cluster_data_funcs as cdf
 from astropy.io import ascii
+import matplotlib as mpl
 from axis_ratio_funcs import read_filtered_ar_df, read_interp_axis_ratio
 
 
@@ -71,7 +72,7 @@ def calc_log_ratio(top_flux, top_err, bot_flux, bot_err):
     return log_ratio, log_ratio_err
 
 
-def plot_bpt(savename='None', axis_obj='False', composite_bpt_point=[-47], composite_bpt_errs=0, use_other_df = 0, use_df='False', add_background=False):
+def plot_bpt(savename='None', axis_obj='False', composite_bpt_point=[-47], composite_bpt_errs=0, use_other_df = 0, use_df='False', add_background=False, color_gals=False):
     """Plots the bpt diagram for the objects in zobjs
 
     Parameters:
@@ -96,6 +97,8 @@ def plot_bpt(savename='None', axis_obj='False', composite_bpt_point=[-47], compo
         # gal_df = read_filtered_ar_df()
     else:
         gal_df = use_df
+
+    n_gals = len(gal_df)
     
     # Get the bpt valeus to plot for all objects
     gal_df = get_bpt_coords(gal_df)
@@ -120,8 +123,18 @@ def plot_bpt(savename='None', axis_obj='False', composite_bpt_point=[-47], compo
         filtered_gal_df = ascii.read(imd.loc_filtered_gal_df).to_pandas()
         filtered_gal_df = get_bpt_coords(filtered_gal_df)
         ax.plot(filtered_gal_df['log_NII_Ha'], filtered_gal_df['log_OIII_Hb'], marker='o', color='grey', ls='None', markersize=1.5)
-    ax.errorbar(gal_df['log_NII_Ha'], gal_df['log_OIII_Hb'], xerr=gal_df[
-                    'log_NII_Ha_err'], yerr=gal_df['log_OIII_Hb_err'], marker='o', color='black', ecolor='grey', ls='None')
+    
+    cmap = mpl.cm.plasma
+    norm = mpl.colors.Normalize(vmin=1, vmax=len(gal_df)) 
+    print(len(gal_df))
+    for gal in range(len(gal_df)):
+        row = gal_df.iloc[gal]
+        if color_gals:
+            rgba = cmap(norm(row['group_gal_id']))
+        else:
+            rgba = 'black'
+        ax.errorbar(row['log_NII_Ha'], row['log_OIII_Hb'], xerr=row[
+                        'log_NII_Ha_err'], yerr=row['log_OIII_Hb_err'], marker='o', color=rgba, ecolor='grey', ls='None')
     
     # gal_df_2 = gal_df[gal_df['agn_flag']>3]
     # ax.errorbar(gal_df_2['log_NII_Ha'], gal_df_2['log_OIII_Hb'], xerr=gal_df_2[

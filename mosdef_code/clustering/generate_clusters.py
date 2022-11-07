@@ -36,9 +36,8 @@ def generate_clusters(n_clusters, stop_to_eval=False, skip_slow_steps=False):
 
     # Cross-correlate the mock seds
     if skip_slow_steps==False:
-        pass
-    correlate_all_seds(zobjs)
-    affinity_matrix = ascii.read(imd.cluster_dir + '/similarity_matrix.csv').to_pandas().to_numpy()
+        correlate_all_seds(zobjs)
+        affinity_matrix = ascii.read(imd.cluster_dir + '/similarity_matrix.csv').to_pandas().to_numpy()
 
     # Evaluate how many clusters to make
     if stop_to_eval==True:
@@ -77,6 +76,7 @@ def make_cluster_dfs(n_clusters, gal_df):
         group_members_df = zobjs_clusters[zobjs_clusters['cluster_num']==group_num]
         group_members_df = group_members_df.drop(['original_zobjs_index'], axis=1)
         group_gal_df = group_members_df.merge(gal_df, on=['field', 'v4id'])
+        group_gal_df['group_gal_id'] = np.arange(len(group_gal_df))
         group_gal_df.to_csv(imd.cluster_indiv_dfs_dir + f'/{group_num}_cluster_df.csv', index=False)
 
 

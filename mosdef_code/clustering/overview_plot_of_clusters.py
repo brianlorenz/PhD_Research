@@ -12,11 +12,12 @@ from spectra_funcs import read_composite_spectrum
 from matplotlib.gridspec import GridSpec
 from bpt_clusters_singledf import plot_bpt
 from uvj_clusters import setup_uvj_plot
+import matplotlib as mpl
 import sys
 
 fontsize = 16
 
-def make_overview_plot_clusters(n_clusters):
+def make_overview_plot_clusters(n_clusters, color_gals=False, bpt_color=False):
     #Set up the array (nrows, ncol)
     # fig, axarr = plt.subplots(n_clusters, 4, figsize=(16, n_clusters*4))
 
@@ -45,6 +46,11 @@ def make_overview_plot_clusters(n_clusters):
 
         clusters_summary_row = clusters_summary_df[clusters_summary_df['groupID']==groupID]
 
+        if bpt_color==True:
+            ax = fig.add_subplot(gs[plot_row_idx, 0])
+            group_df_bpt = plot_bpt(axis_obj=ax, use_other_df=1, use_df=group_df, add_background=True, color_gals=color_gals)
+            
+            fig.delaxes(ax)
 
         ### SED Plot --------------------------------------------
         # ax = axarr[groupID, 0]
@@ -94,10 +100,24 @@ def make_overview_plot_clusters(n_clusters):
 
         ax = fig.add_subplot(gs[plot_row_idx, 2])
 
-
         ax.plot(filtered_gal_df['log_mass'], filtered_gal_df['log_use_sfr'], marker='o', color='grey', ls='None', markersize=2)
-        ax.plot(group_df['log_mass'], group_df['log_use_sfr'], marker='o', color='black', ls='None')
+        # ax.plot(group_df['log_mass'], group_df['log_use_sfr'], marker='o', color='black', ls='None')
         ax.plot(clusters_summary_row['log_mass'], clusters_summary_row['log_sfr'], marker='x', color='red', ls='None', markersize=8, mew=2.5)
+
+        
+        cmap = mpl.cm.plasma
+        norm = mpl.colors.Normalize(vmin=1, vmax=n_gals) 
+        print(n_gals)
+        for gal in range(len(group_df)):
+            row = group_df.iloc[gal]
+            if color_gals:
+                rgba = cmap(norm(row['group_gal_id']))
+            else:
+                rgba = 'black'
+        
+            ax.plot(row['log_mass'], row['log_use_sfr'], marker='o', color=rgba, ls='None')
+
+
 
         # Count the galaxies
         in_mass_range = np.logical_and(group_df['log_mass']>mass_lims[0], group_df['log_mass']<mass_lims[1])
@@ -134,7 +154,17 @@ def make_overview_plot_clusters(n_clusters):
         # median_uv = np.median(group_df[group_df['U_V']>0]['U_V'])
 
         setup_uvj_plot(ax, filtered_gal_df, 0, axis_obj=ax)
-        ax.plot(group_df['V_J'], group_df['U_V'], marker='o', color='black', ls='None')
+        cmap = mpl.cm.plasma
+        norm = mpl.colors.Normalize(vmin=1, vmax=n_gals) 
+        print(n_gals)
+        for gal in range(len(group_df)):
+            row = group_df.iloc[gal]
+            if color_gals:
+                rgba = cmap(norm(row['group_gal_id']))
+            else:
+                rgba = 'black'
+        
+            ax.plot(row['V_J'], row['U_V'], marker='o', color=rgba, ls='None')
         ax.plot(clusters_summary_row['median_V_J'], clusters_summary_row['median_U_V'], marker='x', color='red', ls='None', markersize=8, mew=2.5)
 
         in_x_range = np.logical_and(group_df['V_J']>xrange[0], group_df['V_J']<xrange[1])
@@ -159,7 +189,7 @@ def make_overview_plot_clusters(n_clusters):
         xrange = (-2, 1)
         yrange = (-1.2, 1.5)
         
-        group_df_bpt = plot_bpt(axis_obj=ax, use_other_df=1, use_df=group_df, add_background=True)
+        group_df_bpt = plot_bpt(axis_obj=ax, use_other_df=1, use_df=group_df, add_background=True, color_gals=color_gals)
         
         in_x_range = np.logical_and(group_df_bpt['log_NII_Ha']>xrange[0], group_df_bpt['log_NII_Ha']<xrange[1])
         in_y_range = np.logical_and(group_df_bpt['log_OIII_Hb']>yrange[0], group_df_bpt['log_OIII_Hb']<yrange[1])
@@ -188,7 +218,13 @@ def make_overview_plot_clusters(n_clusters):
 
         plot_row_idx = plot_row_idx + 1
     # plt.tight_layout()
-    fig.savefig(imd.cluster_dir + '/cluster_stats/overview_clusters.pdf')
+    if color_gals:
+        save_str = '_color'
+    else:
+        save_str = ''
+    fig.savefig(imd.cluster_dir + f'/cluster_stats/overview_clusters{save_str}.pdf')
 
 
-make_overview_plot_clusters(23)
+# make_overview_plot_clusters(23)
+# make_overview_plot_clusters(23, color_gals=True)
+make_overview_plot_clusters(23, bpt_color=True)

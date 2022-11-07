@@ -291,7 +291,7 @@ def plot_sample_split(n_groups, save_name, ratio_bins, starting_points, mass_wid
             rgba = cmap(norm(row['balmer_dec']))
 
             # Use this to scale the shapes with axis ratio
-            # ellipse_width, ellipse_height = get_ellipse_shapes(xlims[1]-xlims[0], np.abs(ylims[1]-ylims[0]), shape, scale_factor=0.025, shape_with_axis=True, axis_ratio=row['use_ratio'])
+            ellipse_width, ellipse_height = get_ellipse_shapes(xlims[1]-xlims[0], np.abs(ylims[1]-ylims[0]), shape, scale_factor=0.025, shape_with_axis=True, axis_ratio=row['use_ratio'])
 
             # ax.plot(row['log_mass'], row['log_ssfr'], color = rgba, ls='None', marker=shape)
             if row['hb_detflag_sfr'] == 1.0:
@@ -357,9 +357,10 @@ def make_sample_split_twopanel(save_name, n_groups):
                 ax = ax_faceon
                 shape = shapes['high']
 
-            # ellipse_width, ellipse_height = get_ellipse_shapes(xlims[1]-xlims[0], np.abs(ylims[1]-ylims[0]), shape, scale_factor=0.025)
+            ellipse_width, ellipse_height = get_ellipse_shapes(xlims[1]-xlims[0], np.abs(ylims[1]-ylims[0]), shape, scale_factor=0.025)
             # Use this to scale the shapes with axis ratio
-            ellipse_width, ellipse_height = get_ellipse_shapes(xlims[1]-xlims[0], np.abs(ylims[1]-ylims[0]), shape, scale_factor=0.025, shape_with_axis=True, axis_ratio=row['use_ratio'])
+            # ellipse_width, ellipse_height = get_ellipse_shapes(xlims[1]-xlims[0], np.abs(ylims[1]-ylims[0]), shape, scale_factor=0.025, shape_with_axis=True, axis_ratio=row['use_ratio'])
+            
             rgba = cmap(norm(row['balmer_dec']))
             # ax.plot(row['log_mass'], row['log_ssfr'], color = rgba, ls='None', marker=shape)
             if row['hb_detflag_sfr'] == 1.0:

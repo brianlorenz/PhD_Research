@@ -112,6 +112,7 @@ loc_galaxy_uvjs = mosdef_dir + '/UVJ_Colors/galaxy_uvjs.csv'
 loc_eazy_uvj_fits = mosdef_dir + '/Mosdef_cats/mosdef_eazy_uvj_latest.fits'
 loc_eazy_uvj_cat = mosdef_dir + '/Mosdef_cats/mosdef_eazy_uvj_latest.csv'
 loc_eqwidth_cat = mosdef_dir + '/Mosdef_cats/compile_ew_bc03smc0p2.txt'
+loc_composite_beta_df = cluster_dir + '/beta_composite_measure.csv'
 
 
 

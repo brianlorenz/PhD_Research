@@ -329,6 +329,7 @@ def vis_composite_sed(total_sed, composite_sed=0, composite_filters=0, groupID=-
     
 
     plt.set_cmap('plasma')  # coolwarm
+
     ax_sed.scatter(total_sed[good_idx]['rest_wavelength'], total_sed[good_idx]
                    ['f_lambda_norm'], s=2, c=total_sed[good_idx]['v4id'], zorder=1)
 
