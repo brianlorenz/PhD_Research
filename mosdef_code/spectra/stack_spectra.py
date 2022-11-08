@@ -443,7 +443,7 @@ def divz(X, Y):
     return X / np.where(Y, Y, Y + 1) * np.not_equal(Y, 0)
 
 
-def stack_all_spectra(n_clusters, norm_method, re_observe=False, mask_negatives=False, ignore_low_spectra=False):
+def stack_all_spectra(n_clusters, norm_method, re_observe=False, mask_negatives=False, ignore_low_spectra=False, bootstrap=0):
     """Runs the stack_spectra() function on every cluster
 
     Parameters:
@@ -454,7 +454,7 @@ def stack_all_spectra(n_clusters, norm_method, re_observe=False, mask_negatives=
     for i in range(n_clusters):
         print(f'Stacking spectrum {i}...')
         stack_spectra(i, norm_method, re_observe=re_observe,
-                      mask_negatives=mask_negatives, ignore_low_spectra=ignore_low_spectra)
+                      mask_negatives=mask_negatives, ignore_low_spectra=ignore_low_spectra, bootstrap=bootstrap)
 
 
 def plot_all_spectra(n_clusters, norm_method, mask_negatives=False):
@@ -658,7 +658,8 @@ def perform_stack(stack_type, interp_cluster_spectra_dfs, norm_factors):
         number_specs_by_wave_arr = np.array(number_specs_by_wave)
         # MAD - 1.25 * error in the mean
         total_errs = 1.25*(interp_err_arr_sums/number_specs_by_wave_arr)
-
+        total_errs = np.nan_to_num(total_errs)
+        
     return total_spec, total_cont, total_errs, number_specs_by_wave, norm_value_specs_by_wave
 
 

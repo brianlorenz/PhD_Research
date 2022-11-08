@@ -138,7 +138,7 @@ def smooth_spectrum(spectrum, width=25):
     return smooth_spec
 
 
-def read_composite_spectrum(groupID, norm_method, scaled='False'):
+def read_composite_spectrum(groupID, norm_method, scaled='False', bootstrap_num=-1):
     """Reads in the spectrum file for a given cluster
 
     Parameters:
@@ -151,6 +151,8 @@ def read_composite_spectrum(groupID, norm_method, scaled='False'):
     """
     if scaled == 'True':
         spectrum_df = ascii.read(imd.composite_spec_dir + f'/{norm_method}_csvs/{groupID}_spectrum_scaled.csv').to_pandas()
+    elif bootstrap_num>-1:
+        spectrum_df = ascii.read(imd.composite_spec_dir + f'/{norm_method}_boot_csvs/{groupID}_spectrum_{bootstrap_num}.csv').to_pandas()
     else:
         spectrum_df = ascii.read(imd.composite_spec_dir + f'/{norm_method}_csvs/{groupID}_spectrum.csv').to_pandas()
 

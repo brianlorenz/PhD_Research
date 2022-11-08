@@ -8,6 +8,7 @@ import numpy as np
 import pandas as pd
 from astropy.io import ascii
 from astropy.io import fits
+from sklearn import cluster
 from read_data import mosdef_df
 from mosdef_obj_data_funcs import read_sed, read_mock_sed, get_mosdef_obj, read_composite_sed
 from filter_response import lines, overview, get_index, get_filter_response
@@ -51,7 +52,7 @@ def fit_emission(groupID, norm_method, constrain_O3=False, axis_group=-1, save_n
     Saves a csv of the fits for all of the lines
     """
     # Number of loops in Monte Carlo
-    n_loops = 100
+    n_loops = 0
 
     if axis_group > -1:
         if bootstrap_num > -1:
@@ -70,7 +71,8 @@ def fit_emission(groupID, norm_method, constrain_O3=False, axis_group=-1, save_n
         composite_spectrum_df['err_f_lambda'] = (composite_spectrum_df['err_f_lambda_u'] + composite_spectrum_df['err_f_lambda_d'])/2   
         composite_spectrum_df['wavelength'] = composite_spectrum_df['rest_wavelength']
     else:
-        composite_spectrum_df = read_composite_spectrum(groupID, norm_method)
+        composite_spectrum_df = read_composite_spectrum(groupID, norm_method, bootstrap_num=bootstrap_num)
+        
 
     line_names = [line_list[i][0] for i in range(len(line_list))]
 
@@ -149,8 +151,7 @@ def fit_emission(groupID, norm_method, constrain_O3=False, axis_group=-1, save_n
                 )
     
     else:    
-        popt, arr_popt, cont_scale_out, y_data_cont_sub = monte_carlo_fit(multi_gaussian, wavelength_cut, scale_factor * continuum_cut, scale_factor * composite_spectrum_df[full_cut][
-            'f_lambda'], scale_factor * composite_spectrum_df[full_cut]['err_f_lambda'], np.array(guess), bounds, n_loops)
+        popt, arr_popt, cont_scale_out, y_data_cont_sub = monte_carlo_fit(multi_gaussian, wavelength_cut, scale_factor * continuum_cut, scale_factor * composite_spectrum_df[full_cut]['f_lambda'], scale_factor * composite_spectrum_df[full_cut]['err_f_lambda'], np.array(guess), bounds, n_loops)
     
     err_popt = np.std(arr_popt, axis=0)
     # If we're not doing the monte carlo fitting, just return -99s for all the uncertainties. These can be updated laters
@@ -244,22 +245,29 @@ def fit_emission(groupID, norm_method, constrain_O3=False, axis_group=-1, save_n
         O3N2_metals.append(O3N2_metal)
         log_N2_Ha_measures_list.append(log_N2_Ha_measures)
         log_O3_Hb_measures_list.append(log_O3_Hb_measures)
-    err_log_N2_Ha_measures_low, err_log_N2_Ha_measures_high = np.percentile(log_N2_Ha_measures_list, [16, 84])
-    err_log_O3_Hb_measures_low, err_log_O3_Hb_measures_high = np.percentile(log_O3_Hb_measures_list, [16, 84])
-    err_metal_low, err_metal_high = np.percentile(O3N2_metals, [16, 84])
-    err_log_N2_Ha_measures_low_value = measured_log_N2_Ha[0] - err_log_N2_Ha_measures_low
-    err_log_N2_Ha_measures_high_value = err_log_N2_Ha_measures_high - measured_log_N2_Ha[0]
-    err_log_O3_Hb_measures_low_value = measured_log_O3_Hb[0] - err_log_O3_Hb_measures_low
-    err_log_O3_Hb_measures_high_value = err_log_O3_Hb_measures_high - measured_log_O3_Hb[0]
-    err_metal_low_value = O3N2_metal - err_metal_low
-    err_metal_high_value = err_metal_high - O3N2_metal
-    err_metal_low = [err_metal_low_value for i in range(len(line_list))]
-    err_metal_high = [err_metal_high_value for i in range(len(line_list))]
-    err_log_N2_Ha_measures_low = [err_log_N2_Ha_measures_low_value for i in range(len(line_list))]
-    err_log_N2_Ha_measures_high = [err_log_N2_Ha_measures_high_value for i in range(len(line_list))]
-    err_log_O3_Hb_measures_low = [err_log_O3_Hb_measures_low_value for i in range(len(line_list))]
-    err_log_O3_Hb_measures_high = [err_log_O3_Hb_measures_high_value for i in range(len(line_list))]
-
+    if n_loops != 0:
+        err_log_N2_Ha_measures_low, err_log_N2_Ha_measures_high = np.percentile(log_N2_Ha_measures_list, [16, 84])
+        err_log_O3_Hb_measures_low, err_log_O3_Hb_measures_high = np.percentile(log_O3_Hb_measures_list, [16, 84])
+        err_metal_low, err_metal_high = np.percentile(O3N2_metals, [16, 84])
+        err_log_N2_Ha_measures_low_value = measured_log_N2_Ha[0] - err_log_N2_Ha_measures_low
+        err_log_N2_Ha_measures_high_value = err_log_N2_Ha_measures_high - measured_log_N2_Ha[0]
+        err_log_O3_Hb_measures_low_value = measured_log_O3_Hb[0] - err_log_O3_Hb_measures_low
+        err_log_O3_Hb_measures_high_value = err_log_O3_Hb_measures_high - measured_log_O3_Hb[0]
+        err_metal_low_value = O3N2_metal - err_metal_low
+        err_metal_high_value = err_metal_high - O3N2_metal
+        err_metal_low = [err_metal_low_value for i in range(len(line_list))]
+        err_metal_high = [err_metal_high_value for i in range(len(line_list))]
+        err_log_N2_Ha_measures_low = [err_log_N2_Ha_measures_low_value for i in range(len(line_list))]
+        err_log_N2_Ha_measures_high = [err_log_N2_Ha_measures_high_value for i in range(len(line_list))]
+        err_log_O3_Hb_measures_low = [err_log_O3_Hb_measures_low_value for i in range(len(line_list))]
+        err_log_O3_Hb_measures_high = [err_log_O3_Hb_measures_high_value for i in range(len(line_list))]
+    else:
+        err_metal_low = -99*np.ones(len(balmer_dec))
+        err_metal_high = -99*np.ones(len(balmer_dec))
+        err_log_N2_Ha_measures_low = -99*np.ones(len(balmer_dec))
+        err_log_N2_Ha_measures_high = -99*np.ones(len(balmer_dec))
+        err_log_O3_Hb_measures_low = -99*np.ones(len(balmer_dec))
+        err_log_O3_Hb_measures_high = -99*np.ones(len(balmer_dec))
 
     if n_loops == 0:
         err_balmer_dec_low = -99*np.ones(len(balmer_dec))
@@ -299,11 +307,19 @@ def fit_emission(groupID, norm_method, constrain_O3=False, axis_group=-1, save_n
         fit_df.to_csv(imd.prospector_emission_fits_dir + f'/{run_name}_emission_fits/{groupID}_emission_fits.csv', index=False)
         plot_emission_fit(groupID, norm_method, run_name=run_name)
     else:
-        imd.check_and_make_dir(imd.emission_fit_csvs_dir)
-        imd.check_and_make_dir(imd.emission_fit_images_dir)
-        fit_df.to_csv(imd.emission_fit_csvs_dir +
-                      f'/{groupID}_emission_fits.csv', index=False)
-        plot_emission_fit(groupID, norm_method)
+        if bootstrap_num > -1:
+            imd.check_and_make_dir(imd.emission_fit_csvs_dir)
+            imd.check_and_make_dir(imd.emission_fit_images_dir)
+            imd.check_and_make_dir(imd.emission_fit_dir +
+                        f'/emission_fitting_boot_csvs/')
+            fit_df.to_csv(imd.emission_fit_dir +
+                        f'/emission_fitting_boot_csvs/{groupID}_emission_fits_{bootstrap_num}.csv', index=False)
+        else:
+            imd.check_and_make_dir(imd.emission_fit_csvs_dir)
+            imd.check_and_make_dir(imd.emission_fit_images_dir)
+            fit_df.to_csv(imd.emission_fit_csvs_dir +
+                        f'/{groupID}_emission_fits.csv', index=False)
+            plot_emission_fit(groupID, norm_method)
     return
 
 
@@ -551,15 +567,17 @@ def monte_carlo_fit(func, wavelength_cut, continuum, y_data, y_err, guess, bound
     # Ranges for ha and hb
     hb_half_idx = wavelength_cut < 5500
     ha_half_idx = np.logical_not(hb_half_idx)
-
+    
     hb_cut = get_cuts(wavelength_cut[hb_half_idx])
     ha_cut = get_cuts(wavelength_cut[ha_half_idx])
-    
+
     if fit_axis_group == 1:
         y_data_cont_sub, hb_scale, ha_scale = fast_continuum_subtract(y_data, fast_continuum_cut, hb_half_idx, ha_half_idx)
     else:
         y_data_cont_sub, hb_scale, ha_scale = scale_continuum(y_data, continuum, hb_half_idx, ha_half_idx, hb_cut, ha_cut)
 
+    y_data = y_data.fillna(0)
+    y_data_cont_sub = y_data_cont_sub.fillna(0)
 
     start = time.time()
 
@@ -655,7 +673,7 @@ def get_amp(flux, sig):
 
 
 
-def fit_all_emission(n_clusters, norm_method, ignore_groups, constrain_O3=False):
+def fit_all_emission(n_clusters, norm_method, ignore_groups, constrain_O3=False, bootstrap=-1):
     """Runs the fit_emission() function on every cluster
 
     Parameters:
@@ -670,6 +688,9 @@ def fit_all_emission(n_clusters, norm_method, ignore_groups, constrain_O3=False)
             continue
         print(f'Fitting emission for {i}')
         fit_emission(i, norm_method, constrain_O3=constrain_O3)
+        if bootstrap > -1:
+            for bootstrap_num in range(bootstrap):
+                fit_emission(i, norm_method, constrain_O3=constrain_O3, bootstrap_num=bootstrap_num)
 
 
 def fit_all_axis_ratio_emission(n_groups, save_name=''):
@@ -787,9 +808,9 @@ def fast_continuum_subtract(y_data_cut, fast_continuum_cut, hb_half_idx, ha_half
 
     y_data_copy = y_data_cut.copy()
 
-    y_data_copy[hb_half_idx] = y_data_cut[hb_half_idx] - \
+    y_data_copy[hb_half_idx] = y_data_copy[hb_half_idx] - \
         fast_continuum_cut[hb_half_idx] * hb_scale
-    y_data_copy[ha_half_idx] = y_data_cut[ha_half_idx] - \
+    y_data_copy[ha_half_idx] = y_data_copy[ha_half_idx] - \
         fast_continuum_cut[ha_half_idx] * ha_scale
 
     return (y_data_copy, hb_scale, ha_scale)
@@ -814,20 +835,26 @@ def get_cuts(wavelength_cut_section, width=7):
     cut = [bool(i) for i in cuts]
     return cut
 
-def compute_bootstrap_uncertainties(n_clusters, save_name, bootstrap=-1):
+def compute_bootstrap_uncertainties(n_clusters, save_name, bootstrap=-1, clustering=False):
     """Reads in all the bootstrapped fits form all the clusters, then computes uncertainties and adds them back to the main fit
     
     Parameters:
     n_clusters (int): Number of axis ratio groups
     save_name (str): Name of the folder they are saved in
     bootstrap (int): Set to the number of bootstrapped data points
-    
+    clustering (boolean): Set to true if using clusters, will grab files from cluster_dir
     """
     for axis_group in range(n_clusters):
-        emission_df = ascii.read(imd.axis_cluster_data_dir + f'/{save_name}/{save_name}_emission_fits/{axis_group}_emission_fits.csv').to_pandas()
+        if clustering == True:
+            groupID = axis_group
+            emission_df_loc = imd.emission_fit_csvs_dir + f'/{groupID}_emission_fits.csv'
+            boot_dfs = [ascii.read(imd.emission_fit_dir + f'/emission_fitting_boot_csvs/{groupID}_emission_fits_{bootstrap_num}.csv').to_pandas() for bootstrap_num in range(bootstrap)]
+        else:
+            emission_df_loc = imd.axis_cluster_data_dir + f'/{save_name}/{save_name}_emission_fits/{axis_group}_emission_fits.csv'
 
-        boot_dfs = [ascii.read(imd.axis_cluster_data_dir + f'/{save_name}/{save_name}_emission_fits_boots/{axis_group}_emission_fits_{bootstrap_num}.csv').to_pandas() for bootstrap_num in range(bootstrap)]
-        
+            boot_dfs = [ascii.read(imd.axis_cluster_data_dir + f'/{save_name}/{save_name}_emission_fits_boots/{axis_group}_emission_fits_{bootstrap_num}.csv').to_pandas() for bootstrap_num in range(bootstrap)]
+        emission_df = ascii.read(emission_df_loc).to_pandas()
+
         def compute_err_on_col(col_name, true_values, symmetric_err=True):
             """Give a column name, use the bootstrapped points to find an uncertainty
             
@@ -872,8 +899,22 @@ def compute_bootstrap_uncertainties(n_clusters, save_name, bootstrap=-1):
         emission_df['err_balmer_dec_low'] = low_err
         emission_df['err_balmer_dec_high'] = high_err
 
+        err, low_err, high_err = compute_err_on_col('O3N2_metallicity', emission_df['O3N2_metallicity'], symmetric_err=False)
+        emission_df['err_O3N2_metallicity_low'] = low_err
+        emission_df['err_O3N2_metallicity_high'] = high_err
+
+        err, low_err, high_err = compute_err_on_col('log_N2_Ha', emission_df['log_N2_Ha'], symmetric_err=False)
+        emission_df['err_log_N2_Ha_low'] = low_err
+        emission_df['err_log_N2_Ha_high'] = high_err
+
+        err, low_err, high_err = compute_err_on_col('log_O3_Hb', emission_df['log_O3_Hb'], symmetric_err=False)
+        emission_df['err_log_O3_Hb_low'] = low_err
+        emission_df['err_log_O3_Hb_high'] = high_err
+
+        
+
         emission_df['signal_noise_ratio'] = emission_df['flux']/emission_df['err_flux']
-        emission_df.to_csv(imd.axis_cluster_data_dir + f'/{save_name}/{save_name}_emission_fits/{axis_group}_emission_fits.csv', index=False)
+        emission_df.to_csv(emission_df_loc, index=False)
 # fit_emission(0, 'cluster_norm', constrain_O3=False, axis_group=0, save_name='both_ssfrs_4bin_median_2axis', scaled='False', run_name='False', bootstrap_num=0)
 # bootstrap = 10
 # fit_emission(0, 'cluster_norm', constrain_O3=False, axis_group=1, save_name='both_ssfrs_4bin_median_2axis', scaled='False', run_name='False')

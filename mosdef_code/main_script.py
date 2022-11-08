@@ -8,7 +8,7 @@ import initialize_mosdef_dirs as imd
 
 from composite_sed import get_all_composite_seds
 from stack_spectra import stack_all_spectra
-from fit_emission import fit_all_emission
+from fit_emission import fit_all_emission, compute_bootstrap_uncertainties
 from generate_cluster_plots import generate_all_cluster_plots
 from interpolate import gen_all_mock_composites
 from uvj_clusters import observe_all_uvj
@@ -36,25 +36,31 @@ n_clusters = 23
 run_name = 'test'
 # Set which group numbers to ignore since their data is not good
 ignore_groups = [19]
+ignore_groups = [1,2,3,4,5,6,7,8,9,10,11,19]
+# Set hwo many times to bootstrap
+bootstrap = 5
 
 # imd.check_and_make_dir(imd.composite_filter_csvs_dir)
 # imd.check_and_make_dir(imd.composite_filter_images_dir)
 # imd.check_and_make_dir(imd.composite_filter_sedpy_dir)
 
-# # Begin running all the functions
+# Begin running all the functions
 # print('Generating composite seds...')
 # get_all_composite_seds(n_clusters, run_filters=True)
 # print('Generating composite spectra...')
-# stack_all_spectra(n_clusters, 'cluster_norm')
+# stack_all_spectra(n_clusters, 'cluster_norm', bootstrap=bootstrap)
 # print('Fitting emission lines...')
 
-# #Check for agn and list which groups do not have enough galaxies
+#Check for agn and list which groups do not have enough galaxies
 # check_for_all_agn(n_clusters)
 # generate_skip_file()
 
 
 # Will break here if one of the spectra is so bad that it can't fit
-fit_all_emission(n_clusters, 'cluster_norm', ignore_groups)
+fit_all_emission(n_clusters, 'cluster_norm', ignore_groups, bootstrap=bootstrap)
+
+# Add the bootstrapped uncertainties
+compute_bootstrap_uncertainties(n_clusters, 'None', bootstrap=bootstrap, clustering=True)
 
 # make_clusters_summary_df(n_clusters, ignore_groups)
 
