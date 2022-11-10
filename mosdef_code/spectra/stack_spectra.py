@@ -443,7 +443,7 @@ def divz(X, Y):
     return X / np.where(Y, Y, Y + 1) * np.not_equal(Y, 0)
 
 
-def stack_all_spectra(n_clusters, norm_method, re_observe=False, mask_negatives=False, ignore_low_spectra=False, bootstrap=0):
+def stack_all_spectra(n_clusters, norm_method, re_observe=False, mask_negatives=False, ignore_low_spectra=False, bootstrap=0, ignore_groups=[]):
     """Runs the stack_spectra() function on every cluster
 
     Parameters:
@@ -452,6 +452,9 @@ def stack_all_spectra(n_clusters, norm_method, re_observe=False, mask_negatives=
     Returns:
     """
     for i in range(n_clusters):
+        if i in ignore_groups:
+            print(f'ignoring stacking for group {i}')
+            continue
         print(f'Stacking spectrum {i}...')
         stack_spectra(i, norm_method, re_observe=re_observe,
                       mask_negatives=mask_negatives, ignore_low_spectra=ignore_low_spectra, bootstrap=bootstrap)

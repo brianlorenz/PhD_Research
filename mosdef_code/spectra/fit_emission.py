@@ -835,7 +835,7 @@ def get_cuts(wavelength_cut_section, width=7):
     cut = [bool(i) for i in cuts]
     return cut
 
-def compute_bootstrap_uncertainties(n_clusters, save_name, bootstrap=-1, clustering=False):
+def compute_bootstrap_uncertainties(n_clusters, save_name, bootstrap=-1, clustering=False, ignore_groups=[]):
     """Reads in all the bootstrapped fits form all the clusters, then computes uncertainties and adds them back to the main fit
     
     Parameters:
@@ -843,8 +843,12 @@ def compute_bootstrap_uncertainties(n_clusters, save_name, bootstrap=-1, cluster
     save_name (str): Name of the folder they are saved in
     bootstrap (int): Set to the number of bootstrapped data points
     clustering (boolean): Set to true if using clusters, will grab files from cluster_dir
+    ignore_groups (list): Fill with groupIDs to skip 
     """
     for axis_group in range(n_clusters):
+        if axis_group in ignore_groups:
+            print(f'Ignoring group {axis_group}')
+            continue
         if clustering == True:
             groupID = axis_group
             emission_df_loc = imd.emission_fit_csvs_dir + f'/{groupID}_emission_fits.csv'
