@@ -55,15 +55,17 @@ run_params = {'verbose': True,
               'ftol': 0.5e-5, 'maxfev': 5000,
               'do_levenberg': True,
               'nmin': 10,
-              # dynesty Fitter parameters
-              'nested_bound': 'multi',  # bounding method
-              'nested_sample': 'rwalk',  # sampling method
-              'nested_nlive_init': 100,
+              # --- dynesty parameters ---
+              'nested_bound': 'multi',        # bounding method
+              'nested_sample': 'rwalk',       # sampling method
+              'nested_walks': 70,     # sampling gets very inefficient w/ high S/N spectra
+              'nested_nlive_init': 600, # a finer resolution in likelihood space
               'nested_nlive_batch': 100,
-              'nested_bootstrap': 0,
+              'nested_maxbatch': None, # was None-- changed re ben's email 5/21/19
+              'nested_maxcall': float(1e7), # was 5e7 -- changed to 5e6 re ben's email on 5/21/19
+              'nested_bootstrap': 20,
               'nested_dlogz_init': 0.05,
-              'nested_weight_kwargs': {"pfrac": 1.0},
-              'nested_stop_kwargs': {"post_thresh": 0.05},
+              'nested_stop_kwargs': {"post_thresh": 0.1}, # lower this to 0.02ish once I get things working
               # Obs data parameters
               'objid': 0,
               'zred': 0.0,
@@ -154,11 +156,50 @@ def build_model(object_redshift=0.0, fixed_metallicity=None, add_duste=True,
 
     groupID = run_params['groupID']
 
-    model_params = TemplateLibrary["continuity_flex_sfh"]
+    model_params = TemplateLibrary["continuity_sfh"]
+    
+    #   This accounts for the resolution of the spectrum: convolve model to match data resolution, 
+    #   fit for velocity dispersion
+    #model_params.update(TemplateLibrary["spectral_smoothing"])
+    
+    #   test this: optimize out moderate-order polynomial at every likelihood call
+    #model_params.update(TemplateLibrary['optimize_speccal'])
+
+    # set IMF to chabrier (default is kroupa)
+    # model_params['imf_type']['init'] = 1
 
     zs_df = ascii.read(median_zs_file).to_pandas()
     median_z = zs_df[zs_df['groupID'] == groupID]['median_z'].iloc[0]
     model_params["zred"]['init'] = median_z
+
+    ############## SFH #################
+    ''' This fit: the "standard" fixed-bin setup that is preferred by Joel's paper.
+         We will have a few old bins, and some shorter fixed bins. Our chosen model
+        uses 9 bins, so replicate that here as well. Maybe 4 fixed old bins, then 5 young
+          bins from 0-20, 20-50, 50-100, 100-200, 200-500 Myr'''
+    # remember that agebins are in units of log(yrs) of lookback time
+    # tuniv = cosmo.age(median_z).value
+    # agelims_young = np.array([1, 20e6, 50e6, 100e6, 200e6, 500e6])
+    # agelims_old = np.logspace(np.log10(500e6), np.log10(tuniv*1e9), 5)[1:]
+    # agelims = np.concatenate((agelims_young, agelims_old))
+    # agebins = np.array([np.log10(agelims[:-1]), np.log10(agelims[1:])]).T     
+    # ncomp = agebins.shape[0]     
+    
+    # get umachine priors on logsfr_ratios and logmass
+    # logsfr_ratios_init, logmass_init = umachine_priors(agebins, median_z)
+            
+    # load nvariables and agebins
+    # model_params['mass'] = {'N': ncomp, 'init': np.full(ncomp,1e6), 'depends_on': massmet_to_masses,
+    #     'isfree':False}
+    # model_params['agebins']['N'] = ncomp
+    # model_params['agebins']['init'] = agebins
+    # model_params['agebins']['isfree'] = False
+    # model_params['logsfr_ratios']['N'] = ncomp - 1
+    # model_params['logsfr_ratios']['init'] = logsfr_ratios_init
+    # model_params['logsfr_ratios']['prior'] = priors.StudentT(mean=logsfr_ratios_init,
+    #     scale=np.ones(ncomp-1) * 0.3, df=np.ones(ncomp-1)*2) 
+
+    # MOre parameters and mass-met dependence in wren's email 10/14/22
 
     # Can modfiy default priors
     # model_params["logzsol"]["prior"] = priors.TopHat(mini=-2, maxi=0.19)
@@ -282,3 +323,48 @@ def check_filt_transmission(target_folder, redshift, transmission_threshold = 0.
                 mask_bool = True
         phot_mask.append(mask_bool)
     phot_mask = np.array(phot_mask)
+
+def umachine_priors(agebins=None, zred=None, **extras):
+    '''set smarter priors on the logSFR ratios. given a 
+    redshift zred, use the closest-z universe machine SFH
+    to set a better guess than a constant SFR. returns
+    agebins, logmass, and set of logSFR ratios that are
+    self-consistent. '''
+    
+    tuniv = cosmo.age(zred).value
+    
+    # get the universe machine SFH at the closest redshift
+    ufiles = glob.glob('umachine_SFH/*.dat')
+    uma = np.array([float(a.split('_a')[1][:-4]) for a in ufiles])
+    fname = ufiles[np.argmin(np.abs(uma-cosmo.scale_factor(zred)))]
+    umachine = np.genfromtxt(fname, skip_header=10, names=True)
+    a = float(fname.split('_')[-1][1:-4])
+    # trim low-z stuff we don't need
+    umachine = umachine[umachine['Avg_scale_factor'] <= a]
+    zs = np.array([z_at_value(cosmo.scale_factor, uz) for uz in umachine['Avg_scale_factor']])
+    ages = cosmo.age(zs).value
+
+    # subsample to make sure we'll have umachine bin for everything
+    factor = .001
+    newages = np.arange(0, tuniv,factor)
+    sfh = np.interp(newages, ages, umachine['SFH_Q'])
+    # ok now make the time axis go from now backwards to match agebins
+    sfh = sfh[::-1]
+    mass = sfh*factor*1e9 # mass formed in each little bin    
+    logmass = np.log10(np.sum(mass))  # total mass (return this so we can set prior here for consistency)
+    
+    # get default agebins in same units
+    abins_age = 10**agebins/1e9 # in Gyr
+    dt = (abins_age[:,1] - abins_age[:,0])*1e9 # in yr
+
+    # get mass and SFR in each bin
+    mUniv = np.zeros(len(abins_age))
+    for i in range(0, len(abins_age)):
+        mUniv[i] = np.sum(mass[(newages >= abins_age[i,0]) & (newages <= abins_age[i,1])])
+    sfrUniv = mUniv / dt
+    
+    # then take the log ratio to get what we actually want back
+    logsfr_ratios = np.log10(sfrUniv[:-1] / sfrUniv[1:])
+    
+    # return
+    return(logsfr_ratios, logmass)

@@ -97,7 +97,7 @@ def make_indiv_fit_norm(run_stack = False, only_plot = True):
     return both_ssfrs_4bin_mean_params
 indiv_fit_norm = make_indiv_fit_norm()
 
-def make_indiv_fit_norm_noaxis(run_stack = True, only_plot = False):
+def make_indiv_fit_norm_noaxis(run_stack = False, only_plot = False):
     run_stack = run_stack
     only_plot = only_plot
     mass_width = 1.0
@@ -114,7 +114,26 @@ def make_indiv_fit_norm_noaxis(run_stack = True, only_plot = False):
     bootstrap = -1
     both_ssfrs_4bin_mean_params = stack_params(mass_width, split_width, starting_points, ratio_bins, nbins, split_by, save_name, stack_type, sfms_bins, use_whitaker_sfms, use_z_dependent_sfms, bootstrap, only_plot, run_stack)
     return both_ssfrs_4bin_mean_params
-indiv_fit_norm = make_indiv_fit_norm_noaxis()
+indiv_fit_norm_noaxis = make_indiv_fit_norm_noaxis()
+
+def make_indiv_fit_norm_3groups(run_stack = True, only_plot = False):
+    run_stack = run_stack
+    only_plot = only_plot
+    mass_width = 1.0
+    split_width = 0.75
+    starting_points = [(9, -8.85), (10, -8.85), (9, -9.6), (10, -9.6)]
+    ratio_bins = [0.4, 0.7]
+    nbins = 12
+    split_by = 'log_use_sfr'
+    save_name = 'norm_1_sn5_filtered_3groups'
+    stack_type = 'median'
+    sfms_bins = True
+    use_whitaker_sfms = True
+    use_z_dependent_sfms = True
+    bootstrap = -1
+    both_ssfrs_4bin_mean_params = stack_params(mass_width, split_width, starting_points, ratio_bins, nbins, split_by, save_name, stack_type, sfms_bins, use_whitaker_sfms, use_z_dependent_sfms, bootstrap, only_plot, run_stack)
+    return both_ssfrs_4bin_mean_params
+indiv_fit_norm_3groups = make_indiv_fit_norm_3groups()
 
 
 
@@ -141,5 +160,7 @@ test_stack = make_test()
 
 
 stack_all_and_plot_all(indiv_fit_norm)
+stack_all_and_plot_all(indiv_fit_norm_noaxis)
+stack_all_and_plot_all(indiv_fit_norm_3groups)
 # stack_all_and_plot_all(indiv_fit_norm_zdep)
 # stack_all_and_plot_all(test_stack)

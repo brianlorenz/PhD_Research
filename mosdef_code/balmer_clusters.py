@@ -53,8 +53,8 @@ def plot_balmer_dec_clusters(plot_var='balmer_dec', errorbar=True):
     cbar.ax.tick_params(labelsize=full_page_axisfont-2)
     fig.savefig(imd.cluster_dir+f'/cluster_stats/{plot_var}_mass.pdf')
 
-# plot_balmer_dec_clusters()
+plot_balmer_dec_clusters()
 # plot_balmer_dec_clusters(plot_var='AV')
 # plot_balmer_dec_clusters(plot_var='beta')
-# plot_balmer_dec_clusters(plot_var='O3N2_metallicity')
-plot_balmer_dec_clusters(plot_var='composite_beta')
+plot_balmer_dec_clusters(plot_var='O3N2_metallicity')
+# plot_balmer_dec_clusters(plot_var='composite_beta')

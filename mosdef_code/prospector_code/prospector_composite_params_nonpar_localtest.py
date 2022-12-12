@@ -25,17 +25,16 @@ from astropy.io import ascii
 from astropy.io import fits
 
 
-# Directory locations on home (temporary)
-composite_sed_csvs_dir = '/Users/brianlorenz/mosdef/Clustering_2/composite_seds/composite_sed_csvs'
-composite_filter_sedpy_dir = '/Users/brianlorenz/mosdef/Clustering_2/composite_filters/sedpy_par_files'
-median_zs_file = '/Users/brianlorenz/mosdef/Clustering_2/composite_seds/median_zs.csv'
-
+# Directory locations on savio
+# composite_sed_csvs_dir = '/global/scratch/users/brianlorenz/composite_sed_csvs'
+# composite_filter_sedpy_dir = '/global/scratch/users/brianlorenz/sedpy_par_files'
+# median_zs_file = '/global/scratch/users/brianlorenz/median_zs.csv'
 
 # Directory locations on home
-# import initialize_mosdef_dirs as imd
-# composite_sed_csvs_dir = imd.composite_sed_csvs_dir
-# composite_filter_sedpy_dir = imd.composite_filter_sedpy_dir
-# median_zs_file = imd.composite_seds_dir + '/median_zs.csv'
+import initialize_mosdef_dirs as imd
+composite_sed_csvs_dir = imd.composite_sed_csvs_dir
+composite_filter_sedpy_dir = imd.composite_filter_sedpy_dir
+median_zs_file = imd.composite_seds_dir + '/median_zs.csv'
 
 # %run prospector_dynesty.py --param_file='prospector_composite_params_nonpar_localtest.py' --outfile='composite_group0' --debug=True
 
@@ -56,15 +55,17 @@ run_params = {'verbose': True,
               'ftol': 0.5e-5, 'maxfev': 5000,
               'do_levenberg': True,
               'nmin': 10,
-              # dynesty Fitter parameters
-              'nested_bound': 'multi',  # bounding method
-              'nested_sample': 'rwalk',  # sampling method
-              'nested_nlive_init': 100,
+              # --- dynesty parameters ---
+              'nested_bound': 'multi',        # bounding method
+              'nested_sample': 'rwalk',       # sampling method
+              'nested_walks': 70,     # sampling gets very inefficient w/ high S/N spectra
+              'nested_nlive_init': 600, # a finer resolution in likelihood space
               'nested_nlive_batch': 100,
-              'nested_bootstrap': 0,
+              'nested_maxbatch': None, # was None-- changed re ben's email 5/21/19
+              'nested_maxcall': float(1e7), # was 5e7 -- changed to 5e6 re ben's email on 5/21/19
+              'nested_bootstrap': 20,
               'nested_dlogz_init': 0.05,
-              'nested_weight_kwargs': {"pfrac": 1.0},
-              'nested_stop_kwargs': {"post_thresh": 0.05},
+              'nested_stop_kwargs': {"post_thresh": 0.1}, # lower this to 0.02ish once I get things working
               # Obs data parameters
               'objid': 0,
               'zred': 0.0,
@@ -155,87 +156,56 @@ def build_model(object_redshift=0.0, fixed_metallicity=None, add_duste=True,
 
     groupID = run_params['groupID']
 
-    # --- Get a basic delay-tau SFH parameter set. ---
-    # This has 5 free parameters:
-    #   "mass", "logzsol", "dust2", "tage", "tau"
-    # And two fixed parameters
-    #   "zred"=0.1, "sfh"=4
-    # See the python-FSPS documentation for details about most of these
-    # parameters.  Also, look at `TemplateLibrary.describe("parametric_sfh")` to
-    # view the parameters, their initial values, and the priors in detail.
+    model_params = TemplateLibrary["continuity_sfh"]
     
+    #   This accounts for the resolution of the spectrum: convolve model to match data resolution, 
+    #   fit for velocity dispersion
+    #model_params.update(TemplateLibrary["spectral_smoothing"])
     
-    # Updated to be non-parametric
-    model_params = TemplateLibrary["continuity_flex_sfh"]
+    #   test this: optimize out moderate-order polynomial at every likelihood call
+    #model_params.update(TemplateLibrary['optimize_speccal'])
 
-    # model_params["dust1"] = {"name": "dust1", "N": 1, "isfree": True,
-    #                          "init": 0.1, "units": "optical depth at 5500AA", "prior": priors.TopHat(mini=0.0, maxi=4.0)}
-
-    # Add lumdist parameter.  If this is not added then the distance is
-    # controlled by the "zred" parameter and a WMAP9 cosmology.
-    # if luminosity_distance > 0:
-    #     model_params["lumdist"] = {"N": 1, "isfree": False,
-    #                                "init": luminosity_distance, "units": "Mpc"}
-
-    
-    ### ADD THESE BACK IN FOR FINER CONTROL OF DUST
-    # true_param = {'N': 1, 'isfree': False, 'init': True}
-    # false_param = {'N': 1, 'isfree': False, 'init': False}
-    # # sfh_param = {'N': 1, 'isfree': False, 'init': 1}
-
-    # model_params['add_agb_dust_model'] = false_param
-    # model_params['add_igm_absorption'] = true_param
-    # model_params['add_neb_emission'] = true_param
-    # model_params['add_neb_continuum'] = true_param
-    # model_params['nebemlineinspec'] = true_param
-    # model_params['add_dust_emission'] = true_param
-    # # model_params['sfh'] = sfh_param
-
-    # Adjust model initial values (only important for optimization or emcee)
-    # model_params["dust2"]["init"] = 0.1
-    # model_params['dust1'] = {'N': 1, 'isfree': False,
-    #                          'depends_on': to_dust1, 'init': 1.0}
-    # model_params['dust1_fraction'] = {'N': 1, 'isfree': True, 'init': 1.0}
-    # model_params["logzsol"]["init"] = 0
-    # model_params["tage"]["init"] = 13.
-    # model_params["mass"]["init"] = 1e8
-    # model_params['gas_logz'] = {'N': 1, 'isfree': True, 'init': 0.0}
-
-    # # adjust priors
-    # model_params["dust2"]["prior"] = priors.TopHat(mini=0.0, maxi=4.0)
-    # model_params["dust1_fraction"]["prior"] = priors.TopHat(mini=0.0, maxi=2.0)
-    # model_params["tau"]["prior"] = priors.LogUniform(mini=1e-1, maxi=10)
-    
-    # model_params["gas_logz"]["prior"] = priors.TopHat(mini=-3.0, maxi=0.0)
-
-    # nbins_sfh = 8
-    # model_params['agebins']['N'] = nbins_sfh
-    # model_params['mass']['N'] = nbins_sfh
-    # model_params['logsfr_ratios']['N'] = nbins_sfh-1
-    # model_params['logsfr_ratios']['init'] = np.full(nbins_sfh-1,0.0) # constant SFH
-    # model_params['logsfr_ratios']['prior'] = priors.StudentT(mean=np.full(nbins_sfh-1,0.0),
-    #                                                               scale=np.full(nbins_sfh-1,0.3),
-    #                                                               df=np.full(nbins_sfh-1,2))
-    
-
-    # # Change the model parameter specifications based on some keyword arguments
-    # if fixed_metallicity is not None:
-    #     # make it a fixed parameter
-    #     model_params["logzsol"]["isfree"] = False
-    #     # And use value supplied by fixed_metallicity keyword
-    #     model_params["logzsol"]['init'] = fixed_metallicity
-
-    # # Set to fit at median redshift
-    # model_params["zred"]['isfree'] = False
+    # set IMF to chabrier (default is kroupa)
+    # model_params['imf_type']['init'] = 1
 
     zs_df = ascii.read(median_zs_file).to_pandas()
     median_z = zs_df[zs_df['groupID'] == groupID]['median_z'].iloc[0]
     model_params["zred"]['init'] = median_z
 
+    ############## SFH #################
+    ''' This fit: the "standard" fixed-bin setup that is preferred by Joel's paper.
+         We will have a few old bins, and some shorter fixed bins. Our chosen model
+        uses 9 bins, so replicate that here as well. Maybe 4 fixed old bins, then 5 young
+          bins from 0-20, 20-50, 50-100, 100-200, 200-500 Myr'''
+    # remember that agebins are in units of log(yrs) of lookback time
+    # tuniv = cosmo.age(median_z).value
+    # agelims_young = np.array([1, 20e6, 50e6, 100e6, 200e6, 500e6])
+    # agelims_old = np.logspace(np.log10(500e6), np.log10(tuniv*1e9), 5)[1:]
+    # agelims = np.concatenate((agelims_young, agelims_old))
+    # agebins = np.array([np.log10(agelims[:-1]), np.log10(agelims[1:])]).T     
+    # ncomp = agebins.shape[0]     
+    
+    # get umachine priors on logsfr_ratios and logmass - need umachine files
+    # logsfr_ratios_init, logmass_init = umachine_priors(agebins, median_z)
+            
+    # load nvariables and agebins
+    # model_params['mass'] = {'N': ncomp, 'init': np.full(ncomp,1e6), 'depends_on': massmet_to_masses,
+    #     'isfree':False}
+    # Testing without umachine priors
+    # model_params['agebins']['N'] = ncomp
+    # model_params['agebins']['init'] = agebins
+    # model_params['agebins']['isfree'] = False
+    # model_params['logsfr_ratios']['N'] = ncomp - 1
+    # model_params['logsfr_ratios']['init'] = logsfr_ratios_init
+    # model_params['logsfr_ratios']['prior'] = priors.StudentT(mean=logsfr_ratios_init,
+    #     scale=np.ones(ncomp-1) * 0.3, df=np.ones(ncomp-1)*2) 
+
+    # MOre parameters and mass-met dependence in wren's email 10/14/22
+
     # Can modfiy default priors
-    model_params["logzsol"]["prior"] = priors.TopHat(mini=-2, maxi=0.19)
-    model_params["dust2"]["prior"] = priors.TopHat(mini=0, maxi=2)
-    model_params["logmass"]["prior"] = priors.TopHat(mini=7, maxi=12)
+    # model_params["logzsol"]["prior"] = priors.TopHat(mini=-2, maxi=0.19)
+    # model_params["dust2"]["prior"] = priors.TopHat(mini=0, maxi=2)
+    # model_params["logmass"]["prior"] = priors.TopHat(mini=7, maxi=12)
 
     # Can edit number of bins or priors on SFH - don't fully udnerstand this
     # nbins_sfh = 8
@@ -248,25 +218,16 @@ def build_model(object_redshift=0.0, fixed_metallicity=None, add_duste=True,
     #                                                               df=np.full(nbins_sfh-1,2))
                        
     # Can add dust parameters
-    # model_params.update(TemplateLibrary["nebular"])
-
-
-    # if add_duste:
-    #     # Add dust emission (with fixed dust SED parameters)
-    #     model_params.update(TemplateLibrary["dust_emission"])
-
-    # if add_neb:
-    #     # Add nebular emission (with fixed parameters)
-    #     model_params.update(TemplateLibrary["nebular"])
-
-    
-   
+    model_params.update(TemplateLibrary["nebular"])
+    # model_params.update(TemplateLibrary["dust_emission"])
 
     # Now instantiate the model using this new dictionary of parameter
     # specifications
+    breakpoint()
     model = sedmodel.SedModel(model_params)
 
     return model
+
 
 # --------------
 # SPS Object
@@ -335,6 +296,7 @@ def get_filt_list(target_folder):
     filt_list = observate.load_filters(filt_files, directory=target_folder)
     return filt_list
 
+
 def check_filt_transmission(target_folder, redshift, transmission_threshold = 0.70):
     """Makes a photometric mask from the filters by checking if each filter has a line with high transmission
     
@@ -343,7 +305,7 @@ def check_filt_transmission(target_folder, redshift, transmission_threshold = 0.
     redshift: z
     transmission_threshold: If line transmission is greater than this value, mask the pixel
     """
-    emission_lines = [4969, 5008]
+    emission_lines = [4863, 5008, 6565]
     filt_files = [file for file in os.listdir(target_folder) if '_red.par' in file]
     filt_files.sort()
     phot_mask = []
@@ -363,10 +325,49 @@ def check_filt_transmission(target_folder, redshift, transmission_threshold = 0.
                 mask_bool = True
         phot_mask.append(mask_bool)
     phot_mask = np.array(phot_mask)
-    breakpoint()
 
-groupID = 2
-filt_folder = composite_filter_sedpy_dir + f'/{groupID}_sedpy_pars'
-zs_df = ascii.read(median_zs_file).to_pandas()
-redshift = zs_df[zs_df['groupID'] == groupID]['median_z'].iloc[0]
-check_filt_transmission(filt_folder, redshift, transmission_threshold = 0.70)
+def umachine_priors(agebins=None, zred=None, **extras):
+    '''set smarter priors on the logSFR ratios. given a 
+    redshift zred, use the closest-z universe machine SFH
+    to set a better guess than a constant SFR. returns
+    agebins, logmass, and set of logSFR ratios that are
+    self-consistent. '''
+    
+    tuniv = cosmo.age(zred).value
+    
+    # get the universe machine SFH at the closest redshift
+    ufiles = glob.glob('umachine_SFH/*.dat')
+    uma = np.array([float(a.split('_a')[1][:-4]) for a in ufiles])
+    breakpoint()
+    fname = ufiles[np.argmin(np.abs(uma-cosmo.scale_factor(zred)))]
+    umachine = np.genfromtxt(fname, skip_header=10, names=True)
+    a = float(fname.split('_')[-1][1:-4])
+    # trim low-z stuff we don't need
+    umachine = umachine[umachine['Avg_scale_factor'] <= a]
+    zs = np.array([z_at_value(cosmo.scale_factor, uz) for uz in umachine['Avg_scale_factor']])
+    ages = cosmo.age(zs).value
+
+    # subsample to make sure we'll have umachine bin for everything
+    factor = .001
+    newages = np.arange(0, tuniv,factor)
+    sfh = np.interp(newages, ages, umachine['SFH_Q'])
+    # ok now make the time axis go from now backwards to match agebins
+    sfh = sfh[::-1]
+    mass = sfh*factor*1e9 # mass formed in each little bin    
+    logmass = np.log10(np.sum(mass))  # total mass (return this so we can set prior here for consistency)
+    
+    # get default agebins in same units
+    abins_age = 10**agebins/1e9 # in Gyr
+    dt = (abins_age[:,1] - abins_age[:,0])*1e9 # in yr
+
+    # get mass and SFR in each bin
+    mUniv = np.zeros(len(abins_age))
+    for i in range(0, len(abins_age)):
+        mUniv[i] = np.sum(mass[(newages >= abins_age[i,0]) & (newages <= abins_age[i,1])])
+    sfrUniv = mUniv / dt
+    
+    # then take the log ratio to get what we actually want back
+    logsfr_ratios = np.log10(sfrUniv[:-1] / sfrUniv[1:])
+    
+    # return
+    return(logsfr_ratios, logmass)
