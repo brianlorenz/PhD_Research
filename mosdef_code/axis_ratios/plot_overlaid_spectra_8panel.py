@@ -102,7 +102,7 @@ def plot_overlaid_spectra(savename, plot_cont_sub=False, paper_fig=False):
             color = light_color
             label = '0.7 < Axis Ratio'
             if paper_fig==True:
-                label = '$(b/a) > 0.55$'
+                label = '$(b/a) \geq 0.55$'
         if row['shape'] == 1.0: 
             color = dark_color
             label = ''
@@ -113,7 +113,7 @@ def plot_overlaid_spectra(savename, plot_cont_sub=False, paper_fig=False):
         halpha_range = np.logical_and(spec_df['wavelength']>6560, spec_df['wavelength']<6570)
         peak_halpha = np.max(spec_df[halpha_range]['f_lambda'])
         scale_factor = 1.0/peak_halpha
-        ax.plot(spec_df['wavelength'], spec_df['f_lambda']*scale_factor, color=color, label = label, zorder=2, linewidth=2) 
+        ax.plot(spec_df['wavelength'], spec_df['f_lambda']*scale_factor, color=color, zorder=2, linewidth=2) 
         ax.set_ylim(-0.05, 1.25)
         ax.set_ylabel(f'Normalized F$_\\lambda${add_str}')
         ax.set_xlabel('Wavelength ($\AA$)')
@@ -148,8 +148,10 @@ def plot_overlaid_spectra(savename, plot_cont_sub=False, paper_fig=False):
             #     ax.plot([0],[0], color='grey', label = 'Reference', zorder=1)
             #     ax.legend(bbox_to_anchor=(0.91, 1.04, 0.20, 0.15), loc='upper right', fontsize=16)
             if i == 5:
+                ax.plot([0],[0], color=dark_color, label = '$(b/a) < 0.55$', zorder=1)
+                ax.plot([0],[0], color=light_color, label = '$(b/a) \geq 0.55$', zorder=1)
                 ax.plot([0],[0], color='grey', label = 'Reference', zorder=1)
-                ax.legend(bbox_to_anchor=(1.25, 1.08, 0.20, 0.15), loc='upper right', fontsize=16)
+                ax.legend(bbox_to_anchor=(1.25, 1.08, 0.20, 0.15), loc='upper right', fontsize=14)
                 
                     
                     

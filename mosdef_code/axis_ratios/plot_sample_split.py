@@ -100,9 +100,12 @@ def plot_sample_split(n_groups, save_name, ratio_bins, starting_points, mass_wid
         balmer_av = 4.05*1.97*np.log10(balmer_dec/2.86)
         # err_balmer_av_low = 4.05*1.97*0.434*((balmer_err_low/balmer_dec)/2.86)
         # err_balmer_av_high = 4.05*1.97*0.434*((balmer_err_high/balmer_dec)/2.86)
-        pct_errs = (balmer_err_low/balmer_dec, balmer_err_high/balmer_dec)
-        err_balmer_av_low = pct_errs[0]*balmer_av
-        err_balmer_av_high = pct_errs[1]*balmer_av
+        # pct_errs = (balmer_err_low/balmer_dec, balmer_err_high/balmer_dec)
+        # err_balmer_av_low = pct_errs[0]*balmer_av
+        # err_balmer_av_high = pct_errs[1]*balmer_av
+        # Recalculate where the errors would be if the points were at the top/bottom of their ranges
+        err_balmer_av_low = balmer_av - 4.05*1.97*np.log10((balmer_dec-balmer_err_low)/2.86)
+        err_balmer_av_high = 4.05*1.97*np.log10((balmer_dec+balmer_err_high)/2.86) - balmer_av
         balmer_avs.append(balmer_av)
         err_balmer_av_lows.append(err_balmer_av_low)
         err_balmer_av_highs.append(err_balmer_av_high)
@@ -138,8 +141,8 @@ def plot_sample_split(n_groups, save_name, ratio_bins, starting_points, mass_wid
 
 
         # Bootstrap errors on the medians
-        av_median, err_av_median, err_av_median_low, err_av_median_high = bootstrap_median(axis_ratio_df['AV'])
-        beta_median, err_beta_median, err_beta_median_low, err_beta_median_high = bootstrap_median(axis_ratio_df['beta'])
+        av_median, err_av_median, err_av_median_low, err_av_median_high = bootstrap_median(axis_ratio_df['AV'], sfr_weigh=True, sfr_df=10**axis_ratio_df['log_use_sfr'])
+        beta_median, err_beta_median, err_beta_median_low, err_beta_median_high = bootstrap_median(axis_ratio_df['beta'], sfr_weigh=True, sfr_df=10**axis_ratio_df['log_use_sfr'])
         re_median, err_re_median, err_re_median_low, err_re_median_high = bootstrap_median(axis_ratio_df['half_light'])
 
         
@@ -402,7 +405,6 @@ def make_sample_split_twopanel(save_name, n_groups):
     ax_faceon.text(hlow, vlow, 'V', fontsize=24, transform=ax_faceon.transAxes, color=number_color, path_effects=[pe.withStroke(linewidth=2, foreground="black")]) 
     ax_faceon.text(hhigh, vlow, 'VII', fontsize=24, transform=ax_faceon.transAxes, color=number_color, path_effects=[pe.withStroke(linewidth=2, foreground="black")]) 
     ax_faceon.text(hhigh-0.015, vhigh, 'VIII', fontsize=24, transform=ax_faceon.transAxes, color=number_color, path_effects=[pe.withStroke(linewidth=2, foreground="black")])     
-    
     ax_faceon.set_ylabel('')
     # ax_faceon.set_yticks([])
     ax_faceon.tick_params(labelleft=False)
@@ -410,6 +412,9 @@ def make_sample_split_twopanel(save_name, n_groups):
     cbar = fig.colorbar(mpl.cm.ScalarMappable(norm=norm, cmap=cmap), ax=axarr, fraction=0.046, pad=0.04, shrink=0.90)
     cbar.set_label(balmer_label, fontsize=full_page_axisfont)
     cbar.ax.tick_params(labelsize=full_page_axisfont)
+
+    ax_edgeon.set_title("$b/a < 0.55$", fontsize=full_page_axisfont)
+    ax_faceon.set_title("$b/a \geq 0.55$", fontsize=full_page_axisfont)
 
     fig.savefig(imd.axis_cluster_data_dir + f'/{save_name}/sample_cut_2panel.pdf',bbox_inches='tight')
 

@@ -8,3 +8,5 @@ def convert_attenuation_to_dec(A_Balmer):
     """
     balmer_dec = 2.86*(10**(A_Balmer/(4.05*1.97)))
     return balmer_dec
+
+print(convert_attenuation_to_dec(10))

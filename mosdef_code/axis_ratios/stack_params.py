@@ -78,7 +78,7 @@ class stack_params:
 #     return both_ssfrs_4bin_mean_params
 # whitaker_sfms_boot100_zdep = make_whitaker_sfms_boot100_zdep()
 
-def make_indiv_fit_norm(run_stack = False, only_plot = True):
+def make_indiv_fit_norm(run_stack = True, only_plot = True):
     run_stack = run_stack
     only_plot = only_plot
     mass_width = 1.0
@@ -116,7 +116,7 @@ def make_indiv_fit_norm_noaxis(run_stack = False, only_plot = False):
     return both_ssfrs_4bin_mean_params
 indiv_fit_norm_noaxis = make_indiv_fit_norm_noaxis()
 
-def make_indiv_fit_norm_3groups(run_stack = True, only_plot = False):
+def make_indiv_fit_norm_3groups(run_stack = False, only_plot = False):
     run_stack = run_stack
     only_plot = only_plot
     mass_width = 1.0
@@ -130,7 +130,7 @@ def make_indiv_fit_norm_3groups(run_stack = True, only_plot = False):
     sfms_bins = True
     use_whitaker_sfms = True
     use_z_dependent_sfms = True
-    bootstrap = -1
+    bootstrap = 100
     both_ssfrs_4bin_mean_params = stack_params(mass_width, split_width, starting_points, ratio_bins, nbins, split_by, save_name, stack_type, sfms_bins, use_whitaker_sfms, use_z_dependent_sfms, bootstrap, only_plot, run_stack)
     return both_ssfrs_4bin_mean_params
 indiv_fit_norm_3groups = make_indiv_fit_norm_3groups()

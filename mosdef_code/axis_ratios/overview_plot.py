@@ -98,5 +98,5 @@ def plot_mass_met_paper(nbins, split_by, save_name):
     ax.set_ylabel(metallicity_label, fontsize=label_font)
     fig.savefig(imd.axis_cluster_data_dir + f'/{save_name}/balmer_plots/mass_metallicity.pdf',bbox_inches='tight')
 
-# plot_AV_beta_paper(8, 'log_use_sfr', 'whitaker_sfms_boot100')
+plot_AV_beta_paper(8, 'log_use_sfr', 'norm_1_sn5_filtered')
 # plot_mass_met_paper(8, 'log_use_sfr', 'whitaker_sfms_boot100')

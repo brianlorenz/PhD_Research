@@ -13,8 +13,14 @@ from plot_vals import *
 n = 1.4
 a = 1.77
 b = -17.96
-const = 100
+# a = 2.15
+# b = -21.19
+# const = 100
 const2 = 2.5*10**(-17)
+# const2 = 2.5*10**(b)
+const3 = 1.086*100*((1 / (2 * np.pi))**(1/n)) * (10**(b))
+print(const3)
+print(const2)
 
 def dust_model(metallicity, sfr, re, mass):
     # A_lambda = const * (10**(a * metallicity + b)) * ((sfr / (2 * np.pi * (re**2)))**(1/n))

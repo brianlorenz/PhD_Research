@@ -242,6 +242,8 @@ def plot_balmer_vs_all(save_name):
     ax_cbar_metallicity = fig.add_axes([0.89, 0.2, 0.02, 0.60])
     plot_balmer_on_axis(ax_balmer_sfr, 'log_use_sfr_median', color='mass', use_cbar_axis=True, cbar_axis=ax_cbar_sfr, use_balmer_av=True)
     plot_balmer_on_axis(ax_balmer_metallicity, 'metallicity_median', color='mass', use_cbar_axis=True, cbar_axis = ax_cbar_metallicity, use_balmer_av=True)
+    # plot_balmer_on_axis(ax_balmer_sfr, 'log_use_sfr_median', color='sfr', use_cbar_axis=True, cbar_axis=ax_cbar_sfr, use_balmer_av=True)
+    # plot_balmer_on_axis(ax_balmer_metallicity, 'metallicity_median', color='sfr', use_cbar_axis=True, cbar_axis = ax_cbar_metallicity, use_balmer_av=True)
     ax_balmer_sfr.set_xlabel(sfr_label, fontsize=axis_fontsize)
     ax_balmer_metallicity.set_xlabel(metallicity_label, fontsize=axis_fontsize)
     ax_balmer_sfr.set_ylabel(balmer_av_label, fontsize=axis_fontsize)
