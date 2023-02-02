@@ -428,8 +428,14 @@ def add_metals_to_summary_df_noboot(n_bins, save_name):
     for axis_group in range(n_bins):
         emission_df = ascii.read(imd.axis_cluster_data_dir + f'/{save_name}/{save_name}_emission_fits/{axis_group}_emission_fits.csv').to_pandas()
         median_metals.append(emission_df.iloc[0]['O3N2_metallicity'])
-        err_metal_lows.append(emission_df.iloc[0]['err_O3N2_metallicity_low'])
-        err_metal_highs.append(emission_df.iloc[0]['err_O3N2_metallicity_high'])
+        O3N2_metal_low = emission_df.iloc[0]['err_O3N2_metallicity_low']
+        if O3N2_metal_low < 0: 
+            O3N2_metal_low = 0
+        err_metal_lows.append(O3N2_metal_low)
+        O3N2_metal_high = emission_df.iloc[0]['err_O3N2_metallicity_high']
+        if O3N2_metal_high < 0: 
+            O3N2_metal_high = 0
+        err_metal_highs.append(O3N2_metal_high)
     # Have to name it this way for rest of code to recognize it as a color_var
     summary_df['metallicity_median'] = median_metals
     # summary_df['err_metallicity_median'] = metals_df['err_'+metal_column]

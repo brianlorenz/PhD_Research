@@ -16,9 +16,9 @@ fig_list = [
     imd.axis_cluster_data_dir + f'/{save_name}/sample_cut_2panel.pdf',
     imd.axis_output_dir + f'/ar_compare_F125_axis_ratio_F160_axis_ratio.pdf',
     imd.axis_output_dir + f'/ar_histogram_use_ratio.pdf',
-    imd.axis_output_dir + f'/Dust_Diagram1.pdf',
-    imd.axis_output_dir + f'/Dust_Diagram2.pdf',
-    imd.axis_cluster_data_dir + f'/{save_name}/balmer_plots/balmer_ssfr_mass_color.pdf',
+    imd.axis_output_dir + f'/Dust_Diagram1_clumps.pdf',
+    imd.axis_output_dir + f'/Dust_Diagram2_clumps.pdf',
+    imd.axis_cluster_data_dir + f'/{save_name}/av_extra_mass.pdf',
     imd.axis_cluster_data_dir + f'/{save_name}/balmer_plots/balmer_sfr_metallicity.pdf',
     imd.axis_cluster_data_dir + f'/{save_name}/balmer_plots/balmer_mass_solo.pdf',
     imd.axis_cluster_data_dir + f'/{save_name}/balmer_plots/av_beta_combined.pdf',
@@ -26,7 +26,9 @@ fig_list = [
     imd.axis_cluster_data_dir + f'/{save_name}/metallicity_sfr_sanders.pdf',
     imd.axis_cluster_data_dir + f'/{save_name}/uvj_ar_groups.pdf',
     imd.axis_cluster_data_dir + f'/{save_name}/overlaid_spectra_paper_8panel.pdf'
+    
 ]
+
 
 
 def copy_figure(fig_path):

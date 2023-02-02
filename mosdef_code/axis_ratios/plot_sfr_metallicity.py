@@ -62,6 +62,11 @@ def plot_sfr_metals(save_name, plot_ssfr=False, plot_re=False, plot_sanders=Fals
     metal_vals = np.arange(8.1, 9.0, 0.1)
     x = Symbol('x')
    
+    def get_slope(x1, x2, y1, y2):
+        slope = (y2-y1) /(x2-x1) 
+        print(slope)
+        return slope
+
     # low mass
     A_lambda = 0.85
     re = 0.25
@@ -78,10 +83,11 @@ def plot_sfr_metals(save_name, plot_ssfr=False, plot_re=False, plot_sanders=Fals
             x_plot = np.log10(10**log_sfrs/re)
         label = '$R_\mathrm{eff} = 0.25$, $A_\mathrm{balmer} = 0.85$'
     ax.plot(x_plot, metal_vals, ls='--', color='#8E248C', marker='None', zorder=2)
-    
+    get_slope(x_plot[0], x_plot[-1], metal_vals[0], metal_vals[-1])
+
     # high mass
     A_lambda = 1.9
-    re = 0.4
+    re = 0.41
     sfrs = [float(solve(const2 * 10**(a*metal_vals[i]) * (x/(re**2))**(1/n) - A_lambda, x)[0]) for i in range(len(metal_vals))] #Dust
     sfrs=np.array(sfrs)
     log_sfrs = np.log10(sfrs)
@@ -95,7 +101,8 @@ def plot_sfr_metals(save_name, plot_ssfr=False, plot_re=False, plot_sanders=Fals
         if plot_re==True:
             x_plot = np.log10(10**log_sfrs/re)
     ax.plot(x_plot, metal_vals, ls='--', color='#FF640A', marker='None', zorder=2)
-    
+    get_slope(x_plot[0], x_plot[-1], metal_vals[0], metal_vals[-1])
+
     # high mass
     if plot_ssfr == True:
         pass
@@ -141,6 +148,8 @@ def plot_sfr_metals(save_name, plot_ssfr=False, plot_re=False, plot_sanders=Fals
     x_plot, fm_metals_lowm_top, add_str2 = compute_metals(log_mass, fm_s, re) 
     # ax.plot(x_plot, fm_metals_lowm_top, ls='--', color='black', marker='None', label=f'Stellar Mass = {log_mass}, {add_str2}')
     ax.fill_between(x_plot, fm_metals_lowm_bot, fm_metals_lowm_top, color='black', alpha=0.35, zorder=1)
+    get_slope(x_plot[10], x_plot[16], fm_metals_lowm_bot[10], fm_metals_lowm_bot[16])
+
 
     log_mass = 10.2
     re = 0.4
@@ -150,7 +159,8 @@ def plot_sfr_metals(save_name, plot_ssfr=False, plot_re=False, plot_sanders=Fals
     x_plot, fm_metals_highm_top, add_str2 = compute_metals(log_mass, fm_s, re) 
     # ax.plot(x_plot, fm_metals_highm_top, ls='--', color='blue', marker='None', label=f'Stellar Mass = {log_mass}, {add_str2}')
     ax.fill_between(x_plot, fm_metals_highm_bot, fm_metals_highm_top, color='black', alpha=0.2, zorder=1)
-    
+    get_slope(x_plot[10], x_plot[16], fm_metals_highm_bot[10], fm_metals_highm_bot[16])
+
     cbar = fig.colorbar(mpl.cm.ScalarMappable(norm=norm, cmap=cmap), ax=ax, fraction=0.046, pad=0.04)
     # cbar.set_label(balmer_label, fontsize=fontsize)
     cbar.set_label('A$_\mathrm{balmer}$', fontsize=fontsize)
@@ -161,8 +171,8 @@ def plot_sfr_metals(save_name, plot_ssfr=False, plot_re=False, plot_sanders=Fals
 
     ax.text(1.345, 8.21, 'Low M$_*$ FMR', fontsize=18, rotation=315)
     ax.text(1.91, 8.33, 'High M$_*$ FMR', fontsize=18, rotation=315)
-    ax.text(0.18, 8.65, 'A$_\mathrm{balmer} = 0.85$', fontsize=16, rotation=302, color='#8E248C')
-    ax.text(0.80, 8.78, 'A$_\mathrm{balmer} = 1.9$', fontsize=16, rotation=302, color='#FF640A')
+    ax.text(0.18, 8.60, 'A$_\mathrm{balmer} = 0.85$', fontsize=16, rotation=308, color='#8E248C')
+    ax.text(0.80, 8.71, 'A$_\mathrm{balmer} = 1.9$', fontsize=16, rotation=308, color='#FF640A')
     
     ax.plot([0],[0],ls='--',color='dimgrey',marker='None',label='Dust Model')
     ax.legend(fontsize=16)
@@ -235,4 +245,6 @@ def plot_sfr_times_metals(save_name):
 
     ax.tick_params(labelsize=14)
     fig.savefig(imd.axis_cluster_data_dir + f'/{save_name}/metallicity_times_sfr.pdf',bbox_inches='tight')
-plot_sfr_metals('norm_1_sn5_filtered')
+
+# plot_sfr_metals('norm_1_sn5_filtered', plot_sanders=True)
+
