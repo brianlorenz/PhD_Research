@@ -33,10 +33,13 @@ def generate_paper_table(save_name):
     summary_df['err_hbeta_flux'] = err_hbs
 
 
-    summary_df['sorted_order'] = [0, 2, 4, 6, 1, 3, 5, 7]
+    summary_df['sorted_order'] = [0, 1, 2, 3, 4, 5, 6, 7]
     summary_df = summary_df.sort_values(by=['sorted_order'])
+
+    symbols = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII']
     
     paper_df = pd.DataFrame()
+    paper_df['axis_group'] = symbols
     paper_df['log(StellarMass)'] = summary_df['log_mass_median']
 
     paper_df['log(SFR)'] = summary_df['log_use_sfr_median']
@@ -71,7 +74,7 @@ def generate_paper_table(save_name):
     f = open(imd.axis_cluster_data_dir + f'/{save_name}/axis_ratio_data.tex', "w")
     for i in range(len(paper_df)):
         row = paper_df.iloc[i]
-        f.write(f"${round(row['log(StellarMass)'],2)}$ & ${round(row['log(SFR)'],2)}$ & ${round(row['AxisRatio'],2)}$ & ${round(row['median_z'],2)}$ & ${round(row['metallicity'],2)}\pm_{{{round(row['err_metallictiy_low'],2)}}}^{{{round(row['err_metallictiy_high'],2)}}}$ & ${round(row['median_AV'],2)}\pm{{{round(row['median_AV_std'],2)}}}$ & ${round(row['median_beta'],2)}\pm_{{{round(row['median_beta_low'],2)}}}^{{{round(row['median_beta_high'],2)}}}$ & ${round(row['balmer_dec'],2)}\pm_{{{round(row['err_balmer_dec_low'],2)}}}^{{{round(row['err_balmer_dec_high'],2)}}}$  \\\ \n")
+        f.write(f"{row['axis_group']} & ${round(row['log(StellarMass)'],2)}$ & ${round(row['log(SFR)'],2)}$ & ${round(row['AxisRatio'],2)}$ & ${round(row['median_z'],2)}$ & ${round(row['metallicity'],2)}\pm_{{{round(row['err_metallictiy_low'],2)}}}^{{{round(row['err_metallictiy_high'],2)}}}$ & ${round(row['median_AV'],2)}\pm{{{round(row['median_AV_std'],2)}}}$ & ${round(row['median_beta'],2)}\pm_{{{round(row['median_beta_low'],2)}}}^{{{round(row['median_beta_high'],2)}}}$ & ${round(row['balmer_dec'],2)}\pm_{{{round(row['err_balmer_dec_low'],2)}}}^{{{round(row['err_balmer_dec_high'],2)}}}$  \\\ \n")
         if i==(len(paper_df)-1):
             f.write('\\hline')
             # f.write(f"${round(row['log(StellarMass)'],2)}$ & ${round(row['log(SFR)'],2)}$ & ${round(row['AxisRatio'],2)}$ & ${round(row['median_z'],2)}$ & ${round(row['metallicity'],2)}\pm_{{{round(row['err_metallictiy_low'],2)}}}^{{{round(row['err_metallictiy_high'],2)}}}$ & ${round(row['median_AV'],2)}\pm{{{round(row['median_AV_std'],2)}}}$ & ${round(row['median_beta'],2)}\pm_{{{round(row['median_beta_low'],2)}}}^{{{round(row['median_beta_high'],2)}}}$ & ${round(row['balmer_dec'],2)}\pm_{{{round(row['err_balmer_dec_low'],2)}}}^{{{round(row['err_balmer_dec_high'],2)}}}$")

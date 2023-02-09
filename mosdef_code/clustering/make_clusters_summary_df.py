@@ -35,6 +35,11 @@ def make_clusters_summary_df(n_clusters, ignore_groups):
     err_balmer_dec_lows = []
     err_balmer_dec_highs = []
 
+    balmer_avs = []
+    err_balmer_av_lows = []
+    err_balmer_av_highs = []
+
+
 
     O3N2_metallicities = []
     err_O3N2_metallicity_lows = []
@@ -102,6 +107,10 @@ def make_clusters_summary_df(n_clusters, ignore_groups):
             err_balmer_dec_lows.append(-99)
             err_balmer_dec_highs.append(-99)
 
+            balmer_avs.append(-99)
+            err_balmer_av_lows.append(-99)
+            err_balmer_av_highs.append(-99)
+
             O3N2_metallicities.append(-99)
             err_O3N2_metallicity_lows.append(-99)
             err_O3N2_metallicity_highs.append(-99)
@@ -120,6 +129,14 @@ def make_clusters_summary_df(n_clusters, ignore_groups):
             err_balmer_dec_lows.append(emission_df.iloc[0]['err_balmer_dec_low'])
             err_balmer_dec_highs.append(emission_df.iloc[0]['err_balmer_dec_high'])
 
+            balmer_av = 4.05*1.97*np.log10(emission_df.iloc[0]['balmer_dec']/2.86)
+            # Recalculate where the errors would be if the points were at the top/bottom of their ranges
+            err_balmer_av_low = balmer_av - 4.05*1.97*np.log10((emission_df.iloc[0]['balmer_dec']-emission_df.iloc[0]['err_balmer_dec_low'])/2.86)
+            err_balmer_av_high = 4.05*1.97*np.log10((emission_df.iloc[0]['balmer_dec']+emission_df.iloc[0]['err_balmer_dec_high'])/2.86) - balmer_av
+            balmer_avs.append(balmer_av)
+            err_balmer_av_lows.append(err_balmer_av_low)
+            err_balmer_av_highs.append(err_balmer_av_high)
+
             O3N2_metallicities.append(emission_df.iloc[0]['O3N2_metallicity'])
             err_O3N2_metallicity_lows.append(emission_df.iloc[0]['err_O3N2_metallicity_low'])
             err_O3N2_metallicity_highs.append(emission_df.iloc[0]['err_O3N2_metallicity_high'])
@@ -134,7 +151,7 @@ def make_clusters_summary_df(n_clusters, ignore_groups):
             
             
     # Build into DataFrame
-    clusters_summary_df = pd.DataFrame(zip(groupIDs, n_galss, median_zs, median_masses, median_sfrs, median_ssfrs, av_medians, err_av_median_lows, err_av_median_highs, beta_medians, err_beta_median_lows, err_beta_median_highs, median_vjs, median_uvs, balmer_decs, err_balmer_dec_lows, err_balmer_dec_highs, O3N2_metallicities, err_O3N2_metallicity_lows, err_O3N2_metallicity_highs, log_N2_Has, err_log_N2_Has_low, err_log_N2_Has_high, log_O3_Hbs, err_log_O3_Hbs_low, err_log_O3_Hbs_high), columns=['groupID', 'n_gals', 'redshift', 'log_mass', 'log_sfr', 'log_ssfr', 'AV', 'err_AV_low', 'err_AV_high', 'beta', 'err_beta_low', 'err_beta_high', 'median_V_J', 'median_U_V', 'balmer_dec', 'err_balmer_dec_low', 'err_balmer_dec_high', 'O3N2_metallicity', 'err_O3N2_metallicity_low', 'err_O3N2_metallicity_high', 'log_N2_Ha', 'err_log_N2_Ha_low', 'err_log_N2_Ha_high', 'log_O3_Hb', 'err_log_O3_Hb_low', 'err_log_O3_Hb_high'])
+    clusters_summary_df = pd.DataFrame(zip(groupIDs, n_galss, median_zs, median_masses, median_sfrs, median_ssfrs, av_medians, err_av_median_lows, err_av_median_highs, beta_medians, err_beta_median_lows, err_beta_median_highs, median_vjs, median_uvs, balmer_decs, err_balmer_dec_lows, err_balmer_dec_highs, balmer_avs, err_balmer_av_lows, err_balmer_av_highs, O3N2_metallicities, err_O3N2_metallicity_lows, err_O3N2_metallicity_highs, log_N2_Has, err_log_N2_Has_low, err_log_N2_Has_high, log_O3_Hbs, err_log_O3_Hbs_low, err_log_O3_Hbs_high), columns=['groupID', 'n_gals', 'redshift', 'log_mass', 'log_sfr', 'log_ssfr', 'AV', 'err_AV_low', 'err_AV_high', 'beta', 'err_beta_low', 'err_beta_high', 'median_V_J', 'median_U_V', 'balmer_dec', 'err_balmer_dec_low', 'err_balmer_dec_high', 'balmer_av', 'err_balmer_av_low', 'err_balmer_av_high', 'O3N2_metallicity', 'err_O3N2_metallicity_low', 'err_O3N2_metallicity_high', 'log_N2_Ha', 'err_log_N2_Ha_low', 'err_log_N2_Ha_high', 'log_O3_Hb', 'err_log_O3_Hb_low', 'err_log_O3_Hb_high'])
     clusters_summary_df.to_csv(imd.loc_cluster_summary_df, index=False)
 
 # make_clusters_summary_df(23, ignore_groups=[19])

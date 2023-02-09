@@ -1,4 +1,3 @@
-from curses import meta
 from astropy.io import ascii
 import matplotlib.pyplot as plt
 import matplotlib as mpl
@@ -6,8 +5,6 @@ import initialize_mosdef_dirs as imd
 import numpy as np
 from matplotlib.patches import Ellipse
 from ellipses_for_plotting import get_ellipse_shapes
-import sys
-from scipy.optimize import curve_fit
 from plot_vals import *
 
 n = 1.4
@@ -18,7 +15,7 @@ b = -21.19
 # const = 100
 const2 = 2.5*10**(-17)
 # const2 = 2.5*10**(b)
-const2 = 1.086*84*((1 / (2 * np.pi))**(1/n)) * (10**(b))
+const2 = 1.086*84*8*((1 / (2 * np.pi))**(1/n)) * (10**(b))
 # print(const3)
 print(const2)
 

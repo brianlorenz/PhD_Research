@@ -16,6 +16,7 @@ import cmasher as cmr
 from scipy import stats
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 import matplotlib.patheffects as pe
+from re_to_kpc import convert_re_to_kpc
 
 
 
@@ -97,12 +98,8 @@ def plot_sample_split(n_groups, save_name, ratio_bins, starting_points, mass_wid
         halpha_snrs.append(emission_df[emission_df['line_name']=='Halpha']['signal_noise_ratio'].iloc[0])
         hbeta_snrs.append(emission_df[emission_df['line_name']=='Hbeta']['signal_noise_ratio'].iloc[0])
         # See Price 2014 for the conversion factors:
+        # A_balmer, balmer attenaution, balmer av
         balmer_av = 4.05*1.97*np.log10(balmer_dec/2.86)
-        # err_balmer_av_low = 4.05*1.97*0.434*((balmer_err_low/balmer_dec)/2.86)
-        # err_balmer_av_high = 4.05*1.97*0.434*((balmer_err_high/balmer_dec)/2.86)
-        # pct_errs = (balmer_err_low/balmer_dec, balmer_err_high/balmer_dec)
-        # err_balmer_av_low = pct_errs[0]*balmer_av
-        # err_balmer_av_high = pct_errs[1]*balmer_av
         # Recalculate where the errors would be if the points were at the top/bottom of their ranges
         err_balmer_av_low = balmer_av - 4.05*1.97*np.log10((balmer_dec-balmer_err_low)/2.86)
         err_balmer_av_high = 4.05*1.97*np.log10((balmer_dec+balmer_err_high)/2.86) - balmer_av
@@ -143,7 +140,9 @@ def plot_sample_split(n_groups, save_name, ratio_bins, starting_points, mass_wid
         # Bootstrap errors on the medians
         av_median, err_av_median, err_av_median_low, err_av_median_high = bootstrap_median(axis_ratio_df['AV'], sfr_weigh=True, sfr_df=10**axis_ratio_df['log_use_sfr'])
         beta_median, err_beta_median, err_beta_median_low, err_beta_median_high = bootstrap_median(axis_ratio_df['beta'], sfr_weigh=True, sfr_df=10**axis_ratio_df['log_use_sfr'])
-        re_median, err_re_median, err_re_median_low, err_re_median_high = bootstrap_median(axis_ratio_df['half_light'])
+        # Convert re (arcsec) to physical distance
+        axis_ratio_df['re_kpc'], axis_ratio_df['err_re_kpc'] = convert_re_to_kpc(axis_ratio_df['half_light'], axis_ratio_df['err_half_light'], axis_ratio_df['Z_MOSFIRE'])
+        re_median, err_re_median, err_re_median_low, err_re_median_high = bootstrap_median(axis_ratio_df['re_kpc'])
 
         
 
@@ -419,4 +418,4 @@ def make_sample_split_twopanel(save_name, n_groups):
     fig.savefig(imd.axis_cluster_data_dir + f'/{save_name}/sample_cut_2panel.pdf',bbox_inches='tight')
 
 
-make_sample_split_twopanel('norm_1_sn5_filtered', 8)
+# make_sample_split_twopanel('norm_1_sn5_filtered', 8)
