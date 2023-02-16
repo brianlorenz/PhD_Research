@@ -71,7 +71,7 @@ def generate_paper_table(save_name):
     paper_df['err_balmer_dec_high'] = summary_df['err_balmer_dec_high']
     paper_df.to_csv(imd.axis_cluster_data_dir + f'/{save_name}/axis_ratio_data.csv', index=False)
     
-    f = open(imd.axis_cluster_data_dir + f'/{save_name}/axis_ratio_data.tex', "w")
+    f = open(imd.axis_cluster_data_dir + f'/{save_name}/axis_ratio_data.dat', "w")
     for i in range(len(paper_df)):
         row = paper_df.iloc[i]
         f.write(f"{row['axis_group']} & ${round(row['log(StellarMass)'],2)}$ & ${round(row['log(SFR)'],2)}$ & ${round(row['AxisRatio'],2)}$ & ${round(row['median_z'],2)}$ & ${round(row['metallicity'],2)}\pm_{{{round(row['err_metallictiy_low'],2)}}}^{{{round(row['err_metallictiy_high'],2)}}}$ & ${round(row['median_AV'],2)}\pm{{{round(row['median_AV_std'],2)}}}$ & ${round(row['median_beta'],2)}\pm_{{{round(row['median_beta_low'],2)}}}^{{{round(row['median_beta_high'],2)}}}$ & ${round(row['balmer_dec'],2)}\pm_{{{round(row['err_balmer_dec_low'],2)}}}^{{{round(row['err_balmer_dec_high'],2)}}}$  \\\ \n")

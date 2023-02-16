@@ -14,13 +14,13 @@ destination = imd.axis_output_dir + '/paper_figures'
 # List of the paths to all the figures
 fig_list = [
     imd.axis_cluster_data_dir + f'/{save_name}/sample_cut_2panel.pdf',
-    imd.axis_output_dir + f'/ar_compare_F125_axis_ratio_F160_axis_ratio.pdf',
-    imd.axis_output_dir + f'/ar_histogram_use_ratio.pdf',
+    imd.axis_output_dir + f'/axis_ratio_compare.pdf',
+    imd.axis_output_dir + f'/axis_ratio_histogram.pdf',
     imd.axis_output_dir + f'/Dust_Diagram1_clumps.pdf',
     imd.axis_output_dir + f'/Dust_Diagram2_clumps.pdf',
     imd.axis_cluster_data_dir + f'/{save_name}/av_extra_mass.pdf',
     imd.axis_cluster_data_dir + f'/{save_name}/balmer_plots/balmer_sfr_metallicity.pdf',
-    imd.axis_cluster_data_dir + f'/{save_name}/balmer_plots/balmer_mass_solo.pdf',
+    imd.axis_cluster_data_dir + f'/{save_name}/balmer_plots/balmer_mass.pdf',
     imd.axis_cluster_data_dir + f'/{save_name}/balmer_plots/av_beta_combined.pdf',
     imd.axis_cluster_data_dir + f'/{save_name}/balmer_plots/mass_metallicity.pdf',
     imd.axis_cluster_data_dir + f'/{save_name}/metallicity_sfr_sanders.pdf',

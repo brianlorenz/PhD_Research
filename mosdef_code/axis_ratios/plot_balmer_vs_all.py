@@ -226,7 +226,7 @@ def plot_balmer_vs_all(save_name):
     ax_balmer_mass.tick_params(labelsize=axis_fontsize)
     ax_cbar_mass.tick_params(labelsize=axis_fontsize)
     ax_balmer_mass.legend(fontsize=16, loc=2)
-    fig.savefig(imd.axis_cluster_data_dir + f'/{save_name}/balmer_plots/balmer_mass_solo.pdf',bbox_inches='tight')
+    fig.savefig(imd.axis_cluster_data_dir + f'/{save_name}/balmer_plots/balmer_mass.pdf',bbox_inches='tight')
     plt.close('all')
 
     ## PAPER FIGURE but with SFR and metallicity

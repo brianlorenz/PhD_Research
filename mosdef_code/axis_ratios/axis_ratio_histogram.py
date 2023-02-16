@@ -112,7 +112,7 @@ def plot_ar_hist(use_column = 'use_ratio',  mass_split='False'):
         # ax.hist(law_df['yvals'], bins=bins_law, color='red', alpha=0.5)
         axarr = [ax]
         savename = ''
-        ax.set_ylim(0, 60)
+        ax.set_ylim(0, 40)
     
     for ax in axarr:
         # ax.axvline(0.4, ls='--', color='red')
@@ -133,10 +133,13 @@ def plot_ar_hist(use_column = 'use_ratio',  mass_split='False'):
     ax.legend([handles[idx] for idx in order],[labels[idx] for idx in order], fontsize=14, framealpha=1)
     ax.set_aspect(1/60)
     scale_aspect(ax)
-    fig.savefig(imd.axis_output_dir + f'/ar_histogram_{use_column}{savename}.pdf',bbox_inches='tight')
+    if use_column == 'use_ratio':
+        fig.savefig(imd.axis_output_dir + f'/axis_ratio_histogram.pdf',bbox_inches='tight')
+    else:
+        fig.savefig(imd.axis_output_dir + f'/ar_histogram_{use_column}{savename}.pdf',bbox_inches='tight')
 
 
-# plot_ar_hist()
+plot_ar_hist()
 # plot_ar_hist(use_column='F125_axis_ratio')
 # plot_ar_hist(use_column='F140_axis_ratio')
 # plot_ar_hist(use_column='F160_axis_ratio')
@@ -204,11 +207,14 @@ def compare_ar_measurements(col1, err_col1, col2, err_col2, save=True, ar_df_pro
     ax.set_aspect(1)
     scale_aspect(ax)
     if save == True:
+        if col1 == 'F125_axis_ratio':
+            if col2 == 'F160_axis_ratio':
+                fig.savefig(imd.axis_output_dir + f'/axis_ratio_compare.pdf',bbox_inches='tight')
         fig.savefig(imd.axis_output_dir + f'/ar_compare_{col1}_{col2}.pdf',bbox_inches='tight')
     else:
         return fig
 
-# compare_ar_measurements('F125_axis_ratio', 'F125_err_axis_ratio', 'F160_axis_ratio', 'F160_err_axis_ratio')
+compare_ar_measurements('F125_axis_ratio', 'F125_err_axis_ratio', 'F160_axis_ratio', 'F160_err_axis_ratio')
 # plot_ar_hist(use_column = 'use_ratio')
 
 # compare_ar_measurements('use_ratio', 'err_use_ratio', 'F160_axis_ratio', 'F160_err_axis_ratio')
