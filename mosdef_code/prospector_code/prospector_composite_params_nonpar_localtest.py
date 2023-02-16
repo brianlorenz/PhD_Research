@@ -65,7 +65,7 @@ run_params = {'verbose': True,
               'nested_maxcall': float(1e7), # was 5e7 -- changed to 5e6 re ben's email on 5/21/19
               'nested_bootstrap': 20,
               'nested_dlogz_init': 0.05,
-              'nested_stop_kwargs': {"post_thresh": 0.1}, # lower this to 0.02ish once I get things working
+              'nested_stop_kwargs': {"post_thresh": 0.5}, # lower this to 0.02ish once I get things working
               # Obs data parameters
               'objid': 0,
               'zred': 0.0,
@@ -223,7 +223,6 @@ def build_model(object_redshift=0.0, fixed_metallicity=None, add_duste=True,
 
     # Now instantiate the model using this new dictionary of parameter
     # specifications
-    breakpoint()
     model = sedmodel.SedModel(model_params)
 
     return model
@@ -306,7 +305,7 @@ def check_filt_transmission(target_folder, redshift, transmission_threshold = 0.
     transmission_threshold: If line transmission is greater than this value, mask the pixel
     """
     emission_lines = [4863, 5008, 6565]
-    filt_files = [file for file in os.listdir(target_folder) if '_red.par' in file]
+    filt_files = [fiele for file in os.listdir(target_folder) if '_red.par' in file]
     filt_files.sort()
     phot_mask = []
     for i in range(len(filt_files)):
@@ -325,6 +324,7 @@ def check_filt_transmission(target_folder, redshift, transmission_threshold = 0.
                 mask_bool = True
         phot_mask.append(mask_bool)
     phot_mask = np.array(phot_mask)
+    return phot_mask
 
 def umachine_priors(agebins=None, zred=None, **extras):
     '''set smarter priors on the logSFR ratios. given a 
@@ -338,7 +338,6 @@ def umachine_priors(agebins=None, zred=None, **extras):
     # get the universe machine SFH at the closest redshift
     ufiles = glob.glob('umachine_SFH/*.dat')
     uma = np.array([float(a.split('_a')[1][:-4]) for a in ufiles])
-    breakpoint()
     fname = ufiles[np.argmin(np.abs(uma-cosmo.scale_factor(zred)))]
     umachine = np.genfromtxt(fname, skip_header=10, names=True)
     a = float(fname.split('_')[-1][1:-4])
@@ -371,3 +370,5 @@ def umachine_priors(agebins=None, zred=None, **extras):
     
     # return
     return(logsfr_ratios, logmass)
+
+   # ipython -c "%run prospector_dynesty.py --param_file='prospector_composite_params_nonpar_localtest.py' --outfile='/Users/brianlorenz/mosdef/Clustering/local_test/nonpar_test'"

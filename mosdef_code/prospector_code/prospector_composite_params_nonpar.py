@@ -323,6 +323,7 @@ def check_filt_transmission(target_folder, redshift, transmission_threshold = 0.
                 mask_bool = True
         phot_mask.append(mask_bool)
     phot_mask = np.array(phot_mask)
+    return phot_mask
 
 def umachine_priors(agebins=None, zred=None, **extras):
     '''set smarter priors on the logSFR ratios. given a 
