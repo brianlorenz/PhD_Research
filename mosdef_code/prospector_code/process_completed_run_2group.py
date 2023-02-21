@@ -1,6 +1,6 @@
 '''Codes that should be run on Savio immediately after the run finishes, putting the data in an easy format for plotting'''
 
-from prospector_composite_params_copy import get_filt_list
+from prospector_composite_params_group0 import get_filt_list
 from cosmology_calcs import luminosity_to_flux
 from convert_flux_to_maggies import prospector_maggies_to_flux, prospector_maggies_to_flux_spec
 import prospect.io.read_results as reader
@@ -10,28 +10,23 @@ import numpy as np
 import pandas as pd
 import pickle
 
+# If using non-parametric sfh, we don't calculate the line fluxes in erg/s since I'm not sure which mass value to use
+non_par_sfh = True
 
 # Directory locations on savio
-# savio_prospect_out_dir = '/global/scratch/users/brianlorenz/prospector_h5s'
-# prospector_plot_dir = '/global/scratch/users/brianlorenz/prospector_plots'
-# composite_sed_csvs_dir = '/global/scratch/users/brianlorenz/composite_sed_csvs'
-# composite_filter_sedpy_dir = '/global/scratch/users/brianlorenz/sedpy_par_files'
-# median_zs_file = '/global/scratch/users/brianlorenz/median_zs.csv'
-# mosdef_elines_file = '/global/scratch/users/brianlorenz/mosdef_elines.txt'
+savio_prospect_out_dir = '/global/scratch/users/brianlorenz/prospector_h5s'
+prospector_plot_dir = '/global/scratch/users/brianlorenz/prospector_plots'
+composite_sed_csvs_dir = '/global/scratch/users/brianlorenz/composite_sed_csvs'
+composite_filter_sedpy_dir = '/global/scratch/users/brianlorenz/sedpy_par_files'
+median_zs_file = '/global/scratch/users/brianlorenz/median_zs.csv'
+mosdef_elines_file = '/global/scratch/users/brianlorenz/mosdef_elines.txt'
 
 # For saving
 prospector_csvs_dir = '/global/scratch/users/brianlorenz/prospector_csvs'
 prospector_plots_dir = '/global/scratch/users/brianlorenz/prospector_plots'
 
-
 # Directory locations on home
-import initialize_mosdef_dirs as imd
-savio_prospect_out_dir = imd.cluster_dir + '/local_test'
-composite_sed_csvs_dir = imd.cluster_dir + '/local_test'
-composite_filter_sedpy_dir = imd.composite_filter_sedpy_dir
-median_zs_file = imd.composite_seds_dir + '/median_zs.csv'
-prospector_plot_dir = imd.cluster_dir + '/local_test'
-mosdef_elines_file = imd.loc_mosdef_elines
+# import initialize_mosdef_dirs as imd
 # savio_prospect_out_dir = imd.prospector_h5_dir
 # composite_sed_csvs_dir = imd.composite_sed_csvs_dir
 # composite_filter_sedpy_dir = imd.composite_filter_sedpy_dir
@@ -40,7 +35,7 @@ mosdef_elines_file = imd.loc_mosdef_elines
 # mosdef_elines_file = imd.loc_mosdef_elines
 
 
-def main_process(groupID1, groupID2, trial, run_name):
+def main_process(groupID1, groupID2, trial, run_name, non_par_sfh):
     """Runs all of the functions needed to process the prospector outputs
 
     Parameters:
@@ -59,8 +54,7 @@ def main_process(groupID1, groupID2, trial, run_name):
     groupID=groupID1
     if trial >= 10:
         groupID=groupID2
-    # target_file = [file for file in all_files if f'group{groupID}_trial{trial}' in file]
-    target_file = all_files
+    target_file = [file for file in all_files if f'group{groupID}_trial{trial}' in file]
     if len(target_file) == 0:
         sys.exit(f'Exiting: Could not find matching file for this group {groupID} trial {trial}')
     print(f'found {target_file}')
@@ -72,15 +66,15 @@ def main_process(groupID1, groupID2, trial, run_name):
     # cfig = reader.subcorner(res)
     # cfig.savefig(prospector_plots_dir + f'/{run_name}_plots' + f'{groupID}_trial{trial}_cfig.pdf')
 
-    all_spec, all_phot, all_mfrac, all_line_fluxes, line_waves, weights, idx_high_weights = gen_phot(res, obs, mod, sps)
-    compute_quantiles(res, obs, mod, sps, all_spec, all_phot, all_mfrac, all_line_fluxes, line_waves, weights, idx_high_weights, groupID, trial, run_name)
+    all_spec, all_phot, all_mfrac, all_line_fluxes, all_line_fluxes_erg, line_waves, weights, idx_high_weights = gen_phot(res, obs, mod, sps, non_par_sfh)
+    compute_quantiles(res, obs, mod, sps, all_spec, all_phot, all_mfrac, all_line_fluxes, all_line_fluxes_erg, line_waves, weights, idx_high_weights, groupID, trial)
     
     # Now repeat but just with the continuum
     mod.params['add_neb_emission'] = np.array([False])
     print('Set neb emission to false, computing continuum')
     all_spec, all_phot, all_mfrac, all_line_fluxes, all_line_fluxes_erg, line_waves, weights, idx_high_weights = gen_phot(
         res, obs, mod, sps)
-    compute_quantiles(res, obs, mod, sps, all_spec, all_phot, all_mfrac, all_line_fluxes, line_waves, weights, idx_high_weights, groupID, trial, run_name, cont=True)
+    compute_quantiles(res, obs, mod, sps, all_spec, all_phot, all_mfrac, all_line_fluxes, all_line_fluxes_erg, line_waves, weights, idx_high_weights, groupID, trial, cont=True)
 
 
 def read_output(file, get_sps=True):
@@ -102,7 +96,6 @@ def read_output(file, get_sps=True):
     print(f'Reading from {file}')
     res, obs, mod = reader.results_from(file)
 
-
     filt_folder = composite_filter_sedpy_dir + f'/{obs["groupID"]}_sedpy_pars'
 
     print(f'Setting obs["filters"] to sedpy filters from {filt_folder}')
@@ -118,7 +111,7 @@ def read_output(file, get_sps=True):
     return outputs
 
 
-def gen_phot(res, obs, mod, sps):
+def gen_phot(res, obs, mod, sps, non_par_sfh):
     """Generates the spec and phot objects from a given theta value
 
     Parameters:
@@ -132,8 +125,6 @@ def gen_phot(res, obs, mod, sps):
     spec, phot, mfrac = mod.mean_model(theta, obs, sps)
     line_waves, line_fluxes = sps.get_galaxy_elines()
 
-
-    # breakpoint()
     print('Starting to calculate spectra...')
     weights = res.get('weights', None)
     # Get the thousand highest weights
@@ -147,20 +138,23 @@ def gen_phot(res, obs, mod, sps):
     for i, weight_idx in enumerate(idx_high_weights):
         print(f'Finding mean model for {i}')
         theta_val = res['chain'][weight_idx, :]
-        all_spec[:, i], all_phot[:, i], all_mfrac[i] = mod.mean_model(theta_val, obs, sps=sps)
+        all_spec[:, i], all_phot[:, i], all_mfrac[i] = mod.mean_model(
+            theta_val, obs, sps=sps)
         line_waves, line_fluxes = sps.get_galaxy_elines()
         all_line_fluxes[:, i] = line_fluxes
-        # mass = mod.params['mass']
-        # print(mass)
-        # line_fluxes_erg_s = line_fluxes * mass * 3.846e33
-        # line_fluxes_erg_s_cm2 = luminosity_to_flux(
-        #     line_fluxes_erg_s, mod.params['zred'])
-        # all_line_fluxes_erg[:, i] = line_fluxes_erg_s_cm2
+        if non_par_sfh == False:
+            # When there are multiple agebins, I don't know how to find the mass to convert with
+            mass = mod.params['mass']
+            print(mass)
+            line_fluxes_erg_s = line_fluxes * mass * 3.846e33
+            line_fluxes_erg_s_cm2 = luminosity_to_flux(
+                line_fluxes_erg_s, mod.params['zred'])
+            all_line_fluxes_erg[:, i] = line_fluxes_erg_s_cm2
 
-    return all_spec, all_phot, all_mfrac, all_line_fluxes, line_waves, weights, idx_high_weights
+    return all_spec, all_phot, all_mfrac, all_line_fluxes, all_line_fluxes_erg, line_waves, weights, idx_high_weights
 
 
-def compute_quantiles(res, obs, mod, sps, all_spec, all_phot, all_mfrac, all_line_fluxes, line_waves, weights, idx_high_weights, groupID, trial, run_name, cont=False):
+def compute_quantiles(res, obs, mod, sps, all_spec, all_phot, all_mfrac, all_line_fluxes, all_line_fluxes_erg, line_waves, weights, idx_high_weights, groupID, trial, cont=False):
     # Find the mean photometery, spectra
     phot16 = np.array([quantile(all_phot[i, :], 16, weights=weights[idx_high_weights])
                        for i in range(all_phot.shape[0])])
@@ -182,12 +176,12 @@ def compute_quantiles(res, obs, mod, sps, all_spec, all_phot, all_mfrac, all_lin
     lines84 = np.array([quantile(all_line_fluxes[i, :], 84, weights=weights[idx_high_weights])
                         for i in range(all_line_fluxes.shape[0])])
 
-    # lines16_erg = np.array([quantile(all_line_fluxes_erg[i, :], 16, weights=weights[idx_high_weights])
-    #                         for i in range(all_line_fluxes_erg.shape[0])])
-    # lines50_erg = np.array([quantile(all_line_fluxes_erg[i, :], 50, weights=weights[idx_high_weights])
-    #                         for i in range(all_line_fluxes_erg.shape[0])])
-    # lines84_erg = np.array([quantile(all_line_fluxes_erg[i, :], 84, weights=weights[idx_high_weights])
-    #                         for i in range(all_line_fluxes_erg.shape[0])])
+    lines16_erg = np.array([quantile(all_line_fluxes_erg[i, :], 16, weights=weights[idx_high_weights])
+                            for i in range(all_line_fluxes_erg.shape[0])])
+    lines50_erg = np.array([quantile(all_line_fluxes_erg[i, :], 50, weights=weights[idx_high_weights])
+                            for i in range(all_line_fluxes_erg.shape[0])])
+    lines84_erg = np.array([quantile(all_line_fluxes_erg[i, :], 84, weights=weights[idx_high_weights])
+                            for i in range(all_line_fluxes_erg.shape[0])])
 
     # Setup wavelength ranges
     phot_wavelength = np.array(
@@ -225,7 +219,7 @@ def compute_quantiles(res, obs, mod, sps, all_spec, all_phot, all_mfrac, all_lin
     
     phot_df = pd.DataFrame(zip(z0_phot_wavelength, phot16_flambda_rest, phot50_flambda_rest, phot84_flambda_rest), columns=['rest_wavelength', 'phot16_flambda', 'phot50_flambda', 'phot84_flambda'])
     spec_df = pd.DataFrame(zip(spec_wavelength, spec16_flambda_rest, spec50_flambda_rest, spec84_flambda_rest), columns=['rest_wavelength', 'spec16_flambda', 'spec50_flambda', 'spec84_flambda'])
-    # line_df = pd.DataFrame(zip(line_waves, lines16_erg, lines50_erg, lines84_erg), columns=['rest_wavelength', 'lines16_erg', 'lines50_erg', 'lines84_erg'])
+    line_df = pd.DataFrame(zip(line_waves, lines16_erg, lines50_erg, lines84_erg), columns=['rest_wavelength', 'lines16_erg', 'lines50_erg', 'lines84_erg'])
     
 
     #### EDIT HERE FORE HOW TO SAVE IT
@@ -235,7 +229,7 @@ def compute_quantiles(res, obs, mod, sps, all_spec, all_phot, all_mfrac, all_lin
     if cont==False:
         phot_df.to_csv(prospector_csvs_dir + f'/{run_name}_csvs' + f'/{save_str}_phot.csv', index=False)
         spec_df.to_csv(prospector_csvs_dir + f'/{run_name}_csvs' + f'/{save_str}_spec.csv', index=False)
-        # line_df.to_csv(prospector_csvs_dir + f'/{run_name}_csvs' + f'/{save_str}_lines.csv', index=False)
+        line_df.to_csv(prospector_csvs_dir + f'/{run_name}_csvs' + f'/{save_str}_lines.csv', index=False)
 
         def save_obj(obj, name, run_name):
             with open(prospector_csvs_dir + f'/{run_name}_csvs' + '/' + name + '.pkl', 'wb+') as f:
@@ -282,8 +276,8 @@ def quantile(data, percents, weights=None):
 
 
 # Run with sys.argv when called 
-# groupID1 = sys.argv[1]
-# groupID2 = sys.argv[2]
-# trial = sys.argv[3]
-# run_name = sys.argv[4]
-main_process(1, 2, 0, 'nonpar_test')
+groupID1 = sys.argv[1]
+groupID2 = sys.argv[2]
+trial = sys.argv[3]
+run_name = sys.argv[4]
+main_process(groupID1, groupID2, trial, run_name, non_par_sfh)
