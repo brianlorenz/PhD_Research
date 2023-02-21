@@ -23,14 +23,21 @@ import pickle
 prospector_csvs_dir = '/global/scratch/users/brianlorenz/prospector_csvs'
 prospector_plots_dir = '/global/scratch/users/brianlorenz/prospector_plots'
 
+
 # Directory locations on home
 import initialize_mosdef_dirs as imd
-savio_prospect_out_dir = imd.prospector_h5_dir
-composite_sed_csvs_dir = imd.composite_sed_csvs_dir
+savio_prospect_out_dir = imd.cluster_dir + '/local_test'
+composite_sed_csvs_dir = imd.cluster_dir + '/local_test'
 composite_filter_sedpy_dir = imd.composite_filter_sedpy_dir
 median_zs_file = imd.composite_seds_dir + '/median_zs.csv'
-prospector_plot_dir = imd.prospector_plot_dir
+prospector_plot_dir = imd.cluster_dir + '/local_test'
 mosdef_elines_file = imd.loc_mosdef_elines
+# savio_prospect_out_dir = imd.prospector_h5_dir
+# composite_sed_csvs_dir = imd.composite_sed_csvs_dir
+# composite_filter_sedpy_dir = imd.composite_filter_sedpy_dir
+# median_zs_file = imd.composite_seds_dir + '/median_zs.csv'
+# prospector_plot_dir = imd.prospector_plot_dir
+# mosdef_elines_file = imd.loc_mosdef_elines
 
 
 def main_process(groupID1, groupID2, trial, run_name):
@@ -52,7 +59,8 @@ def main_process(groupID1, groupID2, trial, run_name):
     groupID=groupID1
     if trial >= 10:
         groupID=groupID2
-    target_file = [file for file in all_files if f'group{groupID}_trial{trial}' in file]
+    # target_file = [file for file in all_files if f'group{groupID}_trial{trial}' in file]
+    target_file = all_files
     if len(target_file) == 0:
         sys.exit(f'Exiting: Could not find matching file for this group {groupID} trial {trial}')
     print(f'found {target_file}')
@@ -64,15 +72,15 @@ def main_process(groupID1, groupID2, trial, run_name):
     # cfig = reader.subcorner(res)
     # cfig.savefig(prospector_plots_dir + f'/{run_name}_plots' + f'{groupID}_trial{trial}_cfig.pdf')
 
-    all_spec, all_phot, all_mfrac, all_line_fluxes, all_line_fluxes_erg, line_waves, weights, idx_high_weights = gen_phot(res, obs, mod, sps)
-    compute_quantiles(res, obs, mod, sps, all_spec, all_phot, all_mfrac, all_line_fluxes, all_line_fluxes_erg, line_waves, weights, idx_high_weights, groupID, trial)
+    all_spec, all_phot, all_mfrac, all_line_fluxes, line_waves, weights, idx_high_weights = gen_phot(res, obs, mod, sps)
+    compute_quantiles(res, obs, mod, sps, all_spec, all_phot, all_mfrac, all_line_fluxes, line_waves, weights, idx_high_weights, groupID, trial, run_name)
     
     # Now repeat but just with the continuum
     mod.params['add_neb_emission'] = np.array([False])
     print('Set neb emission to false, computing continuum')
     all_spec, all_phot, all_mfrac, all_line_fluxes, all_line_fluxes_erg, line_waves, weights, idx_high_weights = gen_phot(
         res, obs, mod, sps)
-    compute_quantiles(res, obs, mod, sps, all_spec, all_phot, all_mfrac, all_line_fluxes, all_line_fluxes_erg, line_waves, weights, idx_high_weights, groupID, trial, cont=True)
+    compute_quantiles(res, obs, mod, sps, all_spec, all_phot, all_mfrac, all_line_fluxes, line_waves, weights, idx_high_weights, groupID, trial, run_name, cont=True)
 
 
 def read_output(file, get_sps=True):
@@ -124,6 +132,8 @@ def gen_phot(res, obs, mod, sps):
     spec, phot, mfrac = mod.mean_model(theta, obs, sps)
     line_waves, line_fluxes = sps.get_galaxy_elines()
 
+
+    # breakpoint()
     print('Starting to calculate spectra...')
     weights = res.get('weights', None)
     # Get the thousand highest weights
@@ -137,21 +147,20 @@ def gen_phot(res, obs, mod, sps):
     for i, weight_idx in enumerate(idx_high_weights):
         print(f'Finding mean model for {i}')
         theta_val = res['chain'][weight_idx, :]
-        all_spec[:, i], all_phot[:, i], all_mfrac[i] = mod.mean_model(
-            theta_val, obs, sps=sps)
+        all_spec[:, i], all_phot[:, i], all_mfrac[i] = mod.mean_model(theta_val, obs, sps=sps)
         line_waves, line_fluxes = sps.get_galaxy_elines()
         all_line_fluxes[:, i] = line_fluxes
-        mass = mod.params['mass']
-        print(mass)
-        line_fluxes_erg_s = line_fluxes * mass * 3.846e33
-        line_fluxes_erg_s_cm2 = luminosity_to_flux(
-            line_fluxes_erg_s, mod.params['zred'])
-        all_line_fluxes_erg[:, i] = line_fluxes_erg_s_cm2
+        # mass = mod.params['mass']
+        # print(mass)
+        # line_fluxes_erg_s = line_fluxes * mass * 3.846e33
+        # line_fluxes_erg_s_cm2 = luminosity_to_flux(
+        #     line_fluxes_erg_s, mod.params['zred'])
+        # all_line_fluxes_erg[:, i] = line_fluxes_erg_s_cm2
 
-    return all_spec, all_phot, all_mfrac, all_line_fluxes, all_line_fluxes_erg, line_waves, weights, idx_high_weights
+    return all_spec, all_phot, all_mfrac, all_line_fluxes, line_waves, weights, idx_high_weights
 
 
-def compute_quantiles(res, obs, mod, sps, all_spec, all_phot, all_mfrac, all_line_fluxes, all_line_fluxes_erg, line_waves, weights, idx_high_weights, groupID, trial, cont=False):
+def compute_quantiles(res, obs, mod, sps, all_spec, all_phot, all_mfrac, all_line_fluxes, line_waves, weights, idx_high_weights, groupID, trial, run_name, cont=False):
     # Find the mean photometery, spectra
     phot16 = np.array([quantile(all_phot[i, :], 16, weights=weights[idx_high_weights])
                        for i in range(all_phot.shape[0])])
@@ -173,12 +182,12 @@ def compute_quantiles(res, obs, mod, sps, all_spec, all_phot, all_mfrac, all_lin
     lines84 = np.array([quantile(all_line_fluxes[i, :], 84, weights=weights[idx_high_weights])
                         for i in range(all_line_fluxes.shape[0])])
 
-    lines16_erg = np.array([quantile(all_line_fluxes_erg[i, :], 16, weights=weights[idx_high_weights])
-                            for i in range(all_line_fluxes_erg.shape[0])])
-    lines50_erg = np.array([quantile(all_line_fluxes_erg[i, :], 50, weights=weights[idx_high_weights])
-                            for i in range(all_line_fluxes_erg.shape[0])])
-    lines84_erg = np.array([quantile(all_line_fluxes_erg[i, :], 84, weights=weights[idx_high_weights])
-                            for i in range(all_line_fluxes_erg.shape[0])])
+    # lines16_erg = np.array([quantile(all_line_fluxes_erg[i, :], 16, weights=weights[idx_high_weights])
+    #                         for i in range(all_line_fluxes_erg.shape[0])])
+    # lines50_erg = np.array([quantile(all_line_fluxes_erg[i, :], 50, weights=weights[idx_high_weights])
+    #                         for i in range(all_line_fluxes_erg.shape[0])])
+    # lines84_erg = np.array([quantile(all_line_fluxes_erg[i, :], 84, weights=weights[idx_high_weights])
+    #                         for i in range(all_line_fluxes_erg.shape[0])])
 
     # Setup wavelength ranges
     phot_wavelength = np.array(
@@ -216,7 +225,7 @@ def compute_quantiles(res, obs, mod, sps, all_spec, all_phot, all_mfrac, all_lin
     
     phot_df = pd.DataFrame(zip(z0_phot_wavelength, phot16_flambda_rest, phot50_flambda_rest, phot84_flambda_rest), columns=['rest_wavelength', 'phot16_flambda', 'phot50_flambda', 'phot84_flambda'])
     spec_df = pd.DataFrame(zip(spec_wavelength, spec16_flambda_rest, spec50_flambda_rest, spec84_flambda_rest), columns=['rest_wavelength', 'spec16_flambda', 'spec50_flambda', 'spec84_flambda'])
-    line_df = pd.DataFrame(zip(line_waves, lines16_erg, lines50_erg, lines84_erg), columns=['rest_wavelength', 'lines16_erg', 'lines50_erg', 'lines84_erg'])
+    # line_df = pd.DataFrame(zip(line_waves, lines16_erg, lines50_erg, lines84_erg), columns=['rest_wavelength', 'lines16_erg', 'lines50_erg', 'lines84_erg'])
     
 
     #### EDIT HERE FORE HOW TO SAVE IT
@@ -226,7 +235,7 @@ def compute_quantiles(res, obs, mod, sps, all_spec, all_phot, all_mfrac, all_lin
     if cont==False:
         phot_df.to_csv(prospector_csvs_dir + f'/{run_name}_csvs' + f'/{save_str}_phot.csv', index=False)
         spec_df.to_csv(prospector_csvs_dir + f'/{run_name}_csvs' + f'/{save_str}_spec.csv', index=False)
-        line_df.to_csv(prospector_csvs_dir + f'/{run_name}_csvs' + f'/{save_str}_lines.csv', index=False)
+        # line_df.to_csv(prospector_csvs_dir + f'/{run_name}_csvs' + f'/{save_str}_lines.csv', index=False)
 
         def save_obj(obj, name, run_name):
             with open(prospector_csvs_dir + f'/{run_name}_csvs' + '/' + name + '.pkl', 'wb+') as f:
@@ -277,4 +286,4 @@ def quantile(data, percents, weights=None):
 # groupID2 = sys.argv[2]
 # trial = sys.argv[3]
 # run_name = sys.argv[4]
-main_process(1, 2, 0, 'nonpar_sfh_2group')
+main_process(1, 2, 0, 'nonpar_test')

@@ -11,6 +11,10 @@ import pandas as pd
 import pickle
 
 
+# If using non-parametric sfh, we don't calculate the line fluxes in erg/s since I'm not sure which mass value to use
+non_par_sfh = True
+
+
 # Directory locations on savio
 savio_prospect_out_dir = '/global/scratch/users/brianlorenz/prospector_h5s'
 prospector_plot_dir = '/global/scratch/users/brianlorenz/prospector_plots'
@@ -33,11 +37,13 @@ prospector_plots_dir = '/global/scratch/users/brianlorenz/prospector_plots'
 # mosdef_elines_file = imd.loc_mosdef_elines
 
 
-def main_process(groupID, run_name):
+def main_process(groupID, run_name, non_par_sfh):
     """Runs all of the functions needed to process the prospector outputs
 
     Parameters:
     groupID (int): The id of the group to run
+    run_name (str): Name of the run, controls folders to save/read from
+    non_par_sfh (boolean): Set to true if using a non-parametric SFH. Skips some calculations if true
 
     Returns:
  
@@ -53,7 +59,7 @@ def main_process(groupID, run_name):
     # cfig = reader.subcorner(res)
     # cfig.savefig(prospector_plots_dir + f'/{run_name}_plots' + f'/group{groupID}_cfig.pdf')
 
-    all_spec, all_phot, all_mfrac, all_line_fluxes, all_line_fluxes_erg, line_waves, weights, idx_high_weights = gen_phot(res, obs, mod, sps)
+    all_spec, all_phot, all_mfrac, all_line_fluxes, all_line_fluxes_erg, line_waves, weights, idx_high_weights = gen_phot(res, obs, mod, sps, non_par_sfh)
     compute_quantiles(res, obs, mod, sps, all_spec, all_phot, all_mfrac, all_line_fluxes, all_line_fluxes_erg, line_waves, weights, idx_high_weights, groupID)
     
     # Now repeat but just with the continuum
@@ -98,7 +104,7 @@ def read_output(file, get_sps=True):
     return outputs
 
 
-def gen_phot(res, obs, mod, sps):
+def gen_phot(res, obs, mod, sps, non_par_sfh):
     """Generates the spec and phot objects from a given theta value
 
     Parameters:
@@ -129,11 +135,13 @@ def gen_phot(res, obs, mod, sps):
             theta_val, obs, sps=sps)
         line_waves, line_fluxes = sps.get_galaxy_elines()
         all_line_fluxes[:, i] = line_fluxes
-        mass = mod.params['mass']
-        line_fluxes_erg_s = line_fluxes * mass * 3.846e33
-        line_fluxes_erg_s_cm2 = luminosity_to_flux(
-            line_fluxes_erg_s, mod.params['zred'])
-        all_line_fluxes_erg[:, i] = line_fluxes_erg_s_cm2
+        if non_par_sfh == False:
+            # When there are multiple agebins, I don't know how to find the mass to convert with
+            mass = mod.params['mass']
+            line_fluxes_erg_s = line_fluxes * mass * 3.846e33
+            line_fluxes_erg_s_cm2 = luminosity_to_flux(
+                line_fluxes_erg_s, mod.params['zred'])
+            all_line_fluxes_erg[:, i] = line_fluxes_erg_s_cm2
 
     return all_spec, all_phot, all_mfrac, all_line_fluxes, all_line_fluxes_erg, line_waves, weights, idx_high_weights
 
@@ -263,4 +271,4 @@ def quantile(data, percents, weights=None):
 # Run with sys.argv when called 
 groupID = sys.argv[1]
 run_name = sys.argv[2]
-main_process(groupID, run_name)
+main_process(groupID, run_name, non_par_sfh)
