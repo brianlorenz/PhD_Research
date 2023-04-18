@@ -301,7 +301,7 @@ def sfr_diff_quantified():
     print(f'halpha mean:{halpha_mean}, halpha std: {halpha_std}')
 
 
-sfr_diff_quantified()
+# sfr_diff_quantified()
 
 # convert_ha_to_sfr()
 # add_use_sfr()

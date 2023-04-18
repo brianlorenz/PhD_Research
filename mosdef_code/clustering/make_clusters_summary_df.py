@@ -21,8 +21,12 @@ def make_clusters_summary_df(n_clusters, ignore_groups):
     median_vjs = []
 
     median_masses = []
+    mean_masses = []
+    norm_median_masses = []
     median_sfrs = []
     median_ssfrs = []
+    median_halphas = []
+    norm_median_halphas = []
 
     av_medians = []
     err_av_median_lows = []
@@ -30,6 +34,9 @@ def make_clusters_summary_df(n_clusters, ignore_groups):
     beta_medians = []
     err_beta_median_lows = []
     err_beta_median_highs = []
+
+    ha_fluxes = []
+    err_ha_fluxes = []
 
     balmer_decs = []
     err_balmer_dec_lows = []
@@ -56,6 +63,8 @@ def make_clusters_summary_df(n_clusters, ignore_groups):
     avs = []
     betas = []
 
+    computed_ssfrs = []
+
     
 
     
@@ -74,8 +83,15 @@ def make_clusters_summary_df(n_clusters, ignore_groups):
         median_uv = np.median(group_df[group_df['U_V']>0]['U_V'])
 
         median_mass = np.median(group_df[group_df['log_mass']>0]['log_mass'])
+        mean_mass = np.mean(group_df[group_df['log_mass']>0]['log_mass'])
+        # Compute norm median mass
+        group_masses = 10**(group_df[group_df['log_mass']>0]['log_mass'])
+        norm_group_masses = group_df[group_df['log_mass']>0]['norm_factor'] * group_masses
+        norm_median_mass = np.median(np.log10(norm_group_masses))
         median_sfr = np.median(group_df[group_df['log_use_sfr']>0]['log_use_sfr'])
         median_ssfr = np.log10((10**median_sfr)/(10**median_mass))
+        median_halpha = np.median(group_df[group_df['ha_flux']>0]['ha_flux'])
+        norm_median_halpha = np.median(group_df[group_df['ha_flux']>0]['ha_flux'] * group_df[group_df['ha_flux']>0]['norm_factor'])
 
         # Save properties
         groupIDs.append(groupID)
@@ -87,11 +103,15 @@ def make_clusters_summary_df(n_clusters, ignore_groups):
         median_uvs.append(median_uv)
 
         median_masses.append(median_mass)
+        mean_masses.append(mean_mass)
+        norm_median_masses.append(norm_median_mass)
         median_sfrs.append(median_sfr)
         median_ssfrs.append(median_ssfr)
+        median_halphas.append(median_halpha)
+        norm_median_halphas.append(norm_median_halpha)
 
-        av_median, err_av_median, err_av_median_low, err_av_median_high = bootstrap_median(group_df['AV'])
-        beta_median, err_beta_median, err_beta_median_low, err_beta_median_high = bootstrap_median(group_df['beta'])
+        av_median, err_av_median, err_av_median_low, err_av_median_high = bootstrap_median(group_df['norm_factor'] * group_df['AV'])
+        beta_median, err_beta_median, err_beta_median_low, err_beta_median_high = bootstrap_median(group_df['norm_factor'] * group_df['beta'])
         av_medians.append(av_median)
         err_av_median_lows.append(err_av_median_low)
         err_av_median_highs.append(err_av_median_high)
@@ -103,6 +123,9 @@ def make_clusters_summary_df(n_clusters, ignore_groups):
         # Once all groups are working, remove this if clause
         if groupID in ignore_groups:
             print(f'Ignoring group {groupID}')
+            ha_fluxes.append(-99)
+            err_ha_fluxes.append(-99)
+
             balmer_decs.append(-99)
             err_balmer_dec_lows.append(-99)
             err_balmer_dec_highs.append(-99)
@@ -123,8 +146,17 @@ def make_clusters_summary_df(n_clusters, ignore_groups):
             err_log_O3_Hbs_low.append(-99)
             err_log_O3_Hbs_high.append(-99)
 
+            computed_ssfrs.append(-99)
+
+
+
         else:
             emission_df = ascii.read(imd.emission_fit_csvs_dir + f'/{groupID}_emission_fits.csv').to_pandas()
+            
+            ha_row = emission_df[emission_df['line_name'] == 'Halpha']
+            ha_fluxes.append(ha_row.iloc[0]['flux'])
+            err_ha_fluxes.append(ha_row.iloc[0]['err_flux'])
+            
             balmer_decs.append(emission_df.iloc[0]['balmer_dec'])
             err_balmer_dec_lows.append(emission_df.iloc[0]['err_balmer_dec_low'])
             err_balmer_dec_highs.append(emission_df.iloc[0]['err_balmer_dec_high'])
@@ -148,10 +180,10 @@ def make_clusters_summary_df(n_clusters, ignore_groups):
             log_O3_Hbs.append(emission_df.iloc[0]['log_O3_Hb'])
             err_log_O3_Hbs_low.append(emission_df.iloc[0]['err_log_O3_Hb_low'])
             err_log_O3_Hbs_high.append(emission_df.iloc[0]['err_log_O3_Hb_high'])
-            
+
             
     # Build into DataFrame
-    clusters_summary_df = pd.DataFrame(zip(groupIDs, n_galss, median_zs, median_masses, median_sfrs, median_ssfrs, av_medians, err_av_median_lows, err_av_median_highs, beta_medians, err_beta_median_lows, err_beta_median_highs, median_vjs, median_uvs, balmer_decs, err_balmer_dec_lows, err_balmer_dec_highs, balmer_avs, err_balmer_av_lows, err_balmer_av_highs, O3N2_metallicities, err_O3N2_metallicity_lows, err_O3N2_metallicity_highs, log_N2_Has, err_log_N2_Has_low, err_log_N2_Has_high, log_O3_Hbs, err_log_O3_Hbs_low, err_log_O3_Hbs_high), columns=['groupID', 'n_gals', 'redshift', 'log_mass', 'log_sfr', 'log_ssfr', 'AV', 'err_AV_low', 'err_AV_high', 'beta', 'err_beta_low', 'err_beta_high', 'median_V_J', 'median_U_V', 'balmer_dec', 'err_balmer_dec_low', 'err_balmer_dec_high', 'balmer_av', 'err_balmer_av_low', 'err_balmer_av_high', 'O3N2_metallicity', 'err_O3N2_metallicity_low', 'err_O3N2_metallicity_high', 'log_N2_Ha', 'err_log_N2_Ha_low', 'err_log_N2_Ha_high', 'log_O3_Hb', 'err_log_O3_Hb_low', 'err_log_O3_Hb_high'])
+    clusters_summary_df = pd.DataFrame(zip(groupIDs, n_galss, median_zs, median_masses, mean_masses, norm_median_masses, median_sfrs, median_ssfrs, median_halphas, norm_median_halphas, av_medians, err_av_median_lows, err_av_median_highs, beta_medians, err_beta_median_lows, err_beta_median_highs, median_vjs, median_uvs, ha_fluxes, err_ha_fluxes, balmer_decs, err_balmer_dec_lows, err_balmer_dec_highs, balmer_avs, err_balmer_av_lows, err_balmer_av_highs, O3N2_metallicities, err_O3N2_metallicity_lows, err_O3N2_metallicity_highs, log_N2_Has, err_log_N2_Has_low, err_log_N2_Has_high, log_O3_Hbs, err_log_O3_Hbs_low, err_log_O3_Hbs_high), columns=['groupID', 'n_gals', 'redshift', 'median_log_mass', 'mean_log_mass', 'norm_median_log_mass', 'median_log_sfr', 'median_log_ssfr', 'median_indiv_halphas', 'norm_median_halphas', 'AV', 'err_AV_low', 'err_AV_high', 'beta', 'err_beta_low', 'err_beta_high', 'median_V_J', 'median_U_V', 'ha_flux', 'err_ha_flux', 'balmer_dec', 'err_balmer_dec_low', 'err_balmer_dec_high', 'balmer_av', 'err_balmer_av_low', 'err_balmer_av_high', 'O3N2_metallicity', 'err_O3N2_metallicity_low', 'err_O3N2_metallicity_high', 'log_N2_Ha', 'err_log_N2_Ha_low', 'err_log_N2_Ha_high', 'log_O3_Hb', 'err_log_O3_Hb_low', 'err_log_O3_Hb_high'])
     clusters_summary_df.to_csv(imd.loc_cluster_summary_df, index=False)
 
-# make_clusters_summary_df(23, ignore_groups=[19])
+make_clusters_summary_df(23, ignore_groups=[19])

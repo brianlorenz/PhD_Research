@@ -101,6 +101,7 @@ def convert_filters_to_sedpy(target_folder, groupID):
         #             index=False, sep=' ', header=False)
 
         # Redshift to the medain redshift of the group
+        import initialize_mosdef_dirs as imd
         zs_df = ascii.read(imd.median_zs_file).to_pandas()
         median_z = zs_df[zs_df['groupID'] == groupID]['median_z'].iloc[0]
         data['rest_wavelength'] = to_median_redshift(
@@ -138,3 +139,4 @@ def append_zeros_to_filtname(filtname):
     while len(filtname) < 15:
         filtname = filtname[:6] + '0' + filtname[6:]
     return filtname
+

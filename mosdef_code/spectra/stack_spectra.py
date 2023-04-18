@@ -712,6 +712,8 @@ def stack_axis_ratio(mass_width, split_width, starting_points, ratio_bins, save_
         ar_df['split_for_stack'] = ['log_use_ssfr']*len(ar_df)
     if split_by=='log_use_sfr':
         ar_df['split_for_stack'] = ['log_use_sfr']*len(ar_df)
+    if split_by=='log_sed_sfr':
+        ar_df['split_for_stack'] = ['log_sed_sfr']*len(ar_df)
     if split_by=='log_halpha_ssfr':
         ar_df['split_for_stack'] = ['log_halpha_ssfr']*len(ar_df)
     if split_by=='eq_width_ha':

@@ -11,9 +11,11 @@ import pickle
 import initialize_mosdef_dirs as imd
 from prospector_plot import make_all_prospector_plots_2groups
 
-run_name = 'nonpar_sfh_2group'
-groupID1 = 1
-groupID2 = 2
+run_name = 'fourgroups_2'
+groupID1 = 0
+groupID2 = 1
+groupID3 = 3
+groupID4 = 16
 
 
 def make_tfig_cfig(run_name):
@@ -37,5 +39,5 @@ def make_tfig_cfig(run_name):
 
 
 
-make_tfig_cfig(run_name)
-make_all_prospector_plots_2groups(groupID1, groupID2, run_name)
+# make_tfig_cfig(run_name)
+make_all_prospector_plots_2groups(groupID1, groupID2, groupID3, groupID4, run_name)

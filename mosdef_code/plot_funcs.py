@@ -17,19 +17,24 @@ import initialize_mosdef_dirs as imd
 import shutil
 from spectra_funcs import clip_skylines, get_spectra_files, median_bin_spec, read_spectrum, smooth_spectrum
 from axis_ratio_funcs import read_interp_axis_ratio
+from brokenaxes import brokenaxes
+from matplotlib.gridspec import GridSpec
 
 
-def populate_main_axis(ax, sed, good_idxs, axisfont, ticksize, ticks):
+
+
+def populate_main_axis(ax, sed, good_idxs, axisfont, ticksize, ticks, talk_plot=0):
     ax.errorbar(sed[good_idxs]['rest_wavelength'], sed[good_idxs]['f_lambda'], yerr=[
                 sed[good_idxs]['err_f_lambda'], sed[good_idxs]['err_f_lambda']], ls='None', color='black', marker='o')
     outliers = sed[np.logical_not(good_idxs)]
-    [ax.axvspan(outliers.iloc[i]['rest_wavelength'] * 0.99,
-                outliers.iloc[i]['rest_wavelength'] * 1.01, facecolor='r', alpha=0.5) for i in range(len(outliers))]
-    ax.set_xlabel('log($\lambda$) ($\AA$)', fontsize=axisfont)
-    ax.set_ylabel('f$_{\lambda}$', fontsize=axisfont)
+    if talk_plot == 1:
+        [ax.axvspan(outliers.iloc[i]['rest_wavelength'] * 0.99,
+                    outliers.iloc[i]['rest_wavelength'] * 1.01, facecolor='r', alpha=0.5) for i in range(len(outliers))]
+    ax.set_xlabel('Wavelength ($\mathrm{\\AA}$)', fontsize=axisfont)
+    ax.set_ylabel('Flux', fontsize=axisfont)
 
 
-def plot_sed(field, v4id, plot_spec=False, plot_fit=False, plot_cont=False):
+def plot_sed(field, v4id, plot_spec=False, plot_fit=False, plot_cont=False, talk_plot=False):
     """Given a field and id, read in the sed and create a plot of it
 
     Parameters:
@@ -37,7 +42,7 @@ def plot_sed(field, v4id, plot_spec=False, plot_fit=False, plot_cont=False):
     v4id (int): HST V4.1 id of the object
     plot_spec (boolean): Set to true to plot spectrum
     plot_fit (boolean): Set to true to plot polynomial fit
-
+    talk_plot (str): If true, will save in different location and plot less info
 
     Returns:
     """
@@ -55,11 +60,15 @@ def plot_sed(field, v4id, plot_spec=False, plot_fit=False, plot_cont=False):
     legendfont = 14
     textfont = 16
 
-    fig = plt.figure(figsize=(8, 8))
+    if talk_plot:
+        fig = plt.figure(figsize=(6, 6))
+    else:
+        fig = plt.figure(figsize=(8, 8))
     # Set the location of the image axis here
     ax_main = fig.add_axes([0.15, 0.5, 0.75, 0.45])
     ax_zoom = fig.add_axes([0.15, 0.1, 0.75, 0.25])
-    ax_image = fig.add_axes([0.74, 0.79, 0.15, 0.15])
+    if talk_plot == False:
+        ax_image = fig.add_axes([0.74, 0.79, 0.15, 0.15])
 
     # Values that are not outliers
     good_idxs = sed['f_lambda'] > -98
@@ -77,8 +86,9 @@ def plot_sed(field, v4id, plot_spec=False, plot_fit=False, plot_cont=False):
                      max(sed[good_idxs][sed[good_idxs]['peak_wavelength'] < 20000]['f_lambda'] * 1.2))
 
     rounded_z = np.round(mosdef_obj["Z_MOSFIRE_USE"], 3)
-    ax_main.text(0.02, 0.95, f'{field} {v4id}', fontsize=axisfont, transform=ax_main.transAxes)
-    ax_main.text(0.02, 0.89, f'z = ' + str(rounded_z), fontsize=axisfont, transform=ax_main.transAxes)
+    if talk_plot == False:
+        ax_main.text(0.02, 0.95, f'{field} {v4id}', fontsize=axisfont, transform=ax_main.transAxes)
+        ax_main.text(0.02, 0.89, f'z = ' + str(rounded_z), fontsize=axisfont, transform=ax_main.transAxes)
 
     ax_main.set_xscale('log')
     ax_main.set_xlim(800, 45000)
@@ -96,7 +106,8 @@ def plot_sed(field, v4id, plot_spec=False, plot_fit=False, plot_cont=False):
     ax_zoom.tick_params(labelsize=ticksize, size=ticks)
 
     # IMAGE PLOTTING:
-    plot_image(ax_image, field, v4id, mosdef_obj)
+    if talk_plot == False:
+        plot_image(ax_image, field, v4id, mosdef_obj)
 
     # SPECTRUM PLOTTING:
     if plot_spec:
@@ -112,7 +123,12 @@ def plot_sed(field, v4id, plot_spec=False, plot_fit=False, plot_cont=False):
         plot_continuum(ax_main, mosdef_obj)
         plot_continuum(ax_zoom, mosdef_obj)
 
-    fig.savefig(imd.home_dir + f'/mosdef/SED_Images/{field}_{v4id}.pdf')
+    
+    if talk_plot == True:
+        save_loc = imd.mosdef_dir + f'/talk_plots/{field}_{v4id}_FAST.pdf'
+    else:
+        save_loc = imd.home_dir + f'/mosdef/SED_Images/{field}_{v4id}.pdf'
+    fig.savefig(save_loc)
     plt.close('all')
 
 
@@ -334,3 +350,76 @@ def plot_all_axis_ratios():
     fig.savefig(imd.mosdef_dir +
                 '/axis_ratio_data/Merged_catalogs/all_axis_ratios.pdf')
     plt.close()
+
+
+def talk_plots_seds(field, v4id):
+    
+
+    mosdef_obj = get_mosdef_obj(field, v4id)
+
+    #HST Image
+    fig, ax = plt.subplots(figsize=(6,6))
+    plot_image(ax, field, v4id, mosdef_obj)
+    fig.savefig(imd.mosdef_dir + f'/talk_plots/{field}_{v4id}_image.pdf')
+    plt.close('all')
+    
+    #SED 
+    sed = read_sed(field, v4id)
+    sed['rest_wavelength'] = sed['peak_wavelength'] / \
+        (1 + mosdef_obj['Z_MOSFIRE'])
+    fig, ax = plt.subplots(figsize=(5,5))
+    good_idxs = sed['f_lambda']>-2
+    scale = 1e15
+    ax.plot(sed[good_idxs]['rest_wavelength'], scale*sed[good_idxs]['rest_wavelength']*sed[good_idxs]['f_lambda'], marker='o', ls='None', color='black')
+    ax.tick_params(labelsize=14)
+    ax.set_xlabel('Wavelength $\mathrm{\\AA}$', fontsize=14)
+    ax.set_ylabel('Flux', fontsize=14)
+    
+    fig.savefig(imd.mosdef_dir + f'/talk_plots/{field}_{v4id}_sed.pdf',bbox_inches='tight')
+    plt.close('all')
+
+    #Spectrum 
+    files = get_spectra_files(mosdef_obj)
+    fig = plt.figure(figsize=(12,4))
+    axarr = GridSpec(1, 1, left=0.08, right=0.92, wspace=0.01, hspace=0.01)
+    ax.tick_params(labelsize=14)
+    plot_lims = ((4850, 5020), (6535, 6595))
+
+    bax_0 = brokenaxes(xlims=plot_lims, subplot_spec=axarr[0,0])
+    from fit_emission import line_list
+    for file in files:
+        spectrum_df = read_spectrum(mosdef_obj, file)
+        scale = 1e17
+        bax_0.plot(spectrum_df['rest_wavelength'], scale*spectrum_df[
+                    'f_lambda'], color='blue', lw=1)
+        lims = np.percentile(scale*spectrum_df['f_lambda'], [2,99.8])
+        bax_0.set_ylim(lims[0], 4)
+        # for line in line_list:
+        #     name = line[0]
+        #     center = line[1]
+        #     # line_range = np.logical_and(spec_df['wavelength']>(center-5), spec_df['wavelength']<(center+5))
+        #     line_range = np.logical_and(spectrum_df['rest_wavelength']>(center-3), spectrum_df['rest_wavelength']<(center+3))
+        #     height = np.max(spectrum_df[line_range]['f_lambda'])
+        #     ylims = ax.get_ylim()
+        #     height_pct = (height-ylims[0]) / (ylims[1]-ylims[0])
+        #     print(height_pct)
+        #     bax_0.axvline(center, ymin=height_pct, color='black', ls='-')
+        #     if len(name) > 8:
+        #         offset = -8
+        #     else:
+        #         offset = len(name)*-2.7
+            # bax_0.text(center+3+offset, height+2e-17, name, fontsize=14)
+    bax_0.set_xlabel('Wavelength ($\mathrm{\\AA}$)', fontsize=14, labelpad=20)
+    bax_0.set_ylabel('Flux', fontsize=14, labelpad=-1)
+    bax_0.tick_params(labelsize=14)
+    
+    
+    fig.savefig(imd.mosdef_dir + f'/talk_plots/{field}_{v4id}_spec.pdf',bbox_inches='tight')
+    plt.close('all')
+
+def plot_fast_fit(field, v4id):
+    plot_sed(field, v4id, plot_fit=False,
+                     plot_spec=False, plot_cont=True, talk_plot=True)
+
+# talk_plots_seds('AEGIS', 1848)
+# plot_fast_fit('AEGIS', 1848)

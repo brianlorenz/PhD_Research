@@ -64,8 +64,8 @@ run_params = {'verbose': True,
               'nested_maxbatch': None, # was None-- changed re ben's email 5/21/19
               'nested_maxcall': float(1e7), # was 5e7 -- changed to 5e6 re ben's email on 5/21/19
               'nested_bootstrap': 20,
-              'nested_dlogz_init': 0.05,
-              'nested_stop_kwargs': {"post_thresh": 0.1}, # lower this to 0.02ish once I get things working
+              'nested_dlogz_init': 0.1,
+              'nested_stop_kwargs': {"post_thresh": 0.05}, # lower this to 0.02ish once I get things working
               # Obs data parameters
               'objid': 0,
               'zred': 0.0,
@@ -116,7 +116,11 @@ def build_obs(**kwargs):
     # Phot mask that allows everything
     # obs["phot_mask"] = np.array([m > 0 for m in obs['maggies']])
     # Phot mask around emission lines
-    obs["phot_mask"] = check_filt_transmission(filt_folder, obs['z'])
+    filt_mask = check_filt_transmission(filt_folder, obs['z'])
+    # Phot mask out anything blueward of 1500
+    redshifted_lya_cutoff = 1500*(1+obs['z'])
+    ly_mask = obs["phot_wave"] > redshifted_lya_cutoff
+    obs["phot_mask"] = np.logical_and(filt_mask, ly_mask)
 
     # Add unessential bonus info.  This will be stored in output
     obs['groupID'] = groupID

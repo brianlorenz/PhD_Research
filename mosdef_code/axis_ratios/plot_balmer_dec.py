@@ -65,6 +65,10 @@ def plot_balmer_dec(save_name, n_groups, split_by, y_var = 'balmer_dec', color_v
         # ssfr color map
         norm = mpl.colors.Normalize(vmin=0, vmax=2.0) 
         color_str='_log_use_sfr_color'
+    elif color_var=='log_sed_sfr':
+        # ssfr color map
+        norm = mpl.colors.Normalize(vmin=0, vmax=2.0) 
+        color_str='_log_use_sfr_color'
     elif color_var=='metallicity':
         # metallicity color map
         norm = mpl.colors.Normalize(vmin=8.1, vmax=8.9) 

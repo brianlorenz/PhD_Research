@@ -138,6 +138,7 @@ def plot_sample_split(n_groups, save_name, ratio_bins, starting_points, mass_wid
 
 
         # Bootstrap errors on the medians
+        breakpoint()
         av_median, err_av_median, err_av_median_low, err_av_median_high = bootstrap_median(axis_ratio_df['AV'], sfr_weigh=True, sfr_df=10**axis_ratio_df['log_use_sfr'])
         beta_median, err_beta_median, err_beta_median_low, err_beta_median_high = bootstrap_median(axis_ratio_df['beta'], sfr_weigh=True, sfr_df=10**axis_ratio_df['log_use_sfr'])
         # Convert re (arcsec) to physical distance
@@ -418,4 +419,130 @@ def make_sample_split_twopanel(save_name, n_groups):
     fig.savefig(imd.axis_cluster_data_dir + f'/{save_name}/sample_cut_2panel.pdf',bbox_inches='tight')
 
 
+
+
+
+def make_sample_split_talkplot(save_name, n_groups, plot_stage=0):
+    """Same as above, but jsut for making plots for a talk
+
+    Plot stages:
+    0 - all on same figure
+    1 - split by axis ratio
+    2 - further split by mass
+    3 - finally, split by SFR
+    4 - full plot, add labels and everything
+    
+    """
+    
+    if plot_stage == 0:
+        fig, ax_solo = plt.subplots(figsize=(8,8))
+        axarr = [ax_solo]
+    else:
+        fig, axarr = plt.subplots(1, 2, figsize=(17,8))
+
+        plt.subplots_adjust(left=0.125, bottom=0.1, right=0.9, top=0.9, wspace=0.1, hspace=0.2)
+
+        ax_edgeon = axarr[0]
+        ax_faceon = axarr[1]
+
+    cmap = cmr.get_sub_cmap('gist_heat_r', 0.12, 1.0)
+    norm = mpl.colors.Normalize(vmin=2, vmax=7) 
+
+    
+
+    xlims = (9.0, 11.0)
+    ylims = (-0.1, 2.6)
+
+    for axis_group in range(n_groups):
+        axis_ratio_df = ascii.read(imd.axis_cluster_data_dir + f'/{save_name}/{save_name}_group_dfs/{axis_group}_df.csv').to_pandas()
+        axis_ratio_df['balmer_dec'] = (axis_ratio_df['ha_flux'] / axis_ratio_df['hb_flux'])
+        for i in range(len(axis_ratio_df)):
+            row = axis_ratio_df.iloc[i]
+            if row['use_ratio'] < 0.55:
+                if plot_stage == 0:
+                    ax = ax_solo
+                else:
+                    ax = ax_edgeon
+                shape = shapes['low']
+            else:
+                if plot_stage == 0:
+                    ax = ax_solo
+                else:
+                    ax = ax_faceon
+                shape = shapes['high']
+            
+
+            ellipse_width, ellipse_height = get_ellipse_shapes(xlims[1]-xlims[0], np.abs(ylims[1]-ylims[0]), shape, scale_factor=0.025)
+            # Use this to scale the shapes with axis ratio
+            # ellipse_width, ellipse_height = get_ellipse_shapes(xlims[1]-xlims[0], np.abs(ylims[1]-ylims[0]), shape, scale_factor=0.025, shape_with_axis=True, axis_ratio=row['use_ratio'])
+            
+            rgba = cmap(norm(row['balmer_dec']))
+            # ax.plot(row['log_mass'], row['log_ssfr'], color = rgba, ls='None', marker=shape)
+            if row['hb_detflag_sfr'] == 1.0:
+                ax.add_artist(Ellipse((row['log_mass'], row['log_use_sfr']), ellipse_width, ellipse_height, edgecolor=rgba, zorder=2, fill=False, linewidth=2))
+            else:
+                ax.add_artist(Ellipse((row['log_mass'], row['log_use_sfr']), ellipse_width, ellipse_height, facecolor=rgba, zorder=2))
+
+        med_mass = np.median(axis_ratio_df['log_mass'])
+        med_sfr = np.median(axis_ratio_df['log_use_sfr'])
+        if plot_stage == 4:
+            ax.plot(med_mass, med_sfr, marker='+', mew=2, color=number_color, ls='None', zorder=20, markersize=20)
+            ax.plot(med_mass, med_sfr, marker='+', mew=4, color='black', ls='None', zorder=19, markersize=22)
+
+    for ax in axarr:
+        x = np.linspace(8.8, 11.2, 100)
+        if plot_stage > 1:
+            ax.axvline(10, color='grey', ls='--')
+        a = a_all_fit
+        b = b_all
+        c = c_all
+        print(a_all_fit)
+        y_sfr = a + b*x + c*x**2
+        if plot_stage > 2:
+            ax.plot(x, y_sfr, color='grey', ls='-.')
+
+        ax.set_ylim(ylims)
+        ax.set_xlim(xlims)
+        ax.set_xlabel(stellar_mass_label, fontsize=full_page_axisfont) 
+        ax.set_ylabel(sfr_label, fontsize=full_page_axisfont)
+        ax.tick_params(labelsize=full_page_axisfont)
+        ax.set_aspect(ellipse_width/ellipse_height)
+        scale_aspect(ax) 
+
+    hlow = 0.03
+    hhigh = 0.91
+    vlow = 0.04
+    vhigh = 0.93
+    if plot_stage == 4:
+        ax_edgeon.text(hlow, vhigh, 'II', fontsize=24, transform=ax_edgeon.transAxes, color=number_color, path_effects=[pe.withStroke(linewidth=2, foreground="black")])
+        ax_edgeon.text(hlow, vlow, 'I', fontsize=24, transform=ax_edgeon.transAxes, color=number_color, path_effects=[pe.withStroke(linewidth=2, foreground="black")])
+        ax_edgeon.text(hhigh, vlow, 'III', fontsize=24, transform=ax_edgeon.transAxes, color=number_color, path_effects=[pe.withStroke(linewidth=2, foreground="black")])
+        ax_edgeon.text(hhigh, vhigh, 'IV', fontsize=24, transform=ax_edgeon.transAxes, color=number_color, path_effects=[pe.withStroke(linewidth=2, foreground="black")])     
+        ax_faceon.text(hlow, vhigh, 'VI', fontsize=24, transform=ax_faceon.transAxes, color=number_color, path_effects=[pe.withStroke(linewidth=2, foreground="black")]) 
+        ax_faceon.text(hlow, vlow, 'V', fontsize=24, transform=ax_faceon.transAxes, color=number_color, path_effects=[pe.withStroke(linewidth=2, foreground="black")]) 
+        ax_faceon.text(hhigh, vlow, 'VII', fontsize=24, transform=ax_faceon.transAxes, color=number_color, path_effects=[pe.withStroke(linewidth=2, foreground="black")]) 
+        ax_faceon.text(hhigh-0.015, vhigh, 'VIII', fontsize=24, transform=ax_faceon.transAxes, color=number_color, path_effects=[pe.withStroke(linewidth=2, foreground="black")])     
+    
+
+    cbar = fig.colorbar(mpl.cm.ScalarMappable(norm=norm, cmap=cmap), ax=axarr, fraction=0.046, pad=0.04, shrink=0.90)
+    cbar.set_label(balmer_label, fontsize=full_page_axisfont)
+    cbar.ax.tick_params(labelsize=full_page_axisfont)
+
+    if plot_stage > 0:
+        ax_faceon.set_ylabel('')
+        # ax_faceon.set_yticks([])
+        ax_faceon.tick_params(labelleft=False)
+        ax_edgeon.set_title("$b/a < 0.55$", fontsize=full_page_axisfont)
+        ax_faceon.set_title("$b/a \geq 0.55$", fontsize=full_page_axisfont)
+
+    fig.savefig(imd.axis_cluster_data_dir + f'/{save_name}/talk_samplecut_stage{plot_stage}.pdf',bbox_inches='tight')
+
+
 # make_sample_split_twopanel('norm_1_sn5_filtered', 8)
+make_sample_split_talkplot('norm_1_sn5_filtered', 8, plot_stage=0)
+make_sample_split_talkplot('norm_1_sn5_filtered', 8, plot_stage=1)
+make_sample_split_talkplot('norm_1_sn5_filtered', 8, plot_stage=2)
+make_sample_split_talkplot('norm_1_sn5_filtered', 8, plot_stage=3)
+make_sample_split_talkplot('norm_1_sn5_filtered', 8, plot_stage=4)
+
+

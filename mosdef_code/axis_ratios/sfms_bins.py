@@ -28,6 +28,10 @@ a_highz_fit = -23.770
 
 # 09/09/22 - after re-fitting emission individually
 a_all_fit = -23.864
+# b_all = 4.1693
+# c_all = -0.1638
+
+# a_all_fit = -24.122
 b_all = 4.1693
 c_all = -0.1638
 
@@ -100,22 +104,24 @@ def find_sfms(divide_axis = False, divide_z = False, whitaker_z = False):
         save_add = '_zsplit'
     elif whitaker_z == True:
         low_z = ar_df['Z_MOSFIRE'] < 1.8
-        ax.plot(ar_df[low_z]['log_mass'], ar_df[low_z]['log_use_sfr'], color='orange', ls='None', marker='o', label='redshift < 1.8')
-        ax.plot(ar_df[~low_z]['log_mass'], ar_df[~low_z]['log_use_sfr'], color='blue', ls='None', marker='o', label='redshift > 1.8')
+        sfr_var = 'log_use_sfr'
+        # sfr_var = 'log_sed_sfr'
+        ax.plot(ar_df[low_z]['log_mass'], ar_df[low_z][sfr_var], color='orange', ls='None', marker='o', label='redshift < 1.8')
+        ax.plot(ar_df[~low_z]['log_mass'], ar_df[~low_z][sfr_var], color='blue', ls='None', marker='o', label='redshift > 1.8')
     
-        popt, pcov = curve_fit(whitaker_sfms, ar_df[low_z]['log_mass'], ar_df[low_z]['log_use_sfr'])
+        popt, pcov = curve_fit(whitaker_sfms, ar_df[low_z]['log_mass'], ar_df[low_z][sfr_var])
         a_lowz = popt[0]
         y1_low = whitaker_sfms(x, a_lowz)
         plt.plot(x, y1_low, color='darkorange', ls='--', label='low fit')
         ax.text(9, 2.1, f'a value: {round(a_lowz, 3)}', color='darkorange')
 
-        popt, pcov = curve_fit(whitaker_sfms, ar_df[~low_z]['log_mass'], ar_df[~low_z]['log_use_sfr'])
+        popt, pcov = curve_fit(whitaker_sfms, ar_df[~low_z]['log_mass'], ar_df[~low_z][sfr_var])
         a_highz = popt[0]
         y1_high = whitaker_sfms(x, a_highz)
         plt.plot(x, y1_high, color='darkblue', ls='--', label='high fit')
         ax.text(9, 1.9, f'a value: {round(a_highz, 3)}', color='darkblue')
 
-        popt, pcov = curve_fit(whitaker_sfms, ar_df['log_mass'], ar_df['log_use_sfr'])
+        popt, pcov = curve_fit(whitaker_sfms, ar_df['log_mass'], ar_df[sfr_var])
         a_all = popt[0]
         y1_high = whitaker_sfms(x, a_all)
         plt.plot(x, y1_high, color='red', ls='--', label='full sample')
@@ -172,7 +178,7 @@ def plot_sfms_bins(save_name, nbins, split_by):
 # find_sfms()
 # find_sfms(divide_axis=True)
 # find_sfms(divide_z=True)
-find_sfms(whitaker_z=True)
+# find_sfms(whitaker_z=True)
 # plot_sfms_bins('both_sfms_6bin_median_2axis', 12, 'log_use_sfr')
 #low cut - (9.5, 0.3), (11.0, 1.9)  y = 1.07x-9.83
 #high cut - (9.0, 0.5), (10.5, 2.0) y = 1.07x-8.6

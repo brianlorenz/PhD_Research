@@ -170,7 +170,10 @@ def fit_emission(groupID, norm_method, constrain_O3=False, axis_group=-1, save_n
             cont_sub_df.to_csv(imd.axis_cluster_data_dir + f'/{save_name}/{save_name}_cont_subs_boots/{axis_group}_cont_sub_{bootstrap_num}.csv', index=False)
         else:
             cont_sub_df.to_csv(imd.axis_cluster_data_dir + f'/{save_name}/{save_name}_cont_subs/{axis_group}_cont_sub.csv', index=False)
-
+    else:
+        imd.check_and_make_dir(imd.emission_fit_dir + '/emission_fit_cont_subs/')
+        cont_sub_df = pd.DataFrame(zip(wavelength_cut, y_data_cont_sub / scale_factor), columns=['wavelength_cut','continuum_sub_ydata'])
+        cont_sub_df.to_csv(imd.emission_fit_dir + f'/emission_fit_cont_subs/{groupID}_cont_sub.csv', index=False)
 
     # Now, parse the results into a dataframe
     hb_scale, ha_scale, err_hb_scale, err_ha_scale = cont_scale_out
@@ -386,6 +389,7 @@ def plot_emission_fit(groupID, norm_method, axis_group=-1, save_name='', scaled=
         fit_df = ascii.read(imd.emission_fit_csvs_dir +
                             f'/{groupID}_emission_fits.csv').to_pandas()
         total_spec_df = read_composite_spectrum(groupID, norm_method)
+        cont_sub_df = ascii.read(imd.emission_fit_dir + f'/emission_fit_cont_subs/{groupID}_cont_sub.csv').to_pandas()
 
     fig = plt.figure(figsize=(8, 8))
     ax = fig.add_axes([0.09, 0.08, 0.88, 0.42])
@@ -444,8 +448,8 @@ def plot_emission_fit(groupID, norm_method, axis_group=-1, save_name='', scaled=
     # Plots the spectrum and fit on all axes
     for axis in axes_arr:
         axis.plot(wavelength, spectrum, color='black', lw=1, label='Spectrum')
+        axis.plot(cont_sub_df['wavelength_cut'], cont_sub_df['continuum_sub_ydata'], color='mediumseagreen', label='Continuum-Subtracted', marker='o', ls='None')
         if axis_group > -1:
-            axis.plot(cont_sub_df['wavelength_cut'], cont_sub_df['continuum_sub_ydata'], color='mediumseagreen', label='Continuum-Subtracted', marker='o', ls='None')
             if np.median(fast_continuum)>0:
                 axis.plot(wavelength, fast_continuum, color='blue', label='Scaled FAST Cont')
         axis.plot(wavelength[full_cut][hb_range], gauss_fit[hb_range], color='orange',

@@ -260,11 +260,12 @@ def plot_all_uvj_clusters(n_clusters):
         plot_uvj_cluster(i)
 
 
-def plot_full_uvj(n_clusters, balmer_color=False):
+def plot_full_uvj(n_clusters, color_type='None'):
     """Generate one overview UVJ diagram, with clusters marked by low-membership and labeled by number
 
     Parameters:
-    n_clusters: Number of clusters
+    n_clusters (int): Number of clusters
+    color_type (str): Either set to 'balmer', 'ssfr', or 'metallicity' for what to make the coloarbar
 
     Returns:
     """
@@ -303,28 +304,43 @@ def plot_full_uvj(n_clusters, balmer_color=False):
     for groupID in range(n_clusters):
         row = composite_uvj_df.iloc[groupID]
         ax.text(row['V_J'] - 0.02, row['U_V'] + 0.03, f'{groupID}', size=12, fontweight='bold', color='red')
-        if balmer_color == True:
+        if color_type != 'None':
             cmap = mpl.cm.inferno
-            norm = mpl.colors.Normalize(vmin=2, vmax=10) 
-
             cluster_row_idx = cluster_summary_df['groupID'] == groupID
-            cluster_balmer = cluster_summary_df[cluster_row_idx]['balmer_dec']
-        
-            rgba = cmap(norm(cluster_balmer))
+            if color_type == 'balmer':
+                norm = mpl.colors.Normalize(vmin=2, vmax=10) 
+                cluster_colorval = cluster_summary_df[cluster_row_idx]['balmer_dec']
+                cbar_label = 'Balmer Dec'
+                add_str = '_balmer_color'
+            elif color_type == 'ssfr':
+                norm = mpl.colors.Normalize(vmin=-9.5, vmax=-8.25)
+                cluster_colorval = cluster_summary_df[cluster_row_idx]['log_ssfr'] 
+                cbar_label = 'log(sSFR)'
+                add_str = '_ssfr_color'
+            elif color_type == 'metallicity':
+                norm = mpl.colors.Normalize(vmin=8.2, vmax=8.9)
+                cluster_colorval = cluster_summary_df[cluster_row_idx]['O3N2_metallicity'] 
+                cbar_label = 'O3N2 Metallicity'
+                add_str = '_metal_color'
+            else:
+                sys.exit('Unknown color type. Use "balmer", "ssfr", "metallicity", or "None"')
+
+            rgba = cmap(norm(cluster_colorval))
             ax.plot(row['V_J'], row['U_V'],
                 ls='', marker='o', markersize=6, markeredgewidth=2, color=rgba)
             
+        
 
     # for groupID in bad_uvjs['groupID']:
     #     ax.text(composite_uvj_df.iloc[groupID]['V_J'] - 0.02, composite_uvj_df.iloc[groupID]
     #             ['U_V'] + 0.03, f'{groupID}', size=12, fontweight='bold', color='red')
 
     # Plot the bad composite SEDs as a red X
-    if balmer_color == True:
+    if color_type != 'None':
         cbar = fig.colorbar(mpl.cm.ScalarMappable(norm=norm, cmap=cmap), ax=ax, fraction=0.046, pad=0.04)
-        cbar.set_label('Balmer Dec', fontsize=full_page_axisfont)
+        cbar.set_label(cbar_label, fontsize=full_page_axisfont)
         cbar.ax.tick_params(labelsize=full_page_axisfont-2)
-        add_str = '_balmer_color'
+        
 
     # ax.legend(fontsize=full_page_axisfont - 4)
     ax.tick_params(labelsize=full_page_axisfont)
@@ -370,4 +386,7 @@ def setup_uvj_plot(ax, galaxy_uvj_df, composite_uvj_df, axis_obj='False'):
 
 
 # observe_all_uvj(23, individual_gals=False, composite_uvjs=True)
-plot_full_uvj(23, balmer_color=True)
+# plot_full_uvj(23)
+# plot_full_uvj(23, color_type='balmer')
+# plot_full_uvj(23, color_type='ssfr')
+# plot_full_uvj(23, color_type='metallicity')

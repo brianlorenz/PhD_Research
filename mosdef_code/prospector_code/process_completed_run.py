@@ -66,7 +66,7 @@ def main_process(groupID, run_name, non_par_sfh):
     mod.params['add_neb_emission'] = np.array([False])
     print('Set neb emission to false, computing continuum')
     all_spec, all_phot, all_mfrac, all_line_fluxes, all_line_fluxes_erg, line_waves, weights, idx_high_weights = gen_phot(
-        res, obs, mod, sps)
+        res, obs, mod, sps, non_par_sfh)
     compute_quantiles(res, obs, mod, sps, all_spec, all_phot, all_mfrac, all_line_fluxes, all_line_fluxes_erg, line_waves, weights, idx_high_weights, groupID, cont=True)
 
 

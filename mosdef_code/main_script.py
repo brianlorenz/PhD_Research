@@ -31,7 +31,7 @@ Specify the directories in initialize_mosdef_dirsl;k
 # Make sure to go to initialize_mosdef_dirs to set all the directories properly
 
 # Set the total number of clusters
-n_clusters = 23
+n_clusters = 8
 # Set the name of the prospector run
 run_name = 'test'
 # Set which group numbers to ignore since their data is not good
@@ -49,7 +49,7 @@ bootstrap = 100
 # print('Generating composite seds...')
 # get_all_composite_seds(n_clusters, run_filters=True)
 # print('Generating composite spectra...')
-stack_all_spectra(n_clusters, 'cluster_norm', bootstrap=bootstrap, ignore_groups=ignore_groups)
+# stack_all_spectra(n_clusters, 'cluster_norm', bootstrap=bootstrap, ignore_groups=ignore_groups)
 # print('Fitting emission lines...')
 
 #Check for agn and list which groups do not have enough galaxies
@@ -63,6 +63,8 @@ fit_all_emission(n_clusters, 'cluster_norm', ignore_groups, bootstrap=bootstrap)
 # Add the bootstrapped uncertainties
 compute_bootstrap_uncertainties(n_clusters, 'None', bootstrap=bootstrap, clustering=True, ignore_groups=ignore_groups)
 
+sys.exit()
+
 make_clusters_summary_df(n_clusters, ignore_groups)
 
 # Need to do a few things to composites (measure uvj, generate mocks sed, etc. before we can plot)
@@ -74,7 +76,6 @@ make_clusters_summary_df(n_clusters, ignore_groups)
 # generate_all_cluster_plots(n_clusters)
 
 
-'''
 # Prepare for prospector:
 print('Preparing data for Prospector')
 convert_all_folders_to_sedpy(n_clusters)
@@ -85,10 +86,10 @@ convert_folder_to_maggies(imd.composite_sed_csvs_dir)
 plot_scaled_composites(n_clusters)
 # Scale and re-fit the spectra using the scale that was used for the composites
 scale_all_spectra(n_clusters)
+
 # Re-fit the prospector spectra in the same way that we fit the mosdef ones:
 
+# setup_all_prospector_fit_csvs(29, run_name)
+# fit_all_prospector_emission(29, run_name)
 
-setup_all_prospector_fit_csvs(29, run_name)
-fit_all_prospector_emission(29, run_name)
-'''
 

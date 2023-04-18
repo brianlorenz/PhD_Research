@@ -150,8 +150,8 @@ def make_plots(groupID, run_name, mask=False, savename='False', trial=1):
 
         ## SPECTRUM IS HERE
         # Plot spectrum
-        # ax.plot(spec_df['rest_wavelength'][spec_idxs], spec_df['rest_wavelength'][spec_idxs] * spec_df['spec50_flambda'][spec_idxs], '-',
-        #         color='orange', label='Model spectrum', zorder=3)
+        ax.plot(spec_df['rest_wavelength'][spec_idxs], spec_df['rest_wavelength'][spec_idxs] * spec_df['spec50_flambda'][spec_idxs], '-',
+                color='orange', label='Model spectrum', zorder=3)
 
         # Plot Emission line and labels - plots all from CLOUDY
         # for i in range(len(line_waves)):
@@ -245,7 +245,7 @@ def make_all_prospector_plots(n_clusters, run_name):
             print(f'Making plot for group {groupID}')
             make_plots(groupID, run_name)
 
-def make_all_prospector_plots_2groups(groupID1, groupID2, run_name):
+def make_all_prospector_plots_2groups(groupID1, groupID2, groupID3, groupID4, run_name):
     '''Makes the plots from the outputs of the prospector run on Savio
     
     n_clusters (int): Number of composite clusters
@@ -253,16 +253,16 @@ def make_all_prospector_plots_2groups(groupID1, groupID2, run_name):
 
 
     '''
-    for i in range(20):
-        if i>9:
-            groupID = groupID2
-        else:
-            groupID = groupID1
-        if os.path.exists(imd.prospector_fit_csvs_dir + f'/{run_name}_csvs/group{groupID}_trial{i}_phot.csv'):
-            print(f'Making plot for group {groupID}, trial {i}')
-            make_plots(groupID, run_name, trial=i)
+    groupIDs = [groupID1, groupID2, groupID3, groupID4]
+    for groupID in groupIDs:
+        # if groupID == 0:
+        #     continue
+        for i in range(5):
+            if os.path.exists(imd.prospector_fit_csvs_dir + f'/{run_name}_csvs/group{groupID}_trial{i}_phot.csv'):
+                print(f'Making plot for group {groupID}, trial {i}')
+                make_plots(groupID, run_name, trial=i)
 
 
-# make_all_prospector_plots_2groups(1, 2, 'raised_post_thresh')
+make_all_prospector_plots_2groups(0, 11, 14, 18, 'nonpar_ly_mask')
 # make_all_prospector_plots(29, 'sfh_1')
 

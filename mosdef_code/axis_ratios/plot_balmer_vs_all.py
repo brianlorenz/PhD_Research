@@ -263,3 +263,4 @@ def plot_balmer_vs_all(save_name):
 
 
 # plot_balmer_vs_all('norm_1_sn5_filtered')
+plot_balmer_vs_all('sed_sfr')

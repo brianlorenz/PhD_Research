@@ -191,3 +191,9 @@ def plot_bpt_cluster(emission_df, groupID, axis_obj = 'False'):
     plot_bpt(emission_df, fields_ids, savename=savename, axis_obj=axis_obj)
 
 # plot_bpt()
+
+
+# ar_df = read_filtered_ar_df()
+# ar_df['log_sed_sfr'] = np.log10(ar_df['sed_sfr'])
+# ar_path = imd.mosdef_dir + '/axis_ratio_data/Merged_catalogs/filtered_ar_df.csv'
+# ar_df.to_csv(ar_path, index=False)

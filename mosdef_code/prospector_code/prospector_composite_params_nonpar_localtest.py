@@ -37,6 +37,7 @@ composite_filter_sedpy_dir = imd.composite_filter_sedpy_dir
 median_zs_file = imd.composite_seds_dir + '/median_zs.csv'
 
 # %run prospector_dynesty.py --param_file='prospector_composite_params_nonpar_localtest.py' --outfile='composite_group0' --debug=True
+# "%run prospector_dynesty.py --param_file='prospector_composite_params_group4_trial0.py' --outfile='/global/scratch/users/brianlorenz/prospector_h5s/nonpar_sfh_fixedbins_h5s/group2_trial19'  --debug=True"
 
 # set up cosmology
 cosmo = FlatLambdaCDM(H0=70, Om0=.3)
@@ -117,6 +118,10 @@ def build_obs(**kwargs):
     # obs["phot_mask"] = np.array([m > 0 for m in obs['maggies']])
     # Phot mask around emission lines
     obs["phot_mask"] = check_filt_transmission(filt_folder, obs['z'])
+    # Phot mask out anything blueward of 1500
+    redshifted_lya_cutoff = 1500*(1+obs['z'])
+    ly_mask = obs["phot_wave"] > redshifted_lya_cutoff
+    breakpoint()
 
     # Add unessential bonus info.  This will be stored in output
     obs['groupID'] = groupID

@@ -1,6 +1,6 @@
 '''Codes that should be run on Savio immediately after the run finishes, putting the data in an easy format for plotting'''
 
-from prospector_composite_params_group0 import get_filt_list
+from prospector_composite_params_nonpar import get_filt_list
 from cosmology_calcs import luminosity_to_flux
 from convert_flux_to_maggies import prospector_maggies_to_flux, prospector_maggies_to_flux_spec
 import prospect.io.read_results as reader
@@ -22,8 +22,8 @@ non_par_sfh = True
 # mosdef_elines_file = '/global/scratch/users/brianlorenz/mosdef_elines.txt'
 
 # For saving
-prospector_csvs_dir = '/global/scratch/users/brianlorenz/prospector_csvs'
-prospector_plots_dir = '/global/scratch/users/brianlorenz/prospector_plots'
+# prospector_csvs_dir = '/global/scratch/users/brianlorenz/prospector_csvs'
+# prospector_plots_dir = '/global/scratch/users/brianlorenz/prospector_plots'
 
 # Directory locations on home
 import initialize_mosdef_dirs as imd
@@ -33,6 +33,7 @@ composite_filter_sedpy_dir = imd.composite_filter_sedpy_dir
 median_zs_file = imd.composite_seds_dir + '/median_zs.csv'
 prospector_plot_dir = imd.prospector_plot_dir
 mosdef_elines_file = imd.loc_mosdef_elines
+prospector_csvs_dir = imd.prospector_fit_csvs_dir
 
 
 def main_process(groupID1, groupID2, trial, run_name, non_par_sfh):
@@ -73,7 +74,7 @@ def main_process(groupID1, groupID2, trial, run_name, non_par_sfh):
     mod.params['add_neb_emission'] = np.array([False])
     print('Set neb emission to false, computing continuum')
     all_spec, all_phot, all_mfrac, all_line_fluxes, all_line_fluxes_erg, line_waves, weights, idx_high_weights = gen_phot(
-        res, obs, mod, sps)
+        res, obs, mod, sps, non_par_sfh)
     compute_quantiles(res, obs, mod, sps, all_spec, all_phot, all_mfrac, all_line_fluxes, all_line_fluxes_erg, line_waves, weights, idx_high_weights, groupID, trial, cont=True)
 
 
@@ -280,8 +281,8 @@ def quantile(data, percents, weights=None):
 # groupID2 = sys.argv[2]
 # trial = sys.argv[3]
 # run_name = sys.argv[4]
-groupID1 = 0
-groupID2 = 1
-trial = 1
-run_name = 'nonpar_test'
+groupID1 = 4
+groupID2 = 16
+trial = 0
+run_name = 'local_nonpar_sfh_fixedbins'
 main_process(groupID1, groupID2, trial, run_name, non_par_sfh)

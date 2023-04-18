@@ -16,11 +16,11 @@ from matplotlib.widgets import Slider, Button, SpanSelector
 from generate_ssp import get_filename, ages_allowed
 
 
-os.environ["SPS_HOME"] = "/Users/galaxies-air/SPS_Conroy/fsps/"
+os.environ["SPS_HOME"] = "/Users/brianlorenz/fsps/"
 
-loc = '/Users/galaxies-air/Desktop/Galaxies/visualization/'
+loc = '/Users/brianlorenz/code/courses/galaxies/visualization/'
 
-ssp_folder = '/Users/galaxies-air/Desktop/Galaxies/visualization/ssps/'
+ssp_folder = '/Users/brianlorenz/code/courses/galaxies/visualization/ssps/'
 
 
 def find_nearest(array, value):

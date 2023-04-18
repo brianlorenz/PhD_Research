@@ -275,10 +275,14 @@ def generate_group_of_spectra(n_spec=9, line_peaks = [4861, 6563], fixed_variabl
         balmer_decs = [4.5 for i in range(n_spec)]
     else:
         balmer_decs = [np.random.random()*3 + 3 for i in range(n_spec)]
+    if 'flux' in fixed_variables:
+        balmer_decs = [1 for i in range(n_spec)]
+    else:
+        balmer_decs = [np.random.random()*2 + 1 for i in range(n_spec)]
     gal_dfs = [generate_fake_galaxy_prop(zs[i], 1, vel_disps[i], line_peaks, balmer_decs[i], smooth_vel=smooth_vel) for i in range(n_spec)]
     return gal_dfs, balmer_decs
 
-def generate_fake_galaxy_prop(z, flux, vel_disp, line_peaks, balmer_dec, smooth_vel=0):
+def generate_fake_galaxy_prop(z, flux, vel_disp, line_peaks, balmer_dec, smooth_vel=0, wavelength_res = 1.5):
     """Makes a fake galaxy spectrum with the properties specified
     
     Parameters:
@@ -288,6 +292,7 @@ def generate_fake_galaxy_prop(z, flux, vel_disp, line_peaks, balmer_dec, smooth_
     line_peaks (array): Peak wavelengths of the lines to generate for
     balmer_dec (float): Ratio between halpha and hbeta lines. Halpha stays fixed to 1, hbeta is some fraction of its flux
     smooth_vel (boolean): Set to 1 to smooth the velocity dispersion of the spectrum
+    wavelength_res (float): step size for wavelength resolution
     """
     line_dfs = []
     for line_peak in line_peaks:
@@ -296,7 +301,7 @@ def generate_fake_galaxy_prop(z, flux, vel_disp, line_peaks, balmer_dec, smooth_
         else:
             use_flux = flux
         obs_line_peak = line_peak * (1+z)
-        wavelength = np.arange(int(obs_line_peak)-40, int(obs_line_peak)+40, 1.5)
+        wavelength = np.arange(int(obs_line_peak)-40, int(obs_line_peak)+40, wavelength_res)
         fluxes = generate_emission_line(wavelength, use_flux, vel_disp)
         rest_wavelength = wavelength / (1+z)
         rest_flux = fluxes * (1+z)
@@ -466,6 +471,6 @@ def smooth_velocity(wave,spec,insig,mask=None,sigma=200,scale=1):
 
 
 # main()
-plot_balmer_df_results(save_dir='/all_free_smoothvel')
+# plot_balmer_df_results(save_dir='/all_free_smoothvel')
 # plot_range_of_vel_disp()
 # main(n_spec=10, n_loops=10, balmer_test=True, fixed_variables=[], save_dir='/resolution_001_allfree', interp_resolution=0.001)

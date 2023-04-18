@@ -5,6 +5,7 @@ import sys
 from scipy.linalg.misc import norm
 from astropy.io import fits
 import pandas as pd
+from astropy.io import ascii
 
 # Set all of the directories to store files
 home_dir = str(Path.home())
@@ -196,5 +197,8 @@ def setup_eazy_uvj_cat():
     uvj_cat_df.to_csv(loc_eazy_uvj_cat, index=False)
 
 
+def read_cluster_summary_df():
+    cluster_summary_df = ascii.read(loc_cluster_summary_df).to_pandas()
+    return cluster_summary_df
 
 # setup_cluster_dirs(all_dirs)
