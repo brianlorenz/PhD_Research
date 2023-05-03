@@ -839,7 +839,7 @@ def get_cuts(wavelength_cut_section, width=7):
     cut = [bool(i) for i in cuts]
     return cut
 
-def compute_bootstrap_uncertainties(n_clusters, save_name, bootstrap=-1, clustering=False, ignore_groups=[]):
+def compute_bootstrap_uncertainties(n_clusters, save_name, bootstrap=-1, clustering=False, ignore_groups=[], ha_first=False):
     """Reads in all the bootstrapped fits form all the clusters, then computes uncertainties and adds them back to the main fit
     
     Parameters:
@@ -855,8 +855,13 @@ def compute_bootstrap_uncertainties(n_clusters, save_name, bootstrap=-1, cluster
             continue
         if clustering == True:
             groupID = axis_group
-            emission_df_loc = imd.emission_fit_csvs_dir + f'/{groupID}_emission_fits.csv'
-            boot_dfs = [ascii.read(imd.emission_fit_dir + f'/emission_fitting_boot_csvs/{groupID}_emission_fits_{bootstrap_num}.csv').to_pandas() for bootstrap_num in range(bootstrap)]
+            if ha_first == True:
+                emission_df_loc = imd.emission_fit_dir + '/ha_first_csvs' + f'/{groupID}_emission_fits.csv'
+                breakpoint()
+                boot_dfs = [ascii.read(imd.emission_fit_dir + f'/ha_first_boot_csvs/{groupID}_emission_fits_{bootstrap_num}.csv').to_pandas() for bootstrap_num in range(bootstrap)]
+            else:
+                emission_df_loc = imd.emission_fit_csvs_dir + f'/{groupID}_emission_fits.csv'
+                boot_dfs = [ascii.read(imd.emission_fit_dir + f'/emission_fitting_boot_csvs/{groupID}_emission_fits_{bootstrap_num}.csv').to_pandas() for bootstrap_num in range(bootstrap)]
         else:
             emission_df_loc = imd.axis_cluster_data_dir + f'/{save_name}/{save_name}_emission_fits/{axis_group}_emission_fits.csv'
 
@@ -907,17 +912,21 @@ def compute_bootstrap_uncertainties(n_clusters, save_name, bootstrap=-1, cluster
         emission_df['err_balmer_dec_low'] = low_err
         emission_df['err_balmer_dec_high'] = high_err
 
-        err, low_err, high_err = compute_err_on_col('O3N2_metallicity', emission_df['O3N2_metallicity'], symmetric_err=False)
-        emission_df['err_O3N2_metallicity_low'] = low_err
-        emission_df['err_O3N2_metallicity_high'] = high_err
+        # Ha_first is currently not fitting O3 lines or metallicities
+        if ha_first == True:
+            pass
+        else:
+            err, low_err, high_err = compute_err_on_col('O3N2_metallicity', emission_df['O3N2_metallicity'], symmetric_err=False)
+            emission_df['err_O3N2_metallicity_low'] = low_err
+            emission_df['err_O3N2_metallicity_high'] = high_err
 
-        err, low_err, high_err = compute_err_on_col('log_N2_Ha', emission_df['log_N2_Ha'], symmetric_err=False)
-        emission_df['err_log_N2_Ha_low'] = low_err
-        emission_df['err_log_N2_Ha_high'] = high_err
+            err, low_err, high_err = compute_err_on_col('log_N2_Ha', emission_df['log_N2_Ha'], symmetric_err=False)
+            emission_df['err_log_N2_Ha_low'] = low_err
+            emission_df['err_log_N2_Ha_high'] = high_err
 
-        err, low_err, high_err = compute_err_on_col('log_O3_Hb', emission_df['log_O3_Hb'], symmetric_err=False)
-        emission_df['err_log_O3_Hb_low'] = low_err
-        emission_df['err_log_O3_Hb_high'] = high_err
+            err, low_err, high_err = compute_err_on_col('log_O3_Hb', emission_df['log_O3_Hb'], symmetric_err=False)
+            emission_df['err_log_O3_Hb_low'] = low_err
+            emission_df['err_log_O3_Hb_high'] = high_err
 
         
 

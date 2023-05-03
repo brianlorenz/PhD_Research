@@ -11,11 +11,11 @@ import pickle
 import initialize_mosdef_dirs as imd
 from prospector_plot import make_all_prospector_plots_2groups
 
-run_name = 'fourgroups_2'
+run_name = 'par_ly_mask'
 groupID1 = 0
-groupID2 = 1
-groupID3 = 3
-groupID4 = 16
+groupID2 = 11
+groupID3 = 14
+groupID4 = 18
 
 
 def make_tfig_cfig(run_name):

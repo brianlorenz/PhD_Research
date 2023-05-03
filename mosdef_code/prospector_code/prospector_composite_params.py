@@ -119,12 +119,6 @@ def build_obs(**kwargs):
     redshifted_lya_cutoff = 1500*(1+obs['z'])
     ly_mask = obs["phot_wave"] > redshifted_lya_cutoff
     obs["phot_mask"] = np.logical_and(filt_mask, ly_mask)
-    
-    # Phot mask everying blueward of 1216
-    shifted_lya = 1216*(1+obs['z'])
-    obs["phot_mask"] = obs['phot_wave'] < shifted_lya     
-    obs["phot_mask"] = ~obs["phot_mask"] 
-
 
 
     # Add unessential bonus info.  This will be stored in output
