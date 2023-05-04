@@ -118,7 +118,9 @@ def build_obs(**kwargs):
     # Phot mask out anything blueward of 1500
     redshifted_lya_cutoff = 1500*(1+obs['z'])
     ly_mask = obs["phot_wave"] > redshifted_lya_cutoff
-    obs["phot_mask"] = np.logical_and(filt_mask, ly_mask)
+    # obs["phot_mask"] = np.logical_and(filt_mask, ly_mask)
+    # Filter out just ly_a, not the lines (comment above line
+    obs["phot_mask"] = ly_mask
 
 
     # Add unessential bonus info.  This will be stored in output
