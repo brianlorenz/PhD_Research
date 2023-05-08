@@ -20,7 +20,7 @@ def load_obj(name, run_name):
         return pickle.load(f)
 
 
-def make_plots(groupID, run_name, mask=False, savename='False', trial=1):
+def make_plots(groupID, run_name, mask=False, savename='False', trial=-1):
     """Plots the observations vs the sps model
 
     Parameters:
@@ -30,7 +30,10 @@ def make_plots(groupID, run_name, mask=False, savename='False', trial=1):
     savename (str): Set to the name you want to save the file under
 
     """
-    save_str = f'group{groupID}_trial{trial}'
+    if trial == -1:
+        save_str = f'group{groupID}'
+    else:
+        save_str = f'group{groupID}_trial{trial}'
 
     # res = load_obj(f'{groupID}_res')
     obs = load_obj(f'{save_str}_obs', run_name)
@@ -241,7 +244,7 @@ def make_all_prospector_plots(n_clusters, run_name):
 
     '''
     for groupID in range(n_clusters):
-        if os.path.exists(imd.prospector_fit_csvs_dir + f'/{run_name}_csvs/{groupID}_phot.csv'):
+        if os.path.exists(imd.prospector_fit_csvs_dir + f'/{run_name}_csvs/{groupID}_cont_phot.csv'):
             print(f'Making plot for group {groupID}')
             make_plots(groupID, run_name)
 
@@ -263,6 +266,6 @@ def make_all_prospector_plots_2groups(groupID1, groupID2, groupID3, groupID4, ru
                 make_plots(groupID, run_name, trial=i)
 
 
-make_all_prospector_plots_2groups(0, 11, 14, 18, 'nonpar_ly_mask')
+# make_all_prospector_plots_2groups(0, 11, 14, 18, 'nonpar_ly_mask')
 # make_all_prospector_plots(29, 'sfh_1')
 

@@ -110,7 +110,18 @@ def build_obs(**kwargs):
     # Add 5 percent in quadrature to errors
     data_05p = (sed_data['f_maggies_red']) * 0.05
     obs['maggies_unc'] = (np.sqrt(data_05p**2 + (sed_data['err_f_maggies_avg_red'])**2)).to_numpy()
-    obs["phot_mask"] = np.array([m > 0 for m in obs['maggies']])
+        
+    # Phot mask that allows everything
+    # obs["phot_mask"] = np.array([m > 0 for m in obs['maggies']])
+    # Phot mask around emission lines
+    filt_mask = check_filt_transmission(filt_folder, obs['z'])
+    # Phot mask out anything blueward of 1500
+    redshifted_lya_cutoff = 1500*(1+obs['z'])
+    ly_mask = obs["phot_wave"] > redshifted_lya_cutoff
+    # obs["phot_mask"] = np.logical_and(filt_mask, ly_mask)
+    # Filter out just ly_a, not the lines (comment above line
+    obs["phot_mask"] = ly_mask
+
 
     # Add unessential bonus info.  This will be stored in output
     obs['groupID'] = groupID
@@ -150,6 +161,9 @@ def build_model(object_redshift=0.0, fixed_metallicity=None, add_duste=True,
 
     groupID = run_params['groupID']
 
+    # ---- LIST OF PARAMETERS ----- #
+    # https://dfm.io/python-fsps/current/stellarpop_api/
+
     # --- Get a basic delay-tau SFH parameter set. ---
     # This has 5 free parameters:
     #   "mass", "logzsol", "dust2", "tage", "tau"
@@ -158,52 +172,88 @@ def build_model(object_redshift=0.0, fixed_metallicity=None, add_duste=True,
     # See the python-FSPS documentation for details about most of these
     # parameters.  Also, look at `TemplateLibrary.describe("parametric_sfh")` to
     # view the parameters, their initial values, and the priors in detail.
+
+    # -------- FULL PARAMETERS FOR parametric_sfh ----------- #
+    #     'zred': {'N': 1,
+    #   'isfree': False,
+    #   'init': 0.1,
+    #   'units': 'redshift',
+    #   'prior': <class 'prospect.models.priors.TopHat'>(mini=0.0,maxi=4.0)},
+
+    #  'mass': {'N': 1,
+    #   'isfree': True,
+    #   'init': 10000000000.0,
+    #   'units': 'Solar masses formed',
+    #   'prior': <class 'prospect.models.priors.LogUniform'>(mini=100000000.0,maxi=1000000000000.0)},
+
+    #  'logzsol': {'N': 1,
+    #   'isfree': True,
+    #   'init': -0.5,
+    #   'units': '$\\log (Z/Z_\\odot)$',
+    #   'prior': <class 'prospect.models.priors.TopHat'>(mini=-2,maxi=0.19)},
+
+    #  'dust2': {'N': 1,
+    #   'isfree': True,
+    #   'init': 0.6,
+    #   'units': 'optical depth at 5500AA',
+    #   'prior': <class 'prospect.models.priors.TopHat'>(mini=0.0,maxi=2.0)},
+
+    #  'sfh': {'N': 1, 'isfree': False, 'init': 4, 'units': 'FSPS index'},
+    #  'tage': {'N': 1,
+    #   'isfree': True,
+    #   'init': 1,
+    #   'units': 'Gyr',
+    #   'prior': <class 'prospect.models.priors.TopHat'>(mini=0.001,maxi=13.8)},
+
+    #  'imf_type': {'N': 1, 'isfree': False, 'init': 2},
+
+    #  'dust_type': {'N': 1, 'isfree': False, 'init': 0},
+
+    #  'tau': {'N': 1,
+    #   'isfree': True,
+    #   'init': 1,
+    #   'units': 'Gyr^{-1}',
+    #   'prior': <class 'prospect.models.priors.LogUniform'>(mini=0.1,maxi=30)}
     
-    
-    # Updated to be non-parametric
-    #  model_params = TemplateLibrary["parametric_sfh"]
-    model_params = TemplateLibrary["continuity_flex_sfh"]
-    # model_params["dust1"] = {"name": "dust1", "N": 1, "isfree": True,
-    #                          "init": 0.1, "units": "optical depth at 5500AA", "prior": priors.TopHat(mini=0.0, maxi=4.0)}
 
-    # Add lumdist parameter.  If this is not added then the distance is
-    # controlled by the "zred" parameter and a WMAP9 cosmology.
-    # if luminosity_distance > 0:
-    #     model_params["lumdist"] = {"N": 1, "isfree": False,
-    #                                "init": luminosity_distance, "units": "Mpc"}
 
-    
+    model_params = TemplateLibrary["parametric_sfh"]
 
-    true_param = {'N': 1, 'isfree': False, 'init': True}
-    false_param = {'N': 1, 'isfree': False, 'init': False}
-    # sfh_param = {'N': 1, 'isfree': False, 'init': 1}
+    ### ADD THESE BACK IN FOR FINER CONTROL OF DUST
+    # true_param = {'N': 1, 'isfree': False, 'init': True}
+    # false_param = {'N': 1, 'isfree': False, 'init': False}
+    # # sfh_param = {'N': 1, 'isfree': False, 'init': 1}
 
-    model_params['add_agb_dust_model'] = false_param
-    model_params['add_igm_absorption'] = true_param
-    model_params['add_neb_emission'] = true_param
-    model_params['add_neb_continuum'] = true_param
-    model_params['nebemlineinspec'] = true_param
-    model_params['add_dust_emission'] = true_param
-    # model_params['sfh'] = sfh_param
+    # model_params['add_agb_dust_model'] = false_param
+    # model_params['add_igm_absorption'] = true_param
+    # model_params['add_neb_emission'] = true_param
+    # model_params['add_neb_continuum'] = true_param
+    # model_params['nebemlineinspec'] = true_param
+    # model_params['add_dust_emission'] = true_param
+    # # model_params['sfh'] = sfh_param
+    # model_params['dust1'] = {'N': 1, 'isfree': False,
+    #                          'depends_on': to_dust1, 'init': 1.0}
+    # model_params['dust1_fraction'] = {'N': 1, 'isfree': True, 'init': 1.0}
 
-    # Adjust model initial values (only important for optimization or emcee)
+
+    # Adjust model initial values
+    model_params["dust_type"]['init'] = 0 #  set to 4 for a Kriek and Conroy curve
     model_params["dust2"]["init"] = 0.1
-    model_params['dust1'] = {'N': 1, 'isfree': False,
-                             'depends_on': to_dust1, 'init': 1.0}
-    model_params['dust1_fraction'] = {'N': 1, 'isfree': True, 'init': 1.0}
-    model_params["logzsol"]["init"] = 0
+    # model_params["logzsol"]["init"] = 0
     # model_params["tage"]["init"] = 13.
-    model_params["mass"]["init"] = 1e8
-    model_params['gas_logz'] = {'N': 1, 'isfree': True, 'init': 0.0}
+    model_params["mass"]["init"] = 1e12
+    # model_params['gas_logz'] = {'N': 1, 'isfree': True, 'init': 0.0}
 
-    # model_params["dust_type"] = 4
+    # Add a parameter for the slope of the attenuation curve
+    model_params['dust_index'] = {'N': 1, 'isfree': True, 'init': -0.7}
 
     # adjust priors
     model_params["dust2"]["prior"] = priors.TopHat(mini=0.0, maxi=4.0)
-    model_params["dust1_fraction"]["prior"] = priors.TopHat(mini=0.0, maxi=2.0)
-    # model_params["tau"]["prior"] = priors.LogUniform(mini=1e-1, maxi=10)
-    model_params["mass"]["prior"] = priors.LogUniform(mini=1e6, maxi=1e13)
-    model_params["gas_logz"]["prior"] = priors.TopHat(mini=-3.0, maxi=0.0)
+    model_params["dust_index"]["prior"] = priors.TopHat(mini=-0.2, maxi=-1.2)
+    # model_params["dust1_fraction"]["prior"] = priors.TopHat(mini=0.0, maxi=2.0)
+    model_params["tau"]["prior"] = priors.LogUniform(mini=1e-1, maxi=10)
+    model_params["mass"]["prior"] = priors.LogUniform(mini=1e10, maxi=1e16)
+    # model_params["gas_logz"]["prior"] = priors.TopHat(mini=-3.0, maxi=0.0)
     
 
     # Change the model parameter specifications based on some keyword arguments
@@ -215,18 +265,21 @@ def build_model(object_redshift=0.0, fixed_metallicity=None, add_duste=True,
 
     # Set to fit at median redshift
     model_params["zred"]['isfree'] = False
-
     zs_df = ascii.read(median_zs_file).to_pandas()
     median_z = zs_df[zs_df['groupID'] == groupID]['median_z'].iloc[0]
     model_params["zred"]['init'] = median_z
 
-    if add_duste:
-        # Add dust emission (with fixed dust SED parameters)
-        model_params.update(TemplateLibrary["dust_emission"])
 
-    if add_neb:
-        # Add nebular emission (with fixed parameters)
-        model_params.update(TemplateLibrary["nebular"])
+    model_params.update(TemplateLibrary["nebular"])
+    # model_params.update(TemplateLibrary["dust_emission"])
+
+    # if add_duste:
+    #     # Add dust emission (with fixed dust SED parameters)
+    #     model_params.update(TemplateLibrary["dust_emission"])
+
+    # if add_neb:
+    #     # Add nebular emission (with fixed parameters)
+    #     model_params.update(TemplateLibrary["nebular"])
 
     
    
@@ -244,8 +297,12 @@ def build_model(object_redshift=0.0, fixed_metallicity=None, add_duste=True,
 
 def build_sps(zcontinuous=1, compute_vega_mags=False, **extras):
     from prospect.sources import CSPSpecBasis
-    sps = FastStepBasis(zcontinuous=zcontinuous,
+    # Parametric
+    sps = CSPSpecBasis(zcontinuous=zcontinuous,
                        compute_vega_mags=compute_vega_mags)
+    # Non=parametric
+    # sps = FastStepBasis(zcontinuous=zcontinuous,
+    #                    compute_vega_mags=compute_vega_mags)
     return sps
 
 # -----------------
@@ -299,3 +356,34 @@ def get_filt_list(target_folder):
     filt_files.sort()
     filt_list = observate.load_filters(filt_files, directory=target_folder)
     return filt_list
+
+
+def check_filt_transmission(target_folder, redshift, transmission_threshold = 0.70):
+    """Makes a photometric mask from the filters by checking if each filter has a line with high transmission
+    
+    Parameters:
+    target_folder: folder where the _zred.par files are stored
+    redshift: z
+    transmission_threshold: If line transmission is greater than this value, mask the pixel
+    """
+    emission_lines = [4863, 5008, 6565]
+    filt_files = [file for file in os.listdir(target_folder) if '_red.par' in file]
+    filt_files.sort()
+    phot_mask = []
+    for i in range(len(filt_files)):
+        filt_df = ascii.read(target_folder + '/' + filt_files[i]).to_pandas()
+        filt_df = filt_df.rename(columns={'col1':'obs_wave', 'col2':'transmission'})
+        filt_df['rest_wave'] = filt_df['obs_wave']/(1+redshift)
+        for line_center in emission_lines:
+            abs = np.argmin(np.abs(filt_df['rest_wave']-line_center))
+            line_transmission = filt_df.iloc[abs]['transmission']
+            if line_transmission > transmission_threshold:
+                # Mask the point and leave this loop
+                mask_bool = False
+                break
+            else:
+                # Don't mask 
+                mask_bool = True
+        phot_mask.append(mask_bool)
+    phot_mask = np.array(phot_mask)
+    return phot_mask

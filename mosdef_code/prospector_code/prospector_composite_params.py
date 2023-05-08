@@ -161,6 +161,9 @@ def build_model(object_redshift=0.0, fixed_metallicity=None, add_duste=True,
 
     groupID = run_params['groupID']
 
+    # ---- LIST OF PARAMETERS ----- #
+    # https://dfm.io/python-fsps/current/stellarpop_api/
+
     # --- Get a basic delay-tau SFH parameter set. ---
     # This has 5 free parameters:
     #   "mass", "logzsol", "dust2", "tage", "tau"
@@ -169,21 +172,53 @@ def build_model(object_redshift=0.0, fixed_metallicity=None, add_duste=True,
     # See the python-FSPS documentation for details about most of these
     # parameters.  Also, look at `TemplateLibrary.describe("parametric_sfh")` to
     # view the parameters, their initial values, and the priors in detail.
+
+    # -------- FULL PARAMETERS FOR parametric_sfh ----------- #
+    #     'zred': {'N': 1,
+    #   'isfree': False,
+    #   'init': 0.1,
+    #   'units': 'redshift',
+    #   'prior': <class 'prospect.models.priors.TopHat'>(mini=0.0,maxi=4.0)},
+
+    #  'mass': {'N': 1,
+    #   'isfree': True,
+    #   'init': 10000000000.0,
+    #   'units': 'Solar masses formed',
+    #   'prior': <class 'prospect.models.priors.LogUniform'>(mini=100000000.0,maxi=1000000000000.0)},
+
+    #  'logzsol': {'N': 1,
+    #   'isfree': True,
+    #   'init': -0.5,
+    #   'units': '$\\log (Z/Z_\\odot)$',
+    #   'prior': <class 'prospect.models.priors.TopHat'>(mini=-2,maxi=0.19)},
+
+    #  'dust2': {'N': 1,
+    #   'isfree': True,
+    #   'init': 0.6,
+    #   'units': 'optical depth at 5500AA',
+    #   'prior': <class 'prospect.models.priors.TopHat'>(mini=0.0,maxi=2.0)},
+
+    #  'sfh': {'N': 1, 'isfree': False, 'init': 4, 'units': 'FSPS index'},
+    #  'tage': {'N': 1,
+    #   'isfree': True,
+    #   'init': 1,
+    #   'units': 'Gyr',
+    #   'prior': <class 'prospect.models.priors.TopHat'>(mini=0.001,maxi=13.8)},
+
+    #  'imf_type': {'N': 1, 'isfree': False, 'init': 2},
+
+    #  'dust_type': {'N': 1, 'isfree': False, 'init': 0},
+
+    #  'tau': {'N': 1,
+    #   'isfree': True,
+    #   'init': 1,
+    #   'units': 'Gyr^{-1}',
+    #   'prior': <class 'prospect.models.priors.LogUniform'>(mini=0.1,maxi=30)}
     
-    
-    # Updated to be non-parametric
+
+
     model_params = TemplateLibrary["parametric_sfh"]
-    # model_params = TemplateLibrary["continuity_flex_sfh"]
-    # model_params["dust1"] = {"name": "dust1", "N": 1, "isfree": True,
-    #                          "init": 0.1, "units": "optical depth at 5500AA", "prior": priors.TopHat(mini=0.0, maxi=4.0)}
 
-    # Add lumdist parameter.  If this is not added then the distance is
-    # controlled by the "zred" parameter and a WMAP9 cosmology.
-    # if luminosity_distance > 0:
-    #     model_params["lumdist"] = {"N": 1, "isfree": False,
-    #                                "init": luminosity_distance, "units": "Mpc"}
-
-    
     ### ADD THESE BACK IN FOR FINER CONTROL OF DUST
     # true_param = {'N': 1, 'isfree': False, 'init': True}
     # false_param = {'N': 1, 'isfree': False, 'init': False}
@@ -196,22 +231,28 @@ def build_model(object_redshift=0.0, fixed_metallicity=None, add_duste=True,
     # model_params['nebemlineinspec'] = true_param
     # model_params['add_dust_emission'] = true_param
     # # model_params['sfh'] = sfh_param
-
-    # Adjust model initial values (only important for optimization or emcee)
-    model_params["dust2"]["init"] = 0.1
     # model_params['dust1'] = {'N': 1, 'isfree': False,
     #                          'depends_on': to_dust1, 'init': 1.0}
     # model_params['dust1_fraction'] = {'N': 1, 'isfree': True, 'init': 1.0}
+
+
+    # Adjust model initial values
+    model_params["dust_type"]['init'] = 0 #  set to 4 for a Kriek and Conroy curve
+    model_params["dust2"]["init"] = 0.1
     # model_params["logzsol"]["init"] = 0
     # model_params["tage"]["init"] = 13.
-    model_params["mass"]["init"] = 1e8
+    model_params["mass"]["init"] = 1e12
     # model_params['gas_logz'] = {'N': 1, 'isfree': True, 'init': 0.0}
+
+    # Add a parameter for the slope of the attenuation curve
+    model_params['dust_index'] = {'N': 1, 'isfree': True, 'init': -0.7}
 
     # adjust priors
     model_params["dust2"]["prior"] = priors.TopHat(mini=0.0, maxi=4.0)
+    model_params["dust_index"]["prior"] = priors.TopHat(mini=-0.2, maxi=-1.2)
     # model_params["dust1_fraction"]["prior"] = priors.TopHat(mini=0.0, maxi=2.0)
     model_params["tau"]["prior"] = priors.LogUniform(mini=1e-1, maxi=10)
-    model_params["mass"]["prior"] = priors.LogUniform(mini=1e6, maxi=1e13)
+    model_params["mass"]["prior"] = priors.LogUniform(mini=1e10, maxi=1e16)
     # model_params["gas_logz"]["prior"] = priors.TopHat(mini=-3.0, maxi=0.0)
     
 

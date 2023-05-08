@@ -9,13 +9,18 @@ import numpy as np
 import pandas as pd
 import pickle
 import initialize_mosdef_dirs as imd
-from prospector_plot import make_all_prospector_plots_2groups
+from prospector_plot import make_all_prospector_plots_2groups, make_all_prospector_plots
 
-run_name = 'par_ly_mask'
-groupID1 = 0
-groupID2 = 11
-groupID3 = 14
-groupID4 = 18
+# 2 groups sectoin
+# run_name = 'par_ly_mask'
+# groupID1 = 0
+# groupID2 = 11
+# groupID3 = 14
+# groupID4 = 18
+
+# All groups
+run_name = 'all_groups_masked_eline'
+n_clusters = 23
 
 
 def make_tfig_cfig(run_name):
@@ -40,4 +45,5 @@ def make_tfig_cfig(run_name):
 
 
 # make_tfig_cfig(run_name)
-make_all_prospector_plots_2groups(groupID1, groupID2, groupID3, groupID4, run_name)
+make_all_prospector_plots(n_clusters, run_name)
+# make_all_prospector_plots_2groups(groupID1, groupID2, groupID3, groupID4, run_name)
