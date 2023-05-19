@@ -203,7 +203,7 @@ def build_model(object_redshift=0.0, fixed_metallicity=None, add_duste=True,
     # model_params['logsfr_ratios']['prior'] = priors.StudentT(mean=logsfr_ratios_init,
     #     scale=np.ones(ncomp-1) * 0.3, df=np.ones(ncomp-1)*2) 
 
-    # MOre parameters and mass-met dependence in wren's email 10/14/22
+    # More parameters and mass-met dependence in wren's email 10/14/22
 
     # Can modfiy default priors
     # model_params["logzsol"]["prior"] = priors.TopHat(mini=-2, maxi=0.19)
