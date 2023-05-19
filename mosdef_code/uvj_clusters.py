@@ -240,12 +240,82 @@ def plot_uvj_cluster(groupID, axis_obj='False'):
     if axis_obj == 'False':
         ax.legend(fontsize=legendfont - 4)
         ax.tick_params(labelsize=ticksize, size=ticks)
-        fig.savefig(imd.cluster_uvj_plots_dir + f'/{groupID}_UVJ.pdf')
+        fig.savefig(imd.composite_uvj_dir + f'/cluster_uvjs/{groupID}_UVJ.pdf')
         plt.close()
     else:
         ax.legend()
         return
 
+
+def plot_uvj_cluster_paper(groupID, axis_obj='False'):
+    """Similar to above but cleans up presentation
+
+    Parameters:
+    groupID (int): ID of the cluster to plot
+    axis_obj (matplotlib axis): If given an axis, don't make a new figure - just plot on the given axis
+
+    Returns:
+    """
+
+    cluster_names, fields_ids = cdf.get_cluster_fields_ids(groupID)
+
+    # UVJs of all galaxies
+    galaxy_uvj_df = ascii.read(imd.uvj_dir + '/galaxy_uvjs.csv').to_pandas()
+    # UVJs of all composite SEDs
+    composite_uvj_df = ascii.read(
+        imd.composite_uvj_dir + '/composite_uvjs.csv').to_pandas()
+
+    # Get their uvj values
+    u_v = []
+    v_j = []
+    for obj in fields_ids:
+        field = obj[0]
+        v4id = int(obj[1])
+        idx = np.logical_and(galaxy_uvj_df['field'] ==
+                             field, galaxy_uvj_df['v4id'] == v4id)
+        u_v.append(galaxy_uvj_df[idx]['U_V'].iloc[0])
+        v_j.append(galaxy_uvj_df[idx]['V_J'].iloc[0])
+        # Catalog calculation
+        #uvjs.append(get_uvj(field, v4id))
+    #u_v = [i[0] for i in uvjs]
+    #v_j = [i[1] for i in uvjs]
+
+    # Get uvj value of composite sed
+    #composite_sed = read_composite_sed(groupID)
+    #uvj_composite = observe_uvj(composite_sed)
+
+    uvj_composite = composite_uvj_df[composite_uvj_df['groupID'] == groupID]
+
+    axisfont = 14
+    ticksize = 12
+    ticks = 8
+    legendfont = 14
+
+    if axis_obj == 'False':
+        fig, ax = plt.subplots(figsize=(6, 6))
+    else:
+        ax = axis_obj
+
+    setup_uvj_plot(ax, galaxy_uvj_df, composite_uvj_df, axis_obj=True)
+    ax.set_xlabel('V-J', fontsize=14)
+    ax.set_ylabel('U-V', fontsize=14)
+
+    # Plots the one within the cluster in black
+    ax.plot(v_j, u_v,
+            ls='', marker='o', markersize=3.5, color='black', label='Cluster Galaxies')
+
+    # Plot the composite SED as a red X
+    ax.plot(uvj_composite['V_J'], uvj_composite['U_V'],
+            ls='', marker='x', markersize=8, markeredgewidth=2, color='red', label='Composite SED')
+
+    if axis_obj == 'False':
+        ax.legend(fontsize=legendfont - 4)
+        ax.tick_params(labelsize=ticksize, size=ticks)
+        fig.savefig(imd.composite_uvj_dir + f'/cluster_uvjs/{groupID}_UVJ_paper.pdf', bbox_inches='tight')
+        plt.close()
+    else:
+        ax.legend()
+        return
 
 def plot_all_uvj_clusters(n_clusters):
     """Makes UVJ diagrams for all of the clusters
@@ -258,6 +328,18 @@ def plot_all_uvj_clusters(n_clusters):
     for i in range(n_clusters):
         print(f'Plotting Cluster {i}')
         plot_uvj_cluster(i)
+
+def plot_all_uvj_clusters_paper(n_clusters):
+    """Makes UVJ diagrams for all of the clusters
+
+    Parameters:
+    n_clusters (int): Number of clusters
+
+    Returns:
+    """
+    for i in range(n_clusters):
+        print(f'Plotting Cluster {i}')
+        plot_uvj_cluster_paper(i)
 
 
 def plot_full_uvj(n_clusters, color_type='None'):
@@ -384,9 +466,10 @@ def setup_uvj_plot(ax, galaxy_uvj_df, composite_uvj_df, axis_obj='False'):
     ax.set_xlim(-0.5, 2)
     ax.set_ylim(0, 2.5)
 
-
+# plot_all_uvj_clusters_paper(23)
+# plot_all_uvj_clusters(23)
 # observe_all_uvj(23, individual_gals=False, composite_uvjs=True)
-# plot_full_uvj(23)
+plot_full_uvj(23)
 # plot_full_uvj(23, color_type='balmer')
 # plot_full_uvj(23, color_type='ssfr')
 # plot_full_uvj(23, color_type='metallicity')

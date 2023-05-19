@@ -7,7 +7,13 @@ import numpy as np
 import matplotlib as mpl
 from plot_vals import *
 
-def plot_balmer_dec_clusters(plot_var='balmer_dec', errorbar=True):
+def plot_balmer_dec_clusters(plot_var='balmer_dec', errorbar=True, clean=False):
+    """
+    
+    Parameters:
+    clean (boolean): Set to true to remove point labels and make a cleaner plot
+
+    """
     
     clusters_summary_df = ascii.read(imd.loc_cluster_summary_df).to_pandas()
 
@@ -28,17 +34,19 @@ def plot_balmer_dec_clusters(plot_var='balmer_dec', errorbar=True):
     
 
         
-        rgba = cmap(norm(row['log_ssfr']))
+        rgba = cmap(norm(row['median_log_ssfr']))
         
         if errorbar == True:
-            ax.errorbar(row['log_mass'], row[plot_var], yerr=np.array([[row[f'err_{plot_var}_low'], row[f'err_{plot_var}_high']]]).T, marker='o', ls='None', color=rgba)
+            ax.errorbar(row['median_log_mass'], row[plot_var], yerr=np.array([[row[f'err_{plot_var}_low'], row[f'err_{plot_var}_high']]]).T, marker='o', ls='None', color=rgba)
         else:
-            ax.plot(row['log_mass'], row[plot_var], marker='o', ls='None', color=rgba)
-        ax.text(row['log_mass']+0.02, row[plot_var]+0.02, f'{int(row["groupID"])}')
+            ax.plot(row['median_log_mass'], row[plot_var], marker='o', ls='None', color=rgba)
+        if clean==False:
+            ax.text(row['median_log_mass']+0.02, row[plot_var]+0.02, f'{int(row["groupID"])}')
     ax.set_xlabel(stellar_mass_label, fontsize=full_page_axisfont)
     ax.set_ylabel(plot_var, fontsize=full_page_axisfont)
     if plot_var=='balmer_dec':
         ax.set_ylim(2, 11)
+        ax.set_ylabel('Balmer Dec', fontsize=full_page_axisfont)
     if plot_var=='AV':
         pass
         #ax.set_ylim(2, 11)
@@ -49,12 +57,16 @@ def plot_balmer_dec_clusters(plot_var='balmer_dec', errorbar=True):
         ax.set_ylim(8, 9.5)
     ax.tick_params(labelsize=full_page_axisfont-2)
     cbar = fig.colorbar(mpl.cm.ScalarMappable(norm=norm, cmap=cmap), ax=ax, fraction=0.046, pad=0.04)
-    cbar.set_label('log_ssfr', fontsize=full_page_axisfont)
+    cbar.set_label('log(ssfr)', fontsize=full_page_axisfont)
     cbar.ax.tick_params(labelsize=full_page_axisfont-2)
-    fig.savefig(imd.cluster_dir+f'/cluster_stats/{plot_var}_mass.pdf')
+    if clean==True:
+        add_str='_nolabel'
+    else:
+        add_str = ''
+    fig.savefig(imd.cluster_dir+f'/cluster_stats/{plot_var}_mass{add_str}.pdf', bbox_inches='tight')
 
-plot_balmer_dec_clusters()
+plot_balmer_dec_clusters(clean=True)
 # plot_balmer_dec_clusters(plot_var='AV')
 # plot_balmer_dec_clusters(plot_var='beta')
-plot_balmer_dec_clusters(plot_var='O3N2_metallicity')
+# plot_balmer_dec_clusters(plot_var='O3N2_metallicity')
 # plot_balmer_dec_clusters(plot_var='composite_beta')

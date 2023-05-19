@@ -17,11 +17,11 @@ import sys
 
 fontsize = 16
 
-def make_overview_plot_clusters(n_clusters, color_gals=False, bpt_color=False):
+def make_overview_plot_clusters(n_clusters, color_gals=False, bpt_color=False, paper_overview=False):
     #Set up the array (nrows, ncol)
     # fig, axarr = plt.subplots(n_clusters, 4, figsize=(16, n_clusters*4))
 
-    fig = plt.figure(figsize=(17, n_clusters*4))
+    fig = plt.figure(figsize=(22, n_clusters*5))
     gs = GridSpec(n_clusters, 5, left=0.05, right=0.95, wspace=0.3, hspace=0.6)
 
     clusters_summary_df = ascii.read(imd.loc_cluster_summary_df).to_pandas()
@@ -29,7 +29,7 @@ def make_overview_plot_clusters(n_clusters, color_gals=False, bpt_color=False):
     filtered_gal_df = ascii.read(imd.loc_filtered_gal_df).to_pandas()
     filtered_gal_df['log_use_sfr'] = np.log10(filtered_gal_df['use_sfr'])
 
-    clusters_summary_df_sorted=clusters_summary_df.sort_values('log_ssfr', ascending=False)
+    clusters_summary_df_sorted=clusters_summary_df.sort_values('median_log_ssfr', ascending=False)
     #Manages which row to plot in
     plot_row_idx = 0
 
@@ -57,9 +57,10 @@ def make_overview_plot_clusters(n_clusters, color_gals=False, bpt_color=False):
         ax = fig.add_subplot(gs[plot_row_idx, 0])
         total_sed = ascii.read(imd.total_sed_csvs_dir + f'/{groupID}_total_sed.csv').to_pandas()
         
-        vis_composite_sed(total_sed, composite_sed=0, composite_filters=0, groupID=groupID, std_scatter=0, run_filters=False, axis_obj=ax)
+        vis_composite_sed(total_sed, composite_sed=0, composite_filters=0, groupID=groupID, std_scatter=0, run_filters=False, axis_obj=ax, grey_points=True)
         
-        ax.text(0.85, 0.85, f'{n_gals}', transform=ax.transAxes, fontsize=fontsize)
+        if paper_overview==False:
+            ax.text(0.85, 0.85, f'{n_gals}', transform=ax.transAxes, fontsize=fontsize)
         ax.set_xlabel('Wavelength', fontsize=fontsize)
         ax.set_ylabel('Normalized Flux', fontsize=fontsize)
         ax.tick_params(labelsize = fontsize)
@@ -102,7 +103,7 @@ def make_overview_plot_clusters(n_clusters, color_gals=False, bpt_color=False):
 
         ax.plot(filtered_gal_df['log_mass'], filtered_gal_df['log_use_sfr'], marker='o', color='grey', ls='None', markersize=2)
         # ax.plot(group_df['log_mass'], group_df['log_use_sfr'], marker='o', color='black', ls='None')
-        ax.plot(clusters_summary_row['log_mass'], clusters_summary_row['log_sfr'], marker='x', color='red', ls='None', markersize=8, mew=2.5)
+        ax.plot(clusters_summary_row['median_log_mass'], clusters_summary_row['median_log_sfr'], marker='x', color='red', ls='None', markersize=8, mew=2.5)
 
         
         cmap = mpl.cm.plasma
@@ -227,4 +228,4 @@ def make_overview_plot_clusters(n_clusters, color_gals=False, bpt_color=False):
 
 # make_overview_plot_clusters(23)
 # make_overview_plot_clusters(23, color_gals=True)
-make_overview_plot_clusters(23, bpt_color=True)
+make_overview_plot_clusters(23, bpt_color=True, paper_overview=True)

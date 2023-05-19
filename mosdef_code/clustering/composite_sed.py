@@ -294,7 +294,7 @@ def get_composite_filter(selected_points, wavelength_min, wavelength_max, compos
     return filt_response_df
 
 
-def vis_composite_sed(total_sed, composite_sed=0, composite_filters=0, groupID=-99, std_scatter=0, run_filters=True, axis_obj='False'):
+def vis_composite_sed(total_sed, composite_sed=0, composite_filters=0, groupID=-99, std_scatter=0, run_filters=True, axis_obj='False', grey_points=False):
     """
     If you set an axis obj, it will overwrite the others, and make sure to set a groupID
     """
@@ -330,11 +330,15 @@ def vis_composite_sed(total_sed, composite_sed=0, composite_filters=0, groupID=-
 
     plt.set_cmap('plasma')  # coolwarm
 
+    if grey_points == True:
+        point_color = 'dimgrey'
+    else:
+        point_color = total_sed[good_idx]['v4id']
     ax_sed.scatter(total_sed[good_idx]['rest_wavelength'], total_sed[good_idx]
-                   ['f_lambda_norm'], s=2, c=total_sed[good_idx]['v4id'], zorder=1)
+                   ['f_lambda_norm'], s=2, c=point_color, zorder=1)
 
     ax_sed.errorbar(composite_sed['rest_wavelength'], composite_sed['f_lambda'],
-                    yerr=[composite_sed['err_f_lambda_d'], composite_sed['err_f_lambda_u']], ls='', marker='o', markersize=4, color='black', zorder=2)
+                    yerr=[composite_sed['err_f_lambda_d'], composite_sed['err_f_lambda_u']], ls='', marker='o', markersize=4, color='red', mec='black', zorder=2)
 
     # Parse the scattter into 16th and 84th percetile arrays
     if axis_obj == 'False':
