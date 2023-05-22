@@ -72,7 +72,7 @@ def calc_log_ratio(top_flux, top_err, bot_flux, bot_err):
     return log_ratio, log_ratio_err
 
 
-def plot_bpt(savename='None', axis_obj='False', composite_bpt_point=[-47], composite_bpt_errs=0, use_other_df = 0, use_df='False', add_background=False, color_gals=False):
+def plot_bpt(savename='None', axis_obj='False', composite_bpt_point=[-47], composite_bpt_errs=0, use_other_df = 0, use_df='False', add_background=False, color_gals=False, add_prospector=False):
     """Plots the bpt diagram for the objects in zobjs
 
     Parameters:
@@ -84,7 +84,8 @@ def plot_bpt(savename='None', axis_obj='False', composite_bpt_point=[-47], compo
     use_other_df (boolean): Set to one to use another df, and then specify with use_df
     use_df (pd.DataFrame): Set to a dataframe to plot that instead of gal_df
     small (boolean): Set to true to make the points small and grey
-
+    add_prospector (boolean): Set to true to add the point from the recent prospector fit
+    
     Returns:
     """
 

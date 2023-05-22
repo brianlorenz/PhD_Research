@@ -308,7 +308,7 @@ def fit_emission(groupID, norm_method, constrain_O3=False, axis_group=-1, save_n
     elif run_name != 'False':
         imd.check_and_make_dir(imd.prospector_emission_fits_dir + f'/{run_name}_emission_fits')
         fit_df.to_csv(imd.prospector_emission_fits_dir + f'/{run_name}_emission_fits/{groupID}_emission_fits.csv', index=False)
-        plot_emission_fit(groupID, norm_method, run_name=run_name)
+        # plot_emission_fit(groupID, norm_method, run_name=run_name)
     else:
         if bootstrap_num > -1:
             imd.check_and_make_dir(imd.emission_fit_csvs_dir)
@@ -385,6 +385,7 @@ def plot_emission_fit(groupID, norm_method, axis_group=-1, save_name='', scaled=
         total_spec_df = ascii.read(imd.prospector_fit_csvs_dir + f'/{run_name}_csvs/{groupID}_merged_spec.csv').to_pandas()
         total_spec_df['err_f_lambda'] = (total_spec_df['err_f_lambda_u'] + total_spec_df['err_f_lambda_d'])/2   
         total_spec_df['wavelength'] = total_spec_df['rest_wavelength']
+        # cont_sub_df = ascii.read(imd.prospector_fit_csvs_dir + f'/{run_name}_csvs/{groupID}_cont_sub.csv').to_pandas()
     else:
         fit_df = ascii.read(imd.emission_fit_csvs_dir +
                             f'/{groupID}_emission_fits.csv').to_pandas()

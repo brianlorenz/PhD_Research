@@ -16,11 +16,11 @@ def setup_prospector_fit_csv(groupID, run_name):
     run_name (str): Name of the prospector run on Savio
     
     '''
-    obs = load_obj(f'{groupID}_obs', run_name)
+    obs = load_obj(f'group{groupID}_obs', run_name)
     # redshift_cor = (1+obs['z'])
     redshift_cor = 1 # hopefully fixed this so that a redshift correction is no longer needed in this code
 
-    spec_df = ascii.read(imd.prospector_fit_csvs_dir + f'/{run_name}_csvs/{groupID}_spec.csv').to_pandas()
+    spec_df = ascii.read(imd.prospector_fit_csvs_dir + f'/{run_name}_csvs/group{groupID}_spec.csv').to_pandas()
     spec_df = spec_df.rename(columns = {'spec50_flambda' : 'f_lambda'})
     spec_df['err_f_lambda_d'] = spec_df['f_lambda'] - spec_df['spec16_flambda']
     spec_df['err_f_lambda_u'] = spec_df['spec84_flambda'] - spec_df['f_lambda']
@@ -42,7 +42,7 @@ def setup_prospector_fit_csv(groupID, run_name):
     spec_merged.to_csv(imd.prospector_fit_csvs_dir + f'/{run_name}_csvs/{groupID}_merged_spec.csv', index=False )
 
 
-def setup_all_prospector_fit_csvs(n_clusters, run_name):
+def setup_all_prospector_fit_csvs(n_clusters, run_name, ignore_groups=[]):
     '''Runs setup_fit_csv on all of the clusters
 
     Parameters:
@@ -51,13 +51,13 @@ def setup_all_prospector_fit_csvs(n_clusters, run_name):
     
     '''
     for groupID in range(n_clusters):
-        try:
-            setup_prospector_fit_csv(groupID, run_name)
-        except:
-            pass
+        if groupID in ignore_groups:
+            continue
+        setup_prospector_fit_csv(groupID, run_name)
+        
 
 
-def fit_all_prospector_emission(n_clusters, run_name):
+def fit_all_prospector_emission(n_clusters, run_name, ignore_groups=[]):
     '''Rns the fitting for all of the clusters
 
     Parameters:
@@ -66,10 +66,11 @@ def fit_all_prospector_emission(n_clusters, run_name):
     
     '''
     for groupID in range(n_clusters):
-        try:
-            fit_emission(groupID, 'cluster_norm', run_name = run_name)
-        except:
-            pass
+        if groupID in ignore_groups:
+            continue
+        fit_emission(groupID, 'cluster_norm', run_name = run_name)
+       
     
-setup_all_prospector_fit_csvs(29, 'redshift_maggies')
-fit_all_prospector_emission(29, 'redshift_maggies')
+ignore_groups = [0,5,12,19,22]
+# setup_all_prospector_fit_csvs(23, 'dust_index_test', ignore_groups)
+fit_all_prospector_emission(23, 'dust_index_test', ignore_groups)
