@@ -208,6 +208,8 @@ def make_overview_plot_clusters(n_clusters, color_gals=False, bpt_color=False, p
         ax.plot(log_N2_Ha_group, log_O3_Hb_group, marker='x', color='red', markersize=10, mew=3, ls='None', zorder=10000)
         # ax.errorbar(log_N2_Ha_group, log_O3_Hb_group, xerr=log_N2_Ha_group_errs, yerr=log_O3_Hb_group_errs, marker='x', color='red', markersize=6, mew=3, ls='None')
 
+        # Add the point from prospector
+
         ax.set_xlabel('log(N[II]/H$\\alpha$)', fontsize=fontsize)
         ax.set_ylabel('log(O[III]/H$\\beta$)', fontsize=fontsize, labelpad=-7)
         ax.set_xlim(xrange)
