@@ -15,6 +15,8 @@ from uvj_clusters import setup_uvj_plot
 import matplotlib as mpl
 import sys
 
+prospector_run = 'dust_index_test'
+
 fontsize = 16
 
 def make_overview_plot_clusters(n_clusters, color_gals=False, bpt_color=False, paper_overview=False):
@@ -57,7 +59,7 @@ def make_overview_plot_clusters(n_clusters, color_gals=False, bpt_color=False, p
         ax = fig.add_subplot(gs[plot_row_idx, 0])
         total_sed = ascii.read(imd.total_sed_csvs_dir + f'/{groupID}_total_sed.csv').to_pandas()
         
-        vis_composite_sed(total_sed, composite_sed=0, composite_filters=0, groupID=groupID, std_scatter=0, run_filters=False, axis_obj=ax, grey_points=True)
+        vis_composite_sed(total_sed, composite_sed=0, composite_filters=0, groupID=groupID, std_scatter=0, run_filters=False, axis_obj=ax, grey_points=True, errorbars=False)
         
         if paper_overview==False:
             ax.text(0.85, 0.85, f'{n_gals}', transform=ax.transAxes, fontsize=fontsize)
@@ -190,8 +192,10 @@ def make_overview_plot_clusters(n_clusters, color_gals=False, bpt_color=False, p
         xrange = (-2, 1)
         yrange = (-1.2, 1.5)
         
-        group_df_bpt = plot_bpt(axis_obj=ax, use_other_df=1, use_df=group_df, add_background=True, color_gals=color_gals)
-        
+        try:
+            group_df_bpt = plot_bpt(axis_obj=ax, use_other_df=1, use_df=group_df, add_background=True, color_gals=color_gals, add_prospector=prospector_run, groupID=groupID)
+        except:
+            group_df_bpt = plot_bpt(axis_obj=ax, use_other_df=1, use_df=group_df, add_background=True, color_gals=color_gals)
         in_x_range = np.logical_and(group_df_bpt['log_NII_Ha']>xrange[0], group_df_bpt['log_NII_Ha']<xrange[1])
         in_y_range = np.logical_and(group_df_bpt['log_OIII_Hb']>yrange[0], group_df_bpt['log_OIII_Hb']<yrange[1])
         in_both_range_bpt = np.logical_and(in_x_range, in_y_range)

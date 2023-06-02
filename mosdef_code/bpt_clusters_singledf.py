@@ -72,7 +72,7 @@ def calc_log_ratio(top_flux, top_err, bot_flux, bot_err):
     return log_ratio, log_ratio_err
 
 
-def plot_bpt(savename='None', axis_obj='False', composite_bpt_point=[-47], composite_bpt_errs=0, use_other_df = 0, use_df='False', add_background=False, color_gals=False, add_prospector=False):
+def plot_bpt(savename='None', axis_obj='False', composite_bpt_point=[-47], composite_bpt_errs=0, use_other_df = 0, use_df='False', add_background=False, color_gals=False, add_prospector='False', groupID=-1):
     """Plots the bpt diagram for the objects in zobjs
 
     Parameters:
@@ -84,8 +84,9 @@ def plot_bpt(savename='None', axis_obj='False', composite_bpt_point=[-47], compo
     use_other_df (boolean): Set to one to use another df, and then specify with use_df
     use_df (pd.DataFrame): Set to a dataframe to plot that instead of gal_df
     small (boolean): Set to true to make the points small and grey
-    add_prospector (boolean): Set to true to add the point from the recent prospector fit
-    
+    add_prospector (str): Set to run name to add the point from the recent prospector fit
+    groupID (int): groupID when using prospector
+
     Returns:
     """
 
@@ -123,7 +124,7 @@ def plot_bpt(savename='None', axis_obj='False', composite_bpt_point=[-47], compo
     if add_background==True:
         filtered_gal_df = ascii.read(imd.loc_filtered_gal_df).to_pandas()
         filtered_gal_df = get_bpt_coords(filtered_gal_df)
-        ax.plot(filtered_gal_df['log_NII_Ha'], filtered_gal_df['log_OIII_Hb'], marker='o', color='grey', ls='None', markersize=1.5)
+        ax.plot(filtered_gal_df['log_NII_Ha'], filtered_gal_df['log_OIII_Hb'], marker='o', color='grey', ls='None', markersize=1.5, zorder=1)
     
     cmap = mpl.cm.plasma
     norm = mpl.colors.Normalize(vmin=1, vmax=len(gal_df)) 
@@ -135,7 +136,7 @@ def plot_bpt(savename='None', axis_obj='False', composite_bpt_point=[-47], compo
         else:
             rgba = 'black'
         ax.errorbar(row['log_NII_Ha'], row['log_OIII_Hb'], xerr=row[
-                        'log_NII_Ha_err'], yerr=row['log_OIII_Hb_err'], marker='o', color=rgba, ecolor='grey', ls='None')
+                        'log_NII_Ha_err'], yerr=row['log_OIII_Hb_err'], marker='o', color=rgba, ecolor='grey', ls='None', zorder=1)
     
     # gal_df_2 = gal_df[gal_df['agn_flag']>3]
     # ax.errorbar(gal_df_2['log_NII_Ha'], gal_df_2['log_OIII_Hb'], xerr=gal_df_2[
@@ -143,7 +144,15 @@ def plot_bpt(savename='None', axis_obj='False', composite_bpt_point=[-47], compo
 
     if composite_bpt_point[0] != -47:
         ax.errorbar(composite_bpt_point[0], composite_bpt_point[
-            1], xerr=np.array([composite_bpt_errs[0]]).T, yerr=np.array([composite_bpt_errs[1]]).T, marker='o', color='red', ecolor='red')
+            1], xerr=np.array([composite_bpt_errs[0]]).T, yerr=np.array([composite_bpt_errs[1]]).T, marker='o', color='red', ecolor='red', zorder=1)
+
+
+    if add_prospector != 'False':
+        prospector_fit_df = ascii.read(imd.prospector_emission_fits_dir + f'/{add_prospector}_emission_fits/{groupID}_emission_fits.csv').to_pandas()
+        prospector_n2ha = prospector_fit_df['log_N2_Ha'].iloc[0]
+        prospector_o3hb = prospector_fit_df['log_O3_Hb'].iloc[0]
+        ax.plot(prospector_n2ha, prospector_o3hb, marker='x', color='blue', markersize=10, mew=3, ls='None', zorder=10000)
+
 
     ax.set_xlim(-2, 1)
     ax.set_ylim(-1.2, 1.5)
