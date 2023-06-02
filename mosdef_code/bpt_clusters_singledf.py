@@ -71,8 +71,35 @@ def calc_log_ratio(top_flux, top_err, bot_flux, bot_err):
         ((1 / bot_flux) * top_err)**2 + ((-top_flux / (bot_flux**2)) * bot_err)**2)
     return log_ratio, log_ratio_err
 
+def plot_bpt_all_composites():
+    fig, ax = plt.subplots(figsize=(8,7))
+    clusters_summary_df = ascii.read(imd.loc_cluster_summary_df).to_pandas()
+    ### BPT Plot --------------------------------------------
+    xrange = (-2, 1)
+    yrange = (-1.2, 1.5)
+    
+   
+    plot_bpt(axis_obj=ax, use_other_df=0, add_background=True, skip_gals=True)
 
-def plot_bpt(savename='None', axis_obj='False', composite_bpt_point=[-47], composite_bpt_errs=0, use_other_df = 0, use_df='False', add_background=False, color_gals=False, add_prospector='False', groupID=-1):
+    # ax.plot(group_df['log_mass'], group_df['log_use_sfr'], marker='o', color='black', ls='None')
+
+    # Add the median of the cluster
+    for i in range(len(clusters_summary_df)):
+        groupID = clusters_summary_df['groupID'].iloc[i]
+        log_N2_Ha_group = clusters_summary_df['log_N2_Ha'].iloc[i]
+        log_O3_Hb_group = clusters_summary_df['log_O3_Hb'].iloc[i]
+        
+        log_N2_Ha_group_errs = (clusters_summary_df['err_log_N2_Ha_low'].iloc[i], clusters_summary_df['err_log_N2_Ha_high'].iloc[i])
+        log_O3_Hb_group_errs = (clusters_summary_df['err_log_O3_Hb_low'].iloc[i], clusters_summary_df['err_log_O3_Hb_high'].iloc[i])
+        
+        ax.plot(log_N2_Ha_group, log_O3_Hb_group, marker='x', color='red', markersize=10, mew=3, ls='None', zorder=10000, label='Composite')
+        ax.text(log_N2_Ha_group - 0.02, log_O3_Hb_group + 0.03, f'{groupID}', size=12, fontweight='bold', color='black')
+    ax.set_xlabel('log(N[II] 6583 / H$\\alpha$)', fontsize=14)
+    ax.set_ylabel('log(O[III] 5007 / H$\\beta$)', fontsize=14)
+    ax.tick_params(labelsize=14, size=14)
+    fig.savefig(imd.cluster_dir+'/cluster_stats/all_groups_bpt.pdf')
+
+def plot_bpt(savename='None', axis_obj='False', composite_bpt_point=[-47], composite_bpt_errs=0, use_other_df = 0, use_df='False', add_background=False, color_gals=False, add_prospector='False', groupID=-1, skip_gals=False):
     """Plots the bpt diagram for the objects in zobjs
 
     Parameters:
@@ -86,6 +113,7 @@ def plot_bpt(savename='None', axis_obj='False', composite_bpt_point=[-47], compo
     small (boolean): Set to true to make the points small and grey
     add_prospector (str): Set to run name to add the point from the recent prospector fit
     groupID (int): groupID when using prospector
+    skip_gals (Boolean): Set to true to not plot the galaxies in the cluster
 
     Returns:
     """
@@ -129,14 +157,15 @@ def plot_bpt(savename='None', axis_obj='False', composite_bpt_point=[-47], compo
     cmap = mpl.cm.plasma
     norm = mpl.colors.Normalize(vmin=1, vmax=len(gal_df)) 
     print(len(gal_df))
-    for gal in range(len(gal_df)):
-        row = gal_df.iloc[gal]
-        if color_gals:
-            rgba = cmap(norm(row['group_gal_id']))
-        else:
-            rgba = 'black'
-        ax.errorbar(row['log_NII_Ha'], row['log_OIII_Hb'], xerr=row[
-                        'log_NII_Ha_err'], yerr=row['log_OIII_Hb_err'], marker='o', color=rgba, ecolor='grey', ls='None', zorder=1)
+    if skip_gals==False:
+        for gal in range(len(gal_df)):
+            row = gal_df.iloc[gal]
+            if color_gals:
+                rgba = cmap(norm(row['group_gal_id']))
+            else:
+                rgba = 'black'
+            ax.errorbar(row['log_NII_Ha'], row['log_OIII_Hb'], xerr=row[
+                            'log_NII_Ha_err'], yerr=row['log_OIII_Hb_err'], marker='o', color=rgba, ecolor='grey', ls='None', zorder=1)
     
     # gal_df_2 = gal_df[gal_df['agn_flag']>3]
     # ax.errorbar(gal_df_2['log_NII_Ha'], gal_df_2['log_OIII_Hb'], xerr=gal_df_2[
@@ -151,7 +180,7 @@ def plot_bpt(savename='None', axis_obj='False', composite_bpt_point=[-47], compo
         prospector_fit_df = ascii.read(imd.prospector_emission_fits_dir + f'/{add_prospector}_emission_fits/{groupID}_emission_fits.csv').to_pandas()
         prospector_n2ha = prospector_fit_df['log_N2_Ha'].iloc[0]
         prospector_o3hb = prospector_fit_df['log_O3_Hb'].iloc[0]
-        ax.plot(prospector_n2ha, prospector_o3hb, marker='x', color='blue', markersize=10, mew=3, ls='None', zorder=10000)
+        ax.plot(prospector_n2ha, prospector_o3hb, marker='x', color='orange', markersize=10, mew=3, ls='None', zorder=10000, label='Prospector')
 
 
     ax.set_xlim(-2, 1)
@@ -172,6 +201,19 @@ def plot_bpt(savename='None', axis_obj='False', composite_bpt_point=[-47], compo
 
 
 def plot_all_bpt_clusters(n_clusters):
+    """Plots the bpt diagram for every cluster
+
+    Parameters:
+    n_clusters (int): Number of clusters
+
+    Returns:
+    """
+    # Read in the emission lines dataframe
+    emission_df = read_emission_df()
+    for groupID in range(n_clusters):
+        plot_bpt_cluster(emission_df, groupID)
+
+def plot_all_clusters_same_bpt(n_clusters):
     """Plots the bpt diagram for every cluster
 
     Parameters:
@@ -207,3 +249,4 @@ def plot_bpt_cluster(emission_df, groupID, axis_obj = 'False'):
 # ar_df['log_sed_sfr'] = np.log10(ar_df['sed_sfr'])
 # ar_path = imd.mosdef_dir + '/axis_ratio_data/Merged_catalogs/filtered_ar_df.csv'
 # ar_df.to_csv(ar_path, index=False)
+plot_bpt_all_composites()

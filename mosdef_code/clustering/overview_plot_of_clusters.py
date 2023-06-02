@@ -19,7 +19,12 @@ prospector_run = 'dust_index_test'
 
 fontsize = 16
 
-def make_overview_plot_clusters(n_clusters, color_gals=False, bpt_color=False, paper_overview=False):
+def make_overview_plot_clusters(n_clusters, color_gals=False, bpt_color=False, paper_overview=False, prospector_spec=True):
+    """
+    Parameters:
+    prospector_spec (boolean): Set to true (and update runname above) to add prospector spectra to plot
+    
+    """
     #Set up the array (nrows, ncol)
     # fig, axarr = plt.subplots(n_clusters, 4, figsize=(16, n_clusters*4))
 
@@ -83,7 +88,7 @@ def make_overview_plot_clusters(n_clusters, color_gals=False, bpt_color=False, p
             halpha_range = np.logical_and(spec_df['wavelength']>6560, spec_df['wavelength']<6570)
             peak_halpha = np.max(spec_df[halpha_range]['f_lambda'])
             scale_factor = 1.0/peak_halpha
-            ax.plot(spec_df['wavelength'], spec_df['f_lambda']*scale_factor, color='black', linewidth=2)
+            ax.plot(spec_df['wavelength'], spec_df['f_lambda']*scale_factor, color='black', linewidth=2, label='Composite')
 
             ax.set_xlabel('Wavelength', fontsize=fontsize, labelpad=30)
             ax.set_ylabel('Normalized Flux', fontsize=fontsize)
@@ -93,7 +98,19 @@ def make_overview_plot_clusters(n_clusters, color_gals=False, bpt_color=False, p
         
         except:
             pass
-        
+
+        # Add prospector spectrum
+        if prospector_spec == True:
+            try:
+                prospector_spec_df = ascii.read(imd.prospector_fit_csvs_dir + f'/{prospector_run}_csvs/group{groupID}_spec.csv').to_pandas()
+                halpha_range = np.logical_and(prospector_spec_df['rest_wavelength']>6560, prospector_spec_df['rest_wavelength']<6570)
+                peak_halpha = np.max(prospector_spec_df[halpha_range]['spec50_flambda'])
+                scale_factor = 1.0/peak_halpha
+                
+                ax.plot(prospector_spec_df['rest_wavelength'], prospector_spec_df['spec50_flambda']*scale_factor, color='orange', linewidth=2, label='Prospector')
+                # ax.legend()
+            except:
+                pass 
 
 
 
@@ -209,7 +226,7 @@ def make_overview_plot_clusters(n_clusters, color_gals=False, bpt_color=False, p
         
         log_N2_Ha_group_errs = (clusters_summary_df_sorted['err_log_N2_Ha_low'].iloc[i], clusters_summary_df_sorted['err_log_N2_Ha_high'].iloc[i])
         log_O3_Hb_group_errs = (clusters_summary_df_sorted['err_log_O3_Hb_low'].iloc[i], clusters_summary_df_sorted['err_log_O3_Hb_high'].iloc[i])
-        ax.plot(log_N2_Ha_group, log_O3_Hb_group, marker='x', color='red', markersize=10, mew=3, ls='None', zorder=10000)
+        ax.plot(log_N2_Ha_group, log_O3_Hb_group, marker='x', color='blue', markersize=10, mew=3, ls='None', zorder=10000, label='Composite')
         # ax.errorbar(log_N2_Ha_group, log_O3_Hb_group, xerr=log_N2_Ha_group_errs, yerr=log_O3_Hb_group_errs, marker='x', color='red', markersize=6, mew=3, ls='None')
 
         # Add the point from prospector
@@ -219,6 +236,7 @@ def make_overview_plot_clusters(n_clusters, color_gals=False, bpt_color=False, p
         ax.set_xlim(xrange)
         ax.set_ylim(yrange)
         ax.tick_params(labelsize = fontsize)
+        # ax.legend(framealpha=1)
         # set_aspect_1(ax)
 
         ax.text(1.1, 0.3, f'Group {groupID}', transform=ax.transAxes, fontsize=20, rotation=270)
@@ -234,4 +252,4 @@ def make_overview_plot_clusters(n_clusters, color_gals=False, bpt_color=False, p
 
 # make_overview_plot_clusters(23)
 # make_overview_plot_clusters(23, color_gals=True)
-make_overview_plot_clusters(23, bpt_color=True, paper_overview=True)
+make_overview_plot_clusters(23, bpt_color=True, paper_overview=True, prospector_spec=True)

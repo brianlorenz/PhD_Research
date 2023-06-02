@@ -44,6 +44,6 @@ def make_tfig_cfig(run_name):
 
 
 
-make_tfig_cfig(run_name)
+# make_tfig_cfig(run_name)
 make_all_prospector_plots(n_clusters, run_name)
 # make_all_prospector_plots_2groups(groupID1, groupID2, groupID3, groupID4, run_name)

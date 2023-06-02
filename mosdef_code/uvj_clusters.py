@@ -311,7 +311,7 @@ def plot_uvj_cluster_paper(groupID, axis_obj='False'):
     if axis_obj == 'False':
         ax.legend(fontsize=legendfont - 4)
         ax.tick_params(labelsize=ticksize, size=ticks)
-        fig.savefig(imd.composite_uvj_dir + f'/cluster_uvjs/{groupID}_UVJ_paper.pdf', bbox_inches='tight')
+        fig.savefig(imd.composite_uvj_dir + f'/cluster_uvjs/{groupID}_UVJ_paper.pdf')
         plt.close()
     else:
         ax.legend()
@@ -366,7 +366,7 @@ def plot_full_uvj(n_clusters, color_type='None'):
 
     add_str = ''
 
-    fig, ax = plt.subplots(figsize=(8, 7))
+    fig, ax = plt.subplots(figsize=(8, 8))
 
     setup_uvj_plot(ax, galaxy_uvj_df, composite_uvj_df)
 
@@ -396,7 +396,7 @@ def plot_full_uvj(n_clusters, color_type='None'):
                 add_str = '_balmer_color'
             elif color_type == 'ssfr':
                 norm = mpl.colors.Normalize(vmin=-9.5, vmax=-8.25)
-                cluster_colorval = cluster_summary_df[cluster_row_idx]['log_ssfr'] 
+                cluster_colorval = cluster_summary_df[cluster_row_idx]['median_log_ssfr'] 
                 cbar_label = 'log(sSFR)'
                 add_str = '_ssfr_color'
             elif color_type == 'metallicity':
@@ -428,6 +428,7 @@ def plot_full_uvj(n_clusters, color_type='None'):
     ax.tick_params(labelsize=full_page_axisfont)
     ax.set_xlabel('V-J', fontsize=full_page_axisfont)
     ax.set_ylabel('U-V', fontsize=full_page_axisfont)
+    plt.subplots_adjust(left=0.13, right=0.87, bottom=0.1, top=0.84)
     fig.savefig(imd.composite_uvj_dir + f'/Full_UVJ{add_str}.pdf')
     plt.close()
 

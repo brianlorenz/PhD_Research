@@ -20,7 +20,7 @@ def load_obj(name, run_name):
         return pickle.load(f)
 
 
-def make_plots(groupID, run_name, mask=False, savename='False', trial=-1):
+def make_plots(groupID, run_name, mask=False, savename='False', trial=-1, label_lines=True):
     """Plots the observations vs the sps model
 
     Parameters:
@@ -28,6 +28,7 @@ def make_plots(groupID, run_name, mask=False, savename='False', trial=-1):
     run_name (str): Name of the current run, used to sort folders
     mask(boolean): Set to True if there was a mask
     savename (str): Set to the name you want to save the file under
+    label_lines (boolean): Set to true to have emission lines labeled
 
     """
     if trial == -1:
@@ -150,6 +151,8 @@ def make_plots(groupID, run_name, mask=False, savename='False', trial=-1):
         model_errs = np.vstack((y_model - y_model_16, y_model_84 - y_model))
         ax.errorbar(np.array(phot_df['rest_wavelength']), y_model,
                     ls='-', marker='o', yerr=model_errs, color='blue', label='Model')
+        
+        ax.axvspan(phot_df['rest_wavelength'].iloc[0]-100, 1500, alpha=0.6, color='grey')
 
         ## SPECTRUM IS HERE
         # Plot spectrum
@@ -164,28 +167,29 @@ def make_plots(groupID, run_name, mask=False, savename='False', trial=-1):
 
         # Plot Emission line and labels - plots only those form mosdef
         text_height = 0.96
-        for i in range(len(mosdef_lines_df)):
-            # Get rest wavelength
-            line_rest_wave = int(mosdef_lines_df.iloc[i]['Wavelength'])
+        if label_lines == True:
+            for i in range(len(mosdef_lines_df)):
+                # Get rest wavelength
+                line_rest_wave = int(mosdef_lines_df.iloc[i]['Wavelength'])
 
-            # Check if the line is in the range - if it's out, loop
-            if np.logical_or(line_rest_wave < ax_range[0], line_rest_wave > ax_range[1]):
-                continue
+                # Check if the line is in the range - if it's out, loop
+                if np.logical_or(line_rest_wave < ax_range[0], line_rest_wave > ax_range[1]):
+                    continue
 
-            # Find the nearest line in cloudy:
-            idx_nearest = np.argmin(
-                np.abs(lines_df['rest_wavelength'] - line_rest_wave))
-            line_wave = lines_df['rest_wavelength'].iloc[idx_nearest]
-            line_flux = lines_df['lines50_erg'].iloc[idx_nearest]
-            # Plot a green line where it is
-            ax.axvline(line_wave, ls='--', color='mediumseagreen')
+                # Find the nearest line in cloudy:
+                idx_nearest = np.argmin(
+                    np.abs(lines_df['rest_wavelength'] - line_rest_wave))
+                line_wave = lines_df['rest_wavelength'].iloc[idx_nearest]
+                line_flux = lines_df['lines50_erg'].iloc[idx_nearest]
+                # Plot a green line where it is
+                ax.axvline(line_wave, ls='--', color='mediumseagreen')
 
-            # Add a label
-            trans = transforms.blended_transform_factory(
-                ax.transData, ax.transAxes)
-            ax.text(line_wave, text_height, mosdef_lines_df.iloc[
-                    i]['Name'], transform=trans)
-            text_height = text_height - 0.025
+                # Add a label
+                trans = transforms.blended_transform_factory(
+                    ax.transData, ax.transAxes)
+                ax.text(line_wave, text_height, mosdef_lines_df.iloc[
+                        i]['Name'], transform=trans)
+                text_height = text_height - 0.025
 
         ax.set_ylabel("$\lambda$ F$_\lambda$")
         ax.set_xlabel("Wavelength ($\AA$)")
@@ -246,7 +250,7 @@ def make_all_prospector_plots(n_clusters, run_name):
     for groupID in range(n_clusters):
         if os.path.exists(imd.prospector_fit_csvs_dir + f'/{run_name}_csvs/{groupID}_cont_phot.csv'):
             print(f'Making plot for group {groupID}')
-            make_plots(groupID, run_name)
+            make_plots(groupID, run_name, label_lines=False)
 
 def make_all_prospector_plots_2groups(groupID1, groupID2, groupID3, groupID4, run_name):
     '''Makes the plots from the outputs of the prospector run on Savio

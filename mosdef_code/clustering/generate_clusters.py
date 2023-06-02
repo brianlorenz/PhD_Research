@@ -20,6 +20,8 @@ def generate_clusters(n_clusters, stop_to_eval=False, skip_slow_steps=False):
     skip_slow_steps(boolean): Set to True to skip over making mock seds and cross_correlating
     
     """
+    print('Are you sure you want to clear the cluster directory? c for yes, exit() for no')
+    breakpoint()
     # Prepare the directories
     imd.reset_cluster_dirs(imd.cluster_dir)
     imd.reset_sed_dirs(imd.mosdef_dir)
@@ -84,11 +86,17 @@ def filter_gal_df():
     """Brings together all data sources into a single dataframe for easy access"""
     gal_df = read_interp_axis_ratio()
 
+    len_before_agn = len(gal_df)
     #Filter out objects that are flagged as optical AGN in MOSDEF (see readme)
     gal_df = gal_df[gal_df['agn_flag'] < 4]
+    len_after_agn = len(gal_df)
+    print(f'removed {len_before_agn-len_after_agn} galaxies for AGN flag')
 
+    len_before_zfilt = len(gal_df)
     #Filter out objects that don't have a spectroscopic redshift
     gal_df = gal_df[gal_df['z_qual_flag'] == 7]
+    len_after_zfilt = len(gal_df)
+    print(f'removed {len_before_zfilt-len_after_zfilt} galaxies for bad redshift')
 
     gal_df.to_csv(imd.loc_filtered_gal_df, index=False)
 
@@ -97,6 +105,7 @@ def read_filtered_gal_df():
     return gal_df
 
 
-
-
-generate_clusters(23, stop_to_eval=False, skip_slow_steps=True)
+# filter_gal_df()
+# gal_df = read_filtered_gal_df()
+# print(len(gal_df))
+# generate_clusters(23, stop_to_eval=False, skip_slow_steps=True)
