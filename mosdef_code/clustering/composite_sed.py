@@ -320,7 +320,7 @@ def vis_composite_sed(total_sed, composite_sed=0, composite_filters=0, groupID=-
     else:
         ax_sed = axis_obj
         axarr = [ax_sed]
-        total_sed = ascii.read(imd.total_sed_csvs_dir + f'/{groupID}_total_sed.csv')
+        total_sed = ascii.read(imd.total_sed_csvs_dir + f'/{groupID}_total_sed.csv').to_pandas()
         composite_sed = read_composite_sed(groupID)
 
 

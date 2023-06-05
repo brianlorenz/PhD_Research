@@ -342,6 +342,9 @@ def plot_all_uvj_clusters_paper(n_clusters):
         plot_uvj_cluster_paper(i)
 
 
+def plot_missing_uvjs():
+    """Make a UVJ diagram for galaxies that were not classified"""
+
 def plot_full_uvj(n_clusters, color_type='None'):
     """Generate one overview UVJ diagram, with clusters marked by low-membership and labeled by number
 

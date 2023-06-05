@@ -7,13 +7,11 @@ import pandas as pd
 import initialize_mosdef_dirs as imd
 from plot_vals import *
 from brokenaxes import brokenaxes
-from sklearn import cluster
 from spectra_funcs import read_composite_spectrum
 from matplotlib.gridspec import GridSpec
 from bpt_clusters_singledf import plot_bpt
 from uvj_clusters import setup_uvj_plot
 import matplotlib as mpl
-import sys
 
 prospector_run = 'dust_index_test'
 

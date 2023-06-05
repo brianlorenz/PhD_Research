@@ -37,6 +37,7 @@ composite_spec_dir = cluster_dir + '/composite_spectra'
 
 #Dataframe for galaxies in seds
 loc_filtered_gal_df = cluster_dir + '/filtered_gal_df.csv'
+loc_removed_gal_df = cluster_dir + '/removed_gal_df.csv'
 #Dataframe for summarized bulk proerties of clusters
 loc_cluster_summary_df = cluster_dir + '/cluster_summary.csv'
 
@@ -58,6 +59,7 @@ cluster_uvj_plots_dir = cluster_plot_dir + '/uvj_diagrams'
 cluster_similarity_plots_dir = cluster_plot_dir + '/similarities'
 cluster_similarity_composite_dir = cluster_similarity_plots_dir + '/similarity_to_composite'
 cluster_overview_dir = cluster_plot_dir + '/overviews'
+cluster_paper_figures = cluster_dir + '/paper_figures'
 
 # Prospector Outputs
 prospector_output_dir = cluster_dir + '/prospector_outputs'

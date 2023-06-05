@@ -86,6 +86,8 @@ def filter_gal_df():
     """Brings together all data sources into a single dataframe for easy access"""
     gal_df = read_interp_axis_ratio()
 
+    full_df = read_interp_axis_ratio()
+
     len_before_agn = len(gal_df)
     #Filter out objects that are flagged as optical AGN in MOSDEF (see readme)
     gal_df = gal_df[gal_df['agn_flag'] < 4]
@@ -98,6 +100,12 @@ def filter_gal_df():
     len_after_zfilt = len(gal_df)
     print(f'removed {len_before_zfilt-len_after_zfilt} galaxies for bad redshift')
 
+    breakpoint()
+
+    # Save removed galaxies 
+    removed_gals = full_df.drop(gal_df.index)
+    removed_gals.to_csv(imd.loc_removed_gal_df, index=False)
+
     gal_df.to_csv(imd.loc_filtered_gal_df, index=False)
 
 def read_filtered_gal_df():
@@ -105,7 +113,7 @@ def read_filtered_gal_df():
     return gal_df
 
 
-# filter_gal_df()
+filter_gal_df()
 # gal_df = read_filtered_gal_df()
 # print(len(gal_df))
 # generate_clusters(23, stop_to_eval=False, skip_slow_steps=True)
