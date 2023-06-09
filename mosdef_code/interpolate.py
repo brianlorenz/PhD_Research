@@ -23,7 +23,6 @@ np.random.seed(seed=901969)
 log_filter_centers = np.linspace(np.log10(1300), np.log10(20000), 20)
 width = 0.25
 
-
 def gen_mock_sed(field, v4id, log_filter_centers=log_filter_centers, width=width, groupID=-99, vis=False):
     """Create a mock SED at standard wavelengths
 

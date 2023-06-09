@@ -266,7 +266,7 @@ def stack_spectra(groupID, norm_method, re_observe=False, mask_negatives=False, 
         return
 
 
-
+    
     total_spec, total_cont, total_errs, number_specs_by_wave, norm_value_specs_by_wave = perform_stack(stack_type, interp_cluster_spectra_dfs, norm_factors)
     print(f'bootstrap {bootstrap}')
     #If boostrrapping is turned on, perform multiple stacks with different subsets of the data, and save each of these
@@ -854,5 +854,5 @@ def stack_axis_ratio(mass_width, split_width, starting_points, ratio_bins, save_
             axis_group = axis_group + 1
 
 
-# stack_spectra(22, 'cluster_norm', re_observe=False,
-#                       mask_negatives=False, ignore_low_spectra=False)
+stack_spectra(19, 'cluster_norm', re_observe=False,
+                      mask_negatives=False, ignore_low_spectra=False)

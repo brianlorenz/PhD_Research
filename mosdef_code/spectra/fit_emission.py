@@ -858,7 +858,6 @@ def compute_bootstrap_uncertainties(n_clusters, save_name, bootstrap=-1, cluster
             groupID = axis_group
             if ha_first == True:
                 emission_df_loc = imd.emission_fit_dir + '/ha_first_csvs' + f'/{groupID}_emission_fits.csv'
-                breakpoint()
                 boot_dfs = [ascii.read(imd.emission_fit_dir + f'/ha_first_boot_csvs/{groupID}_emission_fits_{bootstrap_num}.csv').to_pandas() for bootstrap_num in range(bootstrap)]
             else:
                 emission_df_loc = imd.emission_fit_csvs_dir + f'/{groupID}_emission_fits.csv'

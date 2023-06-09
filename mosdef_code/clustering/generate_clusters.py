@@ -59,8 +59,17 @@ def generate_clusters(n_clusters, stop_to_eval=False, skip_slow_steps=False):
 
 
     
-
-
+def plot_eigenvalues():
+    fig, ax = plt.subplots(figsize=(8,8))
+    affinity_matrix = ascii.read(imd.cluster_dir + '/similarity_matrix.csv').to_pandas().to_numpy()
+    eigenvals, eignvectors = np.linalg.eig(affinity_matrix)
+    x_axis = np.arange(1, len(eigenvals)+1, 1)
+    breakpoint()
+    ax.plot(x_axis, eigenvals, ls='-', marker='o', color='black')
+    ax.set_yscale('log')
+    ax.set_xlim(0, 50)
+    ax.set_ylim(0.1, 1000)
+    fig.savefig(imd.cluster_dir+'/paper_figures/eigenvalues.pdf')
     
 
 def make_cluster_dfs(n_clusters, gal_df):
@@ -100,8 +109,6 @@ def filter_gal_df():
     len_after_zfilt = len(gal_df)
     print(f'removed {len_before_zfilt-len_after_zfilt} galaxies for bad redshift')
 
-    breakpoint()
-
     # Save removed galaxies 
     removed_gals = full_df.drop(gal_df.index)
     removed_gals.to_csv(imd.loc_removed_gal_df, index=False)
@@ -112,8 +119,12 @@ def read_filtered_gal_df():
     gal_df = ascii.read(imd.loc_filtered_gal_df).to_pandas()
     return gal_df
 
+def read_removed_gal_df():
+    gal_df = ascii.read(imd.loc_removed_gal_df).to_pandas()
+    return gal_df
 
-filter_gal_df()
+plot_eigenvalues()
+# filter_gal_df()
 # gal_df = read_filtered_gal_df()
 # print(len(gal_df))
 # generate_clusters(23, stop_to_eval=False, skip_slow_steps=True)

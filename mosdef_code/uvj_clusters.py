@@ -21,6 +21,7 @@ import initialize_mosdef_dirs as imd
 import cluster_data_funcs as cdf
 import matplotlib as mpl
 from plot_vals import *
+from generate_clusters import read_filtered_gal_df, read_removed_gal_df
 
 
 def get_uvj(field, v4id):
@@ -342,15 +343,13 @@ def plot_all_uvj_clusters_paper(n_clusters):
         plot_uvj_cluster_paper(i)
 
 
-def plot_missing_uvjs():
-    """Make a UVJ diagram for galaxies that were not classified"""
-
-def plot_full_uvj(n_clusters, color_type='None'):
+def plot_full_uvj(n_clusters, color_type='None', include_unused_gals='No'):
     """Generate one overview UVJ diagram, with clusters marked by low-membership and labeled by number
 
     Parameters:
     n_clusters (int): Number of clusters
     color_type (str): Either set to 'balmer', 'ssfr', or 'metallicity' for what to make the coloarbar
+    include_unused_gals (str): Set to 'No', 'Yes', or 'Only', to either exclude, include, or only show unsued galaxies 
 
     Returns:
     """
@@ -371,7 +370,7 @@ def plot_full_uvj(n_clusters, color_type='None'):
 
     fig, ax = plt.subplots(figsize=(8, 8))
 
-    setup_uvj_plot(ax, galaxy_uvj_df, composite_uvj_df)
+    setup_uvj_plot(ax, galaxy_uvj_df, composite_uvj_df, include_unused_gals=include_unused_gals)
 
     # bad_clusters = cdf.find_bad_clusters(n_clusters)
     # bad_uvjs = composite_uvj_df.loc[bad_clusters]
@@ -380,15 +379,17 @@ def plot_full_uvj(n_clusters, color_type='None'):
     # ax.plot(bad_uvjs['V_J'], bad_uvjs['U_V'],
     #         ls='', marker='x', markersize=5, markeredgewidth=2, color='red', label='Bad Composite SEDs')
 
-    ax.plot(composite_uvj_df['V_J'], composite_uvj_df['U_V'],
-            ls='', marker='x', markersize=5, markeredgewidth=2, color='red')
+    if include_unused_gals!='Only':
+        ax.plot(composite_uvj_df['V_J'], composite_uvj_df['U_V'],
+                ls='', marker='x', markersize=5, markeredgewidth=2, color='red')
 
     
 
 
     for groupID in range(n_clusters):
         row = composite_uvj_df.iloc[groupID]
-        ax.text(row['V_J'] - 0.02, row['U_V'] + 0.03, f'{groupID}', size=12, fontweight='bold', color='red')
+        if include_unused_gals!='Only':
+            ax.text(row['V_J'] - 0.02, row['U_V'] + 0.03, f'{groupID}', size=12, fontweight='bold', color='red')
         if color_type != 'None':
             cmap = mpl.cm.inferno
             cluster_row_idx = cluster_summary_df['groupID'] == groupID
@@ -425,7 +426,9 @@ def plot_full_uvj(n_clusters, color_type='None'):
         cbar = fig.colorbar(mpl.cm.ScalarMappable(norm=norm, cmap=cmap), ax=ax, fraction=0.046, pad=0.04)
         cbar.set_label(cbar_label, fontsize=full_page_axisfont)
         cbar.ax.tick_params(labelsize=full_page_axisfont-2)
-        
+    
+    if include_unused_gals=='Only':
+        add_str = '_removed_gals'
 
     # ax.legend(fontsize=full_page_axisfont - 4)
     ax.tick_params(labelsize=full_page_axisfont)
@@ -436,25 +439,40 @@ def plot_full_uvj(n_clusters, color_type='None'):
     plt.close()
 
 
-def setup_uvj_plot(ax, galaxy_uvj_df, composite_uvj_df, axis_obj='False'):
+def setup_uvj_plot(ax, galaxy_uvj_df, composite_uvj_df, axis_obj='False', include_unused_gals='No'):
     """Plots all background galaxies and clusters onto the UVJ diagram, as well as the lines
 
     Parameters:
     ax (matplotlib axis): matplotlib axis to plot on
     galaxy_uvj_df (pd.dataFrame): dataframe containing uvj values for all galaxies
     composite_uvj_df (pd.dataFrame): dataframe containing uvj values for all composites
+    include_unused_gals (str): Set to 'No', 'Yes', or 'Only', to either exclude, include, or only show unsued galaxies 
+    
 
     Returns:
     """
+
+
+    # Filters down to only points used
+    if include_unused_gals == 'No':
+        used_gal_df = read_filtered_gal_df()
+        galaxy_uvj_df = galaxy_uvj_df[galaxy_uvj_df['v4id'].isin(used_gal_df['v4id'])]
+        galaxy_uvj_df = galaxy_uvj_df.drop_duplicates(subset='v4id', keep="last")
+    if include_unused_gals == 'Only':
+        removed_gal_df = read_removed_gal_df()
+        galaxy_uvj_df = galaxy_uvj_df[galaxy_uvj_df['v4id'].isin(removed_gal_df['v4id'])]
+        galaxy_uvj_df = galaxy_uvj_df.drop_duplicates(subset='v4id', keep="last")
+
 
     # Plots all galaxy UVJs in grey
     ax.plot(galaxy_uvj_df['V_J'], galaxy_uvj_df['U_V'],
             ls='', marker='o', markersize=1.5, color='grey', label='All Galaxies')
 
     if axis_obj == 'False':
-        # Plot all composites as purple X
-        ax.plot(composite_uvj_df['V_J'], composite_uvj_df['U_V'],
-                ls='', marker='x', markersize=5, markeredgewidth=2, color='purple', label='All Composite SEDs')
+        if include_unused_gals!='Only':
+            # Plot all composites as purple X
+            ax.plot(composite_uvj_df['V_J'], composite_uvj_df['U_V'],
+                    ls='', marker='x', markersize=5, markeredgewidth=2, color='purple', label='All Composite SEDs')
 
     # UVJ diagram lines
     ax.plot((-100, 0.69), (1.3, 1.3), color='black')
@@ -473,7 +491,8 @@ def setup_uvj_plot(ax, galaxy_uvj_df, composite_uvj_df, axis_obj='False'):
 # plot_all_uvj_clusters_paper(23)
 # plot_all_uvj_clusters(23)
 # observe_all_uvj(23, individual_gals=False, composite_uvjs=True)
-plot_full_uvj(23)
+plot_full_uvj(23, include_unused_gals='No')
+plot_full_uvj(23, include_unused_gals='Only')
 # plot_full_uvj(23, color_type='balmer')
 # plot_full_uvj(23, color_type='ssfr')
 # plot_full_uvj(23, color_type='metallicity')

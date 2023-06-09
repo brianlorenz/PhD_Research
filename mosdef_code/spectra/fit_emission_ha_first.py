@@ -583,4 +583,4 @@ def fit_all_group_emission_ha_first(n_clusters, ignore_groups, n_boots):
 
 
 # fit_all_group_emission_ha_first(23, ignore_groups=[19], n_boots=100)
-compute_bootstrap_uncertainties(23, '', bootstrap=-1, clustering=True, ignore_groups=[19], ha_first=True)
+compute_bootstrap_uncertainties(23, '', bootstrap=100, clustering=True, ignore_groups=[19], ha_first=True)

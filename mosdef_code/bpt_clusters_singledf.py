@@ -71,7 +71,7 @@ def calc_log_ratio(top_flux, top_err, bot_flux, bot_err):
         ((1 / bot_flux) * top_err)**2 + ((-top_flux / (bot_flux**2)) * bot_err)**2)
     return log_ratio, log_ratio_err
 
-def plot_bpt_all_composites():
+def plot_bpt_all_composites(color_code='None'):
     fig, ax = plt.subplots(figsize=(8,7))
     clusters_summary_df = ascii.read(imd.loc_cluster_summary_df).to_pandas()
     ### BPT Plot --------------------------------------------
@@ -92,12 +92,41 @@ def plot_bpt_all_composites():
         log_N2_Ha_group_errs = (clusters_summary_df['err_log_N2_Ha_low'].iloc[i], clusters_summary_df['err_log_N2_Ha_high'].iloc[i])
         log_O3_Hb_group_errs = (clusters_summary_df['err_log_O3_Hb_low'].iloc[i], clusters_summary_df['err_log_O3_Hb_high'].iloc[i])
         
-        ax.plot(log_N2_Ha_group, log_O3_Hb_group, marker='x', color='red', markersize=10, mew=3, ls='None', zorder=10000, label='Composite')
+        cmap = mpl.cm.inferno
+        if color_code == 'log_mass':
+            norm = mpl.colors.Normalize(vmin=9, vmax=11) 
+            rgba = cmap(norm(clusters_summary_df['median_log_mass'].iloc[i]))
+        elif color_code == 'log_sfr':
+            norm = mpl.colors.Normalize(vmin=0, vmax=3) 
+            rgba = cmap(norm(clusters_summary_df['median_log_sfr'].iloc[i]))
+        elif color_code == 'log_ssfr':
+            norm = mpl.colors.Normalize(vmin=-9, vmax=-8) 
+            rgba = cmap(norm(clusters_summary_df['median_log_ssfr'].iloc[i]))
+        elif color_code == 'metallicity':
+            norm = mpl.colors.Normalize(vmin=8, vmax=9) 
+            rgba = cmap(norm(clusters_summary_df['O3N2_metallicity'].iloc[i]))
+        elif color_code == 'balmer_dec':
+            norm = mpl.colors.Normalize(vmin=3, vmax=9) 
+            rgba = cmap(norm(clusters_summary_df['balmer_dec'].iloc[i]))
+        else: 
+            rgba = 'red'
+
+        ax.plot(log_N2_Ha_group, log_O3_Hb_group, marker='o', color=rgba, markersize=10, mew=3, ls='None', zorder=10000, label='Composite')
         ax.text(log_N2_Ha_group - 0.02, log_O3_Hb_group + 0.03, f'{groupID}', size=12, fontweight='bold', color='black')
+        
+    if color_code != 'None':
+        cbar = fig.colorbar(mpl.cm.ScalarMappable(norm=norm, cmap=cmap), ax=ax, fraction=0.046, pad=0.04)
+        # cbar.set_label(balmer_label, fontsize=fontsize)
+        cbar.set_label(color_code, fontsize=14)
+        cbar.ax.tick_params(labelsize=14)
+        add_str = f'_{color_code}'
+    else:
+        add_str=''
+
     ax.set_xlabel('log(N[II] 6583 / H$\\alpha$)', fontsize=14)
     ax.set_ylabel('log(O[III] 5007 / H$\\beta$)', fontsize=14)
     ax.tick_params(labelsize=14, size=14)
-    fig.savefig(imd.cluster_dir+'/cluster_stats/all_groups_bpt.pdf')
+    fig.savefig(imd.cluster_dir+f'/cluster_stats/bpts/all_groups_bpt{add_str}.pdf')
 
 def plot_bpt(savename='None', axis_obj='False', composite_bpt_point=[-47], composite_bpt_errs=0, use_other_df = 0, use_df='False', add_background=False, color_gals=False, add_prospector='False', groupID=-1, skip_gals=False):
     """Plots the bpt diagram for the objects in zobjs
@@ -249,4 +278,6 @@ def plot_bpt_cluster(emission_df, groupID, axis_obj = 'False'):
 # ar_df['log_sed_sfr'] = np.log10(ar_df['sed_sfr'])
 # ar_path = imd.mosdef_dir + '/axis_ratio_data/Merged_catalogs/filtered_ar_df.csv'
 # ar_df.to_csv(ar_path, index=False)
-plot_bpt_all_composites()
+color_codes = ['None', 'log_mass', 'log_sfr', 'balmer_dec', 'metallicity', 'log_ssfr']
+for color_code in color_codes:
+    plot_bpt_all_composites(color_code=color_code)
