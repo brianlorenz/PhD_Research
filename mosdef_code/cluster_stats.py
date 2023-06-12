@@ -54,12 +54,15 @@ def plot_similarity_cluster(groupID, zobjs, similarity_matrix, axis_obj='False')
 
     ax.set_xlim(-0.05, 1.05)
     
-    
+    mean_sim = np.mean(similarities)
+    mean_sim_to_composite = np.mean(similarities_composite)
     
     if axis_obj == 'False':
         ax.set_xlabel('Similarity', fontsize=axisfont)
         ax.set_ylabel('Number of pairs', fontsize=axisfont)
         ax.tick_params(labelsize=ticksize, size=ticks)
+        
+        ax.text(0.1, 0.9, f'Avg. similarity {mean_sim}', transform=ax.transAxes)
         fig.savefig(imd.cluster_similarity_plots_dir + f'/{groupID}_similarity.pdf')
         plt.close()
 
@@ -78,9 +81,10 @@ def plot_similarity_cluster(groupID, zobjs, similarity_matrix, axis_obj='False')
 
         # Also, save the values between each galaxy and the composite
         galaxies.to_csv(imd.cluster_similarity_composite_dir + f'/{groupID}_similarity_composite.csv', index=False)
+        return mean_sim, mean_sim_to_composite
     
     else:
-        return
+        return mean_sim, mean_sim_to_composite
 
 
 
@@ -99,6 +103,15 @@ def plot_all_similarity(n_clusters):
         imd.cluster_dir + '/zobjs_clustered.csv', data_start=1).to_pandas()
     zobjs['new_index'] = zobjs.index
 
+    groupIDs = []
+    mean_sims = []
+    mean_sim_to_composites = []
     for groupID in range(n_clusters):
-        plot_similarity_cluster(groupID, zobjs, similarity_matrix)
-        
+        mean_sim, mean_sim_to_composite = plot_similarity_cluster(groupID, zobjs, similarity_matrix)
+        mean_sims.append(mean_sim)
+        groupIDs.append(groupID)
+        mean_sim_to_composites.append(mean_sim_to_composite)
+    sim_df = pd.DataFrame(zip(groupIDs, mean_sims, mean_sim_to_composites), columns=['groupID', 'mean_sim', 'mean_sim_to_composite'])
+    sim_df.to_csv(imd.cluster_similarity_plots_dir+'/composite_similarities.csv', index=False)
+
+# plot_all_similarity(23)

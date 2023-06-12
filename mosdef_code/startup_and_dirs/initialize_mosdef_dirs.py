@@ -6,6 +6,7 @@ from scipy.linalg.misc import norm
 from astropy.io import fits
 import pandas as pd
 from astropy.io import ascii
+import numpy as np
 
 # Set all of the directories to store files
 home_dir = str(Path.home())
@@ -52,12 +53,12 @@ emission_fit_indiv_dir_images = mosdef_dir + '/Spectra/indiv_emission_fits_image
 
 
 # Cluster plots
-cluster_plot_dir = cluster_dir + '/cluster_plots'
+cluster_plot_dir = cluster_dir + '/cluster_stats'
 cluster_bpt_plots_dir = cluster_plot_dir + '/bpt_diagrams'
 cluster_sfr_plots_dir = cluster_plot_dir + '/mass_sfr'
 cluster_uvj_plots_dir = cluster_plot_dir + '/uvj_diagrams'
 cluster_similarity_plots_dir = cluster_plot_dir + '/similarities'
-cluster_similarity_composite_dir = cluster_similarity_plots_dir + '/similarity_to_composite'
+cluster_similarity_composite_dir = cluster_similarity_plots_dir + '/similarities_composite'
 cluster_overview_dir = cluster_plot_dir + '/overviews'
 cluster_paper_figures = cluster_dir + '/paper_figures'
 
@@ -122,7 +123,8 @@ loc_composite_beta_df = cluster_dir + '/beta_composite_measure.csv'
 # FAST outputs
 FAST_dir = mosdef_dir + '/FAST'
 
-
+ignore_groups = ascii.read(bad_groups_file).to_pandas()
+ignore_groups = np.array(ignore_groups['groupID'])
 
 
 
