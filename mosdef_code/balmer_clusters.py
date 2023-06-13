@@ -7,7 +7,7 @@ import numpy as np
 import matplotlib as mpl
 from plot_vals import *
 
-def plot_balmer_dec_clusters(plot_var='balmer_dec', errorbar=True, clean=False):
+def plot_balmer_dec_clusters(plot_var='balmer_dec', errorbar=True, clean=False, ignore_groups=[]):
     """
     
     Parameters:
@@ -27,6 +27,8 @@ def plot_balmer_dec_clusters(plot_var='balmer_dec', errorbar=True, clean=False):
     norm = mpl.colors.Normalize(vmin=-9.6, vmax=-8.2) 
 
     for i in range(len(clusters_summary_df)):
+        if i in ignore_groups:
+            continue
         row = clusters_summary_df.iloc[i]
         if plot_var == 'balmer_dec':
             if row['balmer_dec'] < -90:
@@ -65,8 +67,9 @@ def plot_balmer_dec_clusters(plot_var='balmer_dec', errorbar=True, clean=False):
         add_str = ''
     fig.savefig(imd.cluster_dir+f'/cluster_stats/{plot_var}_mass{add_str}.pdf', bbox_inches='tight')
 
-plot_balmer_dec_clusters(clean=True)
-# plot_balmer_dec_clusters(plot_var='AV')
-# plot_balmer_dec_clusters(plot_var='beta')
-# plot_balmer_dec_clusters(plot_var='O3N2_metallicity')
-# plot_balmer_dec_clusters(plot_var='composite_beta')
+ignore_groups = imd.ignore_groups
+# plot_balmer_dec_clusters(clean=True, ignore_groups=ignore_groups)
+# plot_balmer_dec_clusters(plot_var='AV', ignore_groups=ignore_groups)
+# plot_balmer_dec_clusters(plot_var='beta', ignore_groups=ignore_groups)
+# plot_balmer_dec_clusters(plot_var='O3N2_metallicity', ignore_groups=ignore_groups)
+# plot_balmer_dec_clusters(plot_var='composite_beta', ignore_groups=ignore_groups)

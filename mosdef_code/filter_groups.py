@@ -25,5 +25,5 @@ def remove_groups_by_similiary(n_groups, sim_thresh=0.8):
     bad_groups = similarity_df['groupID']
     bad_groups.to_csv(imd.bad_groups_file, index=False)
 
-remove_groups_by_similiary(23)
+# remove_groups_by_similiary(23)
 # generate_skip_file(23)

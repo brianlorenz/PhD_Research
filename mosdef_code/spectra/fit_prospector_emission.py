@@ -71,6 +71,6 @@ def fit_all_prospector_emission(n_clusters, run_name, ignore_groups=[]):
         fit_emission(groupID, 'cluster_norm', run_name = run_name)
        
     
-ignore_groups = [0,5,12,19,22]
+# ignore_groups = [0,5,12,19,22]
 # setup_all_prospector_fit_csvs(23, 'dust_index_test', ignore_groups)
-fit_all_prospector_emission(23, 'dust_index_test', ignore_groups)
+# fit_all_prospector_emission(23, 'dust_index_test', ignore_groups)

@@ -64,7 +64,7 @@ def plot_cluster_summaries(x_var, y_var, savename, color_var='None', plot_lims='
 
     fig.savefig(imd.cluster_dir + f'/cluster_stats/{savename}.pdf', bbox_inches='tight')
 
-ignore_groups = [19]
+ignore_groups = imd.ignore_groups
 
 # SFR comparison plots
 plot_cluster_summaries('norm_median_halphas', 'ha_flux', 'sfrs/ha_flux_compare', color_var='balmer_dec', plot_lims=[6e-18, 8e-16, 6e-18, 8e-16], one_to_one=True, ignore_groups=ignore_groups, log=True)

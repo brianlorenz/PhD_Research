@@ -64,7 +64,6 @@ def plot_eigenvalues():
     affinity_matrix = ascii.read(imd.cluster_dir + '/similarity_matrix.csv').to_pandas().to_numpy()
     eigenvals, eignvectors = np.linalg.eig(affinity_matrix)
     x_axis = np.arange(1, len(eigenvals)+1, 1)
-    breakpoint()
     ax.plot(x_axis, eigenvals, ls='-', marker='o', color='black')
     ax.set_yscale('log')
     ax.set_xlim(0, 50)
@@ -123,7 +122,7 @@ def read_removed_gal_df():
     gal_df = ascii.read(imd.loc_removed_gal_df).to_pandas()
     return gal_df
 
-plot_eigenvalues()
+# plot_eigenvalues()
 # filter_gal_df()
 # gal_df = read_filtered_gal_df()
 # print(len(gal_df))

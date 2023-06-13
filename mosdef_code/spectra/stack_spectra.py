@@ -854,5 +854,5 @@ def stack_axis_ratio(mass_width, split_width, starting_points, ratio_bins, save_
             axis_group = axis_group + 1
 
 
-stack_spectra(19, 'cluster_norm', re_observe=False,
-                      mask_negatives=False, ignore_low_spectra=False)
+# stack_spectra(19, 'cluster_norm', re_observe=False,
+#                       mask_negatives=False, ignore_low_spectra=False)

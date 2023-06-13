@@ -31,7 +31,7 @@ Specify the directories in initialize_mosdef_dirsl;k
 # Make sure to go to initialize_mosdef_dirs to set all the directories properly
 
 # Set the total number of clusters
-n_clusters = 8
+n_clusters = 23
 # Set the name of the prospector run
 run_name = 'test'
 # Set which group numbers to ignore since their data is not good
@@ -47,7 +47,8 @@ bootstrap = 100
 
 # Begin running all the functions
 # print('Generating composite seds...')
-# get_all_composite_seds(n_clusters, run_filters=True)
+get_all_composite_seds(n_clusters, run_filters=True)
+sys.exit()
 # print('Generating composite spectra...')
 # stack_all_spectra(n_clusters, 'cluster_norm', bootstrap=bootstrap, ignore_groups=ignore_groups)
 # print('Fitting emission lines...')
@@ -63,7 +64,7 @@ fit_all_emission(n_clusters, 'cluster_norm', ignore_groups, bootstrap=bootstrap)
 # Add the bootstrapped uncertainties
 compute_bootstrap_uncertainties(n_clusters, 'None', bootstrap=bootstrap, clustering=True, ignore_groups=ignore_groups)
 
-sys.exit()
+
 
 make_clusters_summary_df(n_clusters, ignore_groups)
 
