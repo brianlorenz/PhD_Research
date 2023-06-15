@@ -74,12 +74,17 @@ def composite_and_spec_overview(n_clusters, ignore_groups):
             ylims = ax_spec.get_ylim()[0]
             height_pct = (height-ylims[0]) / (ylims[1]-ylims[0])
             # ax.axvline(center, ymin=-0, ymax=0.78, color='black', ls='--')
-            ax_spec.axvline(center, color='black', ls='-')
+            ax_spec.axvline(center, color='mediumseagreen', ls='--')
             if len(name) > 8:
                 offset = -8
             else:
                 offset = len(name)*-2.7
-            ax_spec.text(center+3+offset, np.min([ylims[1]-0.1, height+0.2]), name, fontsize=single_column_axisfont)
+            if i%nrows==0:
+                if name=='Halpha': name='H$\\alpha$'
+                if name=='Hbeta': name='H$\\beta$'
+                if name=='O3_5008' or name=='O3_4960': name='O[III]'
+                if name=='N2_6550' or name=='N2_6585': name='N[II]'
+                ax_spec.text(center+3+offset, np.min([ylims[1]-0.1, height+0.2]), name, fontsize=single_column_axisfont)
 
         
         

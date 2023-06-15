@@ -108,6 +108,24 @@ def filter_gal_df():
     len_after_zfilt = len(gal_df)
     print(f'removed {len_before_zfilt-len_after_zfilt} galaxies for bad redshift')
 
+    len_before_serendip = len(gal_df)
+    #Filter out serendipds
+    gal_df = gal_df[gal_df['serendip_flag'] == 1]
+    len_after_serendip = len(gal_df)
+    print(f'removed {len_before_serendip-len_after_serendip} galaxies for serendips')
+
+    len_before_id_dup = len(gal_df)
+    #Filter out serendipds
+    good_vals = gal_df['v4id'].drop_duplicates().index
+    gal_df = gal_df.filter(items = good_vals, axis=0)
+    len_after_id_dup= len(gal_df)
+    print(f'removed {len_before_id_dup-len_after_id_dup} galaxies for serendips')
+
+    print(f'{len(gal_df)} galaxies remain')
+
+    print('Save updated filtered gals and removed gals? c to continue')
+    breakpoint()
+
     # Save removed galaxies 
     removed_gals = full_df.drop(gal_df.index)
     removed_gals.to_csv(imd.loc_removed_gal_df, index=False)
