@@ -25,15 +25,13 @@ from spectra_funcs import get_indiv_halpha_norm_factor
 axis_ratio_catalog = ascii.read(imd.loc_axis_ratio_cat).to_pandas()
 
 
-def stack_spectra(groupID, norm_method, re_observe=False, mask_negatives=False, ignore_low_spectra=False, axis_ratio_df=[], axis_group=0, save_name='', scale_factors=0, stack_type='median', bootstrap=0):
+def stack_spectra(groupID, norm_method, re_observe=False, mask_negatives=False, axis_ratio_df=[], axis_group=0, save_name='', scale_factors=0, stack_type='median', bootstrap=0):
     """Stack all the spectra for every object in a given group
 
     Parameters:
     groupID (int): ID of the cluster to perform the stacking
     norm_method (str): Method to normalize - 'cluster_norm' for same norms as sed stacking, 'composite_sed_norm' to normalize to the composite, 'composite_filter' to observe the spectrum in a filter and use one point to normalize, 'positive_median' to take the median of all poitive values and scale that
     re_observe (boolean): Set to True if using 'composite_filter' and you want to re-observe all of the spectra
-    mask_negatives (boolean): Set to True to mask all negative values in the spectra
-    ignore_low_spectra (boolean): Set to True to ignore all spectra with negative median values
     axis_ratio_df (pd.DataFrame): Set to a dataframe of axis ratios and it will stack all spectra within that dataframe. Also set axis_group
     axis_group (int): Number of the axis ratio group
     save_name (str): location to save the files
@@ -107,25 +105,11 @@ def stack_spectra(groupID, norm_method, re_observe=False, mask_negatives=False, 
         # Find all the spectra files corresponding to this object
         spectra_files = get_spectra_files(mosdef_obj)
         for spectrum_file in spectra_files:
-            spectrum_df = read_spectrum(mosdef_obj, spectrum_file)
+            spectrum_df = read_spectrum(mosdef_obj, spectrum_file) #already corrected for 1+z
 
             # Clip the skylines:
             spectrum_df['f_lambda_clip'], spectrum_df['mask'], spectrum_df['err_f_lambda_clip'] = clip_skylines(
                 spectrum_df['obs_wavelength'], spectrum_df['f_lambda'], spectrum_df['err_f_lambda'], mask_negatives=mask_negatives)
-
-            if ignore_low_spectra:
-                # Find the matching wavelength
-                med_spec_wave = np.median(spectrum_df['rest_wavelength'])
-                sed_idx = np.argmin(
-                    np.abs(norm_sed['rest_wavelength'] - med_spec_wave))
-                sed_val = norm_sed['f_lambda'].iloc[sed_idx]
-                spec_median = np.median(spectrum_df[spectrum_df['f_lambda_clip'] != 0][
-                    'f_lambda_clip'])
-                ratio = sed_val / spec_median
-                # print(f'Ratio = {ratio}')
-                if ratio > 2 or ratio < 0:
-                    print('Skipping')
-                    continue
 
             # NORMALZE - HOW BEST TO DO THIS?
             # Original Method - using the computed norm_factors form composite sed formation
@@ -207,7 +191,7 @@ def stack_spectra(groupID, norm_method, re_observe=False, mask_negatives=False, 
             print(f'    Norm factor: {norm_factor}')
             print(f'')
             # Read in the continuum and normalize that
-            continuum_df = read_fast_continuum(mosdef_obj)
+            continuum_df = read_fast_continuum(mosdef_obj) # already corrected for 1+z
             continuum_df['f_lambda_norm'] = continuum_df[
                 'f_lambda'] * norm_factor
 
@@ -443,7 +427,7 @@ def divz(X, Y):
     return X / np.where(Y, Y, Y + 1) * np.not_equal(Y, 0)
 
 
-def stack_all_spectra(n_clusters, norm_method, re_observe=False, mask_negatives=False, ignore_low_spectra=False, bootstrap=0, ignore_groups=[]):
+def stack_all_spectra(n_clusters, norm_method, re_observe=False, mask_negatives=False, bootstrap=0, ignore_groups=[]):
     """Runs the stack_spectra() function on every cluster
 
     Parameters:
@@ -457,7 +441,7 @@ def stack_all_spectra(n_clusters, norm_method, re_observe=False, mask_negatives=
             continue
         print(f'Stacking spectrum {i}...')
         stack_spectra(i, norm_method, re_observe=re_observe,
-                      mask_negatives=mask_negatives, ignore_low_spectra=ignore_low_spectra, bootstrap=bootstrap)
+                      mask_negatives=mask_negatives, bootstrap=bootstrap)
 
 
 def plot_all_spectra(n_clusters, norm_method, mask_negatives=False):
@@ -855,4 +839,4 @@ def stack_axis_ratio(mass_width, split_width, starting_points, ratio_bins, save_
 
 
 # stack_spectra(19, 'cluster_norm', re_observe=False,
-#                       mask_negatives=False, ignore_low_spectra=False)
+#                       mask_negatives=False)

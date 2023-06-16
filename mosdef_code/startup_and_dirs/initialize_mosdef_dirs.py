@@ -123,8 +123,9 @@ loc_composite_beta_df = cluster_dir + '/beta_composite_measure.csv'
 # FAST outputs
 FAST_dir = mosdef_dir + '/FAST'
 
-ignore_groups = ascii.read(bad_groups_file).to_pandas()
-ignore_groups = np.array(ignore_groups['groupID'])
+if os.path.exists(bad_groups_file):
+    ignore_groups = ascii.read(bad_groups_file).to_pandas()
+    ignore_groups = np.array(ignore_groups['groupID'])
 
 
 

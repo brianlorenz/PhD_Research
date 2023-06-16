@@ -4,6 +4,7 @@ import sys
 import os
 import string
 import pdb
+import math
 import numpy as np
 import pandas as pd
 from astropy.io import ascii
@@ -85,7 +86,10 @@ def correlate_all_seds(zobjs):
         sed_i = seds_list[i]
         for j in range(dimension - i):
             sed_j = seds_list[i + j]
-            similarity_matrix[i, i + j] = 1 - get_cross_cor(sed_i, sed_j)[1]
+            save_value = 1 - get_cross_cor(sed_i, sed_j)[1]
+            if math.isnan(save_value):
+                save_value = 0
+            similarity_matrix[i, i + j] = save_value
             similarity_matrix[i + j, i] = similarity_matrix[i, i + j]
     zobjs_df.to_csv(
         imd.home_dir + '/mosdef/Clustering/zobjs_order.csv', index=False)

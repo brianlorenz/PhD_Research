@@ -47,6 +47,8 @@ def gen_mock_sed(field, v4id, log_filter_centers=log_filter_centers, width=width
         mosdef_obj = get_mosdef_obj(field, v4id)
         sed['rest_wavelength'] = sed['peak_wavelength'] / \
             (1 + mosdef_obj['Z_MOSFIRE'])
+        sed['f_lambda'] = sed['f_lambda'] * (1 + mosdef_obj['Z_MOSFIRE'])
+        sed['err_f_lambda'] = sed['err_f_lambda'] * (1 + mosdef_obj['Z_MOSFIRE'])
 
     # Only consider those measurements with detections? Or do we allow less
     # than 0 fluxes? Set them to zero?

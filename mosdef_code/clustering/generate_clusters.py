@@ -12,7 +12,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import time
 
-def generate_clusters(n_clusters, stop_to_eval=False, skip_slow_steps=False):
+def generate_clusters(n_clusters, stop_to_eval=True, skip_slow_steps=False):
     """Main method that will generate all the clusters from scratch
     
     Parameters: 
@@ -144,4 +144,4 @@ def read_removed_gal_df():
 # filter_gal_df()
 # gal_df = read_filtered_gal_df()
 # print(len(gal_df))
-# generate_clusters(23, stop_to_eval=False, skip_slow_steps=True)
+# generate_clusters(19, stop_to_eval=False, skip_slow_steps=True)

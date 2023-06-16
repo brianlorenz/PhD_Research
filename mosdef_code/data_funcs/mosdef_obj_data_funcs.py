@@ -57,6 +57,11 @@ def read_sed(field, v4id, norm=False):
             sed_location = imd.norm_sed_csvs_dir + f'/{field}_{v4id}_3DHST_sed.csv'
     
     sed = ascii.read(sed_location).to_pandas()
+    sed['rest_wavelength'] = sed['peak_wavelength'] / (1+sed['Z_MOSFIRE'])
+    sed['rest_f_lambda'] = sed['f_lambda'] * (1+sed['Z_MOSFIRE'])
+    sed['rest_err_f_lambda'] = sed['err_f_lambda'] * (1+sed['Z_MOSFIRE'])
+    sed['rest_f_lambda'][sed['rest_f_lambda'] < -99] = -99
+    sed['rest_err_f_lambda'][sed['rest_err_f_lambda'] < -99] = -99
     return sed
 
 
@@ -229,3 +234,5 @@ def merge_emission(ar_df):
     ar_line_merge = ar_df.merge(line_mosdef_merge, how='inner', left_on=[
                                 'field', 'v4id'], right_on=['FIELD_STR', 'V4ID'])
     return ar_line_merge
+
+read_sed('AEGIS', 379)

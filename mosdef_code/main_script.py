@@ -31,29 +31,28 @@ Specify the directories in initialize_mosdef_dirsl;k
 # Make sure to go to initialize_mosdef_dirs to set all the directories properly
 
 # Set the total number of clusters
-n_clusters = 23
+n_clusters = 19
 # Set the name of the prospector run
 run_name = 'test'
 # Set which group numbers to ignore since their data is not good
-ignore_groups = [19]
+ignore_groups = []
 # ignore_groups = [0,1,2,3,4,5,6,7,8,9,10,11,19]
 # ignore_groups = [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19]
 # Set hwo many times to bootstrap
 bootstrap = 100
 
-# imd.check_and_make_dir(imd.composite_filter_csvs_dir)
-# imd.check_and_make_dir(imd.composite_filter_images_dir)
-# imd.check_and_make_dir(imd.composite_filter_sedpy_dir)
+imd.check_and_make_dir(imd.composite_filter_csvs_dir)
+imd.check_and_make_dir(imd.composite_filter_images_dir)
+imd.check_and_make_dir(imd.composite_filter_sedpy_dir)
 
 # Begin running all the functions
-# print('Generating composite seds...')
+print('Generating composite seds...')
 get_all_composite_seds(n_clusters, run_filters=True)
-sys.exit()
-# print('Generating composite spectra...')
-# stack_all_spectra(n_clusters, 'cluster_norm', bootstrap=bootstrap, ignore_groups=ignore_groups)
-# print('Fitting emission lines...')
+print('Generating composite spectra...')
+stack_all_spectra(n_clusters, 'cluster_norm', bootstrap=bootstrap, ignore_groups=ignore_groups)
+print('Fitting emission lines...')
 
-#Check for agn and list which groups do not have enough galaxies
+#Check for agn and list which groups do not have enough galaxies - cuts down to 20
 # check_for_all_agn(n_clusters)
 # generate_skip_file()
 
@@ -69,10 +68,11 @@ compute_bootstrap_uncertainties(n_clusters, 'None', bootstrap=bootstrap, cluster
 make_clusters_summary_df(n_clusters, ignore_groups)
 
 # Need to do a few things to composites (measure uvj, generate mocks sed, etc. before we can plot)
-# print('Generating plots')
-# gen_all_mock_composites(n_clusters)
-# observe_all_uvj(n_clusters, individual_gals=False, composite_uvjs=True)
-
+print('Generating plots')
+gen_all_mock_composites(n_clusters)
+observe_all_uvj(n_clusters, individual_gals=False, composite_uvjs=True)
+print('Done - composite SEDs are ready')
+sys.exit()
 # BREAKING HERE, haven't set up what was needed 
 # generate_all_cluster_plots(n_clusters)
 

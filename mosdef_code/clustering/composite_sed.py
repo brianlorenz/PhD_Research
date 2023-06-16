@@ -59,11 +59,8 @@ def get_normalized_sed(target_field, target_v4id, field, v4id):
     sed['norm_factor'] = np.ones(len(sed)) * norm_factor
     sed['norm_field'] = [f'{target_field}'] * len(sed)
     sed['norm_v4id'] = [f'{target_v4id}'] * len(sed)
-    sed['f_lambda_norm'] = sed['f_lambda'] * norm_factor
-    sed['err_f_lambda_norm'] = sed['err_f_lambda'] * norm_factor
-    # Add a column to compute the rest_frame wavelength using the redshift
-    sed['rest_wavelength'] = sed['peak_wavelength'] / \
-        (1 + sed['Z_MOSFIRE'])
+    sed['rest_f_lambda_norm'] = sed['rest_f_lambda'] * norm_factor
+    sed['rest_err_f_lambda_norm'] = sed['rest_err_f_lambda'] * norm_factor
     return sed
 
 
@@ -136,12 +133,12 @@ def get_composite_sed(groupID, run_filters=True):
 
         # Get the scatter of the selected points, will be used for plotting
         std_scatter.append(np.percentile(
-            selected_points['f_lambda_norm'], [16, 84]))
+            selected_points['rest_f_lambda_norm'], [16, 84]))
 
         # 2. Average the points into a single point, add the errors in quadrature, put at the center of the wavelength range
         # SHOULD THIS POINT BE THE AVERAGE OF THE POINTS OR THE MEDIAN OF THE
         # BOOTSTRAPPED DISTRIBUTION???
-        composite_sed_point = np.mean(selected_points['f_lambda_norm'])
+        composite_sed_point = np.mean(selected_points['rest_f_lambda_norm'])
         # print(composite_sed_point)
         composite_sed_points.append(composite_sed_point)
         # Bootstrap to get errors:
@@ -207,7 +204,7 @@ def get_composite_sed_errs(selected_points, composite_sed_point):
     means = []
     for i in range(200):
         random_points = np.random.normal(
-            selected_points['f_lambda_norm'], selected_points['err_f_lambda_norm'])
+            selected_points['rest_f_lambda_norm'], selected_points['rest_err_f_lambda_norm'])
         means.append(np.mean(random_points))
     stddevs = np.percentile(means, [15.7, 84.3])
     err_d = np.abs(composite_sed_point - stddevs[0])
@@ -445,4 +442,4 @@ def get_good_idx(sed):
     return good_idx
 
 
-get_normalized_sed('GOODS-N', 26304, 'GOODS-N', 15096)
+# get_normalized_sed('GOODS-N', 26304, 'GOODS-N', 15096)
