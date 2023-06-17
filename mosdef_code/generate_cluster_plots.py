@@ -6,10 +6,15 @@ from astropy.io import ascii
 from bpt_clusters import plot_bpt_cluster
 from emission_measurements import read_emission_df
 from plot_mass_sfr import plot_mass_sfr_cluster, read_sfr_df, get_all_sfrs_masses
-from uvj_clusters import plot_full_uvj, plot_uvj_cluster
+from uvj_clusters import plot_full_uvj, plot_uvj_cluster, plot_all_uvj_clusters, plot_all_uvj_clusters_paper
 from cluster_stats import plot_similarity_cluster
 from stack_spectra import plot_spec
 from composite_sed import vis_composite_sed
+from plot_cluster_a_vs_b import plot_cluster_summaries
+from overview_plot_of_clusters import make_overview_plot_clusters
+from bpt_clusters_singledf import plot_bpt_all_composites
+from composite_and_spec_overview import composite_and_spec_overview
+from plot_similarity_matrix import plot_sim_matrix
 
 def generate_cluster_plots(groupID, emission_df, all_sfrs_res, zobjs, similarity_matrix, overview=False):
     '''
@@ -50,6 +55,7 @@ def generate_cluster_plots(groupID, emission_df, all_sfrs_res, zobjs, similarity
     plot_mass_sfr_cluster(groupID, all_sfrs_res, axis_obj=ax_mass_sfr)
     plot_uvj_cluster(groupID, axis_obj=ax_uvj)
     
+    imd.check_and_make_dir(imd.cluster_overview_dir)
     fig.savefig(imd.cluster_overview_dir + f'/{groupID}_overview.pdf')
     
     
@@ -81,4 +87,47 @@ def generate_all_cluster_plots(n_clusters, overview=False):
     plot_full_uvj(n_clusters)
 
 
-# generate_all_cluster_plots(29, overview=True)
+def generate_newer_cluster_plots(n_clusters):
+    ignore_groups = imd.ignore_groups
+
+    imd.check_and_make_dir(imd.cluster_dir + f'/cluster_stats/sfrs')
+    
+    # # SFR comparison plots
+    # plot_cluster_summaries('norm_median_halphas', 'ha_flux', 'sfrs/ha_flux_compare', color_var='balmer_dec', plot_lims=[6e-18, 8e-16, 6e-18, 8e-16], one_to_one=True, ignore_groups=ignore_groups, log=True)
+    # plot_cluster_summaries('median_log_sfr', 'computed_log_sfr', 'sfrs/sfr_compare', color_var='balmer_dec', plot_lims=[0.3, 3.5, 0.3, 3.5], one_to_one=True, ignore_groups=ignore_groups)
+    # plot_cluster_summaries('median_log_ssfr', 'computed_log_ssfr', 'sfrs/ssfr_compare', color_var='balmer_dec', plot_lims=[-10.7, -6.5, -10.7, -6.5], one_to_one=True, ignore_groups=ignore_groups)
+
+    # # SFMS
+    # plot_cluster_summaries('median_log_mass', 'median_log_ssfr', 'sfrs/sfms', color_var='O3N2_metallicity', ignore_groups=ignore_groups)
+    # plot_cluster_summaries('median_log_mass', 'computed_log_ssfr', 'sfrs/sfms_computed', color_var='O3N2_metallicity', ignore_groups=ignore_groups)
+    # plot_cluster_summaries('median_log_mass', 'computed_log_ssfr', 'sfrs/sfms_computed_balmercolor', color_var='balmer_dec', ignore_groups=ignore_groups)
+
+    # #AV comparison
+    # plot_cluster_summaries('AV', 'balmer_av', 'sfrs/av_compare', color_var='norm_median_log_mass', ignore_groups=ignore_groups, one_to_one=True, plot_lims=[0, 4.5, 0, 4.5])
+    
+
+    # # BPT diagrams
+    # color_codes = ['None', 'log_mass', 'log_sfr', 'balmer_dec', 'metallicity', 'log_ssfr']
+    # for color_code in color_codes:
+    #     plot_bpt_all_composites(color_code=color_code)
+
+    # UVJ Diagrams
+    plot_all_uvj_clusters_paper(n_clusters)
+    plot_all_uvj_clusters(n_clusters)
+    plot_full_uvj(n_clusters, include_unused_gals='No')
+    plot_full_uvj(n_clusters, include_unused_gals='Only')
+    plot_full_uvj(n_clusters, color_type='balmer')
+    plot_full_uvj(n_clusters, color_type='ssfr')
+    plot_full_uvj(n_clusters, color_type='metallicity')
+
+    # Similarity Matrix
+    plot_sim_matrix(n_clusters, ssfr_order=True)
+    plot_sim_matrix(n_clusters)
+
+    composite_and_spec_overview(n_clusters, ignore_groups)
+    make_overview_plot_clusters(n_clusters, bpt_color=True, paper_overview=False, prospector_spec=False)
+    
+
+
+# generate_all_cluster_plots(19, overview=True)
+# generate_newer_cluster_plots(19)

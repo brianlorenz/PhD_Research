@@ -250,4 +250,4 @@ def make_overview_plot_clusters(n_clusters, color_gals=False, bpt_color=False, p
 
 # make_overview_plot_clusters(23)
 # make_overview_plot_clusters(23, color_gals=True)
-make_overview_plot_clusters(23, bpt_color=True, paper_overview=True, prospector_spec=True)
+# make_overview_plot_clusters(23, bpt_color=True, paper_overview=True, prospector_spec=False)

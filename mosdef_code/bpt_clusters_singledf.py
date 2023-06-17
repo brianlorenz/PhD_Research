@@ -126,6 +126,7 @@ def plot_bpt_all_composites(color_code='None'):
     ax.set_xlabel('log(N[II] 6583 / H$\\alpha$)', fontsize=14)
     ax.set_ylabel('log(O[III] 5007 / H$\\beta$)', fontsize=14)
     ax.tick_params(labelsize=14, size=14)
+    imd.check_and_make_dir(imd.cluster_dir+f'/cluster_stats/bpts/')
     fig.savefig(imd.cluster_dir+f'/cluster_stats/bpts/all_groups_bpt{add_str}.pdf')
 
 def plot_bpt(savename='None', axis_obj='False', composite_bpt_point=[-47], composite_bpt_errs=0, use_other_df = 0, use_df='False', add_background=False, color_gals=False, add_prospector='False', groupID=-1, skip_gals=False):
@@ -278,6 +279,6 @@ def plot_bpt_cluster(emission_df, groupID, axis_obj = 'False'):
 # ar_df['log_sed_sfr'] = np.log10(ar_df['sed_sfr'])
 # ar_path = imd.mosdef_dir + '/axis_ratio_data/Merged_catalogs/filtered_ar_df.csv'
 # ar_df.to_csv(ar_path, index=False)
-color_codes = ['None', 'log_mass', 'log_sfr', 'balmer_dec', 'metallicity', 'log_ssfr']
-for color_code in color_codes:
-    plot_bpt_all_composites(color_code=color_code)
+# color_codes = ['None', 'log_mass', 'log_sfr', 'balmer_dec', 'metallicity', 'log_ssfr']
+# for color_code in color_codes:
+#     plot_bpt_all_composites(color_code=color_code)

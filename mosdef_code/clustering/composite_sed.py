@@ -171,10 +171,12 @@ def get_composite_sed(groupID, run_filters=True):
                       composite_filters=composite_filters, groupID=groupID, std_scatter=std_scatter, run_filters=run_filters)
 
     # Save the composite SED
+    imd.check_and_make_dir(imd.composite_sed_csvs_dir)
     composite_sed.to_csv(
         imd.composite_sed_csvs_dir + f'/{groupID}_sed.csv', index=False)
 
     # Save the total SED
+    imd.check_and_make_dir(imd.total_sed_csvs_dir)
     total_sed.to_csv(imd.total_sed_csvs_dir + f'/{groupID}_total_sed.csv', index=False)
     
 
@@ -332,7 +334,7 @@ def vis_composite_sed(total_sed, composite_sed=0, composite_filters=0, groupID=-
     else:
         point_color = total_sed[good_idx]['v4id']
     ax_sed.scatter(total_sed[good_idx]['rest_wavelength'], total_sed[good_idx]
-                   ['f_lambda_norm'], s=2, c=point_color, zorder=1)
+                   ['rest_f_lambda_norm'], s=2, c=point_color, zorder=1)
 
     if errorbars == True:
         ax_sed.errorbar(composite_sed['rest_wavelength'], composite_sed['f_lambda'],
@@ -371,6 +373,7 @@ def vis_composite_sed(total_sed, composite_sed=0, composite_filters=0, groupID=-
 
     if axis_obj == 'False':
         plt.tight_layout()
+        imd.check_and_make_dir(imd.composite_sed_images_dir)
         fig.savefig(imd.composite_sed_images_dir + f'/{filt_dir}{groupID}_sed.pdf')
         plt.close()
     else:
@@ -399,7 +402,7 @@ def vis_composite_filt(selected_points, filt_wavelength, filt_values, interp_fil
     colors = iter(plt.cm.viridis(np.linspace(0, 1, len(interp_filt_values))))
     for i in range(len(interp_filt_values)):
         color = next(colors)
-        ax_sed.errorbar(selected_points.iloc[i]['rest_wavelength'], selected_points.iloc[i]['f_lambda_norm'], yerr=selected_points.iloc[i]['err_f_lambda_norm'],
+        ax_sed.errorbar(selected_points.iloc[i]['rest_wavelength'], selected_points.iloc[i]['rest_f_lambda_norm'], yerr=selected_points.iloc[i]['rest_err_f_lambda_norm'],
                         ls='', marker='o', markersize=4, color=color)
         ax_filt.plot(filt_wavelength,
                      interp_filt_values[i], color=color)

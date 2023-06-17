@@ -28,7 +28,6 @@ def plot_sim_matrix(n_clusters, ssfr_order=False):
         new_order_df = zobjs_clustered.sort_values(by=['cluster_num']).reset_index()
         add_str = ''
         cluster_order = np.arange(n_clusters)
-    breakpoint()
     
     col_names = [f'col{new_order.iloc[i]+1}' for i in range(len(new_order))]
 
@@ -55,5 +54,5 @@ def plot_sim_matrix(n_clusters, ssfr_order=False):
     fig.savefig(imd.cluster_dir+f'/similarity_matrix_vis{add_str}.pdf', bbox_inches='tight')
     
 
-plot_sim_matrix(23, ssfr_order=True)
-plot_sim_matrix(23)
+# plot_sim_matrix(19, ssfr_order=True)
+# plot_sim_matrix(19)

@@ -88,8 +88,8 @@ def composite_and_spec_overview(n_clusters, ignore_groups):
 
         
         
-
+    imd.check_and_make_dir(imd.cluster_paper_figures)
     fig.savefig(imd.cluster_paper_figures + '/composite_and_spec_overview.pdf', bbox_inches='tight')
 
-ignore_groups = imd.ignore_groups
-composite_and_spec_overview(23, ignore_groups)
+# ignore_groups = imd.ignore_groups
+# composite_and_spec_overview(23, ignore_groups)

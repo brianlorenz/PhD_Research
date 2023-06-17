@@ -33,4 +33,4 @@ def add_norm_factors(n_clusters):
         group_df.to_csv(imd.cluster_indiv_dfs_dir + f'/{groupID}_cluster_df.csv', index=False)
 
 
-add_norm_factors(23)
+add_norm_factors(19)

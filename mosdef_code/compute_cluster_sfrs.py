@@ -41,4 +41,4 @@ def compute_cluster_sfrs():
 
 
 
-compute_cluster_sfrs()
+# compute_cluster_sfrs()
