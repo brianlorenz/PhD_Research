@@ -17,11 +17,12 @@ from scipy import stats
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 import matplotlib.patheffects as pe
 from re_to_kpc import convert_re_to_kpc
-
+from balmer_avs import compute_balmer_av
 
 
 shapes = {'low': '+', 'mid': 'd', 'high': 'o'}
 colors = {'sorted0': 'red', 'sorted1': 'blue', 'sorted2': 'orange', 'sorted3': 'mediumseagreen', 'sorted4': 'lightskyblue', 'sorted5': 'darkviolet'}
+
 
 def plot_sample_split(n_groups, save_name, ratio_bins, starting_points, mass_width, split_width, nbins, sfms_bins, use_whitaker_sfms, use_z_dependent_sfms, ax='None', fig='fig', plot_sfr_and_ssfr=False, panels=False):
     """Plots the way that the sample has been divided in mass/ssfr space
@@ -99,7 +100,8 @@ def plot_sample_split(n_groups, save_name, ratio_bins, starting_points, mass_wid
         hbeta_snrs.append(emission_df[emission_df['line_name']=='Hbeta']['signal_noise_ratio'].iloc[0])
         # See Price 2014 for the conversion factors:
         # A_balmer, balmer attenaution, balmer av
-        balmer_av = 4.05*1.97*np.log10(balmer_dec/2.86)
+        
+        balmer_av = compute_balmer_av(balmer_dec)
         # Recalculate where the errors would be if the points were at the top/bottom of their ranges
         err_balmer_av_low = balmer_av - 4.05*1.97*np.log10((balmer_dec-balmer_err_low)/2.86)
         err_balmer_av_high = 4.05*1.97*np.log10((balmer_dec+balmer_err_high)/2.86) - balmer_av
@@ -539,10 +541,10 @@ def make_sample_split_talkplot(save_name, n_groups, plot_stage=0):
 
 
 # make_sample_split_twopanel('norm_1_sn5_filtered', 8)
-make_sample_split_talkplot('norm_1_sn5_filtered', 8, plot_stage=0)
-make_sample_split_talkplot('norm_1_sn5_filtered', 8, plot_stage=1)
-make_sample_split_talkplot('norm_1_sn5_filtered', 8, plot_stage=2)
-make_sample_split_talkplot('norm_1_sn5_filtered', 8, plot_stage=3)
-make_sample_split_talkplot('norm_1_sn5_filtered', 8, plot_stage=4)
+# make_sample_split_talkplot('norm_1_sn5_filtered', 8, plot_stage=0)
+# make_sample_split_talkplot('norm_1_sn5_filtered', 8, plot_stage=1)
+# make_sample_split_talkplot('norm_1_sn5_filtered', 8, plot_stage=2)
+# make_sample_split_talkplot('norm_1_sn5_filtered', 8, plot_stage=3)
+# make_sample_split_talkplot('norm_1_sn5_filtered', 8, plot_stage=4)
 
 

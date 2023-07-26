@@ -22,6 +22,7 @@ from filter_groups import generate_skip_file, remove_groups_by_similiary
 from make_clusters_summary_df import make_clusters_summary_df
 from add_norm_factors_to_group_dfs import add_norm_factors
 from compute_cluster_sfrs import compute_cluster_sfrs
+from balmer_dec_histogram import compute_balmer_lower_limits
 
 '''Starting point: One folder ('cluster_folder') that contains: 
 -folders labeled '0', '1', ..., 'N' where N is the number of clusters-1. These will be the cluster "groups"
@@ -84,6 +85,7 @@ bootstrap = 100
 
 generate_newer_cluster_plots(n_clusters)
 # generate_all_cluster_plots(n_clusters)
+compute_balmer_lower_limits()
 breakpoint()
 
 

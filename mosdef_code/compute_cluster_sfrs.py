@@ -4,7 +4,12 @@ from compute_new_sfrs import correct_ha_lum_for_dust, ha_lum_to_sfr
 import numpy as np
 from astropy.io import ascii
 
-def compute_cluster_sfrs():
+def compute_cluster_sfrs(lower_limit=True):
+    """
+    
+    Parameters:
+    lower_limit (boolean): Set to true to use the lower limits computed in balmer_dec_histogram
+    """
     cluster_summary_df = imd.read_cluster_summary_df()
 
     halpha_fluxes = cluster_summary_df['ha_flux']
