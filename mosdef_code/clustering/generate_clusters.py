@@ -119,7 +119,7 @@ def filter_gal_df():
     good_vals = gal_df['v4id'].drop_duplicates().index
     gal_df = gal_df.filter(items = good_vals, axis=0)
     len_after_id_dup= len(gal_df)
-    print(f'removed {len_before_id_dup-len_after_id_dup} galaxies for serendips')
+    print(f'removed {len_before_id_dup-len_after_id_dup} galaxies for duplicates')
 
     print(f'{len(gal_df)} galaxies remain')
 

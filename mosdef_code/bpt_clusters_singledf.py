@@ -186,7 +186,6 @@ def plot_bpt(savename='None', axis_obj='False', composite_bpt_point=[-47], compo
     
     cmap = mpl.cm.plasma
     norm = mpl.colors.Normalize(vmin=1, vmax=len(gal_df)) 
-    print(len(gal_df))
     if skip_gals==False:
         for gal in range(len(gal_df)):
             row = gal_df.iloc[gal]

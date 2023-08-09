@@ -127,7 +127,9 @@ def generate_newer_cluster_plots(n_clusters):
     composite_and_spec_overview(n_clusters, ignore_groups)
     make_overview_plot_clusters(n_clusters, bpt_color=True, paper_overview=False, prospector_spec=False)
     
-
+    color_codes = ['None', 'log_mass', 'log_sfr', 'balmer_dec', 'metallicity', 'log_ssfr']
+    for color_code in color_codes:
+        plot_bpt_all_composites(color_code=color_code)
 
 # generate_all_cluster_plots(19, overview=True)
 # generate_newer_cluster_plots(19)

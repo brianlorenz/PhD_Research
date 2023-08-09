@@ -98,10 +98,11 @@ def stack_spectra(groupID, norm_method, re_observe=False, mask_negatives=False, 
         ]
 
         # Only check the coverage if we are not an axis stack mode - it is pre-checked there
-        if not axis_stack:
-            covered = check_line_coverage(mosdef_obj, coverage_list)
-            if covered == False:
-                continue
+        # if not axis_stack:
+        #     covered = check_line_coverage(mosdef_obj, coverage_list)
+        #     if covered == False:
+        #         continue
+        
         # Find all the spectra files corresponding to this object
         spectra_files = get_spectra_files(mosdef_obj)
         for spectrum_file in spectra_files:

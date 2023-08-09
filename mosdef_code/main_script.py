@@ -24,6 +24,7 @@ from add_norm_factors_to_group_dfs import add_norm_factors
 from compute_cluster_sfrs import compute_cluster_sfrs
 from balmer_dec_histogram import compute_balmer_lower_limits
 
+
 '''Starting point: One folder ('cluster_folder') that contains: 
 -folders labeled '0', '1', ..., 'N' where N is the number of clusters-1. These will be the cluster "groups"
 -each of these folders contains images of each of the seds in a given cluster, named as '{field}_{v4id}_mock.pdf'
@@ -77,15 +78,15 @@ bootstrap = 100
 # observe_all_uvj(n_clusters, individual_gals=False, composite_uvjs=True)
 # print('Done - composite SEDs are ready')
 
-# Figure out which groups to exclude from plots - CHECK THRESHOLD in /cluster_stats/similarities/composite_similarities.csv
+# # Figure out which groups to exclude from plots - CHECK THRESHOLD in /cluster_stats/similarities/composite_similarities.csv
 # remove_groups_by_similiary(n_clusters, sim_thresh=0.8)
 
 # Compute the ssfr for the groups
-# compute_cluster_sfrs()
+compute_balmer_lower_limits()
+compute_cluster_sfrs()
 
 generate_newer_cluster_plots(n_clusters)
 # generate_all_cluster_plots(n_clusters)
-compute_balmer_lower_limits()
 breakpoint()
 
 

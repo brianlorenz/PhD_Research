@@ -72,6 +72,6 @@ def compute_balmer_lower_limits(std_flag_thresh=3):
     cluster_summary_df.to_csv(imd.loc_cluster_summary_df, index=False)
     
 
-compute_balmer_lower_limits()
+# compute_balmer_lower_limits()
 # plot_balmer_hist(19, 100)
 # 2, 7, 13, 17

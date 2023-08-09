@@ -15,6 +15,10 @@ def compute_cluster_sfrs(lower_limit=True):
     halpha_fluxes = cluster_summary_df['ha_flux']
     balmer_avs = cluster_summary_df['balmer_av']
     balmer_decs = cluster_summary_df['balmer_dec']
+    if lower_limit == True:
+        balmer_avs = cluster_summary_df['balmer_av_with_limit']
+        balmer_decs = cluster_summary_df['balmer_dec_with_limit']
+   
     # log_mean_masses = cluster_summary_df['mean_log_mass']
     
 
@@ -53,9 +57,16 @@ def compute_cluster_sfrs(lower_limit=True):
 
     cluster_summary_df['computed_log_sfr'] = log_halpha_sfrs
     cluster_summary_df['computed_log_ssfr'] = log_halpha_ssfrs
+    cluster_summary_df['computed_log_sfr_with_limit'] = -99
+    cluster_summary_df['computed_log_ssfr_with_limit'] = -99
+    if lower_limit==True:
+        cluster_summary_df['computed_log_sfr'] = -99
+        cluster_summary_df['computed_log_ssfr'] = -99
+        cluster_summary_df['computed_log_sfr_with_limit'] = log_halpha_sfrs
+        cluster_summary_df['computed_log_ssfr_with_limit'] = log_halpha_ssfrs
 
     cluster_summary_df.to_csv(imd.loc_cluster_summary_df, index=False)
 
 
 
-compute_cluster_sfrs()
+# compute_cluster_sfrs()
