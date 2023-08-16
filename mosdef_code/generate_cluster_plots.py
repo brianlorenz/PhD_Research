@@ -10,7 +10,7 @@ from uvj_clusters import plot_full_uvj, plot_uvj_cluster, plot_all_uvj_clusters,
 from cluster_stats import plot_similarity_cluster
 from stack_spectra import plot_spec
 from composite_sed import vis_composite_sed
-from plot_cluster_a_vs_b import plot_cluster_summaries
+from plot_cluster_a_vs_b import plot_cluster_summaries, make_plots_a_vs_b
 from overview_plot_of_clusters import make_overview_plot_clusters
 from bpt_clusters_singledf import plot_bpt_all_composites
 from composite_and_spec_overview import composite_and_spec_overview
@@ -92,24 +92,12 @@ def generate_newer_cluster_plots(n_clusters):
 
     imd.check_and_make_dir(imd.cluster_dir + f'/cluster_stats/sfrs')
     
-    # # SFR comparison plots
-    # plot_cluster_summaries('norm_median_halphas', 'ha_flux', 'sfrs/ha_flux_compare', color_var='balmer_dec', plot_lims=[6e-18, 8e-16, 6e-18, 8e-16], one_to_one=True, ignore_groups=ignore_groups, log=True)
-    # plot_cluster_summaries('median_log_sfr', 'computed_log_sfr', 'sfrs/sfr_compare', color_var='balmer_dec', plot_lims=[0.3, 3.5, 0.3, 3.5], one_to_one=True, ignore_groups=ignore_groups)
-    # plot_cluster_summaries('median_log_ssfr', 'computed_log_ssfr', 'sfrs/ssfr_compare', color_var='balmer_dec', plot_lims=[-10.7, -6.5, -10.7, -6.5], one_to_one=True, ignore_groups=ignore_groups)
-
-    # # SFMS
-    # plot_cluster_summaries('median_log_mass', 'median_log_ssfr', 'sfrs/sfms', color_var='O3N2_metallicity', ignore_groups=ignore_groups)
-    # plot_cluster_summaries('median_log_mass', 'computed_log_ssfr', 'sfrs/sfms_computed', color_var='O3N2_metallicity', ignore_groups=ignore_groups)
-    # plot_cluster_summaries('median_log_mass', 'computed_log_ssfr', 'sfrs/sfms_computed_balmercolor', color_var='balmer_dec', ignore_groups=ignore_groups)
-
-    # #AV comparison
-    # plot_cluster_summaries('AV', 'balmer_av', 'sfrs/av_compare', color_var='norm_median_log_mass', ignore_groups=ignore_groups, one_to_one=True, plot_lims=[0, 4.5, 0, 4.5])
-    
+    make_plots_a_vs_b()
 
     # # BPT diagrams
-    # color_codes = ['None', 'log_mass', 'log_sfr', 'balmer_dec', 'metallicity', 'log_ssfr']
-    # for color_code in color_codes:
-    #     plot_bpt_all_composites(color_code=color_code)
+    color_codes = ['None', 'log_mass', 'log_sfr', 'balmer_dec', 'metallicity', 'log_ssfr']
+    for color_code in color_codes:
+        plot_bpt_all_composites(color_code=color_code)
 
     # UVJ Diagrams
     plot_all_uvj_clusters_paper(n_clusters)

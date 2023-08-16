@@ -76,6 +76,8 @@ def plot_similarity_cluster(groupID, zobjs, similarity_matrix, axis_obj='False')
         ax.set_xlabel('Similarity to Composite', fontsize=axisfont)
         ax.set_ylabel('Number of galaxies', fontsize=axisfont)
         ax.tick_params(labelsize=ticksize, size=ticks)
+        imd.check_and_make_dir(imd.cluster_similarity_plots_dir)
+        imd.check_and_make_dir(imd.cluster_similarity_composite_dir)
         fig.savefig(imd.cluster_similarity_composite_dir  + f'/{groupID}_similarity_composite.pdf')
         plt.close()
 

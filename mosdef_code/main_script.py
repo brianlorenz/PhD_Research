@@ -43,7 +43,7 @@ ignore_groups = []
 # ignore_groups = [0,1,2,3,4,5,6,7,8,9,10,11,19]
 # ignore_groups = [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19]
 # Set hwo many times to bootstrap
-bootstrap = 100
+bootstrap = 1000
 
 # imd.check_and_make_dir(imd.composite_filter_csvs_dir)
 # imd.check_and_make_dir(imd.composite_filter_images_dir)
@@ -56,9 +56,8 @@ bootstrap = 100
 # stack_all_spectra(n_clusters, 'cluster_norm', bootstrap=bootstrap, ignore_groups=ignore_groups)
 # print('Fitting emission lines...')
 
-# #Check for agn and list which groups do not have enough galaxies - cuts down to 20
-# # check_for_all_agn(n_clusters)
-# # generate_skip_file()
+# # # Check for agn and list which groups do not have enough galaxies - cuts down to 20
+# check_for_all_agn(n_clusters)
 
 
 # # Will break here if one of the spectra is so bad that it can't fit
@@ -81,19 +80,20 @@ bootstrap = 100
 # # Figure out which groups to exclude from plots - CHECK THRESHOLD in /cluster_stats/similarities/composite_similarities.csv
 # remove_groups_by_similiary(n_clusters, sim_thresh=0.8)
 
-# Compute the ssfr for the groups
-compute_balmer_lower_limits()
-compute_cluster_sfrs()
+# # Compute the ssfr for the groups
+# compute_balmer_lower_limits()
+# compute_cluster_sfrs()
 
+# Have to run this twice, since ignore_groups won't be loaded properly the first time
 generate_newer_cluster_plots(n_clusters)
-# generate_all_cluster_plots(n_clusters)
+generate_all_cluster_plots(n_clusters)
 breakpoint()
 
 
 # Prepare for prospector:
 print('Preparing data for Prospector')
-convert_all_folders_to_sedpy(n_clusters)
 find_median_redshifts(n_clusters)
+convert_all_folders_to_sedpy(n_clusters)
 convert_folder_to_maggies(imd.composite_sed_csvs_dir)
 
 # Plot of all of the scaled composites, must be run after convert_folder_to_maggies
