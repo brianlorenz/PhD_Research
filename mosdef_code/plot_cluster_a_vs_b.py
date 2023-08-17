@@ -2,9 +2,10 @@ import initialize_mosdef_dirs as imd
 import matplotlib.pyplot as plt
 import matplotlib as mpl
 from plot_vals import *
+from leja_sfms_redshift import leja2022_sfms
 cluster_summary_df = imd.read_cluster_summary_df()
 
-def plot_cluster_summaries(x_var, y_var, savename, color_var='None', plot_lims='None', one_to_one=False, ignore_groups=[], log=False, lower_limit=False):
+def plot_cluster_summaries(x_var, y_var, savename, color_var='None', plot_lims='None', one_to_one=False, ignore_groups=[], log=False, lower_limit=False, add_leja_sfms=False):
     """Plots two columsn of cluster_summary_df against each other
     
     Parameters:
@@ -16,6 +17,7 @@ def plot_cluster_summaries(x_var, y_var, savename, color_var='None', plot_lims='
     one_to_one (boolean): Set to True to add a 1-1 line
     log (boolean): Set to True to make it a log-log plot
     lower_limit (boolean): Set to true to use lower limit SFRs and hollow out those points
+    add_leja_sfms (boolean): If True, add the sfms from Leja 2022 to the plot
     """
 
     fig, ax = plt.subplots(figsize = (8,8))
@@ -52,6 +54,16 @@ def plot_cluster_summaries(x_var, y_var, savename, color_var='None', plot_lims='
         else:
             marker='o'
         ax.plot(row[x_var], row[y_var], color=rgba, marker=marker, ls='None', zorder=3, mec='black')
+        ax.text(row[x_var], row[y_var], f"{int(row['groupID'])}", color='black')
+
+    if add_leja_sfms:
+        redshift = 2
+        mode = 'ridge'
+        logmasses = np.arange(9, 11, 0.02)
+        logSFRs = np.array([leja2022_sfms(logmass, redshift, mode) for logmass in logmasses])
+        logssfrs = np.log10((10**logSFRs) / (10**logmasses))
+        ax.plot(logmasses, logssfrs, color='black', marker='None', ls='-', zorder=1, label=f'Leja SFMS z={redshift}, type={mode}', fontsize=14)
+        ax.legend()
 
     if plot_lims != 'None':
         ax.set_xlim(plot_lims[0], plot_lims[1])
@@ -153,13 +165,13 @@ def make_plots_a_vs_b():
 
     # SFR comparison plots
     plot_cluster_summaries('norm_median_halphas', 'ha_flux', 'sfrs/ha_flux_compare', color_var='balmer_dec', plot_lims=[6e-18, 8e-16, 6e-18, 8e-16], one_to_one=True, ignore_groups=ignore_groups, log=True)
-    plot_cluster_summaries('median_log_sfr', 'computed_log_sfr', 'sfrs/sfr_compare', color_var='balmer_dec', plot_lims=[0.3, 3.5, 0.3, 3.5], one_to_one=True, ignore_groups=ignore_groups, lower_limit=lower_limit)
+    plot_cluster_summaries('median_log_sfr', 'computed_log_sfr', 'sfrs/sfr_compare', color_var='balmer_dec', plot_lims=[0.3, 5, 0.3, 5], one_to_one=True, ignore_groups=ignore_groups, lower_limit=lower_limit)
     plot_cluster_summaries('median_log_ssfr', 'computed_log_ssfr', 'sfrs/ssfr_compare', color_var='balmer_dec', plot_lims=[-10.7, -6.5, -10.7, -6.5], one_to_one=True, ignore_groups=ignore_groups, lower_limit=lower_limit)
 
     # Find which groups have accurate Ha and Hb measurements:
     ignore_groups = np.array(cluster_summary_df[cluster_summary_df['err_balmer_dec_high']>1].index)
     plot_cluster_summaries('norm_median_halphas', 'ha_flux', 'sfrs/ha_flux_compare_balmer_accurate', color_var='balmer_dec', plot_lims=[6e-18, 8e-16, 6e-18, 8e-16], one_to_one=True, ignore_groups=ignore_groups, log=True)
-    plot_cluster_summaries('median_log_sfr', 'computed_log_sfr', 'sfrs/sfr_compare_balmer_accurate', color_var='balmer_dec', plot_lims=[0.3, 3.5, 0.3, 3.5], one_to_one=True, ignore_groups=ignore_groups, lower_limit=lower_limit)
+    plot_cluster_summaries('median_log_sfr', 'computed_log_sfr', 'sfrs/sfr_compare_balmer_accurate', color_var='balmer_dec', plot_lims=[0.3, 5, 0.3, 5], one_to_one=True, ignore_groups=ignore_groups, lower_limit=lower_limit)
     plot_cluster_summaries('median_log_ssfr', 'computed_log_ssfr', 'sfrs/ssfr_compare_balmer_accurate', color_var='balmer_dec', plot_lims=[-10.7, -6.5, -10.7, -6.5], one_to_one=True, ignore_groups=ignore_groups, lower_limit=lower_limit)
     ignore_groups = imd.ignore_groups
 
@@ -167,9 +179,17 @@ def make_plots_a_vs_b():
     plot_cluster_summaries('median_log_mass', 'median_log_ssfr', 'sfrs/sfms', color_var='O3N2_metallicity', ignore_groups=ignore_groups)
     plot_cluster_summaries('median_log_mass', 'computed_log_ssfr', 'sfrs/sfms_computed', color_var='O3N2_metallicity', ignore_groups=ignore_groups, lower_limit=lower_limit)
     plot_cluster_summaries('median_log_mass', 'computed_log_ssfr', 'sfrs/sfms_computed_balmercolor', color_var='balmer_dec', ignore_groups=ignore_groups, lower_limit=lower_limit)
+    plot_cluster_summaries('median_log_mass', 'computed_log_ssfr', 'sfrs/sfms_with_Leja', color_var='balmer_dec', ignore_groups=ignore_groups, lower_limit=lower_limit, add_leja_sfms=True)
+
+    # SFR Mass
+    plot_cluster_summaries('median_log_mass', 'computed_log_sfr', 'sfrs/sfr_mass_lower_limit', color_var='balmer_dec', ignore_groups=ignore_groups, lower_limit=lower_limit)
+    plot_cluster_summaries('median_log_mass', 'median_log_sfr', 'sfrs/sfr_mass_median', color_var='balmer_dec', ignore_groups=ignore_groups)
+
+    # Halpha compare
+    plot_cluster_summaries('ha_flux', 'median_indiv_halphas', 'sfrs/halpha_norm_compare', color_var='balmer_dec', ignore_groups=ignore_groups, one_to_one=True, log=True)
 
     #AV comparison
     plot_cluster_summaries('AV', 'balmer_av', 'sfrs/av_compare', color_var='norm_median_log_mass', ignore_groups=ignore_groups, one_to_one=True, plot_lims=[0, 4.5, 0, 4.5], lower_limit=lower_limit)
     plot_cluster_summaries('AV', 'balmer_av', 'sfrs/av_compare', color_var='norm_median_log_mass', ignore_groups=ignore_groups, one_to_one=True, plot_lims=[0, 4.5, 0, 4.5], lower_limit=lower_limit)
 
-# make_plots_a_vs_b()
+make_plots_a_vs_b()

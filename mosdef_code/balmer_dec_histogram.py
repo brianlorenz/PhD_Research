@@ -86,4 +86,4 @@ def compute_balmer_lower_limits(sig_noise_thresh=2):
 
 
 # plot_balmer_hist(19, 1000)
-compute_balmer_lower_limits()
+# compute_balmer_lower_limits()
