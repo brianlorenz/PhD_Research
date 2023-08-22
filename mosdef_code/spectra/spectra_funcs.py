@@ -138,13 +138,14 @@ def smooth_spectrum(spectrum, width=25):
     return smooth_spec
 
 
-def read_composite_spectrum(groupID, norm_method, scaled='False', bootstrap_num=-1):
+def read_composite_spectrum(groupID, norm_method, scaled='False', bootstrap_num=-1, halpha_scaled=False):
     """Reads in the spectrum file for a given cluster
 
     Parameters:
     groupID (int): id of the cluster to read
     norm_method (str): folder to look for spectrum
     scaled (str): Reads the scaled sed if set to 'True'
+    halpha_scaled (boolean): Set to true to instead read the halpha scaled spectrum
 
     Returns:
     spectrum_df (pd.DataFrame): Dataframe containing wavelength and fluxes for the spectrum
@@ -152,9 +153,15 @@ def read_composite_spectrum(groupID, norm_method, scaled='False', bootstrap_num=
     if scaled == 'True':
         spectrum_df = ascii.read(imd.composite_spec_dir + f'/{norm_method}_csvs/{groupID}_spectrum_scaled.csv').to_pandas()
     elif bootstrap_num>-1:
-        spectrum_df = ascii.read(imd.composite_spec_dir + f'/{norm_method}_boot_csvs/{groupID}_spectrum_{bootstrap_num}.csv').to_pandas()
+        if halpha_scaled == True:
+            spectrum_df = ascii.read(imd.composite_spec_dir + f'/halpha_scaled_{norm_method}_boot_csvs/{groupID}_spectrum_{bootstrap_num}.csv').to_pandas()
+        else:
+            spectrum_df = ascii.read(imd.composite_spec_dir + f'/{norm_method}_boot_csvs/{groupID}_spectrum_{bootstrap_num}.csv').to_pandas()
     else:
-        spectrum_df = ascii.read(imd.composite_spec_dir + f'/{norm_method}_csvs/{groupID}_spectrum.csv').to_pandas()
+        if halpha_scaled == True:
+            spectrum_df = ascii.read(imd.composite_spec_dir + f'/halpha_scaled_{norm_method}_csvs/{groupID}_spectrum.csv').to_pandas()
+        else:
+            spectrum_df = ascii.read(imd.composite_spec_dir + f'/{norm_method}_csvs/{groupID}_spectrum.csv').to_pandas()
 
     return spectrum_df
 

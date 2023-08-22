@@ -35,7 +35,7 @@ line_list = [
 line_centers_rest = [line_list[i][1] for i in range(len(line_list))]
 
 
-def fit_emission(groupID, norm_method, constrain_O3=False, axis_group=-1, save_name='', scaled='False', run_name='False', bootstrap_num=-1):
+def fit_emission(groupID, norm_method, constrain_O3=False, axis_group=-1, save_name='', scaled='False', run_name='False', bootstrap_num=-1, halpha_scaled=False):
     """Given a groupID, fit the emission lines in that composite spectrum
 
     Parameters:
@@ -47,7 +47,8 @@ def fit_emission(groupID, norm_method, constrain_O3=False, axis_group=-1, save_n
     scaled (str): Set to 'True' if fitting the scaled spectra
     run_name (str): Set to the prospector run_name if fitting prospector spectra
     bootstrap_num (int): Set to -1 to avoid bootstrap, set to the number to read in the corresponding spectrum and fit that
-
+    halpha_scaled (boolean): Set to true to fit the halpha scaled spectra instead
+    
     Returns:
     Saves a csv of the fits for all of the lines
     """
@@ -71,7 +72,7 @@ def fit_emission(groupID, norm_method, constrain_O3=False, axis_group=-1, save_n
         composite_spectrum_df['err_f_lambda'] = (composite_spectrum_df['err_f_lambda_u'] + composite_spectrum_df['err_f_lambda_d'])/2   
         composite_spectrum_df['wavelength'] = composite_spectrum_df['rest_wavelength']
     else:
-        composite_spectrum_df = read_composite_spectrum(groupID, norm_method, bootstrap_num=bootstrap_num)
+        composite_spectrum_df = read_composite_spectrum(groupID, norm_method, bootstrap_num=bootstrap_num, halpha_scaled=halpha_scaled)
         
 
     line_names = [line_list[i][0] for i in range(len(line_list))]
@@ -171,9 +172,14 @@ def fit_emission(groupID, norm_method, constrain_O3=False, axis_group=-1, save_n
         else:
             cont_sub_df.to_csv(imd.axis_cluster_data_dir + f'/{save_name}/{save_name}_cont_subs/{axis_group}_cont_sub.csv', index=False)
     else:
-        imd.check_and_make_dir(imd.emission_fit_dir + '/emission_fit_cont_subs/')
-        cont_sub_df = pd.DataFrame(zip(wavelength_cut, y_data_cont_sub / scale_factor), columns=['wavelength_cut','continuum_sub_ydata'])
-        cont_sub_df.to_csv(imd.emission_fit_dir + f'/emission_fit_cont_subs/{groupID}_cont_sub.csv', index=False)
+        if halpha_scaled == True:
+            imd.check_and_make_dir(imd.emission_fit_dir + '/halpha_scaled_emission_fit_cont_subs/')
+            cont_sub_df = pd.DataFrame(zip(wavelength_cut, y_data_cont_sub / scale_factor), columns=['wavelength_cut','continuum_sub_ydata'])
+            cont_sub_df.to_csv(imd.emission_fit_dir + f'/halpha_scaled_emission_fit_cont_subs/{groupID}_cont_sub.csv', index=False)
+        else:
+            imd.check_and_make_dir(imd.emission_fit_dir + '/emission_fit_cont_subs/')
+            cont_sub_df = pd.DataFrame(zip(wavelength_cut, y_data_cont_sub / scale_factor), columns=['wavelength_cut','continuum_sub_ydata'])
+            cont_sub_df.to_csv(imd.emission_fit_dir + f'/emission_fit_cont_subs/{groupID}_cont_sub.csv', index=False)
 
     # Now, parse the results into a dataframe
     hb_scale, ha_scale, err_hb_scale, err_ha_scale = cont_scale_out
@@ -311,33 +317,46 @@ def fit_emission(groupID, norm_method, constrain_O3=False, axis_group=-1, save_n
         # plot_emission_fit(groupID, norm_method, run_name=run_name)
     else:
         if bootstrap_num > -1:
-            imd.check_and_make_dir(imd.emission_fit_csvs_dir)
-            imd.check_and_make_dir(imd.emission_fit_images_dir)
-            imd.check_and_make_dir(imd.emission_fit_dir +
-                        f'/emission_fitting_boot_csvs/')
-            fit_df.to_csv(imd.emission_fit_dir +
-                        f'/emission_fitting_boot_csvs/{groupID}_emission_fits_{bootstrap_num}.csv', index=False)
+            if halpha_scaled == True:
+                imd.check_and_make_dir(imd.emission_fit_dir +
+                            f'/halpha_scaled_emission_fitting_boot_csvs/')
+                fit_df.to_csv(imd.emission_fit_dir +
+                            f'/halpha_scaled_emission_fitting_boot_csvs/{groupID}_emission_fits_{bootstrap_num}.csv', index=False)
+            else:
+                imd.check_and_make_dir(imd.emission_fit_csvs_dir)
+                imd.check_and_make_dir(imd.emission_fit_images_dir)
+                imd.check_and_make_dir(imd.emission_fit_dir +
+                            f'/emission_fitting_boot_csvs/')
+                fit_df.to_csv(imd.emission_fit_dir +
+                            f'/emission_fitting_boot_csvs/{groupID}_emission_fits_{bootstrap_num}.csv', index=False)
         else:
-            imd.check_and_make_dir(imd.emission_fit_csvs_dir)
-            imd.check_and_make_dir(imd.emission_fit_images_dir)
-            fit_df.to_csv(imd.emission_fit_csvs_dir +
-                        f'/{groupID}_emission_fits.csv', index=False)
-            plot_emission_fit(groupID, norm_method)
+            if halpha_scaled == True:
+                imd.check_and_make_dir(imd.emission_fit_dir + f'/halpha_scaled_emission_fitting_csvs')
+                fit_df.to_csv(imd.emission_fit_dir + f'/halpha_scaled_emission_fitting_csvs' +
+                            f'/{groupID}_emission_fits.csv', index=False)
+
+            else:
+                imd.check_and_make_dir(imd.emission_fit_csvs_dir)
+                imd.check_and_make_dir(imd.emission_fit_images_dir)
+                fit_df.to_csv(imd.emission_fit_csvs_dir +
+                            f'/{groupID}_emission_fits.csv', index=False)
+                plot_emission_fit(groupID, norm_method)
     return
 
 
-def fit_all_emission(n_clusters, norm_method, scaled='False'):
-    """Runs the stack_spectra() function on every cluster
+# def fit_all_emission_old(n_clusters, norm_method, scaled='False', halpha_scaled=False):
+#     """Runs the stack_spectra() function on every cluster
 
-    Parameters:
-    n_clusters (int): Number of clusters
-    norm_method (str): method of normalizing
-    scaled (str): Set to 'True' if fitting the scaled spectra instead
+#     Parameters:
+#     n_clusters (int): Number of clusters
+#     norm_method (str): method of normalizing
+#     scaled (str): Set to 'True' if fitting the scaled spectra instead
+#     halpha_scalted (boolean): Set to true to instead fir the halpha scaled spectra
 
-    Returns:
-    """
-    for i in range(n_clusters):
-        fit_emission(i, norm_method, scaled=scaled)
+#     Returns:
+#     """
+#     for i in range(n_clusters):
+#         fit_emission(i, norm_method, scaled=scaled, halpha_scaled=halpha_scaled)
 
 
 def plot_emission_fit(groupID, norm_method, axis_group=-1, save_name='', scaled='False', run_name='False', bootstrap_num=-1):
@@ -678,12 +697,13 @@ def get_amp(flux, sig):
 
 
 
-def fit_all_emission(n_clusters, norm_method, ignore_groups, constrain_O3=False, bootstrap=-1):
+def fit_all_emission(n_clusters, norm_method, ignore_groups, constrain_O3=False, bootstrap=-1, halpha_scaled=False):
     """Runs the fit_emission() function on every cluster
 
     Parameters:
     n_clusters (int): Number of clusters
     norm_method (str): Method of normalization
+    halpha_scaled (boolean): Set to true to fit the halpha scaled spectra instead
 
     Returns:
     """
@@ -692,10 +712,10 @@ def fit_all_emission(n_clusters, norm_method, ignore_groups, constrain_O3=False,
             print(f'Ignoring group {i}')
             continue
         print(f'Fitting emission for {i}')
-        fit_emission(i, norm_method, constrain_O3=constrain_O3)
+        fit_emission(i, norm_method, constrain_O3=constrain_O3, halpha_scaled=halpha_scaled)
         if bootstrap > -1:
             for bootstrap_num in range(bootstrap):
-                fit_emission(i, norm_method, constrain_O3=constrain_O3, bootstrap_num=bootstrap_num)
+                fit_emission(i, norm_method, constrain_O3=constrain_O3, bootstrap_num=bootstrap_num, halpha_scaled=halpha_scaled)
 
 
 def fit_all_axis_ratio_emission(n_groups, save_name=''):
@@ -840,7 +860,7 @@ def get_cuts(wavelength_cut_section, width=7):
     cut = [bool(i) for i in cuts]
     return cut
 
-def compute_bootstrap_uncertainties(n_clusters, save_name, bootstrap=-1, clustering=False, ignore_groups=[], ha_first=False):
+def compute_bootstrap_uncertainties(n_clusters, save_name, bootstrap=-1, clustering=False, ignore_groups=[], ha_first=False, halpha_scaled=True):
     """Reads in all the bootstrapped fits form all the clusters, then computes uncertainties and adds them back to the main fit
     
     Parameters:
@@ -849,6 +869,7 @@ def compute_bootstrap_uncertainties(n_clusters, save_name, bootstrap=-1, cluster
     bootstrap (int): Set to the number of bootstrapped data points
     clustering (boolean): Set to true if using clusters, will grab files from cluster_dir
     ignore_groups (list): Fill with groupIDs to skip 
+    halpha_scaled (boolean): Set to true to use the halpha scaled emission fits instead
     """
     for axis_group in range(n_clusters):
         if axis_group in ignore_groups:
@@ -860,8 +881,12 @@ def compute_bootstrap_uncertainties(n_clusters, save_name, bootstrap=-1, cluster
                 emission_df_loc = imd.emission_fit_dir + '/ha_first_csvs' + f'/{groupID}_emission_fits.csv'
                 boot_dfs = [ascii.read(imd.emission_fit_dir + f'/ha_first_boot_csvs/{groupID}_emission_fits_{bootstrap_num}.csv').to_pandas() for bootstrap_num in range(bootstrap)]
             else:
-                emission_df_loc = imd.emission_fit_csvs_dir + f'/{groupID}_emission_fits.csv'
-                boot_dfs = [ascii.read(imd.emission_fit_dir + f'/emission_fitting_boot_csvs/{groupID}_emission_fits_{bootstrap_num}.csv').to_pandas() for bootstrap_num in range(bootstrap)]
+                if halpha_scaled==True:
+                    emission_df_loc = imd.emission_fit_dir + f'/halpha_scaled_emission_fitting_csvs/{groupID}_emission_fits.csv'
+                    boot_dfs = [ascii.read(imd.emission_fit_dir + f'/halpha_scaled_emission_fitting_boot_csvs/{groupID}_emission_fits_{bootstrap_num}.csv').to_pandas() for bootstrap_num in range(bootstrap)]
+                else:
+                    emission_df_loc = imd.emission_fit_csvs_dir + f'/{groupID}_emission_fits.csv'
+                    boot_dfs = [ascii.read(imd.emission_fit_dir + f'/emission_fitting_boot_csvs/{groupID}_emission_fits_{bootstrap_num}.csv').to_pandas() for bootstrap_num in range(bootstrap)]
         else:
             emission_df_loc = imd.axis_cluster_data_dir + f'/{save_name}/{save_name}_emission_fits/{axis_group}_emission_fits.csv'
 
@@ -942,3 +967,5 @@ def compute_bootstrap_uncertainties(n_clusters, save_name, bootstrap=-1, cluster
 #     plot_emission_fit(0, 'cluster_norm', axis_group=axis_group, save_name='both_sfms_4bin_median_2axis_boot100')
 
 # fit_emission(0, 'cluster_norm', constrain_O3=False, axis_group=0, save_name='norm_1_sn3_filtered_cont_renorm', scaled='False', run_name='False')
+
+# fit_all_emission(19, 'cluster_norm', [], bootstrap=1000, halpha_scaled=True)

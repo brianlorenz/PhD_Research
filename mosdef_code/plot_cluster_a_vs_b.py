@@ -62,7 +62,7 @@ def plot_cluster_summaries(x_var, y_var, savename, color_var='None', plot_lims='
         logmasses = np.arange(9, 11, 0.02)
         logSFRs = np.array([leja2022_sfms(logmass, redshift, mode) for logmass in logmasses])
         logssfrs = np.log10((10**logSFRs) / (10**logmasses))
-        ax.plot(logmasses, logssfrs, color='black', marker='None', ls='-', zorder=1, label=f'Leja SFMS z={redshift}, type={mode}', fontsize=14)
+        ax.plot(logmasses, logssfrs, color='black', marker='None', ls='-', zorder=1, label=f'Leja SFMS z={redshift}, type={mode}')
         ax.legend()
 
     if plot_lims != 'None':
@@ -192,4 +192,4 @@ def make_plots_a_vs_b():
     plot_cluster_summaries('AV', 'balmer_av', 'sfrs/av_compare', color_var='norm_median_log_mass', ignore_groups=ignore_groups, one_to_one=True, plot_lims=[0, 4.5, 0, 4.5], lower_limit=lower_limit)
     plot_cluster_summaries('AV', 'balmer_av', 'sfrs/av_compare', color_var='norm_median_log_mass', ignore_groups=ignore_groups, one_to_one=True, plot_lims=[0, 4.5, 0, 4.5], lower_limit=lower_limit)
 
-make_plots_a_vs_b()
+# make_plots_a_vs_b()

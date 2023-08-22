@@ -5,16 +5,18 @@ from astropy.io import ascii
 import pandas as pd
 from axis_ratio_helpers import bootstrap_median
 
-def make_clusters_summary_df(n_clusters, ignore_groups, use_ha_first_csvs=False):
+def make_clusters_summary_df(n_clusters, ignore_groups, use_ha_first_csvs=False, halpha_scaled=True):
     """Makes a datafrmae with summarized properties from all the clusters
     
     Parameters:
     n_clusters (int): Number of clusters
     use_ha_first_csvs (boolean): Set to true to use the emission fits that fit halpha first
+    halpha_scaled (boolean): Set to true to use the halpha scaled emission fits
     """
     
     groupIDs = []
     n_galss = []
+    halpha_scaled_values = []
 
     median_zs = []
 
@@ -75,6 +77,7 @@ def make_clusters_summary_df(n_clusters, ignore_groups, use_ha_first_csvs=False)
         group_df = ascii.read(imd.cluster_indiv_dfs_dir + f'/{groupID}_cluster_df.csv')
         group_df['log_use_sfr'] = np.log10(group_df['use_sfr'])
         n_gals = len(group_df)
+        halpha_scaled_value = halpha_scaled
 
 
         # Compute properties
@@ -97,6 +100,7 @@ def make_clusters_summary_df(n_clusters, ignore_groups, use_ha_first_csvs=False)
         # Save properties
         groupIDs.append(groupID)
         n_galss.append(n_gals)
+        halpha_scaled_values.append(halpha_scaled_value)
 
         median_zs.append(median_z)
 
@@ -155,7 +159,10 @@ def make_clusters_summary_df(n_clusters, ignore_groups, use_ha_first_csvs=False)
             if use_ha_first_csvs==True:
                 emission_df = ascii.read(imd.emission_fit_dir + '/ha_first_csvs/' + f'/{groupID}_emission_fits.csv').to_pandas()
             else:
-                emission_df = ascii.read(imd.emission_fit_csvs_dir + f'/{groupID}_emission_fits.csv').to_pandas()
+                if halpha_scaled == True:
+                    emission_df = ascii.read(imd.emission_fit_dir + f'/halpha_scaled_emission_fitting_csvs/{groupID}_emission_fits.csv').to_pandas()
+                else:
+                    emission_df = ascii.read(imd.emission_fit_csvs_dir + f'/{groupID}_emission_fits.csv').to_pandas()
             
             ha_row = emission_df[emission_df['line_name'] == 'Halpha']
             ha_fluxes.append(ha_row.iloc[0]['flux'])
@@ -201,7 +208,7 @@ def make_clusters_summary_df(n_clusters, ignore_groups, use_ha_first_csvs=False)
 
             
     # Build into DataFrame
-    clusters_summary_df = pd.DataFrame(zip(groupIDs, n_galss, median_zs, median_masses, mean_masses, norm_median_masses, median_sfrs, median_ssfrs, median_halphas, norm_median_halphas, av_medians, err_av_median_lows, err_av_median_highs, beta_medians, err_beta_median_lows, err_beta_median_highs, median_vjs, median_uvs, ha_fluxes, err_ha_fluxes, balmer_decs, err_balmer_dec_lows, err_balmer_dec_highs, balmer_avs, err_balmer_av_lows, err_balmer_av_highs, O3N2_metallicities, err_O3N2_metallicity_lows, err_O3N2_metallicity_highs, log_N2_Has, err_log_N2_Has_low, err_log_N2_Has_high, log_O3_Hbs, err_log_O3_Hbs_low, err_log_O3_Hbs_high), columns=['groupID', 'n_gals', 'redshift', 'median_log_mass', 'mean_log_mass', 'norm_median_log_mass', 'median_log_sfr', 'median_log_ssfr', 'median_indiv_halphas', 'norm_median_halphas', 'AV', 'err_AV_low', 'err_AV_high', 'beta', 'err_beta_low', 'err_beta_high', 'median_V_J', 'median_U_V', 'ha_flux', 'err_ha_flux', 'balmer_dec', 'err_balmer_dec_low', 'err_balmer_dec_high', 'balmer_av', 'err_balmer_av_low', 'err_balmer_av_high', 'O3N2_metallicity', 'err_O3N2_metallicity_low', 'err_O3N2_metallicity_high', 'log_N2_Ha', 'err_log_N2_Ha_low', 'err_log_N2_Ha_high', 'log_O3_Hb', 'err_log_O3_Hb_low', 'err_log_O3_Hb_high'])
+    clusters_summary_df = pd.DataFrame(zip(groupIDs, n_galss, halpha_scaled_values, median_zs, median_masses, mean_masses, norm_median_masses, median_sfrs, median_ssfrs, median_halphas, norm_median_halphas, av_medians, err_av_median_lows, err_av_median_highs, beta_medians, err_beta_median_lows, err_beta_median_highs, median_vjs, median_uvs, ha_fluxes, err_ha_fluxes, balmer_decs, err_balmer_dec_lows, err_balmer_dec_highs, balmer_avs, err_balmer_av_lows, err_balmer_av_highs, O3N2_metallicities, err_O3N2_metallicity_lows, err_O3N2_metallicity_highs, log_N2_Has, err_log_N2_Has_low, err_log_N2_Has_high, log_O3_Hbs, err_log_O3_Hbs_low, err_log_O3_Hbs_high), columns=['groupID', 'n_gals', 'halpha_scaled_spectra', 'redshift', 'median_log_mass', 'mean_log_mass', 'norm_median_log_mass', 'median_log_sfr', 'median_log_ssfr', 'median_indiv_halphas', 'norm_median_halphas', 'AV', 'err_AV_low', 'err_AV_high', 'beta', 'err_beta_low', 'err_beta_high', 'median_V_J', 'median_U_V', 'ha_flux', 'err_ha_flux', 'balmer_dec', 'err_balmer_dec_low', 'err_balmer_dec_high', 'balmer_av', 'err_balmer_av_low', 'err_balmer_av_high', 'O3N2_metallicity', 'err_O3N2_metallicity_low', 'err_O3N2_metallicity_high', 'log_N2_Ha', 'err_log_N2_Ha_low', 'err_log_N2_Ha_high', 'log_O3_Hb', 'err_log_O3_Hb_low', 'err_log_O3_Hb_high'])
     clusters_summary_df.to_csv(imd.loc_cluster_summary_df, index=False)
 
 # make_clusters_summary_df(23, ignore_groups=[19], use_ha_first_csvs=False)

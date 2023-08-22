@@ -23,6 +23,7 @@ from make_clusters_summary_df import make_clusters_summary_df
 from add_norm_factors_to_group_dfs import add_norm_factors
 from compute_cluster_sfrs import compute_cluster_sfrs
 from balmer_dec_histogram import compute_balmer_lower_limits
+from scale_spectra import scale_all_spec_to_median_halpha
 
 
 '''Starting point: One folder ('cluster_folder') that contains: 
@@ -44,6 +45,7 @@ ignore_groups = []
 # ignore_groups = [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19]
 # Set hwo many times to bootstrap
 bootstrap = 1000
+halpha_scaled=True
 
 # imd.check_and_make_dir(imd.composite_filter_csvs_dir)
 # imd.check_and_make_dir(imd.composite_filter_images_dir)
@@ -60,16 +62,20 @@ bootstrap = 1000
 # check_for_all_agn(n_clusters)
 
 
-# # Will break here if one of the spectra is so bad that it can't fit
-# fit_all_emission(n_clusters, 'cluster_norm', ignore_groups, bootstrap=bootstrap)
+# # Don't fit the bootstrapped spectra yet - need to scale them first
+# fit_all_emission(n_clusters, 'cluster_norm', ignore_groups, bootstrap=-1)
+# # Scales the composite spectra and the boostrapped spectra
+# scale_all_spec_to_median_halpha(n_clusters, bootstrap=bootstrap)
+# # Re-fit the emission of the composites and now fit the boostrapped ones
+# fit_all_emission(n_clusters, 'cluster_norm', ignore_groups, bootstrap=bootstrap, halpha_scaled=halpha_scaled)
 
-# # Add the bootstrapped uncertainties
-# compute_bootstrap_uncertainties(n_clusters, 'None', bootstrap=bootstrap, clustering=True, ignore_groups=ignore_groups)
+# # # Add the bootstrapped uncertainties
+# compute_bootstrap_uncertainties(n_clusters, 'None', bootstrap=bootstrap, clustering=True, ignore_groups=ignore_groups, halpha_scaled=halpha_scaled)
 
-# # Add the normalizations to the group dfs
+# # # Add the normalizations to the group dfs
 # add_norm_factors(n_clusters)
 
-# make_clusters_summary_df(n_clusters, ignore_groups)
+# make_clusters_summary_df(n_clusters, ignore_groups, halpha_scaled=halpha_scaled)
 
 # # Need to do a few things to composites (measure uvj, generate mocks sed, etc. before we can plot)
 # print('Generating plots')
@@ -84,9 +90,9 @@ bootstrap = 1000
 # compute_balmer_lower_limits()
 # compute_cluster_sfrs()
 
-# Have to run this twice, since ignore_groups won't be loaded properly the first time
-generate_newer_cluster_plots(n_clusters)
-generate_all_cluster_plots(n_clusters)
+# # Have to run this twice, since ignore_groups won't be loaded properly the first time
+# generate_newer_cluster_plots(n_clusters)
+# generate_all_cluster_plots(n_clusters)
 breakpoint()
 
 

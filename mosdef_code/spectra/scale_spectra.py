@@ -29,10 +29,10 @@ def scale_spec_to_median_halpha(groupID, norm_method, bootstrap_num=-1):
     spec_df['cont_f_lambda'] = spec_df['cont_f_lambda']*flux_ratio
     if bootstrap_num == -1:
         imd.check_and_make_dir(imd.composite_spec_dir +f'/halpha_scaled_{norm_method}_csvs/')
-        spec_df.to_csv(imd.composite_spec_dir +f'/halpha_scaled_{norm_method}_csvs/{groupID}_spectrum.csv')
+        spec_df.to_csv(imd.composite_spec_dir +f'/halpha_scaled_{norm_method}_csvs/{groupID}_spectrum.csv', index=False)
     else:
         imd.check_and_make_dir(imd.composite_spec_dir +f'/halpha_scaled_{norm_method}_boot_csvs/')
-        spec_df.to_csv(imd.composite_spec_dir +f'/halpha_scaled_{norm_method}_boot_csvs/{groupID}_spectrum_{bootstrap_num}.csv')
+        spec_df.to_csv(imd.composite_spec_dir +f'/halpha_scaled_{norm_method}_boot_csvs/{groupID}_spectrum_{bootstrap_num}.csv', index=False)
 
 def scale_all_spec_to_median_halpha(n_clusters, bootstrap=-1):
     '''Runs scale_spectrum on all of the composite sed groups
@@ -77,4 +77,4 @@ def scale_all_spectra(n_clusters):
         scale_spectrum(groupID, 'cluster_norm')
 
 # scale_all_spectra(29)
-scale_all_spec_to_median_halpha(19, bootstrap=1000)
+# scale_all_spec_to_median_halpha(19, bootstrap=1000)
