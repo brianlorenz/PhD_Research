@@ -163,6 +163,7 @@ def plot_mass_sfr_cluster(groupID, all_sfrs_res, axis_obj='False'):
     cluster_names, fields_ids = cdf.get_cluster_fields_ids(groupID)
     fields_ids = [(obj[0], int(obj[1])) for obj in fields_ids]
     savename = imd.cluster_sfr_plots_dir + f'/{groupID}_mass_sfr.pdf'
+    imd.check_and_make_dir(imd.cluster_sfr_plots_dir)
     plot_mass_sfr(fields_ids, savename=savename,
                     axis_obj=axis_obj, composite_sfr_mass_point=[-47], all_sfrs_res=all_sfrs_res)
 

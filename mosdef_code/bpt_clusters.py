@@ -175,5 +175,6 @@ def plot_bpt_cluster(emission_df, groupID, axis_obj = 'False'):
     cluster_names, fields_ids = cdf.get_cluster_fields_ids(groupID)
     fields_ids = [(obj[0], int(obj[1])) for obj in fields_ids]
     # Location to save the file
+    imd.check_and_make_dir(imd.cluster_bpt_plots_dir)
     savename = imd.cluster_bpt_plots_dir + f'/{groupID}_BPT.pdf'
     plot_bpt(emission_df, fields_ids, savename=savename, axis_obj=axis_obj)

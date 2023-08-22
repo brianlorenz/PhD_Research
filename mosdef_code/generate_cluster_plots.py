@@ -55,8 +55,9 @@ def generate_cluster_plots(groupID, emission_df, all_sfrs_res, zobjs, similarity
     plot_mass_sfr_cluster(groupID, all_sfrs_res, axis_obj=ax_mass_sfr)
     plot_uvj_cluster(groupID, axis_obj=ax_uvj)
     
-    imd.check_and_make_dir(imd.cluster_overview_dir)
-    fig.savefig(imd.cluster_overview_dir + f'/{groupID}_overview.pdf')
+    if overview == True:
+        imd.check_and_make_dir(imd.cluster_overview_dir)
+        fig.savefig(imd.cluster_overview_dir + f'/{groupID}_overview.pdf')
     
     
 
