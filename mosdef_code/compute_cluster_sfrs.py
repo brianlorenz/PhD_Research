@@ -30,7 +30,9 @@ def compute_cluster_sfrs(lower_limit=True):
     cluster_summary_df['target_galaxy_redshifts'] = redshifts
     cluster_summary_df['target_galaxy_median_log_mass'] = [norm_gals[i]['log_mass'].iloc[0] for i in range(len(cluster_summary_df))]
     
+    median_redshifts = cluster_summary_df['redshift']
     log_norm_median_masses = cluster_summary_df['norm_median_log_mass']
+    log_median_masses = cluster_summary_df['median_log_mass']
 
     # Another method is to try to compute using A_V rather than mass
     AV = cluster_summary_df['AV']
@@ -38,21 +40,21 @@ def compute_cluster_sfrs(lower_limit=True):
     #Convert the Balmer AV to A_Halpha using https://iopscience.iop.org/article/10.1088/0004-637X/763/2/145/pdf
     balmer_ahalphas = 3.33*(balmer_avs / 4.05)
 
-    ahalphas = 3.33*(AV / 4.05)*2
+    # ahalphas = 3.33*(AV / 4.05)*2
 
     # Convert ha to luminsoty
-    halpha_lums = flux_to_luminosity(halpha_fluxes, redshifts)
+    halpha_lums = flux_to_luminosity(halpha_fluxes, median_redshifts)
 
     # Get dust-corrected halpha
-    # intrinsic_halpha_lums = correct_ha_lum_for_dust(halpha_lums, balmer_ahalphas) 
-    intrinsic_halpha_lums = correct_ha_lum_for_dust(halpha_lums, ahalphas)
+    intrinsic_halpha_lums = correct_ha_lum_for_dust(halpha_lums, balmer_ahalphas) 
+    # intrinsic_halpha_lums = correct_ha_lum_for_dust(halpha_lums, ahalphas)
 
     # Derive SFR from Hao 2011
     halpha_sfrs = ha_lum_to_sfr(intrinsic_halpha_lums, imf='Hao_Chabrier')
     log_halpha_sfrs = np.log10(halpha_sfrs)
 
     # Divide by mean mass for sSFR
-    halpha_ssfrs = halpha_sfrs / (10**log_norm_median_masses)
+    halpha_ssfrs = halpha_sfrs / (10**log_median_masses)
     log_halpha_ssfrs = np.log10(halpha_ssfrs)
 
     cluster_summary_df['computed_log_sfr'] = log_halpha_sfrs

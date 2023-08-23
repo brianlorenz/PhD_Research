@@ -40,10 +40,14 @@ def make_clusters_summary_df(n_clusters, ignore_groups, use_ha_first_csvs=False,
 
     ha_fluxes = []
     err_ha_fluxes = []
+    hb_fluxes = []
+    err_hb_fluxes = []
+    hb_sns = []
 
     balmer_decs = []
     err_balmer_dec_lows = []
     err_balmer_dec_highs = []
+    balmer_dec_sns = []
 
     balmer_avs = []
     err_balmer_av_lows = []
@@ -130,10 +134,14 @@ def make_clusters_summary_df(n_clusters, ignore_groups, use_ha_first_csvs=False,
             print(f'Ignoring group {groupID}')
             ha_fluxes.append(-99)
             err_ha_fluxes.append(-99)
+            hb_fluxes.append(-99)
+            err_hb_fluxes.append(-99)
+            hb_sns.append(-99)
 
             balmer_decs.append(-99)
             err_balmer_dec_lows.append(-99)
             err_balmer_dec_highs.append(-99)
+            balmer_dec_sns.append(-99)
 
             balmer_avs.append(-99)
             err_balmer_av_lows.append(-99)
@@ -167,10 +175,15 @@ def make_clusters_summary_df(n_clusters, ignore_groups, use_ha_first_csvs=False,
             ha_row = emission_df[emission_df['line_name'] == 'Halpha']
             ha_fluxes.append(ha_row.iloc[0]['flux'])
             err_ha_fluxes.append(ha_row.iloc[0]['err_flux'])
+            hb_row = emission_df[emission_df['line_name'] == 'Hbeta']
+            hb_fluxes.append(hb_row.iloc[0]['flux'])
+            err_hb_fluxes.append(hb_row.iloc[0]['err_flux'])
+            hb_sns.append(hb_row.iloc[0]['flux'] / hb_row.iloc[0]['err_flux'])
             
             balmer_decs.append(emission_df.iloc[0]['balmer_dec'])
             err_balmer_dec_lows.append(emission_df.iloc[0]['err_balmer_dec_low'])
             err_balmer_dec_highs.append(emission_df.iloc[0]['err_balmer_dec_high'])
+            balmer_dec_sns.append(emission_df.iloc[0]['balmer_dec'] / np.mean([emission_df.iloc[0]['err_balmer_dec_low'], emission_df.iloc[0]['err_balmer_dec_high']]))
 
             balmer_av = 4.05*1.97*np.log10(emission_df.iloc[0]['balmer_dec']/2.86)
             # Recalculate where the errors would be if the points were at the top/bottom of their ranges
@@ -208,7 +221,7 @@ def make_clusters_summary_df(n_clusters, ignore_groups, use_ha_first_csvs=False,
 
             
     # Build into DataFrame
-    clusters_summary_df = pd.DataFrame(zip(groupIDs, n_galss, halpha_scaled_values, median_zs, median_masses, mean_masses, norm_median_masses, median_sfrs, median_ssfrs, median_halphas, norm_median_halphas, av_medians, err_av_median_lows, err_av_median_highs, beta_medians, err_beta_median_lows, err_beta_median_highs, median_vjs, median_uvs, ha_fluxes, err_ha_fluxes, balmer_decs, err_balmer_dec_lows, err_balmer_dec_highs, balmer_avs, err_balmer_av_lows, err_balmer_av_highs, O3N2_metallicities, err_O3N2_metallicity_lows, err_O3N2_metallicity_highs, log_N2_Has, err_log_N2_Has_low, err_log_N2_Has_high, log_O3_Hbs, err_log_O3_Hbs_low, err_log_O3_Hbs_high), columns=['groupID', 'n_gals', 'halpha_scaled_spectra', 'redshift', 'median_log_mass', 'mean_log_mass', 'norm_median_log_mass', 'median_log_sfr', 'median_log_ssfr', 'median_indiv_halphas', 'norm_median_halphas', 'AV', 'err_AV_low', 'err_AV_high', 'beta', 'err_beta_low', 'err_beta_high', 'median_V_J', 'median_U_V', 'ha_flux', 'err_ha_flux', 'balmer_dec', 'err_balmer_dec_low', 'err_balmer_dec_high', 'balmer_av', 'err_balmer_av_low', 'err_balmer_av_high', 'O3N2_metallicity', 'err_O3N2_metallicity_low', 'err_O3N2_metallicity_high', 'log_N2_Ha', 'err_log_N2_Ha_low', 'err_log_N2_Ha_high', 'log_O3_Hb', 'err_log_O3_Hb_low', 'err_log_O3_Hb_high'])
+    clusters_summary_df = pd.DataFrame(zip(groupIDs, n_galss, halpha_scaled_values, median_zs, median_masses, mean_masses, norm_median_masses, median_sfrs, median_ssfrs, median_halphas, norm_median_halphas, av_medians, err_av_median_lows, err_av_median_highs, beta_medians, err_beta_median_lows, err_beta_median_highs, median_vjs, median_uvs, ha_fluxes, err_ha_fluxes, hb_fluxes, err_hb_fluxes, hb_sns, balmer_decs, err_balmer_dec_lows, err_balmer_dec_highs, balmer_dec_sns, balmer_avs, err_balmer_av_lows, err_balmer_av_highs, O3N2_metallicities, err_O3N2_metallicity_lows, err_O3N2_metallicity_highs, log_N2_Has, err_log_N2_Has_low, err_log_N2_Has_high, log_O3_Hbs, err_log_O3_Hbs_low, err_log_O3_Hbs_high), columns=['groupID', 'n_gals', 'halpha_scaled_spectra', 'redshift', 'median_log_mass', 'mean_log_mass', 'norm_median_log_mass', 'median_log_sfr', 'median_log_ssfr', 'median_indiv_halphas', 'norm_median_halphas', 'AV', 'err_AV_low', 'err_AV_high', 'beta', 'err_beta_low', 'err_beta_high', 'median_V_J', 'median_U_V', 'ha_flux', 'err_ha_flux', 'hb_flux', 'err_hb_flux', 'hb_snr', 'balmer_dec', 'err_balmer_dec_low', 'err_balmer_dec_high', 'balmer_dec_snr', 'balmer_av', 'err_balmer_av_low', 'err_balmer_av_high', 'O3N2_metallicity', 'err_O3N2_metallicity_low', 'err_O3N2_metallicity_high', 'log_N2_Ha', 'err_log_N2_Ha_low', 'err_log_N2_Ha_high', 'log_O3_Hb', 'err_log_O3_Hb_low', 'err_log_O3_Hb_high'])
     clusters_summary_df.to_csv(imd.loc_cluster_summary_df, index=False)
 
 # make_clusters_summary_df(23, ignore_groups=[19], use_ha_first_csvs=False)

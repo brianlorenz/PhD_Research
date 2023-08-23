@@ -35,6 +35,8 @@ def plot_cluster_summaries(x_var, y_var, savename, color_var='None', plot_lims='
             cmap = mpl.cm.inferno
             if color_var=='balmer_dec':
                 norm = mpl.colors.Normalize(vmin=3, vmax=5) 
+            elif color_var=='balmer_dec_with_limit':
+                norm = mpl.colors.Normalize(vmin=3, vmax=6) 
             elif color_var=='O3N2_metallicity':
                 norm = mpl.colors.Normalize(vmin=8.2, vmax=9) 
             elif color_var=='norm_median_log_mass':
@@ -69,9 +71,6 @@ def plot_cluster_summaries(x_var, y_var, savename, color_var='None', plot_lims='
         ax.set_xlim(plot_lims[0], plot_lims[1])
         ax.set_ylim(plot_lims[2], plot_lims[3])
 
-    if one_to_one:
-        # ax.plot([-(1e18), 1e10], [-(1e18), 1e10], ls='--', color='red')
-        ax.plot([0,1],[0,1], transform=ax.transAxes, ls='--', color='red')
 
     if log:
         ax.set_xscale('log')
@@ -84,6 +83,14 @@ def plot_cluster_summaries(x_var, y_var, savename, color_var='None', plot_lims='
 
     ax.set_xlabel(x_var, fontsize=full_page_axisfont)
     ax.set_ylabel(y_var, fontsize=full_page_axisfont)
+
+    if one_to_one:
+        xlims = ax.get_xlim()
+        ylims = ax.get_ylim()
+        ax.plot([-20, 20], [-20, 20], ls='--', color='red')
+        ax.set_xlim(xlims)
+        ax.set_ylim(ylims)
+        # ax.plot([0,1],[0,1], transform=ax.transAxes, ls='--', color='red')
 
     fig.savefig(imd.cluster_dir + f'/cluster_stats/{savename}.pdf', bbox_inches='tight')
 
@@ -115,6 +122,8 @@ def plot_ratio(x_var_numerator, x_var_denominator, y_var_numerator, y_var_denomi
             cmap = mpl.cm.inferno
             if color_var=='balmer_dec':
                 norm = mpl.colors.Normalize(vmin=3, vmax=5) 
+            elif color_var=='balmer_dec_with_limit':
+                norm = mpl.colors.Normalize(vmin=3, vmax=6) 
             elif color_var=='O3N2_metallicity':
                 norm = mpl.colors.Normalize(vmin=8.2, vmax=9) 
             elif color_var=='norm_median_log_mass':
@@ -165,13 +174,13 @@ def make_plots_a_vs_b():
 
     # SFR comparison plots
     plot_cluster_summaries('norm_median_halphas', 'ha_flux', 'sfrs/ha_flux_compare', color_var='balmer_dec', plot_lims=[6e-18, 8e-16, 6e-18, 8e-16], one_to_one=True, ignore_groups=ignore_groups, log=True)
-    plot_cluster_summaries('median_log_sfr', 'computed_log_sfr', 'sfrs/sfr_compare', color_var='balmer_dec', plot_lims=[0.3, 5, 0.3, 5], one_to_one=True, ignore_groups=ignore_groups, lower_limit=lower_limit)
+    plot_cluster_summaries('median_log_sfr', 'computed_log_sfr', 'sfrs/sfr_compare', color_var='balmer_dec', plot_lims=[0.3, 3, 0.3, 3], one_to_one=True, ignore_groups=ignore_groups, lower_limit=lower_limit)
     plot_cluster_summaries('median_log_ssfr', 'computed_log_ssfr', 'sfrs/ssfr_compare', color_var='balmer_dec', plot_lims=[-10.7, -6.5, -10.7, -6.5], one_to_one=True, ignore_groups=ignore_groups, lower_limit=lower_limit)
 
     # Find which groups have accurate Ha and Hb measurements:
     ignore_groups = np.array(cluster_summary_df[cluster_summary_df['err_balmer_dec_high']>1].index)
     plot_cluster_summaries('norm_median_halphas', 'ha_flux', 'sfrs/ha_flux_compare_balmer_accurate', color_var='balmer_dec', plot_lims=[6e-18, 8e-16, 6e-18, 8e-16], one_to_one=True, ignore_groups=ignore_groups, log=True)
-    plot_cluster_summaries('median_log_sfr', 'computed_log_sfr', 'sfrs/sfr_compare_balmer_accurate', color_var='balmer_dec', plot_lims=[0.3, 5, 0.3, 5], one_to_one=True, ignore_groups=ignore_groups, lower_limit=lower_limit)
+    plot_cluster_summaries('median_log_sfr', 'computed_log_sfr', 'sfrs/sfr_compare_balmer_accurate', color_var='balmer_dec', plot_lims=[0.3, 3, 0.3, 3], one_to_one=True, ignore_groups=ignore_groups, lower_limit=lower_limit)
     plot_cluster_summaries('median_log_ssfr', 'computed_log_ssfr', 'sfrs/ssfr_compare_balmer_accurate', color_var='balmer_dec', plot_lims=[-10.7, -6.5, -10.7, -6.5], one_to_one=True, ignore_groups=ignore_groups, lower_limit=lower_limit)
     ignore_groups = imd.ignore_groups
 
@@ -192,4 +201,18 @@ def make_plots_a_vs_b():
     plot_cluster_summaries('AV', 'balmer_av', 'sfrs/av_compare', color_var='norm_median_log_mass', ignore_groups=ignore_groups, one_to_one=True, plot_lims=[0, 4.5, 0, 4.5], lower_limit=lower_limit)
     plot_cluster_summaries('AV', 'balmer_av', 'sfrs/av_compare', color_var='norm_median_log_mass', ignore_groups=ignore_groups, one_to_one=True, plot_lims=[0, 4.5, 0, 4.5], lower_limit=lower_limit)
 
+    # Trying to diagnose what makes the SFR high
+    plot_cluster_summaries('redshift', 'computed_log_sfr', 'sfrs/diagnostics/sfr_z_lower_limit', color_var='balmer_dec_with_limit', ignore_groups=ignore_groups, lower_limit=lower_limit)
+    plot_cluster_summaries('target_galaxy_redshifts', 'computed_log_sfr', 'sfrs/diagnostics/sfr_ztarget_lower_limit', color_var='balmer_dec_with_limit', ignore_groups=ignore_groups, lower_limit=lower_limit)
+    plot_cluster_summaries('target_galaxy_median_log_mass', 'computed_log_sfr', 'sfrs/diagnostics/sfr_masstarget_lower_limit', color_var='balmer_dec_with_limit', ignore_groups=ignore_groups, lower_limit=lower_limit)
+    plot_cluster_summaries('median_log_mass', 'computed_log_sfr', 'sfrs/diagnostics/sfr_massgroup_lower_limit', color_var='balmer_dec_with_limit', ignore_groups=ignore_groups, lower_limit=lower_limit)
+    plot_cluster_summaries('ha_flux', 'computed_log_sfr', 'sfrs/diagnostics/sfr_haflux_lower_limit', color_var='balmer_dec_with_limit', ignore_groups=ignore_groups, lower_limit=lower_limit)
+    plot_cluster_summaries('balmer_dec', 'computed_log_sfr', 'sfrs/diagnostics/sfr_balmer_lower_limit', color_var='balmer_dec_with_limit', ignore_groups=ignore_groups, lower_limit=lower_limit)
+    plot_cluster_summaries('balmer_av', 'computed_log_sfr', 'sfrs/diagnostics/sfr_balmerav_lower_limit', color_var='balmer_dec_with_limit', ignore_groups=ignore_groups, lower_limit=lower_limit)
+    plot_cluster_summaries('balmer_dec_with_limit', 'computed_log_sfr', 'sfrs/diagnostics/sfr_balmerlimit_lower_limit', color_var='balmer_dec_with_limit', ignore_groups=ignore_groups, lower_limit=lower_limit)
+    plot_cluster_summaries('ha_flux', 'computed_log_sfr', 'sfrs/diagnostics/sfr_haflux_lower_limit', color_var='balmer_dec_with_limit', ignore_groups=ignore_groups, lower_limit=lower_limit)
+    plot_cluster_summaries('hb_flux', 'computed_log_sfr', 'sfrs/diagnostics/sfr_hbflux_lower_limit', color_var='balmer_dec_with_limit', ignore_groups=ignore_groups, lower_limit=lower_limit)
+    
+    #SNR Plots
+    plot_cluster_summaries('hb_snr', 'balmer_dec_snr', 'sfrs/hbeta_balmer_snr', color_var='balmer_dec_with_limit', ignore_groups=ignore_groups, one_to_one=True)
 # make_plots_a_vs_b()

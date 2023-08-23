@@ -49,13 +49,17 @@ def plot_balmer_hist(n_clusters, n_boots):
         low_sigs.append(one_sig_low)
         low_2sigs.append(two_sig_low)
         high_sigs.append(one_sig_high)
+
+        xlims = ax.get_xlim()
+        if xlims[1]>30:
+            ax.set_xlim(-1, 40)
         
         imd.check_and_make_dir(imd.cluster_dir+'/cluster_stats/balmer_decs')
         fig.savefig(imd.cluster_dir+f'/cluster_stats/balmer_decs/{groupID}_balmer_hist.pdf')
     balmer_dist_df = pd.DataFrame(zip(groupIDs, measured_balmers, low_sigs, high_sigs, low_2sigs), columns=['groupID', 'balmer_dec', 'one_sig_balmer_low', 'one_sig_balmer_high', 'two_sig_balmer_low'])
     balmer_dist_df.to_csv(imd.cluster_dir+'/balmer_dist_df.csv', index=False)
 
-def compute_balmer_lower_limits(sig_noise_thresh=2):
+def compute_balmer_lower_limits(sig_noise_thresh=3):
     """Finds which groups should be assigned lower limits, and at what value
 
     sig_noise_thresh (float): balmer decrement value ratio compared to the width of the two-sigma distribution
@@ -63,7 +67,7 @@ def compute_balmer_lower_limits(sig_noise_thresh=2):
     """
     cluster_summary_df = ascii.read(imd.loc_cluster_summary_df).to_pandas()
     balmer_dist_df = ascii.read(imd.cluster_dir+'/balmer_dist_df.csv').to_pandas()
-    balmer_snr = cluster_summary_df['balmer_dec']/(cluster_summary_df['err_balmer_dec_high']+cluster_summary_df['err_balmer_dec_low'])
+    balmer_snr = cluster_summary_df['balmer_dec_snr']
     lower_limit_flag = balmer_snr<sig_noise_thresh
     lower_limit_flag_binary = 1*(lower_limit_flag)
     cluster_summary_df['flag_balmer_lower_limit'] = lower_limit_flag_binary
@@ -73,15 +77,19 @@ def compute_balmer_lower_limits(sig_noise_thresh=2):
     # balmer_limit = np.max(confident_balmer_decs)
     cluster_summary_df['balmer_dec_with_limit'] = cluster_summary_df['balmer_dec']
     for i in range(len(cluster_summary_df)):
-        balmer_limit = balmer_dist_df.iloc[i]['two_sig_balmer_low']
-        cluster_summary_df.loc[i, 'balmer_dec_with_limit'] = balmer_limit
+        if cluster_summary_df.iloc[i]['flag_balmer_lower_limit'] == 1:
+            balmer_limit = balmer_dist_df.iloc[i]['two_sig_balmer_low']
+            #Compute using AV of 0 (dec = 2.86) if limit is less than 2.86
+            if balmer_limit < 2.86:
+                balmer_limit = 2.86
+            cluster_summary_df.loc[i, 'balmer_dec_with_limit'] = balmer_limit
     #Compute the balmer avs using these limits
     cluster_summary_df['balmer_av_with_limit'] = compute_balmer_av(cluster_summary_df['balmer_dec_with_limit'])
     
     # Save the data frame with the limit added
     cluster_summary_df.to_csv(imd.loc_cluster_summary_df, index=False)
 
-    compute_cluster_sfrs(lower_limit=True)
+    # compute_cluster_sfrs(lower_limit=True)
     
 
 

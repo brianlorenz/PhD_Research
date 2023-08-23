@@ -15,12 +15,15 @@ from sympy import Symbol
 
 
 
-def plot_cluster_sfr_metals(plot_ssfr=False, plot_re=False, plot_sanders=False):
+def plot_cluster_sfr_metals(plot_ssfr=False, plot_re=False, plot_sanders=False, mass_color=False):
     summary_df = ascii.read(imd.loc_cluster_summary_df).to_pandas()
+    ignore_groups = imd.ignore_groups
     fig, ax = plt.subplots(figsize = (8,8))
 
     # Plot the points
     for i in range(len(summary_df)):
+        if i in ignore_groups:
+            continue
         row = summary_df.iloc[i]
 
         ax.set_ylim(8.2, 8.95)
@@ -35,22 +38,33 @@ def plot_cluster_sfr_metals(plot_ssfr=False, plot_re=False, plot_sanders=False):
         fontsize=full_page_axisfont
 
         cmap = mpl.cm.inferno
-        norm = mpl.colors.Normalize(vmin=3, vmax=5.5) 
-        rgba = cmap(norm(row['balmer_dec']))
-        # norm = mpl.colors.Normalize(vmin=0.5, vmax=2.5) 
-        # rgba = cmap(norm(row['balmer_dec']))
+        if mass_color==True:
+            norm = mpl.colors.Normalize(vmin=9, vmax=11) 
+            rgba = cmap(norm(row['median_log_mass']))
+        else:
+            # norm = mpl.colors.Normalize(vmin=3, vmax=5.5)
+            norm = mpl.colors.Normalize(vmin=0, vmax=3) 
+            # rgba = cmap(norm(row['balmer_dec']))
+            rgba = cmap(norm(row['balmer_av_with_limit']))
+            # norm = mpl.colors.Normalize(vmin=0.5, vmax=2.5) 
+            # rgba = cmap(norm(row['balmer_dec']))
         
         if plot_ssfr == True:
-            x_points = row['log_ssfr']
+            x_points = row['computed_log_ssfr_with_limit']
             ax.set_xlabel('log(sSFR)', fontsize=fontsize)
         else:
-            x_points = row['log_sfr']
+            x_points = row['computed_log_sfr_with_limit']
             ax.set_xlabel(sfr_label, fontsize=fontsize)
             if plot_re==True:
                 # Not supported yet
-                x_points = np.log10(10**row['log_sfr'] / row['re_median'])
+                x_points = np.log10(10**row['computed_log_sfr_with_limit'] / row['re_median'])
                 ax.set_xlabel('log(SFR/R_e)', fontsize=fontsize)
-        ax.errorbar(x_points, row['O3N2_metallicity'], yerr=np.array([[row['err_O3N2_metallicity_low'], row['err_O3N2_metallicity_high']]]).T, color=rgba, marker='o', ls='None', zorder=3)
+        if row['flag_balmer_lower_limit'] == 1:
+            marker = '^'
+        else:
+            marker = 'o'
+        ax.errorbar(x_points, row['O3N2_metallicity'], yerr=np.array([[row['err_O3N2_metallicity_low'], row['err_O3N2_metallicity_high']]]).T, color=rgba, marker=marker, ls='None', zorder=3)
+        ax.text(x_points, row['O3N2_metallicity'], f"{int(row['groupID'])}", color='black')
         zorder=15-i
         ax.set_ylabel('12 + log(O/H)', fontsize=fontsize)
     
@@ -63,41 +77,41 @@ def plot_cluster_sfr_metals(plot_ssfr=False, plot_re=False, plot_sanders=False):
         print(slope)
         return slope
 
-    # low mass
-    A_lambda = 0.85
-    re = 0.25
-    sfrs = [float(solve(const2 * 10**(a*metal_vals[i]) * (x/(re**2))**(1/n) - A_lambda, x)[0]) for i in range(len(metal_vals))] #Dust
-    sfrs=np.array(sfrs)
-    log_sfrs = np.log10(sfrs)
-    if plot_ssfr == True:
-        log_mass = 9.75
-        x_plot = np.log10(sfrs/(10**log_mass))
-        label = '$R_\mathrm{eff} = 0.25$, $A_\mathrm{balmer} = 0.85$' + f', mass={log_mass}'
-    else:
-        x_plot = log_sfrs
-        if plot_re==True:
-            x_plot = np.log10(10**log_sfrs/re)
-        label = '$R_\mathrm{eff} = 0.25$, $A_\mathrm{balmer} = 0.85$'
-    ax.plot(x_plot, metal_vals, ls='--', color='#8E248C', marker='None', zorder=2)
-    get_slope(x_plot[0], x_plot[-1], metal_vals[0], metal_vals[-1])
+    # # low mass
+    # A_lambda = 0.85
+    # re = 0.25
+    # sfrs = [float(solve(const2 * 10**(a*metal_vals[i]) * (x/(re**2))**(1/n) - A_lambda, x)[0]) for i in range(len(metal_vals))] #Dust
+    # sfrs=np.array(sfrs)
+    # log_sfrs = np.log10(sfrs)
+    # if plot_ssfr == True:
+    #     log_mass = 9.75
+    #     x_plot = np.log10(sfrs/(10**log_mass))
+    #     label = '$R_\mathrm{eff} = 0.25$, $A_\mathrm{balmer} = 0.85$' + f', mass={log_mass}'
+    # else:
+    #     x_plot = log_sfrs
+    #     if plot_re==True:
+    #         x_plot = np.log10(10**log_sfrs/re)
+    #     label = '$R_\mathrm{eff} = 0.25$, $A_\mathrm{balmer} = 0.85$'
+    # ax.plot(x_plot, metal_vals, ls='--', color='#8E248C', marker='None', zorder=2)
+    # get_slope(x_plot[0], x_plot[-1], metal_vals[0], metal_vals[-1])
 
-    # high mass
-    A_lambda = 1.9
-    re = 0.41
-    sfrs = [float(solve(const2 * 10**(a*metal_vals[i]) * (x/(re**2))**(1/n) - A_lambda, x)[0]) for i in range(len(metal_vals))] #Dust
-    sfrs=np.array(sfrs)
-    log_sfrs = np.log10(sfrs)
-    if plot_ssfr == True:
-        log_mass = 10.25
-        x_plot = np.log10(sfrs/(10**log_mass))
-        label = '$R_\mathrm{eff} = 0.4$, $A_\mathrm{balmer} = 1.9$' + f', mass={log_mass}'
-    else:
-        x_plot = log_sfrs
-        label = '$R_\mathrm{eff} = 0.4$, $A_\mathrm{balmer} = 1.9$'
-        if plot_re==True:
-            x_plot = np.log10(10**log_sfrs/re)
-    ax.plot(x_plot, metal_vals, ls='--', color='#FF640A', marker='None', zorder=2)
-    get_slope(x_plot[0], x_plot[-1], metal_vals[0], metal_vals[-1])
+    # # high mass
+    # A_lambda = 1.9
+    # re = 0.41
+    # sfrs = [float(solve(const2 * 10**(a*metal_vals[i]) * (x/(re**2))**(1/n) - A_lambda, x)[0]) for i in range(len(metal_vals))] #Dust
+    # sfrs=np.array(sfrs)
+    # log_sfrs = np.log10(sfrs)
+    # if plot_ssfr == True:
+    #     log_mass = 10.25
+    #     x_plot = np.log10(sfrs/(10**log_mass))
+    #     label = '$R_\mathrm{eff} = 0.4$, $A_\mathrm{balmer} = 1.9$' + f', mass={log_mass}'
+    # else:
+    #     x_plot = log_sfrs
+    #     label = '$R_\mathrm{eff} = 0.4$, $A_\mathrm{balmer} = 1.9$'
+    #     if plot_re==True:
+    #         x_plot = np.log10(10**log_sfrs/re)
+    # ax.plot(x_plot, metal_vals, ls='--', color='#FF640A', marker='None', zorder=2)
+    # get_slope(x_plot[0], x_plot[-1], metal_vals[0], metal_vals[-1])
 
     # high mass
     if plot_ssfr == True:
@@ -159,15 +173,18 @@ def plot_cluster_sfr_metals(plot_ssfr=False, plot_re=False, plot_sanders=False):
 
     cbar = fig.colorbar(mpl.cm.ScalarMappable(norm=norm, cmap=cmap), ax=ax, fraction=0.046, pad=0.04)
     # cbar.set_label(balmer_label, fontsize=fontsize)
-    cbar.set_label('A$_\mathrm{balmer}$', fontsize=fontsize)
+    if mass_color==True:
+        cbar.set_label('median log mass', fontsize=fontsize)
+    else:
+        cbar.set_label('A$_\mathrm{balmer}$ with limit', fontsize=fontsize)
     cbar.ax.tick_params(labelsize=fontsize)
     ax.tick_params(labelsize=full_page_axisfont)
     # ax.legend()
 
     ax.text(1.345, 8.21, 'Low M$_*$ FMR', fontsize=18, rotation=315)
     ax.text(1.91, 8.33, 'High M$_*$ FMR', fontsize=18, rotation=315)
-    ax.text(0.18, 8.60, 'A$_\mathrm{balmer} = 0.85$', fontsize=16, rotation=308, color='#8E248C')
-    ax.text(0.80, 8.71, 'A$_\mathrm{balmer} = 1.9$', fontsize=16, rotation=308, color='#FF640A')
+    # ax.text(0.18, 8.60, 'A$_\mathrm{balmer} = 0.85$', fontsize=16, rotation=308, color='#8E248C')
+    # ax.text(0.80, 8.71, 'A$_\mathrm{balmer} = 1.9$', fontsize=16, rotation=308, color='#FF640A')
     
     ax.plot([0],[0],ls='--',color='dimgrey',marker='None',label='Dust Model')
     ax.legend(fontsize=16)
@@ -182,8 +199,10 @@ def plot_cluster_sfr_metals(plot_ssfr=False, plot_re=False, plot_sanders=False):
         add_str = '_sanders'
     else:
         add_str = ''
-
-    fig.savefig(imd.cluster_dir + f'/cluster_stats/' + 'sfr_metallicity.pdf',bbox_inches='tight')
+    if mass_color==True:
+        fig.savefig(imd.cluster_dir + f'/cluster_stats/' + 'sfr_metallicity_masscolor.pdf',bbox_inches='tight')
+    else:
+        fig.savefig(imd.cluster_dir + f'/cluster_stats/' + 'sfr_metallicity.pdf',bbox_inches='tight')
 
 
 # plot_sfr_metals('whitaker_sfms_boot100')
@@ -192,4 +211,5 @@ def plot_cluster_sfr_metals(plot_ssfr=False, plot_re=False, plot_sanders=False):
 
 
 plot_cluster_sfr_metals(plot_sanders=True)
+plot_cluster_sfr_metals(plot_sanders=True, mass_color=True)
 

@@ -92,6 +92,7 @@ halpha_scaled=True
 
 # # Have to run this twice, since ignore_groups won't be loaded properly the first time
 # generate_newer_cluster_plots(n_clusters)
+sys.exit()
 # generate_all_cluster_plots(n_clusters)
 breakpoint()
 
