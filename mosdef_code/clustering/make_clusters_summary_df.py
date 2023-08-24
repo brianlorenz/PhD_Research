@@ -5,7 +5,7 @@ from astropy.io import ascii
 import pandas as pd
 from axis_ratio_helpers import bootstrap_median
 
-def make_clusters_summary_df(n_clusters, ignore_groups, use_ha_first_csvs=False, halpha_scaled=True):
+def make_clusters_summary_df(n_clusters, ignore_groups, use_ha_first_csvs=False, halpha_scaled=False):
     """Makes a datafrmae with summarized properties from all the clusters
     
     Parameters:

@@ -82,12 +82,15 @@ def fit_emission(groupID, norm_method, constrain_O3=False, axis_group=-1, save_n
         scale_factor = 10**15
     else:
         scale_factor = 10**18
+    
+    if norm_method == 'luminosity':
+        scale_factor = scale_factor / 10**58
 
     # Build the initial guesses
     guess = []
     bounds_low = []
     bounds_high = []
-    amp_guess = 10**-18  # flux units
+    amp_guess = 1  # flux units
     if scaled == 'True':
         amp_guess = 10**-14  # flux units
     if run_name != 'False':
@@ -113,14 +116,14 @@ def fit_emission(groupID, norm_method, constrain_O3=False, axis_group=-1, save_n
         #     if i == idx_5008:
         #         guess.append(1)
         #         continue
-        guess.append(scale_factor * amp_guess)
+        guess.append(amp_guess)
         bounds_low.append(0)
         if scaled == 'True':
             bounds_high.append(scale_factor * 10**-12)
         elif run_name != 'False':
             bounds_high.append(scale_factor * 10**-12)
         else:
-            bounds_high.append(scale_factor * 10**-16)
+            bounds_high.append(100)
     bounds = (np.array(bounds_low), np.array(bounds_high))
 
     wavelength = composite_spectrum_df[
@@ -860,7 +863,7 @@ def get_cuts(wavelength_cut_section, width=7):
     cut = [bool(i) for i in cuts]
     return cut
 
-def compute_bootstrap_uncertainties(n_clusters, save_name, bootstrap=-1, clustering=False, ignore_groups=[], ha_first=False, halpha_scaled=True):
+def compute_bootstrap_uncertainties(n_clusters, save_name, bootstrap=-1, clustering=False, ignore_groups=[], ha_first=False, halpha_scaled=False):
     """Reads in all the bootstrapped fits form all the clusters, then computes uncertainties and adds them back to the main fit
     
     Parameters:

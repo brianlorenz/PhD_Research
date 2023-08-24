@@ -18,7 +18,7 @@ from operator import itemgetter
 from itertools import *
 from matplotlib import patches
 from read_FAST_spec import read_FAST_file
-from cosmology_calcs import flux_to_luminosity
+from cosmology_calcs import flux_to_luminosity, flux_to_luminosity_factor
 from sfms_bins import *
 from spectra_funcs import get_indiv_halpha_norm_factor
 
@@ -30,7 +30,7 @@ def stack_spectra(groupID, norm_method, re_observe=False, mask_negatives=False, 
 
     Parameters:
     groupID (int): ID of the cluster to perform the stacking
-    norm_method (str): Method to normalize - 'cluster_norm' for same norms as sed stacking, 'composite_sed_norm' to normalize to the composite, 'composite_filter' to observe the spectrum in a filter and use one point to normalize, 'positive_median' to take the median of all poitive values and scale that
+    norm_method (str): Method to normalize - 'cluster_norm' for same norms as sed stacking, 'composite_sed_norm' to normalize to the composite, 'composite_filter' to observe the spectrum in a filter and use one point to normalize, 'positive_median' to take the median of all poitive values and scale that, 'luminsoity' to stack in luminosity space
     re_observe (boolean): Set to True if using 'composite_filter' and you want to re-observe all of the spectra
     axis_ratio_df (pd.DataFrame): Set to a dataframe of axis ratios and it will stack all spectra within that dataframe. Also set axis_group
     axis_group (int): Number of the axis ratio group
@@ -76,11 +76,13 @@ def stack_spectra(groupID, norm_method, re_observe=False, mask_negatives=False, 
     # to loop over each one
     interp_cluster_spectra_dfs = []
     norm_factors = []
+    z_specs = []
     loop_count = -1
     for mosdef_obj in mosdef_objs:
         loop_count += 1
         # Get the redshift and normalization
         z_spec = mosdef_obj['Z_MOSFIRE']
+        z_specs.append(z_spec)
         field = mosdef_obj['FIELD_STR']
         v4id = mosdef_obj['V4ID']
 
@@ -116,6 +118,8 @@ def stack_spectra(groupID, norm_method, re_observe=False, mask_negatives=False, 
             # Original Method - using the computed norm_factors form composite sed formation
             if norm_method == 'cluster_norm':
                 norm_factor = np.median(norm_sed['norm_factor'])
+            elif norm_method == 'luminosity':
+                norm_factor = flux_to_luminosity_factor(z_spec)
             elif norm_method == 'composite_sed_norm':
                 try:
                     norm_factor, spec_correlate, used_points = norm_spec_sed(

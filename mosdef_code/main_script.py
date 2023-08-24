@@ -45,7 +45,7 @@ ignore_groups = []
 # ignore_groups = [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19]
 # Set hwo many times to bootstrap
 bootstrap = 1000
-halpha_scaled=True
+halpha_scaled=False
 
 # imd.check_and_make_dir(imd.composite_filter_csvs_dir)
 # imd.check_and_make_dir(imd.composite_filter_images_dir)
@@ -56,26 +56,32 @@ halpha_scaled=True
 # get_all_composite_seds(n_clusters, run_filters=True)
 # print('Generating composite spectra...')
 # stack_all_spectra(n_clusters, 'cluster_norm', bootstrap=bootstrap, ignore_groups=ignore_groups)
+# stack_all_spectra(n_clusters, 'luminosity', bootstrap=bootstrap, ignore_groups=ignore_groups)
 # print('Fitting emission lines...')
 
 # # # Check for agn and list which groups do not have enough galaxies - cuts down to 20
 # check_for_all_agn(n_clusters)
 
-
+### NO LONGER SCALING SKIP THIS STEP
 # # Don't fit the bootstrapped spectra yet - need to scale them first
 # fit_all_emission(n_clusters, 'cluster_norm', ignore_groups, bootstrap=-1)
+# fit_all_emission(n_clusters, 'luminosity', ignore_groups, bootstrap=-1)
 # # Scales the composite spectra and the boostrapped spectra
 # scale_all_spec_to_median_halpha(n_clusters, bootstrap=bootstrap)
+
 # # Re-fit the emission of the composites and now fit the boostrapped ones
 # fit_all_emission(n_clusters, 'cluster_norm', ignore_groups, bootstrap=bootstrap, halpha_scaled=halpha_scaled)
+# fit_all_emission(n_clusters, 'luminosity', ignore_groups, bootstrap=bootstrap)
 
 # # # Add the bootstrapped uncertainties
 # compute_bootstrap_uncertainties(n_clusters, 'None', bootstrap=bootstrap, clustering=True, ignore_groups=ignore_groups, halpha_scaled=halpha_scaled)
+# compute_bootstrap_uncertainties(n_clusters, 'None', bootstrap=bootstrap, clustering=True, ignore_groups=ignore_groups)
 
 # # # Add the normalizations to the group dfs
 # add_norm_factors(n_clusters)
 
 # make_clusters_summary_df(n_clusters, ignore_groups, halpha_scaled=halpha_scaled)
+make_clusters_summary_df(n_clusters, ignore_groups)
 
 # # Need to do a few things to composites (measure uvj, generate mocks sed, etc. before we can plot)
 # print('Generating plots')
