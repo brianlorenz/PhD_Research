@@ -22,7 +22,7 @@ from filter_groups import generate_skip_file, remove_groups_by_similiary
 from make_clusters_summary_df import make_clusters_summary_df
 from add_norm_factors_to_group_dfs import add_norm_factors
 from compute_cluster_sfrs import compute_cluster_sfrs
-from balmer_dec_histogram import compute_balmer_lower_limits
+from balmer_dec_histogram import compute_balmer_lower_limits, plot_balmer_hist
 from scale_spectra import scale_all_spec_to_median_halpha
 
 
@@ -81,7 +81,7 @@ halpha_scaled=False
 # add_norm_factors(n_clusters)
 
 # make_clusters_summary_df(n_clusters, ignore_groups, halpha_scaled=halpha_scaled)
-make_clusters_summary_df(n_clusters, ignore_groups)
+# make_clusters_summary_df(n_clusters, ignore_groups)
 
 # # Need to do a few things to composites (measure uvj, generate mocks sed, etc. before we can plot)
 # print('Generating plots')
@@ -93,11 +93,12 @@ make_clusters_summary_df(n_clusters, ignore_groups)
 # remove_groups_by_similiary(n_clusters, sim_thresh=0.8)
 
 # # Compute the ssfr for the groups
+# plot_balmer_hist(n_clusters, bootstrap)
 # compute_balmer_lower_limits()
-# compute_cluster_sfrs()
+# compute_cluster_sfrs(luminosity=True)
 
 # # Have to run this twice, since ignore_groups won't be loaded properly the first time
-# generate_newer_cluster_plots(n_clusters)
+generate_newer_cluster_plots(n_clusters)
 sys.exit()
 # generate_all_cluster_plots(n_clusters)
 breakpoint()

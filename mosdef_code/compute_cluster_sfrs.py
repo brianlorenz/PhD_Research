@@ -4,11 +4,12 @@ from compute_new_sfrs import correct_ha_lum_for_dust, ha_lum_to_sfr
 import numpy as np
 from astropy.io import ascii
 
-def compute_cluster_sfrs(lower_limit=True):
+def compute_cluster_sfrs(lower_limit=True, luminosity=False):
     """
     
     Parameters:
     lower_limit (boolean): Set to true to use the lower limits computed in balmer_dec_histogram
+    luminosity (boolean): Set to false if the fluxes are already in luminosity space
     """
     cluster_summary_df = imd.read_cluster_summary_df()
 
@@ -44,6 +45,8 @@ def compute_cluster_sfrs(lower_limit=True):
 
     # Convert ha to luminsoty
     halpha_lums = flux_to_luminosity(halpha_fluxes, median_redshifts)
+    if luminosity == True:
+        halpha_lums = halpha_fluxes
 
     # Get dust-corrected halpha
     intrinsic_halpha_lums = correct_ha_lum_for_dust(halpha_lums, balmer_ahalphas) 
