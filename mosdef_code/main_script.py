@@ -24,6 +24,7 @@ from add_norm_factors_to_group_dfs import add_norm_factors
 from compute_cluster_sfrs import compute_cluster_sfrs
 from balmer_dec_histogram import compute_balmer_lower_limits, plot_balmer_hist
 from scale_spectra import scale_all_spec_to_median_halpha
+from compute_indiv_sfrs_from_halpha import compute_indiv_sfrs
 
 
 '''Starting point: One folder ('cluster_folder') that contains: 
@@ -39,6 +40,7 @@ Specify the directories in initialize_mosdef_dirsl;k
 n_clusters = 19
 # Set the name of the prospector run
 run_name = 'test'
+norm_method = 'luminosity'
 # Set which group numbers to ignore since their data is not good
 ignore_groups = []
 # ignore_groups = [0,1,2,3,4,5,6,7,8,9,10,11,19]
@@ -96,9 +98,10 @@ halpha_scaled=False
 # plot_balmer_hist(n_clusters, bootstrap)
 # compute_balmer_lower_limits()
 # compute_cluster_sfrs(luminosity=True)
+# compute_indiv_sfrs(n_clusters, lower_limit=True)
 
 # # Have to run this twice, since ignore_groups won't be loaded properly the first time
-generate_newer_cluster_plots(n_clusters)
+generate_newer_cluster_plots(n_clusters, norm_method)
 sys.exit()
 # generate_all_cluster_plots(n_clusters)
 breakpoint()

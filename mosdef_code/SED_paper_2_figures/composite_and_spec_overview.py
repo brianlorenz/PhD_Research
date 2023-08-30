@@ -15,7 +15,7 @@ single_column_axisfont = 14
 
 
 
-def composite_and_spec_overview(n_clusters, ignore_groups):
+def composite_and_spec_overview(n_clusters, ignore_groups, norm_method):
     clusters_summary_df = ascii.read(imd.loc_cluster_summary_df).to_pandas()
     clusters_summary_df = clusters_summary_df[~clusters_summary_df['groupID'].isin(ignore_groups)]
 
@@ -53,7 +53,7 @@ def composite_and_spec_overview(n_clusters, ignore_groups):
         plot_lims = ((4850, 5020), (6530, 6595))
         ax_spec = brokenaxes(xlims=plot_lims, subplot_spec=gs[i%nrows, plot_col_index+1])
 
-        spec_df = read_composite_spectrum(groupID, 'cluster_norm', scaled='False')
+        spec_df = read_composite_spectrum(groupID, norm_method, scaled='False')
         halpha_range = np.logical_and(spec_df['wavelength']>6560, spec_df['wavelength']<6570)
         peak_halpha = np.max(spec_df[halpha_range]['f_lambda'])
         scale_factor = 1.0/peak_halpha

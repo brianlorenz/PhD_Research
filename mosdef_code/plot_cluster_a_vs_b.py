@@ -4,6 +4,7 @@ import matplotlib as mpl
 from plot_vals import *
 from leja_sfms_redshift import leja2022_sfms
 cluster_summary_df = imd.read_cluster_summary_df()
+from astropy.io import ascii
 
 def plot_cluster_summaries(x_var, y_var, savename, color_var='None', plot_lims='None', one_to_one=False, ignore_groups=[], log=False, lower_limit=False, add_leja_sfms=False):
     """Plots two columsn of cluster_summary_df against each other
@@ -25,6 +26,10 @@ def plot_cluster_summaries(x_var, y_var, savename, color_var='None', plot_lims='
     if lower_limit == True:
         y_var = y_var+'_with_limit'
         savename = savename+'_with_limit'
+
+    if y_var == 'override_flux_with_limit':
+        cluster_summary_df2 = ascii.read(imd.mosdef_dir + '/Clustering_20230823_scaledtoindivha/cluster_summary.csv').to_pandas()
+        cluster_summary_df['override_flux_with_limit'] = cluster_summary_df2[x_var]
 
     for i in range(len(cluster_summary_df)):
         if i in ignore_groups:
@@ -83,6 +88,8 @@ def plot_cluster_summaries(x_var, y_var, savename, color_var='None', plot_lims='
 
     ax.set_xlabel(x_var, fontsize=full_page_axisfont)
     ax.set_ylabel(y_var, fontsize=full_page_axisfont)
+    if y_var == 'override_flux_with_limit':
+        ax.set_ylabel(x_var + '_older_method', fontsize=full_page_axisfont)
 
     if one_to_one:
         xlims = ax.get_xlim()
@@ -176,6 +183,9 @@ def make_plots_a_vs_b():
     plot_cluster_summaries('norm_median_halphas', 'ha_flux', 'sfrs/ha_flux_compare', color_var='balmer_dec', plot_lims=[6e-18, 8e-16, 6e-18, 8e-16], one_to_one=True, ignore_groups=ignore_groups, log=True)
     plot_cluster_summaries('median_log_sfr', 'computed_log_sfr', 'sfrs/sfr_compare', color_var='balmer_dec', plot_lims=[0.3, 3, 0.3, 3], one_to_one=True, ignore_groups=ignore_groups, lower_limit=lower_limit)
     plot_cluster_summaries('median_log_ssfr', 'computed_log_ssfr', 'sfrs/ssfr_compare', color_var='balmer_dec', plot_lims=[-10.7, -6.5, -10.7, -6.5], one_to_one=True, ignore_groups=ignore_groups, lower_limit=lower_limit)
+    plot_cluster_summaries('computed_log_sfr_with_limit', 'median_indiv_computed_log_sfr', 'sfrs/sfr_indiv_vs_cluster', color_var='balmer_dec', plot_lims=[0.3, 3, 0.3, 3], one_to_one=True, ignore_groups=ignore_groups, lower_limit=lower_limit)
+    plot_cluster_summaries('computed_log_ssfr_with_limit', 'median_indiv_computed_log_ssfr', 'sfrs/ssfr_indiv_vs_cluster', color_var='balmer_dec', plot_lims=[-10.7, -6.5, -10.7, -6.5], one_to_one=True, ignore_groups=ignore_groups, lower_limit=lower_limit)
+    plot_cluster_summaries('computed_log_sfr_with_limit', 'override_flux', 'sfrs/sfr_compare_new_vs_old_method', color_var='balmer_dec', plot_lims=[0.3, 3, 0.3, 3], one_to_one=True, ignore_groups=ignore_groups, lower_limit=lower_limit)
 
     # Find which groups have accurate Ha and Hb measurements:
     ignore_groups = np.array(cluster_summary_df[cluster_summary_df['err_balmer_dec_high']>1].index)

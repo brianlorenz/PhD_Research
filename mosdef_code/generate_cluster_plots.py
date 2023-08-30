@@ -88,7 +88,7 @@ def generate_all_cluster_plots(n_clusters, overview=False):
     plot_full_uvj(n_clusters)
 
 
-def generate_newer_cluster_plots(n_clusters):
+def generate_newer_cluster_plots(n_clusters, norm_method):
     ignore_groups = imd.ignore_groups
 
     imd.check_and_make_dir(imd.cluster_dir + f'/cluster_stats/sfrs')
@@ -113,7 +113,7 @@ def generate_newer_cluster_plots(n_clusters):
     plot_sim_matrix(n_clusters, ssfr_order=True)
     plot_sim_matrix(n_clusters)
 
-    composite_and_spec_overview(n_clusters, ignore_groups)
+    composite_and_spec_overview(n_clusters, ignore_groups, norm_method=norm_method)
     make_overview_plot_clusters(n_clusters, bpt_color=True, paper_overview=False, prospector_spec=False)
     
     color_codes = ['None', 'log_mass', 'log_sfr', 'balmer_dec', 'metallicity', 'log_ssfr']
