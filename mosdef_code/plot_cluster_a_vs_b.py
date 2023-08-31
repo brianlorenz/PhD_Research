@@ -186,6 +186,7 @@ def make_plots_a_vs_b():
     plot_cluster_summaries('computed_log_sfr_with_limit', 'median_indiv_computed_log_sfr', 'sfrs/sfr_indiv_vs_cluster', color_var='balmer_dec', plot_lims=[0.3, 3, 0.3, 3], one_to_one=True, ignore_groups=ignore_groups, lower_limit=lower_limit)
     plot_cluster_summaries('computed_log_ssfr_with_limit', 'median_indiv_computed_log_ssfr', 'sfrs/ssfr_indiv_vs_cluster', color_var='balmer_dec', plot_lims=[-10.7, -6.5, -10.7, -6.5], one_to_one=True, ignore_groups=ignore_groups, lower_limit=lower_limit)
     plot_cluster_summaries('computed_log_sfr_with_limit', 'override_flux', 'sfrs/sfr_compare_new_vs_old_method', color_var='balmer_dec', plot_lims=[0.3, 3, 0.3, 3], one_to_one=True, ignore_groups=ignore_groups, lower_limit=lower_limit)
+    plot_cluster_summaries('median_log_sfr', 'median_indiv_computed_log_sfr', 'sfrs/sfr_indiv_vs_mosdef', color_var='balmer_dec', plot_lims=[0.3, 3, 0.3, 3], one_to_one=True, ignore_groups=ignore_groups, lower_limit=lower_limit)
 
     # Find which groups have accurate Ha and Hb measurements:
     ignore_groups = np.array(cluster_summary_df[cluster_summary_df['err_balmer_dec_high']>1].index)
@@ -226,4 +227,4 @@ def make_plots_a_vs_b():
     
     #SNR Plots
     plot_cluster_summaries('hb_snr', 'balmer_dec_snr', 'sfrs/hbeta_balmer_snr', color_var='balmer_dec_with_limit', ignore_groups=ignore_groups, one_to_one=True)
-# make_plots_a_vs_b()
+make_plots_a_vs_b()
