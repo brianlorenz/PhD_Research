@@ -63,6 +63,7 @@ def plot_similarity_cluster(groupID, zobjs, similarity_matrix, axis_obj='False')
         ax.tick_params(labelsize=ticksize, size=ticks)
         
         ax.text(0.1, 0.9, f'Avg. similarity {mean_sim}', transform=ax.transAxes)
+        imd.check_and_make_dir(imd.cluster_similarity_plots_dir)
         fig.savefig(imd.cluster_similarity_plots_dir + f'/{groupID}_similarity.pdf')
         plt.close()
 

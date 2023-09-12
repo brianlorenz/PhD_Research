@@ -17,7 +17,7 @@ prospector_run = 'dust_index_test'
 
 fontsize = 16
 
-def make_overview_plot_clusters(n_clusters, color_gals=False, bpt_color=False, paper_overview=False, prospector_spec=True):
+def make_overview_plot_clusters(n_clusters, norm_method, color_gals=False, bpt_color=False, paper_overview=False, prospector_spec=True):
     """
     Parameters:
     prospector_spec (boolean): Set to true (and update runname above) to add prospector spectra to plot
@@ -82,7 +82,7 @@ def make_overview_plot_clusters(n_clusters, color_gals=False, bpt_color=False, p
 
         # Can change the norm_method here
         try:
-            spec_df = read_composite_spectrum(groupID, 'cluster_norm', scaled='False')
+            spec_df = read_composite_spectrum(groupID, norm_method, scaled='False')
             halpha_range = np.logical_and(spec_df['wavelength']>6560, spec_df['wavelength']<6570)
             peak_halpha = np.max(spec_df[halpha_range]['f_lambda'])
             scale_factor = 1.0/peak_halpha

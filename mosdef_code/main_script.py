@@ -25,6 +25,7 @@ from compute_cluster_sfrs import compute_cluster_sfrs
 from balmer_dec_histogram import compute_balmer_lower_limits, plot_balmer_hist
 from scale_spectra import scale_all_spec_to_median_halpha
 from compute_indiv_sfrs_from_halpha import compute_indiv_sfrs
+from plot_group_hists import plot_group_hists
 
 
 '''Starting point: One folder ('cluster_folder') that contains: 
@@ -40,7 +41,7 @@ Specify the directories in initialize_mosdef_dirsl;k
 n_clusters = 19
 # Set the name of the prospector run
 run_name = 'test'
-norm_method = 'luminosity'
+norm_method = 'nonorm'
 # Set which group numbers to ignore since their data is not good
 ignore_groups = []
 # ignore_groups = [0,1,2,3,4,5,6,7,8,9,10,11,19]
@@ -57,8 +58,7 @@ halpha_scaled=False
 # print('Generating composite seds...')
 # get_all_composite_seds(n_clusters, run_filters=True)
 # print('Generating composite spectra...')
-# stack_all_spectra(n_clusters, 'cluster_norm', bootstrap=bootstrap, ignore_groups=ignore_groups)
-# stack_all_spectra(n_clusters, 'luminosity', bootstrap=bootstrap, ignore_groups=ignore_groups)
+# stack_all_spectra(n_clusters, norm_method, bootstrap=bootstrap, ignore_groups=ignore_groups)
 # print('Fitting emission lines...')
 
 # # # Check for agn and list which groups do not have enough galaxies - cuts down to 20
@@ -73,7 +73,7 @@ halpha_scaled=False
 
 # # Re-fit the emission of the composites and now fit the boostrapped ones
 # fit_all_emission(n_clusters, 'cluster_norm', ignore_groups, bootstrap=bootstrap, halpha_scaled=halpha_scaled)
-# fit_all_emission(n_clusters, 'luminosity', ignore_groups, bootstrap=bootstrap)
+# fit_all_emission(n_clusters, norm_method, ignore_groups, bootstrap=bootstrap)
 
 # # # Add the bootstrapped uncertainties
 # compute_bootstrap_uncertainties(n_clusters, 'None', bootstrap=bootstrap, clustering=True, ignore_groups=ignore_groups, halpha_scaled=halpha_scaled)
@@ -97,12 +97,13 @@ halpha_scaled=False
 # # Compute the ssfr for the groups
 # plot_balmer_hist(n_clusters, bootstrap)
 # compute_balmer_lower_limits()
-# compute_cluster_sfrs(luminosity=True)
+# compute_cluster_sfrs(luminosity=False)
 # compute_indiv_sfrs(n_clusters, lower_limit=True)
 
 # # Have to run this twice, since ignore_groups won't be loaded properly the first time
 generate_newer_cluster_plots(n_clusters, norm_method)
-sys.exit()
+# plot_group_hists(n_clusters)
+
 # generate_all_cluster_plots(n_clusters)
 breakpoint()
 

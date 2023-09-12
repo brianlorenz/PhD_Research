@@ -21,7 +21,7 @@ def make_hist(save_dir, groupID, xvar, xlabel, removed_gal_number, bins):
     imd.check_and_make_dir(save_dir + f'/{xlabel}')
     fig.savefig(save_dir + f'/{xlabel}/{groupID}_{xlabel}.pdf')
 
-def plot_halpha_hists(n_clusters):
+def plot_group_hists(n_clusters):
     filtered_gal_df = ascii.read(imd.loc_filtered_gal_df).to_pandas()
 
     filtered_gal_df_hbfilt = filtered_gal_df[filtered_gal_df['hb_flux'] > -98]
@@ -30,6 +30,14 @@ def plot_halpha_hists(n_clusters):
     all_hbs = filtered_gal_df_hbfilt['hb_flux']
     all_balmers = all_has/all_hbs
     all_masses = filtered_gal_df_hbfilt['log_mass']
+    avs_nofilt = filtered_gal_df['AV']
+    masses_nofilt = filtered_gal_df['log_mass']
+    group_balmer_tuples = []
+    group_massfilt_tuples = []
+    group_av_tuples = []
+    group_mass_tuples = []
+    groupIDs = []
+    
 
     for groupID in range(n_clusters):
         group_df = ascii.read(imd.cluster_indiv_dfs_dir + f'/{groupID}_cluster_df.csv').to_pandas()
@@ -47,6 +55,7 @@ def plot_halpha_hists(n_clusters):
         balmer_decs = halpha_fluxes_hbfilt/hbeta_fluxes_hbfilt
         log_masses_hbfilt = hbfilt['log_mass']
         removed_gal_number_balmer = len(group_df) - len(balmer_decs)
+        group_avs = group_df['AV']
 
         
 
@@ -77,4 +86,59 @@ def plot_halpha_hists(n_clusters):
         imd.check_and_make_dir(save_dir + f'/balmer_mass')
         fig.savefig(save_dir + f'/balmer_mass/{groupID}_balmer_mass.pdf')
         plt.close('all')
-plot_halpha_hists(19)
+
+        # AV vs Mass in each group
+        fig, ax = plt.subplots(figsize=(8,8))
+        ax.plot(masses_nofilt, avs_nofilt, marker='o', color='grey', ls='None', ms=2)
+        ax.plot(log_masses, group_avs, marker='o', color='black', ls='None')
+        ax.set_xlim(9,11)
+        ax.set_ylim(0,3)
+        ax.set_xlabel(stellar_mass_label, fontsize=14)
+        ax.set_ylabel('AV', fontsize=14)
+        ax.tick_params(labelsize=14)
+        imd.check_and_make_dir(save_dir + f'/av_mass')
+        fig.savefig(save_dir + f'/av_mass/{groupID}_av_mass.pdf')
+        plt.close('all')
+
+        group_balmer_tuple = np.percentile(balmer_decs, [16,50,84])
+        group_massfilt_tuple = np.percentile(log_masses_hbfilt, [16,50,84])
+        group_av_tuple = np.percentile(group_avs, [16,50,84])
+        group_mass_tuple = np.percentile(log_masses, [16,50,84])
+        group_balmer_tuples.append(group_balmer_tuple)
+        group_massfilt_tuples.append(group_massfilt_tuple)
+        group_av_tuples.append(group_av_tuple)
+        group_mass_tuples.append(group_mass_tuple)
+        groupIDs.append(groupID)
+    
+    # Balmer and AV vs mass total
+    def plot_all_groups(xvars, yvars, groupIDs, ylabel):
+        fig, ax = plt.subplots(figsize=(8,8))
+        ignore_groups = imd.ignore_groups
+        for groupID in groupIDs:
+            if groupID in ignore_groups:
+                continue
+            group_xvars = xvars[groupID]
+            group_yvars = yvars[groupID]
+            median_xvar = group_xvars[1]
+            err_xvar = [[median_xvar-group_xvars[0]], [group_xvars[2]-median_xvar]]
+            median_yvar = group_yvars[1]
+            err_yvar = [[median_yvar-group_yvars[0]], [group_yvars[2]-median_yvar]]
+            ax.errorbar(median_xvar, median_yvar, xerr=err_xvar, yerr=err_yvar, marker='o', color='black')
+            ax.text(median_xvar, median_yvar, f'{int(groupID)}', fontsize=14)
+        ax.set_xlim(9,11)
+        ax.set_xlabel(stellar_mass_label, fontsize=14)
+        ax.set_ylabel(ylabel, fontsize=14)
+        ax.tick_params(labelsize=14)
+        if ylabel == 'Balmer Dec':
+            ax.set_ylim(0,8)
+            imd.check_and_make_dir(save_dir + f'/balmer_mass')
+            fig.savefig(save_dir + f'/balmer_mass/all_balmer_mass.pdf')
+        if ylabel == 'AV':
+            ax.set_ylim(0,3)
+            imd.check_and_make_dir(save_dir + f'/av_mass')
+            fig.savefig(save_dir + f'/av_mass/all_av_mass.pdf')
+        plt.close('all')
+    plot_all_groups(group_massfilt_tuples, group_balmer_tuples, groupIDs, 'Balmer Dec')
+    plot_all_groups(group_mass_tuples, group_av_tuples, groupIDs, 'AV')
+    
+plot_group_hists(19)

@@ -68,7 +68,7 @@ def stack_spectra(groupID, norm_method, re_observe=False, mask_negatives=False, 
                        for field, v4id in fields_ids]
 
     # min, max, step-size
-    spectrum_wavelength = np.arange(3000, 10000, 1)
+    spectrum_wavelength = np.arange(3000, 10000, 0.5)
     if axis_stack:
         spectrum_wavelength = np.arange(3000, 10000, 0.5)
 
@@ -118,6 +118,8 @@ def stack_spectra(groupID, norm_method, re_observe=False, mask_negatives=False, 
             # Original Method - using the computed norm_factors form composite sed formation
             if norm_method == 'cluster_norm':
                 norm_factor = np.median(norm_sed['norm_factor'])
+            elif norm_method == 'nonorm':
+                norm_factor = 1
             elif norm_method == 'luminosity':
                 norm_factor = flux_to_luminosity_factor(z_spec)
             elif norm_method == 'composite_sed_norm':

@@ -114,7 +114,7 @@ def generate_newer_cluster_plots(n_clusters, norm_method):
     plot_sim_matrix(n_clusters)
 
     composite_and_spec_overview(n_clusters, ignore_groups, norm_method=norm_method)
-    make_overview_plot_clusters(n_clusters, bpt_color=True, paper_overview=False, prospector_spec=False)
+    make_overview_plot_clusters(n_clusters, norm_method, bpt_color=True, paper_overview=False, prospector_spec=False)
     
     color_codes = ['None', 'log_mass', 'log_sfr', 'balmer_dec', 'metallicity', 'log_ssfr']
     for color_code in color_codes:

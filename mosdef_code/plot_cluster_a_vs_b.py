@@ -44,7 +44,7 @@ def plot_cluster_summaries(x_var, y_var, savename, color_var='None', plot_lims='
                 norm = mpl.colors.Normalize(vmin=3, vmax=6) 
             elif color_var=='O3N2_metallicity':
                 norm = mpl.colors.Normalize(vmin=8.2, vmax=9) 
-            elif color_var=='norm_median_log_mass':
+            elif color_var=='norm_median_log_mass' or color_var=='median_log_mass':
                 norm = mpl.colors.Normalize(vmin=9, vmax=11) 
             else:
                 norm = mpl.colors.Normalize(vmin=-10, vmax=10) 
@@ -180,7 +180,9 @@ def make_plots_a_vs_b():
     lower_limit = True
 
     # SFR comparison plots
-    plot_cluster_summaries('norm_median_halphas', 'ha_flux', 'sfrs/ha_flux_compare', color_var='balmer_dec', plot_lims=[6e-18, 8e-16, 6e-18, 8e-16], one_to_one=True, ignore_groups=ignore_groups, log=True)
+    plot_cluster_summaries('norm_median_halphas', 'ha_flux', 'sfrs/ha_flux_compare_norm', color_var='balmer_dec', plot_lims=[6e-18, 8e-16, 6e-18, 8e-16], one_to_one=True, ignore_groups=ignore_groups, log=True)
+    plot_cluster_summaries('median_indiv_halphas', 'ha_flux', 'sfrs/ha_flux_compare_nonorm', color_var='median_log_mass', plot_lims=[6e-18, 8e-16, 6e-18, 8e-16], one_to_one=True, ignore_groups=ignore_groups, log=True)
+    plot_cluster_summaries('median_indiv_halphas', 'ha_flux', 'sfrs/ha_flux_compare_nonorm_balmer', color_var='balmer_dec', plot_lims=[6e-18, 8e-16, 6e-18, 8e-16], one_to_one=True, ignore_groups=ignore_groups, log=True)
     plot_cluster_summaries('median_log_sfr', 'computed_log_sfr', 'sfrs/sfr_compare', color_var='balmer_dec', plot_lims=[0.3, 3, 0.3, 3], one_to_one=True, ignore_groups=ignore_groups, lower_limit=lower_limit)
     plot_cluster_summaries('median_log_ssfr', 'computed_log_ssfr', 'sfrs/ssfr_compare', color_var='balmer_dec', plot_lims=[-10.7, -6.5, -10.7, -6.5], one_to_one=True, ignore_groups=ignore_groups, lower_limit=lower_limit)
     plot_cluster_summaries('computed_log_sfr_with_limit', 'median_indiv_computed_log_sfr', 'sfrs/sfr_indiv_vs_cluster', color_var='balmer_dec', plot_lims=[0.3, 3, 0.3, 3], one_to_one=True, ignore_groups=ignore_groups, lower_limit=lower_limit)
@@ -227,4 +229,4 @@ def make_plots_a_vs_b():
     
     #SNR Plots
     plot_cluster_summaries('hb_snr', 'balmer_dec_snr', 'sfrs/hbeta_balmer_snr', color_var='balmer_dec_with_limit', ignore_groups=ignore_groups, one_to_one=True)
-make_plots_a_vs_b()
+# make_plots_a_vs_b()
