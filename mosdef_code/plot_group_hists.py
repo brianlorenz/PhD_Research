@@ -4,6 +4,7 @@ from astropy.io import ascii
 from cosmology_calcs import flux_to_luminosity
 import numpy as np
 from plot_vals import *
+import matplotlib as mpl
 cluster_summary_df = imd.read_cluster_summary_df()
 
 def make_hist(save_dir, groupID, xvar, xlabel, removed_gal_number, bins):
@@ -111,7 +112,7 @@ def plot_group_hists(n_clusters):
         groupIDs.append(groupID)
     
     # Balmer and AV vs mass total
-    def plot_all_groups(xvars, yvars, groupIDs, ylabel):
+    def plot_all_groups(xvars, yvars, groupIDs, ylabel, color_var='None'):
         fig, ax = plt.subplots(figsize=(8,8))
         ignore_groups = imd.ignore_groups
         for groupID in groupIDs:
@@ -123,22 +124,48 @@ def plot_group_hists(n_clusters):
             err_xvar = [[median_xvar-group_xvars[0]], [group_xvars[2]-median_xvar]]
             median_yvar = group_yvars[1]
             err_yvar = [[median_yvar-group_yvars[0]], [group_yvars[2]-median_yvar]]
-            ax.errorbar(median_xvar, median_yvar, xerr=err_xvar, yerr=err_yvar, marker='o', color='black')
+
+            if color_var != 'None':
+                cmap = mpl.cm.inferno
+                if color_var=='balmer_dec':
+                    norm = mpl.colors.Normalize(vmin=3, vmax=5) 
+                elif color_var=='balmer_dec_with_limit':
+                    norm = mpl.colors.Normalize(vmin=3, vmax=6) 
+                elif color_var=='O3N2_metallicity':
+                    norm = mpl.colors.Normalize(vmin=8.2, vmax=9) 
+                elif color_var=='norm_median_log_mass' or color_var=='median_log_mass':
+                    norm = mpl.colors.Normalize(vmin=9, vmax=11) 
+                elif color_var=='computed_log_ssfr_with_limit':
+                    norm = mpl.colors.Normalize(vmin=-11, vmax=-8) 
+                else:
+                    norm = mpl.colors.Normalize(vmin=-10, vmax=10) 
+                row = cluster_summary_df.iloc[groupID]
+                rgba = cmap(norm(row[color_var]))
+            else:
+                rgba = 'black'
+            ax.errorbar(median_xvar, median_yvar, xerr=err_xvar, yerr=err_yvar, marker='o', color=rgba)
             ax.text(median_xvar, median_yvar, f'{int(groupID)}', fontsize=14)
         ax.set_xlim(9,11)
         ax.set_xlabel(stellar_mass_label, fontsize=14)
         ax.set_ylabel(ylabel, fontsize=14)
-        ax.tick_params(labelsize=14)
+        if color_var != 'None':
+            cbar = fig.colorbar(mpl.cm.ScalarMappable(norm=norm, cmap=cmap), ax=ax, fraction=0.046, pad=0.04)
+            cbar.set_label(color_var, fontsize=full_page_axisfont)
+            cbar.ax.tick_params(labelsize=full_page_axisfont)
+        ax.tick_params(labelsize=full_page_axisfont)
         if ylabel == 'Balmer Dec':
             ax.set_ylim(0,8)
             imd.check_and_make_dir(save_dir + f'/balmer_mass')
-            fig.savefig(save_dir + f'/balmer_mass/all_balmer_mass.pdf')
+            fig.savefig(save_dir + f'/balmer_mass/all_balmer_mass_{color_var}.pdf')
         if ylabel == 'AV':
             ax.set_ylim(0,3)
             imd.check_and_make_dir(save_dir + f'/av_mass')
             fig.savefig(save_dir + f'/av_mass/all_av_mass.pdf')
         plt.close('all')
     plot_all_groups(group_massfilt_tuples, group_balmer_tuples, groupIDs, 'Balmer Dec')
+    plot_all_groups(group_massfilt_tuples, group_balmer_tuples, groupIDs, 'Balmer Dec', color_var='median_log_mass')
+    plot_all_groups(group_massfilt_tuples, group_balmer_tuples, groupIDs, 'Balmer Dec', color_var='computed_log_ssfr_with_limit')
+
     plot_all_groups(group_mass_tuples, group_av_tuples, groupIDs, 'AV')
     
 plot_group_hists(19)
