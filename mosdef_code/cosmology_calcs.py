@@ -66,3 +66,4 @@ def flux_to_luminosity_factor(redshift):
     factor = (4 * np.pi * lum_dist.value ** 2) 
 
     return factor
+

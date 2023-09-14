@@ -15,7 +15,7 @@ from uvj_clusters import observe_all_uvj
 from convert_filter_to_sedpy import convert_all_folders_to_sedpy, find_median_redshifts
 from convert_flux_to_maggies import convert_folder_to_maggies
 from plot_scaled_comps import plot_scaled_composites
-from scale_spectra import scale_all_spectra
+from scale_spectra import scale_all_spectra, scale_all_spec_to_median_halpha
 from fit_prospector_emission import setup_all_prospector_fit_csvs, fit_all_prospector_emission
 from check_for_agn import check_for_all_agn
 from filter_groups import generate_skip_file, remove_groups_by_similiary
@@ -23,7 +23,6 @@ from make_clusters_summary_df import make_clusters_summary_df
 from add_norm_factors_to_group_dfs import add_norm_factors
 from compute_cluster_sfrs import compute_cluster_sfrs
 from balmer_dec_histogram import compute_balmer_lower_limits, plot_balmer_hist
-from scale_spectra import scale_all_spec_to_median_halpha
 from compute_indiv_sfrs_from_halpha import compute_indiv_sfrs
 from plot_group_hists import plot_group_hists
 
@@ -41,7 +40,7 @@ Specify the directories in initialize_mosdef_dirsl;k
 n_clusters = 19
 # Set the name of the prospector run
 run_name = 'test'
-norm_method = 'nonorm'
+norm_method = 'luminosity'
 # Set which group numbers to ignore since their data is not good
 ignore_groups = []
 # ignore_groups = [0,1,2,3,4,5,6,7,8,9,10,11,19]
@@ -97,27 +96,27 @@ halpha_scaled=False
 # # Compute the ssfr for the groups
 # plot_balmer_hist(n_clusters, bootstrap)
 # compute_balmer_lower_limits()
-# compute_cluster_sfrs(luminosity=False)
+# compute_cluster_sfrs(luminosity=True)
 # compute_indiv_sfrs(n_clusters, lower_limit=True)
 
 # # Have to run this twice, since ignore_groups won't be loaded properly the first time
-generate_newer_cluster_plots(n_clusters, norm_method)
+# generate_newer_cluster_plots(n_clusters, norm_method)
 # plot_group_hists(n_clusters)
 
 # generate_all_cluster_plots(n_clusters)
-breakpoint()
+# breakpoint()
 
 
 # Prepare for prospector:
-print('Preparing data for Prospector')
-find_median_redshifts(n_clusters)
-convert_all_folders_to_sedpy(n_clusters)
-convert_folder_to_maggies(imd.composite_sed_csvs_dir)
+# print('Preparing data for Prospector')
+# find_median_redshifts(n_clusters)
+# convert_all_folders_to_sedpy(n_clusters)
+# convert_folder_to_maggies(imd.composite_sed_csvs_dir)
 
 # Plot of all of the scaled composites, must be run after convert_folder_to_maggies
-plot_scaled_composites(n_clusters)
+# plot_scaled_composites(n_clusters)
 # Scale and re-fit the spectra using the scale that was used for the composites
-scale_all_spectra(n_clusters)
+# scale_all_spectra(n_clusters)
 
 # Re-fit the prospector spectra in the same way that we fit the mosdef ones:
 

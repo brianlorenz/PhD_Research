@@ -136,7 +136,7 @@ def plot_group_hists(n_clusters):
                 elif color_var=='norm_median_log_mass' or color_var=='median_log_mass':
                     norm = mpl.colors.Normalize(vmin=9, vmax=11) 
                 elif color_var=='computed_log_ssfr_with_limit':
-                    norm = mpl.colors.Normalize(vmin=-11, vmax=-8) 
+                    norm = mpl.colors.Normalize(vmin=-10, vmax=-7) 
                 else:
                     norm = mpl.colors.Normalize(vmin=-10, vmax=10) 
                 row = cluster_summary_df.iloc[groupID]
@@ -146,26 +146,45 @@ def plot_group_hists(n_clusters):
             ax.errorbar(median_xvar, median_yvar, xerr=err_xvar, yerr=err_yvar, marker='o', color=rgba)
             ax.text(median_xvar, median_yvar, f'{int(groupID)}', fontsize=14)
         ax.set_xlim(9,11)
-        ax.set_xlabel(stellar_mass_label, fontsize=14)
-        ax.set_ylabel(ylabel, fontsize=14)
+        ax.set_xlabel(stellar_mass_label, fontsize=single_column_axisfont)
+        ax.set_ylabel(ylabel, fontsize=single_column_axisfont)
         if color_var != 'None':
             cbar = fig.colorbar(mpl.cm.ScalarMappable(norm=norm, cmap=cmap), ax=ax, fraction=0.046, pad=0.04)
-            cbar.set_label(color_var, fontsize=full_page_axisfont)
-            cbar.ax.tick_params(labelsize=full_page_axisfont)
-        ax.tick_params(labelsize=full_page_axisfont)
+            cbar.set_label(color_var, fontsize=single_column_axisfont)
+            cbar.ax.tick_params(labelsize=single_column_axisfont)
+        ax.tick_params(labelsize=single_column_axisfont)
         if ylabel == 'Balmer Dec':
             ax.set_ylim(0,8)
             imd.check_and_make_dir(save_dir + f'/balmer_mass')
-            fig.savefig(save_dir + f'/balmer_mass/all_balmer_mass_{color_var}.pdf')
+            fig.savefig(save_dir + f'/balmer_mass/all_balmer_mass_{color_var}.pdf', bbox_inches='tight')
         if ylabel == 'AV':
             ax.set_ylim(0,3)
             imd.check_and_make_dir(save_dir + f'/av_mass')
-            fig.savefig(save_dir + f'/av_mass/all_av_mass.pdf')
+            fig.savefig(save_dir + f'/av_mass/all_av_mass.pdf', bbox_inches='tight')
         plt.close('all')
     plot_all_groups(group_massfilt_tuples, group_balmer_tuples, groupIDs, 'Balmer Dec')
-    plot_all_groups(group_massfilt_tuples, group_balmer_tuples, groupIDs, 'Balmer Dec', color_var='median_log_mass')
+    plot_all_groups(group_massfilt_tuples, group_balmer_tuples, groupIDs, 'Balmer Dec', color_var='O3N2_metallicity')
     plot_all_groups(group_massfilt_tuples, group_balmer_tuples, groupIDs, 'Balmer Dec', color_var='computed_log_ssfr_with_limit')
 
     plot_all_groups(group_mass_tuples, group_av_tuples, groupIDs, 'AV')
-    
-plot_group_hists(19)
+
+    fig, ax = plt.subplots(figsize=(8,8))
+    ignore_groups = imd.ignore_groups
+    for groupID in groupIDs:
+        if groupID in ignore_groups:
+            continue
+        median_indiv_balmer = group_balmer_tuples[groupID][1]
+        err_indiv_balmer = [[median_indiv_balmer-group_balmer_tuples[groupID][0]], [group_balmer_tuples[groupID][2]-median_indiv_balmer]]
+        cluster_balmer = cluster_summary_df.iloc[groupID]['balmer_dec']
+        if cluster_balmer >10:
+            continue
+        ax.errorbar(cluster_balmer, median_indiv_balmer, yerr=err_indiv_balmer, marker='o', color='black')
+        ax.text(cluster_balmer, median_indiv_balmer, f'{int(groupID)}', fontsize=14)
+    ax.plot([-20, 20], [-20, 20], ls='--', color='red')
+    ax.set_xlim(2,9)
+    ax.set_ylim(2,9)
+    ax.set_xlabel('Cluster Balmer Dec', fontsize=single_column_axisfont)
+    ax.set_ylabel('Median Individuals Balmer Dec', fontsize=single_column_axisfont)
+    ax.tick_params(labelsize=single_column_axisfont)
+    fig.savefig(imd.cluster_dir + '/cluster_stats/indiv_group_plots/balmer_compare.pdf', bbox_inches='tight')
+# plot_group_hists(19)

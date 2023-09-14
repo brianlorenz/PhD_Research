@@ -94,7 +94,7 @@ def plot_cluster_summaries(x_var, y_var, savename, color_var='None', plot_lims='
     if one_to_one:
         xlims = ax.get_xlim()
         ylims = ax.get_ylim()
-        ax.plot([-20, 20], [-20, 20], ls='--', color='red')
+        ax.plot([-20, 20e60], [-20, 20e60], ls='--', color='red')
         ax.set_xlim(xlims)
         ax.set_ylim(ylims)
         # ax.plot([0,1],[0,1], transform=ax.transAxes, ls='--', color='red')
@@ -182,6 +182,7 @@ def make_plots_a_vs_b():
     # SFR comparison plots
     plot_cluster_summaries('norm_median_halphas', 'ha_flux', 'sfrs/ha_flux_compare_norm', color_var='balmer_dec', plot_lims=[6e-18, 8e-16, 6e-18, 8e-16], one_to_one=True, ignore_groups=ignore_groups, log=True)
     plot_cluster_summaries('median_indiv_halphas', 'ha_flux', 'sfrs/ha_flux_compare_nonorm', color_var='median_log_mass', plot_lims=[6e-18, 8e-16, 6e-18, 8e-16], one_to_one=True, ignore_groups=ignore_groups, log=True)
+    plot_cluster_summaries('median_halpha_luminosity', 'ha_flux', 'sfrs/ha_luminosity_compare_nonorm', color_var='median_log_mass', plot_lims=[3e41, 4e42, 3e41, 4e42], one_to_one=True, ignore_groups=ignore_groups, log=True)
     plot_cluster_summaries('median_indiv_halphas', 'ha_flux', 'sfrs/ha_flux_compare_nonorm_balmer', color_var='balmer_dec', plot_lims=[6e-18, 8e-16, 6e-18, 8e-16], one_to_one=True, ignore_groups=ignore_groups, log=True)
     plot_cluster_summaries('median_log_sfr', 'computed_log_sfr', 'sfrs/sfr_compare', color_var='balmer_dec', plot_lims=[0.3, 3, 0.3, 3], one_to_one=True, ignore_groups=ignore_groups, lower_limit=lower_limit)
     plot_cluster_summaries('median_log_ssfr', 'computed_log_ssfr', 'sfrs/ssfr_compare', color_var='balmer_dec', plot_lims=[-10.7, -6.5, -10.7, -6.5], one_to_one=True, ignore_groups=ignore_groups, lower_limit=lower_limit)
@@ -229,4 +230,4 @@ def make_plots_a_vs_b():
     
     #SNR Plots
     plot_cluster_summaries('hb_snr', 'balmer_dec_snr', 'sfrs/hbeta_balmer_snr', color_var='balmer_dec_with_limit', ignore_groups=ignore_groups, one_to_one=True)
-# make_plots_a_vs_b()
+make_plots_a_vs_b()

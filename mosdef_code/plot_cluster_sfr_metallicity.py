@@ -15,7 +15,7 @@ from sympy import Symbol
 
 
 
-def plot_cluster_sfr_metals(plot_ssfr=False, plot_re=False, plot_sanders=False, mass_color=False):
+def plot_cluster_sfr_metals(plot_ssfr=False, plot_re=False, plot_sanders=False, mass_color=False, show_mass=False):
     summary_df = ascii.read(imd.loc_cluster_summary_df).to_pandas()
     ignore_groups = imd.ignore_groups
     fig, ax = plt.subplots(figsize = (8,8))
@@ -39,7 +39,7 @@ def plot_cluster_sfr_metals(plot_ssfr=False, plot_re=False, plot_sanders=False, 
 
         cmap = mpl.cm.inferno
         if mass_color==True:
-            norm = mpl.colors.Normalize(vmin=9, vmax=11) 
+            norm = mpl.colors.Normalize(vmin=9, vmax=11.5) 
             rgba = cmap(norm(row['median_log_mass']))
         else:
             # norm = mpl.colors.Normalize(vmin=3, vmax=5.5)
@@ -153,23 +153,49 @@ def plot_cluster_sfr_metals(plot_ssfr=False, plot_re=False, plot_sanders=False, 
     log_mass = 9.55
     re = 0.25
     x_plot, fm_metals_lowm_bot, add_str2 = compute_metals(log_mass, fm_s, re) 
-    # ax.plot(x_plot, fm_metals_lowm_bot, ls='--', color='black', marker='None', label=f'Stellar Mass = {log_mass}, {add_str2}')
+    if mass_color == True and show_mass==True:
+        rgba_massline = cmap(norm(log_mass))
+        ax.plot(x_plot, fm_metals_lowm_bot, marker='None', color=rgba_massline, ls='-')
     log_mass = 9.8
     x_plot, fm_metals_lowm_top, add_str2 = compute_metals(log_mass, fm_s, re) 
     # ax.plot(x_plot, fm_metals_lowm_top, ls='--', color='black', marker='None', label=f'Stellar Mass = {log_mass}, {add_str2}')
-    ax.fill_between(x_plot, fm_metals_lowm_bot, fm_metals_lowm_top, color='black', alpha=0.35, zorder=1)
+    if mass_color == True and show_mass==True:
+        rgba_massline = cmap(norm(log_mass))
+        ax.plot(x_plot, fm_metals_lowm_top, marker='None', color=rgba_massline, ls='-')
+    if show_mass == False:
+        ax.fill_between(x_plot, fm_metals_lowm_bot, fm_metals_lowm_top, color='black', alpha=0.35, zorder=1)
     get_slope(x_plot[10], x_plot[16], fm_metals_lowm_bot[10], fm_metals_lowm_bot[16])
+
+    
+
 
 
     log_mass = 10.2
     re = 0.4
     x_plot, fm_metals_highm_bot, add_str2 = compute_metals(log_mass, fm_s, re) 
-    # ax.plot(x_plot, fm_metals_highm_bot, ls='--', color='blue', marker='None', label=f'Stellar Mass = {log_mass}, {add_str2}')
+    if mass_color == True and show_mass==True:
+        rgba_massline = cmap(norm(log_mass))
+        ax.plot(x_plot, fm_metals_highm_bot, marker='None', color=rgba_massline, ls='-')
     log_mass = 10.35
     x_plot, fm_metals_highm_top, add_str2 = compute_metals(log_mass, fm_s, re) 
-    # ax.plot(x_plot, fm_metals_highm_top, ls='--', color='blue', marker='None', label=f'Stellar Mass = {log_mass}, {add_str2}')
-    ax.fill_between(x_plot, fm_metals_highm_bot, fm_metals_highm_top, color='black', alpha=0.2, zorder=1)
+    if mass_color == True and show_mass==True:
+        rgba_massline = cmap(norm(log_mass))
+        ax.plot(x_plot, fm_metals_highm_top, marker='None', color=rgba_massline, ls='-')
+    if mass_color == False:
+        ax.fill_between(x_plot, fm_metals_highm_bot, fm_metals_highm_top, color='black', alpha=0.2, zorder=1)
     get_slope(x_plot[10], x_plot[16], fm_metals_highm_bot[10], fm_metals_highm_bot[16])
+
+    log_mass = 10.6
+    x_plot, fm_metals_higher_m, add_str2 = compute_metals(log_mass, fm_s, re) 
+    if mass_color == True and show_mass==True:
+        rgba_massline = cmap(norm(log_mass))
+        ax.plot(x_plot, fm_metals_higher_m, marker='None', color=rgba_massline, ls='-')
+
+    log_mass = 11.00
+    x_plot, fm_metals_very_high_m, add_str2 = compute_metals(log_mass, fm_s, re) 
+    if mass_color == True and show_mass==True:
+        rgba_massline = cmap(norm(log_mass))
+        ax.plot(x_plot, fm_metals_very_high_m, marker='None', color=rgba_massline, ls='-')
 
     cbar = fig.colorbar(mpl.cm.ScalarMappable(norm=norm, cmap=cmap), ax=ax, fraction=0.046, pad=0.04)
     # cbar.set_label(balmer_label, fontsize=fontsize)
@@ -212,4 +238,5 @@ def plot_cluster_sfr_metals(plot_ssfr=False, plot_re=False, plot_sanders=False, 
 
 plot_cluster_sfr_metals(plot_sanders=True)
 plot_cluster_sfr_metals(plot_sanders=True, mass_color=True)
+plot_cluster_sfr_metals(plot_sanders=True, mass_color=True, show_mass=True)
 
