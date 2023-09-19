@@ -19,8 +19,8 @@ from prospector_plot import make_all_prospector_plots_2groups, make_all_prospect
 # groupID4 = 18
 
 # All groups
-run_name = 'dust_index_test'
-n_clusters = 23
+run_name = 'first_test_19groups'
+n_clusters = 19
 
 
 def make_tfig_cfig(run_name):
@@ -44,6 +44,6 @@ def make_tfig_cfig(run_name):
 
 
 
-# make_tfig_cfig(run_name)
+make_tfig_cfig(run_name)
 make_all_prospector_plots(n_clusters, run_name)
 # make_all_prospector_plots_2groups(groupID1, groupID2, groupID3, groupID4, run_name)

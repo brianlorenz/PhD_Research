@@ -76,6 +76,10 @@ def compute_balmer_lower_limits(sig_noise_thresh=3):
     # confident_balmer_decs = cluster_summary_df[cluster_summary_df['flag_balmer_lower_limit']==0]['balmer_dec'] 
     # balmer_limit = np.max(confident_balmer_decs)
     cluster_summary_df['balmer_dec_with_limit'] = cluster_summary_df['balmer_dec']
+    cluster_summary_df['err_balmer_dec_with_limit_low'] = cluster_summary_df['err_balmer_dec_low']
+    cluster_summary_df['err_balmer_dec_with_limit_high'] = cluster_summary_df['err_balmer_dec_high']
+    cluster_summary_df['err_balmer_av_with_limit_low'] = cluster_summary_df['err_balmer_av_low']
+    cluster_summary_df['err_balmer_av_with_limit_high'] = cluster_summary_df['err_balmer_av_high']
     for i in range(len(cluster_summary_df)):
         if cluster_summary_df.iloc[i]['flag_balmer_lower_limit'] == 1:
             balmer_limit = balmer_dist_df.iloc[i]['two_sig_balmer_low']
@@ -83,9 +87,14 @@ def compute_balmer_lower_limits(sig_noise_thresh=3):
             if balmer_limit < 2.86:
                 balmer_limit = 2.86
             cluster_summary_df.loc[i, 'balmer_dec_with_limit'] = balmer_limit
+            cluster_summary_df.loc[i, 'err_balmer_dec_with_limit_low'] = 0
+            cluster_summary_df.loc[i, 'err_balmer_dec_with_limit_high'] = 0
+            cluster_summary_df.loc[i, 'err_balmer_av_with_limit_low'] = 0
+            cluster_summary_df.loc[i, 'err_balmer_av_with_limit_high'] = 0
     #Compute the balmer avs using these limits
     cluster_summary_df['balmer_av_with_limit'] = compute_balmer_av(cluster_summary_df['balmer_dec_with_limit'])
     
+
     # Save the data frame with the limit added
     cluster_summary_df.to_csv(imd.loc_cluster_summary_df, index=False)
 
