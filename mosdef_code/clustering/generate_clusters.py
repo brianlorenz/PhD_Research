@@ -8,6 +8,8 @@ from interpolate import gen_all_seds
 from cross_correlate import correlate_all_seds
 from clustering import cluster_seds
 from astropy.io import ascii
+from spectra_funcs import check_quick_coverage
+from mosdef_obj_data_funcs import get_mosdef_obj
 import numpy as np
 import matplotlib.pyplot as plt
 import time
@@ -121,6 +123,23 @@ def filter_gal_df():
     len_after_id_dup= len(gal_df)
     print(f'removed {len_before_id_dup-len_after_id_dup} galaxies for duplicates')
 
+    coverage_list = [
+            ('Halpha', 6564.61),
+            ('Hbeta', 4862.68),
+        ]
+    # 
+    lines_covereds = []
+    for i in range(len(gal_df)):
+        mosdef_obj = get_mosdef_obj(gal_df.iloc[i]['field'], gal_df.iloc[i]['v4id'])
+        lines_covered = check_quick_coverage(mosdef_obj, coverage_list, verb=False)
+        lines_covereds.append(lines_covered)
+    gal_df['ha_hb_covered'] = lines_covereds
+    len_before_hahb_coverage = len(gal_df)
+    #Filter out serendipds
+    gal_df = gal_df[gal_df['ha_hb_covered'] == 1]
+    len_after_hahb_coverage = len(gal_df)
+    print(f'removed {len_before_hahb_coverage-len_after_hahb_coverage} galaxies for halpha or hbeta not covered')
+
     print(f'{len(gal_df)} galaxies remain')
 
     print('Save updated filtered gals and removed gals? c to continue')
@@ -140,8 +159,8 @@ def read_removed_gal_df():
     gal_df = ascii.read(imd.loc_removed_gal_df).to_pandas()
     return gal_df
 
-# plot_eigenvalues()
 # filter_gal_df()
+# plot_eigenvalues()
 # gal_df = read_filtered_gal_df()
 # print(len(gal_df))
 # generate_clusters(19, stop_to_eval=False, skip_slow_steps=True)

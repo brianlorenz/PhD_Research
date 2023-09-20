@@ -315,6 +315,7 @@ def fit_emission(groupID, norm_method, constrain_O3=False, axis_group=-1, save_n
                       f'/{groupID}_emission_fits_scaled.csv', index=False)
         plot_emission_fit(groupID, norm_method, scaled='True')
     elif run_name != 'False':
+        imd.check_and_make_dir(imd.prospector_emission_fits_dir)
         imd.check_and_make_dir(imd.prospector_emission_fits_dir + f'/{run_name}_emission_fits')
         fit_df.to_csv(imd.prospector_emission_fits_dir + f'/{run_name}_emission_fits/{groupID}_emission_fits.csv', index=False)
         # plot_emission_fit(groupID, norm_method, run_name=run_name)

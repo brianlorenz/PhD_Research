@@ -465,6 +465,37 @@ def read_spectrum(mosdef_obj, spectrum_file):
 
     return spectrum_df
 
+def check_quick_coverage(mosdef_obj, line_list, verb=True):
+    spectra_files = get_spectra_files(mosdef_obj)
+    spectrum_dfs = []
+    for file in spectra_files:
+        spectrum_df = read_spectrum(mosdef_obj, file)
+        spectrum_dfs.append(spectrum_df)
+    coverages = []
+    for line in line_list:
+        # Assume the line is not covered
+        coverage = 0
+
+        line_name = line[0]
+        line_wave = line[1]
+        for spectrum_df in spectrum_dfs:
+            # Check if the line is even covered. If not, it will loop to the
+            # next dataframe
+            if line_wave > spectrum_df['rest_wavelength'].iloc[0] and line_wave < spectrum_df['rest_wavelength'].iloc[-1]:
+                coverage = 1
+        if coverage == 0:
+                if verb:
+                    print(f'{line_name} has no coverage')
+        coverages.append(coverage)
+    if 0 in coverages:
+        lines_covered = 0
+        if verb:
+            print(f"{mosdef_obj['FIELD_STR']}, {mosdef_obj['V4ID']} does not have full coverage")
+    else:
+        lines_covered = 1
+        if verb:
+            print(f"{mosdef_obj['FIELD_STR']}, {mosdef_obj['V4ID']} has full coverage!")
+    return lines_covered
 
 def check_line_coverage(mosdef_obj, line_list, plot=False):
     """Checks to see if all five emission lines fall within the spectra for this object

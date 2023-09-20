@@ -7,6 +7,8 @@ from astropy.io import ascii
 import initialize_mosdef_dirs as imd
 from fit_emission import fit_emission
 from prospector_plot import load_obj
+from cosmology_calcs import flux_to_luminosity
+import os
 
 def setup_prospector_fit_csv(groupID, run_name):
     '''Takes the csv outputs from prospector and merges them into a better format for the fitting code
@@ -53,7 +55,9 @@ def setup_all_prospector_fit_csvs(n_clusters, run_name, ignore_groups=[]):
     for groupID in range(n_clusters):
         if groupID in ignore_groups:
             continue
-        setup_prospector_fit_csv(groupID, run_name)
+        # Check if that group had a successful prospector run
+        if confirm_h5file_exists(groupID, run_name) == True:
+            setup_prospector_fit_csv(groupID, run_name)
         
 
 
@@ -68,9 +72,30 @@ def fit_all_prospector_emission(n_clusters, run_name, ignore_groups=[]):
     for groupID in range(n_clusters):
         if groupID in ignore_groups:
             continue
-        fit_emission(groupID, 'cluster_norm', run_name = run_name)
+        if confirm_h5file_exists(groupID, run_name) == True:
+            fit_emission(groupID, 'cluster_norm', run_name = run_name)
        
     
+def confirm_h5file_exists(groupID, run_name):
+    h5_dir = os.listdir(imd.prospector_h5_dir+f'/{run_name}_h5s/')
+    groupfiles = [filename.split('_')[1] for filename in h5_dir]
+    if f'group{groupID}' in groupfiles:
+        exists = True
+    else:
+        exists = False
+    return exists
+
+def multiply_fit_by_lumdist(n_clusters, run_name, ignore_groups=[]):
+    median_zs = ascii.read(imd.median_zs_file).to_pandas()
+    for groupID in range(n_clusters):
+        if groupID in ignore_groups:
+            continue
+        if confirm_h5file_exists(groupID, run_name) == True:
+            redshift = median_zs.iloc[groupID]['median_z']
+            emission_fit_df = ascii.read(imd.prospector_emission_fits_dir + f'/{run_name}_emission_fits/{groupID}_emission_fits.csv').to_pandas()
+            fluxes = emission_fit_df['flux']
+            emission_fit_df['luminosity'] = flux_to_luminosity(fluxes, redshift)
+            emission_fit_df.to_csv(imd.prospector_emission_fits_dir + f'/{run_name}_emission_fits/{groupID}_emission_fits.csv', index=False)
 # ignore_groups = [0,5,12,19,22]
 # setup_all_prospector_fit_csvs(23, 'dust_index_test', ignore_groups)
 # fit_all_prospector_emission(23, 'dust_index_test', ignore_groups)

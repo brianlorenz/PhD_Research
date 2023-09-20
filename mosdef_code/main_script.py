@@ -16,7 +16,7 @@ from convert_filter_to_sedpy import convert_all_folders_to_sedpy, find_median_re
 from convert_flux_to_maggies import convert_folder_to_maggies
 from plot_scaled_comps import plot_scaled_composites
 from scale_spectra import scale_all_spectra, scale_all_spec_to_median_halpha
-from fit_prospector_emission import setup_all_prospector_fit_csvs, fit_all_prospector_emission
+from fit_prospector_emission import multiply_fit_by_lumdist, setup_all_prospector_fit_csvs, fit_all_prospector_emission
 from check_for_agn import check_for_all_agn
 from filter_groups import generate_skip_file, remove_groups_by_similiary
 from make_clusters_summary_df import make_clusters_summary_df
@@ -39,7 +39,7 @@ Specify the directories in initialize_mosdef_dirsl;k
 # Set the total number of clusters
 n_clusters = 19
 # Set the name of the prospector run
-run_name = 'test'
+run_name = 'first_test_19groups'
 norm_method = 'luminosity'
 # Set which group numbers to ignore since their data is not good
 ignore_groups = []
@@ -120,7 +120,8 @@ halpha_scaled=False
 
 # Re-fit the prospector spectra in the same way that we fit the mosdef ones:
 
-# setup_all_prospector_fit_csvs(29, run_name)
-# fit_all_prospector_emission(29, run_name)
+# setup_all_prospector_fit_csvs(19, run_name)
+# fit_all_prospector_emission(19, run_name)
+# multiply_fit_by_lumdist(19, run_name)
 
 
