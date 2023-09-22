@@ -716,7 +716,9 @@ def fit_all_emission(n_clusters, norm_method, ignore_groups, constrain_O3=False,
             print(f'Ignoring group {i}')
             continue
         print(f'Fitting emission for {i}')
-        fit_emission(i, norm_method, constrain_O3=constrain_O3, halpha_scaled=halpha_scaled)
+        if i<4:
+            continue
+        # fit_emission(i, norm_method, constrain_O3=constrain_O3, halpha_scaled=halpha_scaled)
         if bootstrap > -1:
             for bootstrap_num in range(bootstrap):
                 fit_emission(i, norm_method, constrain_O3=constrain_O3, bootstrap_num=bootstrap_num, halpha_scaled=halpha_scaled)

@@ -3,9 +3,10 @@ import matplotlib.pyplot as plt
 import matplotlib as mpl
 from plot_vals import *
 from leja_sfms_redshift import leja2022_sfms
-cluster_summary_df = imd.read_cluster_summary_df()
 from astropy.io import ascii
 import os
+if os.path.exists(imd.loc_cluster_summary_df): 
+    cluster_summary_df = imd.read_cluster_summary_df()
 
 def plot_cluster_summaries(x_var, y_var, savename, color_var='None', plot_lims='None', one_to_one=False, ignore_groups=[], log=False, lower_limit=False, add_leja_sfms=False, yerr=False, prospector_run_name = ''):
     """Plots two columsn of cluster_summary_df against each other
@@ -204,58 +205,58 @@ def make_plots_a_vs_b():
     lower_limit = True
 
     # # SFR comparison plots
-    # plot_cluster_summaries('norm_median_halphas', 'ha_flux', 'sfrs/ha_flux_compare_norm', color_var='balmer_dec', plot_lims=[6e-18, 8e-16, 6e-18, 8e-16], one_to_one=True, ignore_groups=ignore_groups, log=True)
-    # plot_cluster_summaries('median_indiv_halphas', 'ha_flux', 'sfrs/ha_flux_compare_nonorm', color_var='median_log_mass', plot_lims=[6e-18, 8e-16, 6e-18, 8e-16], one_to_one=True, ignore_groups=ignore_groups, log=True)
-    # plot_cluster_summaries('median_halpha_luminosity', 'ha_flux', 'sfrs/ha_luminosity_compare_nonorm', color_var='median_log_mass', plot_lims=[3e41, 4e42, 3e41, 4e42], one_to_one=True, ignore_groups=ignore_groups, log=True, yerr=True)
-    # plot_cluster_summaries('median_indiv_halphas', 'ha_flux', 'sfrs/ha_flux_compare_nonorm_balmer', color_var='balmer_dec', plot_lims=[6e-18, 8e-16, 6e-18, 8e-16], one_to_one=True, ignore_groups=ignore_groups, log=True)
-    # plot_cluster_summaries('median_log_sfr', 'computed_log_sfr', 'sfrs/sfr_compare', color_var='balmer_dec', plot_lims=[0.3, 3, 0.3, 3], one_to_one=True, ignore_groups=ignore_groups, lower_limit=lower_limit)
-    # plot_cluster_summaries('median_log_ssfr', 'computed_log_ssfr', 'sfrs/ssfr_compare', color_var='balmer_dec', plot_lims=[-10.7, -6.5, -10.7, -6.5], one_to_one=True, ignore_groups=ignore_groups, lower_limit=lower_limit)
-    # plot_cluster_summaries('computed_log_sfr_with_limit', 'median_indiv_computed_log_sfr', 'sfrs/sfr_indiv_vs_cluster', color_var='balmer_dec', plot_lims=[0.3, 3, 0.3, 3], one_to_one=True, ignore_groups=ignore_groups, lower_limit=lower_limit)
-    # plot_cluster_summaries('computed_log_ssfr_with_limit', 'median_indiv_computed_log_ssfr', 'sfrs/ssfr_indiv_vs_cluster', color_var='balmer_dec', plot_lims=[-10.7, -6.5, -10.7, -6.5], one_to_one=True, ignore_groups=ignore_groups, lower_limit=lower_limit)
-    # plot_cluster_summaries('computed_log_sfr_with_limit', 'override_flux', 'sfrs/sfr_compare_new_vs_old_method', color_var='balmer_dec', plot_lims=[0.3, 3, 0.3, 3], one_to_one=True, ignore_groups=ignore_groups, lower_limit=lower_limit)
-    # plot_cluster_summaries('median_log_sfr', 'median_indiv_computed_log_sfr', 'sfrs/sfr_indiv_vs_mosdef', color_var='balmer_dec', plot_lims=[0.3, 3, 0.3, 3], one_to_one=True, ignore_groups=ignore_groups, lower_limit=lower_limit)
+    plot_cluster_summaries('norm_median_halphas', 'ha_flux', 'sfrs/ha_flux_compare_norm', color_var='balmer_dec', plot_lims=[6e-18, 8e-16, 6e-18, 8e-16], one_to_one=True, ignore_groups=ignore_groups, log=True)
+    plot_cluster_summaries('median_indiv_halphas', 'ha_flux', 'sfrs/ha_flux_compare_nonorm', color_var='median_log_mass', plot_lims=[6e-18, 8e-16, 6e-18, 8e-16], one_to_one=True, ignore_groups=ignore_groups, log=True)
+    plot_cluster_summaries('median_halpha_luminosity', 'ha_flux', 'sfrs/ha_luminosity_compare_nonorm', color_var='median_log_mass', plot_lims=[3e41, 4e42, 3e41, 4e42], one_to_one=True, ignore_groups=ignore_groups, log=True, yerr=True)
+    plot_cluster_summaries('median_indiv_halphas', 'ha_flux', 'sfrs/ha_flux_compare_nonorm_balmer', color_var='balmer_dec', plot_lims=[6e-18, 8e-16, 6e-18, 8e-16], one_to_one=True, ignore_groups=ignore_groups, log=True)
+    plot_cluster_summaries('median_log_sfr', 'computed_log_sfr', 'sfrs/sfr_compare', color_var='balmer_dec', plot_lims=[0.3, 3, 0.3, 3], one_to_one=True, ignore_groups=ignore_groups, lower_limit=lower_limit)
+    plot_cluster_summaries('median_log_ssfr', 'computed_log_ssfr', 'sfrs/ssfr_compare', color_var='balmer_dec', plot_lims=[-10.7, -6.5, -10.7, -6.5], one_to_one=True, ignore_groups=ignore_groups, lower_limit=lower_limit)
+    plot_cluster_summaries('computed_log_sfr_with_limit', 'median_indiv_computed_log_sfr', 'sfrs/sfr_indiv_vs_cluster', color_var='balmer_dec', plot_lims=[0.3, 3, 0.3, 3], one_to_one=True, ignore_groups=ignore_groups, lower_limit=lower_limit)
+    plot_cluster_summaries('computed_log_ssfr_with_limit', 'median_indiv_computed_log_ssfr', 'sfrs/ssfr_indiv_vs_cluster', color_var='balmer_dec', plot_lims=[-10.7, -6.5, -10.7, -6.5], one_to_one=True, ignore_groups=ignore_groups, lower_limit=lower_limit)
+    plot_cluster_summaries('computed_log_sfr_with_limit', 'override_flux', 'sfrs/sfr_compare_new_vs_old_method', color_var='balmer_dec', plot_lims=[0.3, 3, 0.3, 3], one_to_one=True, ignore_groups=ignore_groups, lower_limit=lower_limit)
+    plot_cluster_summaries('median_log_sfr', 'median_indiv_computed_log_sfr', 'sfrs/sfr_indiv_vs_mosdef', color_var='balmer_dec', plot_lims=[0.3, 3, 0.3, 3], one_to_one=True, ignore_groups=ignore_groups, lower_limit=lower_limit)
 
     # # Find which groups have accurate Ha and Hb measurements:
-    # ignore_groups = np.array(cluster_summary_df[cluster_summary_df['err_balmer_dec_high']>1].index)
-    # plot_cluster_summaries('norm_median_halphas', 'ha_flux', 'sfrs/ha_flux_compare_balmer_accurate', color_var='balmer_dec', plot_lims=[6e-18, 8e-16, 6e-18, 8e-16], one_to_one=True, ignore_groups=ignore_groups, log=True)
-    # plot_cluster_summaries('median_log_sfr', 'computed_log_sfr', 'sfrs/sfr_compare_balmer_accurate', color_var='balmer_dec', plot_lims=[0.3, 3, 0.3, 3], one_to_one=True, ignore_groups=ignore_groups, lower_limit=lower_limit)
-    # plot_cluster_summaries('median_log_ssfr', 'computed_log_ssfr', 'sfrs/ssfr_compare_balmer_accurate', color_var='balmer_dec', plot_lims=[-10.7, -6.5, -10.7, -6.5], one_to_one=True, ignore_groups=ignore_groups, lower_limit=lower_limit)
-    # ignore_groups = imd.ignore_groups
+    ignore_groups = np.array(cluster_summary_df[cluster_summary_df['err_balmer_dec_high']>1].index)
+    plot_cluster_summaries('norm_median_halphas', 'ha_flux', 'sfrs/ha_flux_compare_balmer_accurate', color_var='balmer_dec', plot_lims=[6e-18, 8e-16, 6e-18, 8e-16], one_to_one=True, ignore_groups=ignore_groups, log=True)
+    plot_cluster_summaries('median_log_sfr', 'computed_log_sfr', 'sfrs/sfr_compare_balmer_accurate', color_var='balmer_dec', plot_lims=[0.3, 3, 0.3, 3], one_to_one=True, ignore_groups=ignore_groups, lower_limit=lower_limit)
+    plot_cluster_summaries('median_log_ssfr', 'computed_log_ssfr', 'sfrs/ssfr_compare_balmer_accurate', color_var='balmer_dec', plot_lims=[-10.7, -6.5, -10.7, -6.5], one_to_one=True, ignore_groups=ignore_groups, lower_limit=lower_limit)
+    ignore_groups = imd.ignore_groups
 
     # # SFMS
-    # plot_cluster_summaries('median_log_mass', 'median_log_ssfr', 'sfrs/sfms', color_var='O3N2_metallicity', ignore_groups=ignore_groups)
-    # plot_cluster_summaries('median_log_mass', 'computed_log_ssfr', 'sfrs/sfms_computed', color_var='O3N2_metallicity', ignore_groups=ignore_groups, lower_limit=lower_limit)
-    # plot_cluster_summaries('median_log_mass', 'computed_log_ssfr', 'sfrs/sfms_computed_balmercolor', color_var='balmer_dec', ignore_groups=ignore_groups, lower_limit=lower_limit)
-    # plot_cluster_summaries('median_log_mass', 'computed_log_ssfr', 'sfrs/sfms_with_Leja', color_var='balmer_dec', ignore_groups=ignore_groups, lower_limit=lower_limit, add_leja_sfms=True)
+    plot_cluster_summaries('median_log_mass', 'median_log_ssfr', 'sfrs/sfms', color_var='O3N2_metallicity', ignore_groups=ignore_groups)
+    plot_cluster_summaries('median_log_mass', 'computed_log_ssfr', 'sfrs/sfms_computed', color_var='O3N2_metallicity', ignore_groups=ignore_groups, lower_limit=lower_limit)
+    plot_cluster_summaries('median_log_mass', 'computed_log_ssfr', 'sfrs/sfms_computed_balmercolor', color_var='balmer_dec', ignore_groups=ignore_groups, lower_limit=lower_limit)
+    plot_cluster_summaries('median_log_mass', 'computed_log_ssfr', 'sfrs/sfms_with_Leja', color_var='balmer_dec', ignore_groups=ignore_groups, lower_limit=lower_limit, add_leja_sfms=True)
 
     # # SFR Mass
-    # plot_cluster_summaries('median_log_mass', 'computed_log_sfr', 'sfrs/sfr_mass_lower_limit', color_var='balmer_dec', ignore_groups=ignore_groups, lower_limit=lower_limit)
-    # plot_cluster_summaries('median_log_mass', 'median_log_sfr', 'sfrs/sfr_mass_median', color_var='balmer_dec', ignore_groups=ignore_groups)
+    plot_cluster_summaries('median_log_mass', 'computed_log_sfr', 'sfrs/sfr_mass_lower_limit', color_var='balmer_dec', ignore_groups=ignore_groups, lower_limit=lower_limit)
+    plot_cluster_summaries('median_log_mass', 'median_log_sfr', 'sfrs/sfr_mass_median', color_var='balmer_dec', ignore_groups=ignore_groups)
 
     # # Halpha compare
-    # plot_cluster_summaries('ha_flux', 'median_indiv_halphas', 'sfrs/halpha_norm_compare', color_var='balmer_dec', ignore_groups=ignore_groups, one_to_one=True, log=True)
+    plot_cluster_summaries('ha_flux', 'median_indiv_halphas', 'sfrs/halpha_norm_compare', color_var='balmer_dec', ignore_groups=ignore_groups, one_to_one=True, log=True)
 
     # #AV comparison
-    # plot_cluster_summaries('AV', 'balmer_av', 'sfrs/av_compare', color_var='norm_median_log_mass', ignore_groups=ignore_groups, one_to_one=True, plot_lims=[0, 4.5, 0, 4.5], lower_limit=lower_limit)
-    # plot_cluster_summaries('AV', 'balmer_av', 'sfrs/av_compare', color_var='norm_median_log_mass', ignore_groups=ignore_groups, one_to_one=True, plot_lims=[0, 4.5, 0, 4.5], lower_limit=lower_limit)
+    plot_cluster_summaries('AV', 'balmer_av', 'sfrs/av_compare', color_var='norm_median_log_mass', ignore_groups=ignore_groups, one_to_one=True, plot_lims=[0, 4.5, 0, 4.5], lower_limit=lower_limit)
+    plot_cluster_summaries('AV', 'balmer_av', 'sfrs/av_compare', color_var='norm_median_log_mass', ignore_groups=ignore_groups, one_to_one=True, plot_lims=[0, 4.5, 0, 4.5], lower_limit=lower_limit)
 
     # # Trying to diagnose what makes the SFR high
-    # imd.check_and_make_dir(imd.cluster_dir + f'/cluster_stats/sfrs/diagnostics/')
-    # plot_cluster_summaries('redshift', 'computed_log_sfr', 'sfrs/diagnostics/sfr_z_lower_limit', color_var='balmer_dec_with_limit', ignore_groups=ignore_groups, lower_limit=lower_limit)
-    # plot_cluster_summaries('target_galaxy_redshifts', 'computed_log_sfr', 'sfrs/diagnostics/sfr_ztarget_lower_limit', color_var='balmer_dec_with_limit', ignore_groups=ignore_groups, lower_limit=lower_limit)
-    # plot_cluster_summaries('target_galaxy_median_log_mass', 'computed_log_sfr', 'sfrs/diagnostics/sfr_masstarget_lower_limit', color_var='balmer_dec_with_limit', ignore_groups=ignore_groups, lower_limit=lower_limit)
-    # plot_cluster_summaries('median_log_mass', 'computed_log_sfr', 'sfrs/diagnostics/sfr_massgroup_lower_limit', color_var='balmer_dec_with_limit', ignore_groups=ignore_groups, lower_limit=lower_limit)
-    # plot_cluster_summaries('ha_flux', 'computed_log_sfr', 'sfrs/diagnostics/sfr_haflux_lower_limit', color_var='balmer_dec_with_limit', ignore_groups=ignore_groups, lower_limit=lower_limit)
-    # plot_cluster_summaries('balmer_dec', 'computed_log_sfr', 'sfrs/diagnostics/sfr_balmer_lower_limit', color_var='balmer_dec_with_limit', ignore_groups=ignore_groups, lower_limit=lower_limit)
-    # plot_cluster_summaries('balmer_av', 'computed_log_sfr', 'sfrs/diagnostics/sfr_balmerav_lower_limit', color_var='balmer_dec_with_limit', ignore_groups=ignore_groups, lower_limit=lower_limit)
-    # plot_cluster_summaries('balmer_dec_with_limit', 'computed_log_sfr', 'sfrs/diagnostics/sfr_balmerlimit_lower_limit', color_var='balmer_dec_with_limit', ignore_groups=ignore_groups, lower_limit=lower_limit)
-    # plot_cluster_summaries('ha_flux', 'computed_log_sfr', 'sfrs/diagnostics/sfr_haflux_lower_limit', color_var='balmer_dec_with_limit', ignore_groups=ignore_groups, lower_limit=lower_limit)
-    # plot_cluster_summaries('hb_flux', 'computed_log_sfr', 'sfrs/diagnostics/sfr_hbflux_lower_limit', color_var='balmer_dec_with_limit', ignore_groups=ignore_groups, lower_limit=lower_limit)
+    imd.check_and_make_dir(imd.cluster_dir + f'/cluster_stats/sfrs/diagnostics/')
+    plot_cluster_summaries('redshift', 'computed_log_sfr', 'sfrs/diagnostics/sfr_z_lower_limit', color_var='balmer_dec_with_limit', ignore_groups=ignore_groups, lower_limit=lower_limit)
+    plot_cluster_summaries('target_galaxy_redshifts', 'computed_log_sfr', 'sfrs/diagnostics/sfr_ztarget_lower_limit', color_var='balmer_dec_with_limit', ignore_groups=ignore_groups, lower_limit=lower_limit)
+    plot_cluster_summaries('target_galaxy_median_log_mass', 'computed_log_sfr', 'sfrs/diagnostics/sfr_masstarget_lower_limit', color_var='balmer_dec_with_limit', ignore_groups=ignore_groups, lower_limit=lower_limit)
+    plot_cluster_summaries('median_log_mass', 'computed_log_sfr', 'sfrs/diagnostics/sfr_massgroup_lower_limit', color_var='balmer_dec_with_limit', ignore_groups=ignore_groups, lower_limit=lower_limit)
+    plot_cluster_summaries('ha_flux', 'computed_log_sfr', 'sfrs/diagnostics/sfr_haflux_lower_limit', color_var='balmer_dec_with_limit', ignore_groups=ignore_groups, lower_limit=lower_limit)
+    plot_cluster_summaries('balmer_dec', 'computed_log_sfr', 'sfrs/diagnostics/sfr_balmer_lower_limit', color_var='balmer_dec_with_limit', ignore_groups=ignore_groups, lower_limit=lower_limit)
+    plot_cluster_summaries('balmer_av', 'computed_log_sfr', 'sfrs/diagnostics/sfr_balmerav_lower_limit', color_var='balmer_dec_with_limit', ignore_groups=ignore_groups, lower_limit=lower_limit)
+    plot_cluster_summaries('balmer_dec_with_limit', 'computed_log_sfr', 'sfrs/diagnostics/sfr_balmerlimit_lower_limit', color_var='balmer_dec_with_limit', ignore_groups=ignore_groups, lower_limit=lower_limit)
+    plot_cluster_summaries('ha_flux', 'computed_log_sfr', 'sfrs/diagnostics/sfr_haflux_lower_limit', color_var='balmer_dec_with_limit', ignore_groups=ignore_groups, lower_limit=lower_limit)
+    plot_cluster_summaries('hb_flux', 'computed_log_sfr', 'sfrs/diagnostics/sfr_hbflux_lower_limit', color_var='balmer_dec_with_limit', ignore_groups=ignore_groups, lower_limit=lower_limit)
     
     # #SNR Plots
-    # plot_cluster_summaries('hb_snr', 'balmer_dec_snr', 'sfrs/hbeta_balmer_snr', color_var='balmer_dec_with_limit', ignore_groups=ignore_groups, one_to_one=True)
+    plot_cluster_summaries('hb_snr', 'balmer_dec_snr', 'sfrs/hbeta_balmer_snr', color_var='balmer_dec_with_limit', ignore_groups=ignore_groups, one_to_one=True)
 
     # Prospector emission - to use, set the yvar to the prospector name, and prospector_run_name to be accurate
-    plot_cluster_summaries('ha_flux', 'luminosity', 'sfrs/prospector_ha_compare', color_var='median_log_mass', one_to_one=True, ignore_groups=ignore_groups, log=True, prospector_run_name='first_test_19groups')
+    # plot_cluster_summaries('ha_flux', 'luminosity', 'sfrs/prospector_ha_compare', color_var='median_log_mass', one_to_one=True, ignore_groups=ignore_groups, log=True, prospector_run_name='first_test_19groups')
 
-make_plots_a_vs_b()
+# make_plots_a_vs_b()

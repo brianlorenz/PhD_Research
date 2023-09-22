@@ -18,7 +18,7 @@ from plot_scaled_comps import plot_scaled_composites
 from scale_spectra import scale_all_spectra, scale_all_spec_to_median_halpha
 from fit_prospector_emission import multiply_fit_by_lumdist, setup_all_prospector_fit_csvs, fit_all_prospector_emission
 from check_for_agn import check_for_all_agn
-from filter_groups import generate_skip_file, remove_groups_by_similiary
+from filter_groups import remove_groups_by_similiary
 from make_clusters_summary_df import make_clusters_summary_df
 from add_norm_factors_to_group_dfs import add_norm_factors
 from compute_cluster_sfrs import compute_cluster_sfrs
@@ -34,10 +34,11 @@ from plot_group_hists import plot_group_hists
 Specify the directories in initialize_mosdef_dirsl;k
 '''
 
-# Make sure to go to initialize_mosdef_dirs to set all the directories properly
+# Make sure to run generate_clusters.py first to set up the clusters
+
 
 # Set the total number of clusters
-n_clusters = 19
+n_clusters = 20
 # Set the name of the prospector run
 run_name = 'first_test_19groups'
 norm_method = 'luminosity'
@@ -49,9 +50,10 @@ ignore_groups = []
 bootstrap = 1000
 halpha_scaled=False
 
-# imd.check_and_make_dir(imd.composite_filter_csvs_dir)
-# imd.check_and_make_dir(imd.composite_filter_images_dir)
-# imd.check_and_make_dir(imd.composite_filter_sedpy_dir)
+imd.check_and_make_dir(imd.cluster_dir + '/composite_filters')
+imd.check_and_make_dir(imd.composite_filter_csvs_dir)
+imd.check_and_make_dir(imd.composite_filter_images_dir)
+imd.check_and_make_dir(imd.composite_filter_sedpy_dir)
 
 # # Begin running all the functions
 # print('Generating composite seds...')
@@ -62,13 +64,6 @@ halpha_scaled=False
 
 # # # Check for agn and list which groups do not have enough galaxies - cuts down to 20
 # check_for_all_agn(n_clusters)
-
-### NO LONGER SCALING SKIP THIS STEP
-# # Don't fit the bootstrapped spectra yet - need to scale them first
-# fit_all_emission(n_clusters, 'cluster_norm', ignore_groups, bootstrap=-1)
-# fit_all_emission(n_clusters, 'luminosity', ignore_groups, bootstrap=-1)
-# # Scales the composite spectra and the boostrapped spectra
-# scale_all_spec_to_median_halpha(n_clusters, bootstrap=bootstrap)
 
 # # Re-fit the emission of the composites and now fit the boostrapped ones
 # fit_all_emission(n_clusters, 'cluster_norm', ignore_groups, bootstrap=bootstrap, halpha_scaled=halpha_scaled)
@@ -108,13 +103,13 @@ halpha_scaled=False
 
 
 # Prepare for prospector:
-# print('Preparing data for Prospector')
-# find_median_redshifts(n_clusters)
-# convert_all_folders_to_sedpy(n_clusters)
-# convert_folder_to_maggies(imd.composite_sed_csvs_dir)
+print('Preparing data for Prospector')
+find_median_redshifts(n_clusters)
+convert_all_folders_to_sedpy(n_clusters)
+convert_folder_to_maggies(imd.composite_sed_csvs_dir)
 
 # Plot of all of the scaled composites, must be run after convert_folder_to_maggies
-# plot_scaled_composites(n_clusters)
+plot_scaled_composites(n_clusters)
 # Scale and re-fit the spectra using the scale that was used for the composites
 # scale_all_spectra(n_clusters)
 

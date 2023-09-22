@@ -6,14 +6,14 @@ import initialize_mosdef_dirs as imd
 from cluster_stats import plot_all_similarity
 
 
-def generate_skip_file(n_groups):
-    """Makes the file that removes groups until you have 20 (savio node size)
+# def generate_skip_file(n_groups):
+#     """Makes the file that removes groups until you have 20 (savio node size)
     
-    """
-    n_agn_df = ascii.read(imd.number_agn_file).to_pandas()
-    sorted_agn_df = n_agn_df.sort_values('n_gals')
-    bad_groups_df =  sorted_agn_df.iloc[:-20]['groupID']
-    bad_groups_df.to_csv(imd.bad_groups_file, index=False)
+#     """
+#     n_agn_df = ascii.read(imd.number_agn_file).to_pandas()
+#     sorted_agn_df = n_agn_df.sort_values('n_gals')
+#     bad_groups_df =  sorted_agn_df.iloc[:-20]['groupID']
+#     bad_groups_df.to_csv(imd.bad_groups_file, index=False)
 
 def remove_groups_by_similiary(n_groups, sim_thresh=0.8):
     """Fills the skip file with groups that have similarities lower than the threshold

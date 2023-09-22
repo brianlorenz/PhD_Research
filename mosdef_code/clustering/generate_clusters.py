@@ -163,4 +163,4 @@ def read_removed_gal_df():
 # plot_eigenvalues()
 # gal_df = read_filtered_gal_df()
 # print(len(gal_df))
-# generate_clusters(19, stop_to_eval=False, skip_slow_steps=True)
+# generate_clusters(20, stop_to_eval=False, skip_slow_steps=True)

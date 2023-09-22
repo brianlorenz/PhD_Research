@@ -5,7 +5,9 @@ from cosmology_calcs import flux_to_luminosity
 import numpy as np
 from plot_vals import *
 import matplotlib as mpl
-cluster_summary_df = imd.read_cluster_summary_df()
+import os
+if os.path.exists(imd.loc_cluster_summary_df): 
+    cluster_summary_df = imd.read_cluster_summary_df()
 
 def make_hist(save_dir, groupID, xvar, xlabel, removed_gal_number, bins):
     fig, ax = plt.subplots(figsize=(8,8))
