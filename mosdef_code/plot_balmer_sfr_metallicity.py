@@ -73,4 +73,4 @@ def plot_balmer_sfr_metallicity(n_clusters, ignore_groups):
     fig.savefig(imd.cluster_dir + f'/cluster_stats/balmer_sfr_metallicity.pdf',bbox_inches='tight')
     plt.close('all')
 
-# plot_balmer_sfr_metallicity(19, ignore_groups)
+# plot_balmer_sfr_metallicity(20, ignore_groups)

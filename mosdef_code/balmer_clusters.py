@@ -68,7 +68,7 @@ def plot_balmer_dec_clusters(plot_var='balmer_dec', errorbar=True, clean=False, 
     fig.savefig(imd.cluster_dir+f'/cluster_stats/{plot_var}_mass{add_str}.pdf', bbox_inches='tight')
 
 ignore_groups = imd.ignore_groups
-plot_balmer_dec_clusters(clean=True, ignore_groups=ignore_groups)
+plot_balmer_dec_clusters(clean=False, ignore_groups=ignore_groups)
 plot_balmer_dec_clusters(plot_var='AV', ignore_groups=ignore_groups)
 plot_balmer_dec_clusters(plot_var='beta', ignore_groups=ignore_groups)
 plot_balmer_dec_clusters(plot_var='O3N2_metallicity', ignore_groups=ignore_groups)

@@ -314,6 +314,12 @@ def build_model(object_redshift=0.0, fixed_metallicity=None, add_duste=True,
     model_params["zred"]['isfree'] = False
     model_params["zred"]['init'] = redshift
 
+    # # Age fo universe at current redshift + 1Gyr
+    # model_params['tage'] = {'N': 1, 'isfree': True, 'init': 0.5}
+    tage_prior_upper = float(np.array(cosmo.age(2.3)))+1  
+    model_params["tage"]["prior"] = priors.TopHat(mini=0.0, maxi=tage_prior_upper)
+
+
 
     model_params.update(TemplateLibrary["nebular"])
     # model_params.update(TemplateLibrary["dust_emission"])

@@ -253,6 +253,7 @@ def build_model(object_redshift=0.0, fixed_metallicity=None, add_duste=True,
     # model_params["dust1_fraction"]["prior"] = priors.TopHat(mini=0.0, maxi=2.0)
     model_params["tau"]["prior"] = priors.LogUniform(mini=1e-1, maxi=10)
     model_params["mass"]["prior"] = priors.LogUniform(mini=1e10, maxi=1e16)
+    
     # model_params["gas_logz"]["prior"] = priors.TopHat(mini=-3.0, maxi=0.0)
     
 
@@ -268,6 +269,10 @@ def build_model(object_redshift=0.0, fixed_metallicity=None, add_duste=True,
     zs_df = ascii.read(median_zs_file).to_pandas()
     median_z = zs_df[zs_df['groupID'] == groupID]['median_z'].iloc[0]
     model_params["zred"]['init'] = median_z
+
+    # Age fo universe at current redshift + 1Gyr
+    tage_prior_upper = float(np.array(cosmo.age(median_z)))+1  
+    model_params["tage"]["prior"] = priors.TopHat(mini=0.0, maxi=tage_prior_upper)
 
 
     model_params.update(TemplateLibrary["nebular"])
