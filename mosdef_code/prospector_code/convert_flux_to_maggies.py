@@ -7,7 +7,6 @@ from astropy.io import ascii
 from astropy.utils import data
 from numpy.lib.function_base import median
 from scipy import interpolate
-import initialize_mosdef_dirs as imd
 
 # Savio
 median_zs_file = '/global/scratch/users/brianlorenz/median_zs.csv'
@@ -65,7 +64,7 @@ def convert_all_seds_to_maggies():
     sed_csvs = [sedname for sedname in seds if '.csv' in sedname]
     for sed_file_name in sed_csvs:
         convert_sed_flux_to_maggies(sed_file_name)
-    
+
 
 def convert_sed_flux_to_maggies(sed_file_name):
     """Adds a new column in a file that converts the flux to maggies, the unit needed by Prospector
@@ -75,14 +74,18 @@ def convert_sed_flux_to_maggies(sed_file_name):
 
     """
     data_df = ascii.read(imd.sed_csvs_dir + '/' + sed_file_name).to_pandas()
-
-    f_nu = data_df['f_lambda'] * (data_df['peak_wavelength']**2) * 3.34 * 10**(-19)
+    
+    data_df['redshifted_peak_wavelength'] = data_df['peak_wavelength']*(1+data_df['Z_MOSFIRE'])
+    data_df['redshifted_flux'] = data_df['f_lambda'] / (1+data_df['Z_MOSFIRE'])
+    data_df['err_redshifted_flux'] = data_df['err_f_lambda'] / (1+data_df['Z_MOSFIRE'])
+    f_nu = data_df['redshifted_flux'] * (data_df['redshifted_peak_wavelength']**2) * 3.34 * 10**(-19)
     f_jy = f_nu * (10**23)
     maggies = f_jy / 3631
-    err = data_df['err_f_lambda'] * \
-        ((data_df['peak_wavelength']**2) * 3.34 * 10**(-19)) * (10**23) / 3631
-    data_df['f_maggies'] = maggies
-    data_df['err_f_maggies'] = err
+    err = data_df['err_redshifted_flux'] * \
+        ((data_df['redshifted_peak_wavelength']**2) * 3.34 * 10**(-19)) * (10**23) / 3631
+    data_df['f_maggies_red'] = maggies
+    data_df['err_f_maggies_red'] = err
+    
 
     data_df.to_csv(imd.mosdef_dir+f'/seds_maggies/{sed_file_name}', index=False)
     return
@@ -171,4 +174,4 @@ def prospector_maggies_to_flux_spec(spec_wave, spec):
 
 
 
-convert_all_seds_to_maggies()
+# convert_all_seds_to_maggies()

@@ -9,7 +9,7 @@ import numpy as np
 import pandas as pd
 import pickle
 import initialize_mosdef_dirs as imd
-from prospector_plot import make_all_prospector_plots_2groups, make_all_prospector_plots
+from prospector_plot import make_all_prospector_plots_2groups, make_all_prospector_plots, make_all_singleplots
 
 # 2 groups sectoin
 # run_name = 'par_ly_mask'
@@ -19,8 +19,10 @@ from prospector_plot import make_all_prospector_plots_2groups, make_all_prospect
 # groupID4 = 18
 
 # All groups
-run_name = 'first_test_19groups'
-n_clusters = 19
+run_name = 'first_test_20groups'
+n_clusters = 20
+
+
 
 
 def make_tfig_cfig(run_name):
@@ -32,6 +34,7 @@ def make_tfig_cfig(run_name):
         file_shortname = file[:-19]
 
         res, obs, mod = reader.results_from(imd.prospector_h5_dir + f'/{run_name}_h5s/' + file)
+        
 
         tfig = reader.traceplot(res)
         tfig.savefig(imd.prospector_plot_dir + f'/{run_name}_plots' + f'/{file_shortname}_tfig.pdf')
@@ -42,8 +45,7 @@ def make_tfig_cfig(run_name):
 
 
 
-
-
-make_tfig_cfig(run_name)
-make_all_prospector_plots(n_clusters, run_name)
+# make_tfig_cfig(run_name)
+# make_all_prospector_plots(n_clusters, run_name)
+make_all_singleplots(n_clusters, run_name)
 # make_all_prospector_plots_2groups(groupID1, groupID2, groupID3, groupID4, run_name)

@@ -53,7 +53,7 @@ def fit_emission(groupID, norm_method, constrain_O3=False, axis_group=-1, save_n
     Saves a csv of the fits for all of the lines
     """
     # Number of loops in Monte Carlo
-    n_loops = 0
+    n_loops = 100
 
     if axis_group > -1:
         if bootstrap_num > -1:

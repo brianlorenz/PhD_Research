@@ -25,6 +25,7 @@ from compute_cluster_sfrs import compute_cluster_sfrs
 from balmer_dec_histogram import compute_balmer_lower_limits, plot_balmer_hist
 from compute_indiv_sfrs_from_halpha import compute_indiv_sfrs
 from plot_group_hists import plot_group_hists
+from prospector_masses import add_masses_to_cluster_summary_df
 
 
 '''Starting point: One folder ('cluster_folder') that contains: 
@@ -40,7 +41,7 @@ Specify the directories in initialize_mosdef_dirsl;k
 # Set the total number of clusters
 n_clusters = 20
 # Set the name of the prospector run
-run_name = 'first_test_19groups'
+run_name = 'first_test_20groups'
 norm_method = 'luminosity'
 # Set which group numbers to ignore since their data is not good
 ignore_groups = []
@@ -103,20 +104,20 @@ imd.check_and_make_dir(imd.composite_filter_sedpy_dir)
 
 
 # Prepare for prospector:
-print('Preparing data for Prospector')
-find_median_redshifts(n_clusters)
-convert_all_folders_to_sedpy(n_clusters)
-convert_folder_to_maggies(imd.composite_sed_csvs_dir)
+# print('Preparing data for Prospector')
+# find_median_redshifts(n_clusters)
+# convert_all_folders_to_sedpy(n_clusters)
+# convert_folder_to_maggies(imd.composite_sed_csvs_dir)
 
 # Plot of all of the scaled composites, must be run after convert_folder_to_maggies
-plot_scaled_composites(n_clusters)
+# plot_scaled_composites(n_clusters)
 # Scale and re-fit the spectra using the scale that was used for the composites
 # scale_all_spectra(n_clusters)
 
 # Re-fit the prospector spectra in the same way that we fit the mosdef ones:
 
-# setup_all_prospector_fit_csvs(19, run_name)
-# fit_all_prospector_emission(19, run_name)
-# multiply_fit_by_lumdist(19, run_name)
-
+# setup_all_prospector_fit_csvs(n_clusters, run_name)
+# fit_all_prospector_emission(n_clusters, run_name)
+# multiply_fit_by_lumdist(n_clusters, run_name)
+# add_masses_to_cluster_summary_df(n_clusters, run_name) # Adds masses and computes sfr/ssfr
 

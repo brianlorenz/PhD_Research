@@ -39,7 +39,11 @@ def make_vis_plot(x_var, y_var, x_var_label, y_var_label, savename, color_var_na
             marker='o'
 
         # ax.errorbar(row[x_var], row[y_var], yerr=np.array([[row['err_'+y_var+'_low'], row['err_'+y_var+'_high']]]).T, color=rgba, marker=marker, ls='None', zorder=3, mec='black')
-        ax.plot(x_var[i], y_var[i], color=rgba, marker=marker, ls='None', zorder=3, mec='black')
+        if 'Balmer' in y_var_label:
+            yerr=np.array([[row[f'err_balmer_dec_low'], row[f'err_balmer_dec_high']]]).T
+            ax.errorbar(x_var[i], y_var[i], yerr=yerr, color=rgba, marker=marker, ls='None', zorder=3, mec='black')
+        else:
+            ax.plot(x_var[i], y_var[i], color=rgba, marker=marker, ls='None', zorder=3, mec='black')
 
     cbar = fig.colorbar(mpl.cm.ScalarMappable(norm=norm, cmap=cmap), ax=ax, fraction=0.046, pad=0.04)
     cbar.set_label(color_var_name, fontsize=full_page_axisfont)
@@ -65,7 +69,7 @@ balmer_decs = cluster_summary_df['balmer_dec']
 masses = cluster_summary_df['median_log_mass']
 
 logsfr_times_metals = logsfrs*metallicities
-make_vis_plot(logsfr_times_metals, balmer_decs,'log(SFR)*Metallicity', 'Balmer dec', 'sfr_times_metallicity', color_var_name='median_log_mass', ylim=[0,10])
+make_vis_plot(logsfr_times_metals, balmer_decs,'log(SFR)*Metallicity', 'Balmer Dec', 'sfr_times_metallicity', color_var_name='median_log_mass', ylim=[0,10])
 logsfr_times_metals_withre = np.log10(((10**logsfrs)/(res**2))**(1/1.4))*metallicities
 # make_vis_plot(logsfr_times_metals_withre, balmer_decs,'Formula from paper', 'Balmer dec', 'sfr_times_metallicity_with_re', color_var_name='median_log_mass', ylim=[0,10])
 

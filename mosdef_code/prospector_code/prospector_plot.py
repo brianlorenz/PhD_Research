@@ -13,12 +13,82 @@ import cluster_data_funcs as cdf
 from emission_measurements import read_emission_df
 from plot_mass_sfr import plot_mass_sfr_cluster, read_sfr_df, get_all_sfrs_masses
 import initialize_mosdef_dirs as imd
+from plot_vals import *
 
 
 def load_obj(name, run_name):
     with open(imd.prospector_fit_csvs_dir + f'/{run_name}_csvs' + '/' + name + '.pkl', 'rb') as f:
         return pickle.load(f)
 
+
+def make_single_plot(groupID, run_name, add_spec=False, mask=False, savename='False', trial=-1, label_lines=True):
+
+    if trial == -1:
+        save_str = f'group{groupID}'
+    else:
+        save_str = f'group{groupID}_trial{trial}'
+
+    # res = load_obj(f'{save_str}_res', run_name)
+    obs = load_obj(f'{save_str}_obs', run_name)
+
+    spec_df = ascii.read(imd.prospector_fit_csvs_dir + f'/{run_name}_csvs' + 
+                         f'/{save_str}_spec.csv').to_pandas()
+    phot_df = ascii.read(imd.prospector_fit_csvs_dir + f'/{run_name}_csvs' +
+                         f'/{save_str}_phot.csv').to_pandas()
+    lines_df = ascii.read(imd.prospector_fit_csvs_dir + f'/{run_name}_csvs' +
+                          f'/{save_str}_lines.csv').to_pandas()
+
+    save_dir = imd.prospector_plot_dir + f'/{run_name}_plots'
+    if savename == 'False':
+        savename = save_str
+
+    fig, ax = plt.subplots(figsize=(8, 7))
+
+    # Set the wavelength limits
+    start_spec = phot_df['rest_wavelength'].iloc[0]
+    end_spec = phot_df['rest_wavelength'].iloc[-1]
+    spec_idxs = np.logical_and(
+        spec_df['rest_wavelength'] > start_spec, spec_df['rest_wavelength'] < end_spec)
+
+    # Plot photometry
+    rest_frame_original_phot = obs['f_lambda']*(1+obs['z'])
+    rest_frame_original_phot_errs = obs['err_f_lambda']*(1+obs['z'])
+    ax.errorbar(phot_df['rest_wavelength'], phot_df['rest_wavelength'] * rest_frame_original_phot, color='black', yerr=phot_df['rest_wavelength'] * rest_frame_original_phot_errs, ls='-', marker='o', label='Observations', zorder=1)
+
+    y_model = np.array(phot_df['rest_wavelength']
+                        * phot_df['phot50_flambda'])
+    y_model_16 = phot_df['rest_wavelength'] * phot_df['phot16_flambda']
+    y_model_84 = phot_df['rest_wavelength'] * phot_df['phot84_flambda']
+    model_errs = np.vstack((y_model - y_model_16, y_model_84 - y_model))
+    ax.errorbar(np.array(phot_df['rest_wavelength']), y_model,
+                ls='-', marker='o', yerr=model_errs, color='blue', label='Model')
+    
+    ax.axvspan(phot_df['rest_wavelength'].iloc[0]-100, 1500, alpha=0.6, color='grey')
+
+    ## SPECTRUM IS HERE
+    # Plot spectrum
+    spec_name = ''
+    if add_spec==True:
+        ax.plot(spec_df['rest_wavelength'][spec_idxs], spec_df['rest_wavelength'][spec_idxs] * spec_df['spec50_flambda'][spec_idxs], '-',
+                color='orange', label='Model spectrum', zorder=3)
+        spec_name='_spec'
+    ax.set_xscale('log')
+    ax.set_ylim(0.8 * np.percentile(phot_df['rest_wavelength'] * rest_frame_original_phot, 1),
+                     1.1 * np.percentile(phot_df['rest_wavelength'] * rest_frame_original_phot, 99))
+    ax.set_xlim(phot_df['rest_wavelength'].iloc[0] -
+                     30, phot_df['rest_wavelength'].iloc[-1] + 3000)
+    ax.legend()
+    ax.set_ylabel("$\lambda$ F$_\lambda$", fontsize = single_column_axisfont)
+    ax.set_xlabel("Wavelength ($\AA$)", fontsize=single_column_axisfont)
+    ax.tick_params(labelsize=single_column_axisfont)
+    fig.savefig(save_dir + '/' + savename + f'_fitonly{spec_name}.pdf', bbox_inches='tight')
+
+def make_all_singleplots(n_clusters, run_name):
+    for groupID in range(n_clusters):
+        if os.path.exists(imd.prospector_fit_csvs_dir + f'/{run_name}_csvs/{groupID}_cont_phot.csv'):
+            print(f'Making plot for group {groupID}')
+            make_single_plot(groupID, run_name)
+            make_single_plot(groupID, run_name, add_spec=True)
 
 def make_plots(groupID, run_name, mask=False, savename='False', trial=-1, label_lines=True):
     """Plots the observations vs the sps model
@@ -36,7 +106,7 @@ def make_plots(groupID, run_name, mask=False, savename='False', trial=-1, label_
     else:
         save_str = f'group{groupID}_trial{trial}'
 
-    # res = load_obj(f'{groupID}_res')
+    # res = load_obj(f'{save_str}_res', run_name)
     obs = load_obj(f'{save_str}_obs', run_name)
 
     spec_df = ascii.read(imd.prospector_fit_csvs_dir + f'/{run_name}_csvs' + 
@@ -235,6 +305,7 @@ def make_plots(groupID, run_name, mask=False, savename='False', trial=-1, label_
 
     # Save the plot
     ax_main.legend()
+    imd.check_and_make_dir(save_dir)
     fig.savefig(save_dir + '/' + savename + '_fit.pdf')
     plt.close('all')
 

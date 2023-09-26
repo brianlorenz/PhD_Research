@@ -36,7 +36,7 @@ import initialize_mosdef_dirs as imd
 # composite_filter_sedpy_dir = imd.composite_filter_sedpy_dir
 # median_zs_file = imd.composite_seds_dir + '/median_zs.csv'
 
-# %run prospector_dynesty.py --param_file='prospector_params_singlegal.py' --outfile='singlegal' --debug=True
+# %run prospector_dynesty.py --param_file='prospector_params_singlegal.py' --outfile='/Users/brianlorenz/mosdef/prospector_singlegal_tests/singlegal' --debug=True
 
 # set up cosmology
 cosmo = FlatLambdaCDM(H0=70, Om0=.3)
@@ -76,24 +76,8 @@ run_params = {'verbose': True,
               'v4id': 3075
               }
 
-# --------------
-# OBS
-# --------------
-
-
-def build_obs(**kwargs):
-    """Load the obs dict
-
-    :returns obs:
-        Dictionary of observational data.
-    """
-    field = run_params['field']
-    v4id = run_params['v4id']
-    sed_file = imd.sed_csvs_dir + f'/{field}_{v4id}_sed.csv'
-    sed_df = ascii.read(sed_file).to_pandas()
-    sed_df = sed_df[sed_df['f_lambda']>-98]
-    filters = sed_df['filter_name']
-    filters_list = filters.values.tolist()
+def get_filters(sed_df):
+    """Replaces the mosdef names of the filters with sedpy names"""
 
     def replace_item(lst, to_replace, replace_with):
         result = []
@@ -103,6 +87,9 @@ def build_obs(**kwargs):
             else:
                 result.append(i)
         return result
+    
+    filters = sed_df['filter_name']
+    filters_list = filters.values.tolist()
 
     filters_list = replace_item(filters_list, 'f_F814W', ['wfc3_uvis_f814w'])
     filters_list = replace_item(filters_list, 'f_F606W', ['wfc3_uvis_f606w'])
@@ -129,6 +116,27 @@ def build_obs(**kwargs):
     filters_list = replace_item(filters_list, 'f_G', ['sdss_g0'])
     filters_list = replace_item(filters_list, 'f_U', ['sdss_u0'])
 
+    return filters_list
+
+
+# --------------
+# OBS
+# --------------
+
+
+def build_obs(**kwargs):
+    """Load the obs dict
+
+    :returns obs:
+        Dictionary of observational data.
+    """
+    field = run_params['field']
+    v4id = run_params['v4id']
+    sed_file = imd.mosdef_dir + f'/seds_maggies/{field}_{v4id}_sed.csv'
+    sed_df = ascii.read(sed_file).to_pandas()
+    sed_df = sed_df[sed_df['f_lambda']>-98]
+    filters_list = get_filters(sed_df)
+    
     
     # set up obs dict
     obs = {}
@@ -138,30 +146,28 @@ def build_obs(**kwargs):
 
     # load photometric filters
     obs["filters"] = observate.load_filters(filters_list)
-    breakpoint()
 
     # load photometry
-    obs["phot_wave"] = sed_data['redshifted_wavelength'].to_numpy()
-    obs['maggies'] = (sed_data['f_maggies_red']).to_numpy()
-    #obs['maggies_unc'] = (sed_data['err_f_maggies_avg']).to_numpy()
+    obs["phot_wave"] = sed_df['redshifted_peak_wavelength'].to_numpy()
+    obs['maggies'] = (sed_df['f_maggies_red']).to_numpy()
+    obs['maggies_unc'] = (sed_df['err_f_maggies_red']).to_numpy()
     # Add 5 percent in quadrature to errors
-    data_05p = (sed_data['f_maggies_red']) * 0.05
-    obs['maggies_unc'] = (np.sqrt(data_05p**2 + (sed_data['err_f_maggies_avg_red'])**2)).to_numpy()
+    # data_05p = (sed_df['f_maggies_red']) * 0.05
+    # obs['maggies_unc'] = (np.sqrt(data_05p**2 + (sed_data['err_f_maggies_avg_red'])**2)).to_numpy()
         
     # Phot mask that allows everything
-    # obs["phot_mask"] = np.array([m > 0 for m in obs['maggies']])
+    obs["phot_mask"] = np.array([m > 0 for m in obs['maggies']])
     # Phot mask around emission lines
-    filt_mask = check_filt_transmission(filt_folder, obs['z'])
+    # filt_mask = check_filt_transmission(filt_folder, obs['z'])
     # Phot mask out anything blueward of 1500
-    redshifted_lya_cutoff = 1500*(1+obs['z'])
-    ly_mask = obs["phot_wave"] > redshifted_lya_cutoff
+    # redshifted_lya_cutoff = 1500*(1+obs['z'])
+    # ly_mask = obs["phot_wave"] > redshifted_lya_cutoff
     # obs["phot_mask"] = np.logical_and(filt_mask, ly_mask)
     # Filter out just ly_a, not the lines (comment above line
-    obs["phot_mask"] = ly_mask
+    # obs["phot_mask"] = ly_mask
 
 
     # Add unessential bonus info.  This will be stored in output
-    obs['groupID'] = groupID
     obs['wavelength'] = None
     obs['spectrum'] = None
     obs['mask'] = None
@@ -198,7 +204,7 @@ def build_model(object_redshift=0.0, fixed_metallicity=None, add_duste=True,
 
     field = run_params['field']
     v4id = run_params['v4id']
-    sed_file = imd.sed_csvs_dir + f'/{field}_{v4id}_sed.csv'
+    sed_file = imd.mosdef_dir + f'/seds_maggies/{field}_{v4id}_sed.csv'
     sed_df = ascii.read(sed_file).to_pandas()
     redshift = sed_df.iloc[0]['Z_MOSFIRE']
 

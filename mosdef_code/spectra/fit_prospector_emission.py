@@ -95,6 +95,8 @@ def multiply_fit_by_lumdist(n_clusters, run_name, ignore_groups=[]):
             emission_fit_df = ascii.read(imd.prospector_emission_fits_dir + f'/{run_name}_emission_fits/{groupID}_emission_fits.csv').to_pandas()
             fluxes = emission_fit_df['flux']
             emission_fit_df['luminosity'] = flux_to_luminosity(fluxes, redshift)
+            err_fluxes = emission_fit_df['err_flux']
+            emission_fit_df['err_luminosity'] = flux_to_luminosity(err_fluxes, redshift)
             emission_fit_df.to_csv(imd.prospector_emission_fits_dir + f'/{run_name}_emission_fits/{groupID}_emission_fits.csv', index=False)
 # ignore_groups = [0,5,12,19,22]
 # setup_all_prospector_fit_csvs(23, 'dust_index_test', ignore_groups)

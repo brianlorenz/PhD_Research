@@ -1,6 +1,6 @@
 '''Codes that should be run on Savio immediately after the run finishes, putting the data in an easy format for plotting'''
 
-from prospector_composite_params_group0 import get_filt_list
+from prospector_params_singlegal import get_filters
 from cosmology_calcs import luminosity_to_flux
 from convert_flux_to_maggies import prospector_maggies_to_flux, prospector_maggies_to_flux_spec
 import prospect.io.read_results as reader
@@ -9,23 +9,30 @@ import os
 import numpy as np
 import pandas as pd
 import pickle
+import initialize_mosdef_dirs as imd
+from sedpy import observate
+from astropy.io import ascii
+
+field = 'AEGIS'
+v4id = 3075
+run_name = 'singlegal'
+groupID=0
 
 
 # If using non-parametric sfh, we don't calculate the line fluxes in erg/s since I'm not sure which mass value to use
 non_par_sfh = False
 
-
 # Directory locations on savio
-savio_prospect_out_dir = '/global/scratch/users/brianlorenz/prospector_h5s'
-prospector_plot_dir = '/global/scratch/users/brianlorenz/prospector_plots'
-composite_sed_csvs_dir = '/global/scratch/users/brianlorenz/composite_sed_csvs'
-composite_filter_sedpy_dir = '/global/scratch/users/brianlorenz/sedpy_par_files'
-median_zs_file = '/global/scratch/users/brianlorenz/median_zs.csv'
-mosdef_elines_file = '/global/scratch/users/brianlorenz/mosdef_elines.txt'
+# savio_prospect_out_dir = '/global/scratch/users/brianlorenz/prospector_h5s'
+# prospector_plot_dir = '/global/scratch/users/brianlorenz/prospector_plots'
+# composite_sed_csvs_dir = '/global/scratch/users/brianlorenz/composite_sed_csvs'
+# composite_filter_sedpy_dir = '/global/scratch/users/brianlorenz/sedpy_par_files'
+# median_zs_file = '/global/scratch/users/brianlorenz/median_zs.csv'
+# mosdef_elines_file = '/global/scratch/users/brianlorenz/mosdef_elines.txt'
 
 # For saving
-prospector_csvs_dir = '/global/scratch/users/brianlorenz/prospector_csvs'
-prospector_plots_dir = '/global/scratch/users/brianlorenz/prospector_plots'
+prospector_csvs_dir = '/Users/brianlorenz/mosdef/prospector_singlegal_tests/csvs'
+prospector_plots_dir = '/Users/brianlorenz/mosdef/prospector_singlegal_tests/csvs'
 
 # Directory locations on home
 # import initialize_mosdef_dirs as imd
@@ -37,22 +44,19 @@ prospector_plots_dir = '/global/scratch/users/brianlorenz/prospector_plots'
 # mosdef_elines_file = imd.loc_mosdef_elines
 
 
-def main_process(groupID, run_name, non_par_sfh):
+def main_process():
     """Runs all of the functions needed to process the prospector outputs
 
     Parameters:
-    groupID (int): The id of the group to run
-    run_name (str): Name of the run, controls folders to save/read from
-    non_par_sfh (boolean): Set to true if using a non-parametric SFH. Skips some calculations if true
 
     Returns:
  
 
     """
-    all_files = os.listdir(savio_prospect_out_dir + f'/{run_name}_h5s')
-    target_file = [file for file in all_files if f'composite_group{groupID}_' in file]
+    all_files = os.listdir(imd.mosdef_dir + f'/prospector_singlegal_tests/')
+    target_file = [file for file in all_files if f'{run_name}' in file]
     print(f'found {target_file}')
-    res, obs, mod, sps, file = read_output(savio_prospect_out_dir + f'/{run_name}_h5s' + '/' + target_file[0])
+    res, obs, mod, sps, file = read_output(imd.mosdef_dir + f'/prospector_singlegal_tests/' + target_file[0])
 
     # tfig = reader.traceplot(res)
     # tfig.savefig(prospector_plots_dir + f'/{run_name}_plots' + f'/group{groupID}_tfig.pdf')
@@ -89,10 +93,13 @@ def read_output(file, get_sps=True):
     print(f'Reading from {file}')
     res, obs, mod = reader.results_from(file)
 
-    filt_folder = composite_filter_sedpy_dir + f'/{obs["groupID"]}_sedpy_pars'
+    sed_file = imd.mosdef_dir + f'/seds_maggies/{field}_{v4id}_sed.csv'
+    sed_df = ascii.read(sed_file).to_pandas()
+    sed_df = sed_df[sed_df['f_lambda']>-98]
+    filters_list = get_filters(sed_df)
 
-    print(f'Setting obs["filters"] to sedpy filters from {filt_folder}')
-    obs["filters"] = get_filt_list(filt_folder)
+    print(f'Setting obs["filters"] to sedpy filters')
+    obs["filters"] = observate.load_filters(filters_list)
 
     # These will be the outputs, sps is added if get_sps==True
     outputs = [res, obs, mod]
@@ -220,9 +227,9 @@ def compute_quantiles(res, obs, mod, sps, all_spec, all_phot, all_mfrac, all_lin
 
 
     if cont==False:
-        phot_df.to_csv(prospector_csvs_dir + f'/{run_name}_csvs' + f'/{save_str}_phot.csv', index=False)
-        spec_df.to_csv(prospector_csvs_dir + f'/{run_name}_csvs' + f'/{save_str}_spec.csv', index=False)
-        line_df.to_csv(prospector_csvs_dir + f'/{run_name}_csvs' + f'/{save_str}_lines.csv', index=False)
+        phot_df.to_csv(prospector_csvs_dir + f'/{save_str}_phot.csv', index=False)
+        spec_df.to_csv(prospector_csvs_dir + f'/{save_str}_spec.csv', index=False)
+        line_df.to_csv(prospector_csvs_dir + f'/{save_str}_lines.csv', index=False)
 
         def save_obj(obj, name, run_name):
             with open(prospector_csvs_dir + f'/{run_name}_csvs' + '/' + name + '.pkl', 'wb+') as f:
@@ -242,8 +249,8 @@ def compute_quantiles(res, obs, mod, sps, all_spec, all_phot, all_mfrac, all_lin
             print('Could not pickle mod')
     
     else:
-        phot_df.to_csv(prospector_csvs_dir + f'/{run_name}_csvs' + f'/{groupID}_cont_phot.csv', index=False)
-        spec_df.to_csv(prospector_csvs_dir + f'/{run_name}_csvs' + f'/{groupID}_cont_spec.csv', index=False)
+        phot_df.to_csv(prospector_csvs_dir + f'/{save_str}_cont_phot.csv', index=False)
+        spec_df.to_csv(prospector_csvs_dir + f'/{save_str}_cont_spec.csv', index=False)
 
 
 # function from tom to get theta values for different percentiles
@@ -268,7 +275,4 @@ def quantile(data, percents, weights=None):
     return y
 
 
-# Run with sys.argv when called 
-groupID = sys.argv[1]
-run_name = sys.argv[2]
-main_process(groupID, run_name, non_par_sfh)
+main_process()
