@@ -301,6 +301,7 @@ def build_model(object_redshift=0.0, fixed_metallicity=None, add_duste=True,
     model_params["tau"]["prior"] = priors.LogUniform(mini=1e-1, maxi=10)
     model_params["mass"]["prior"] = priors.LogUniform(mini=1e10, maxi=1e16)
     # model_params["gas_logz"]["prior"] = priors.TopHat(mini=-3.0, maxi=0.0)
+    model_params["logzsol"]["prior"] = priors.TopHat(mini=-0.8, maxi=0.2)
     
 
     # Change the model parameter specifications based on some keyword arguments

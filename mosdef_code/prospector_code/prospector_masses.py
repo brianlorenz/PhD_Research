@@ -11,26 +11,26 @@ def save_masses(n_clusters, run_name):
     for groupID in range(n_clusters):
         groupIDs.append(groupID)
     
-    mass_list = [13.83,
-                 -99,
+    mass_list = [12.96,
+                 14.03,
+                 12.57,
+                 11.75,
+                 13.60,
+                 12.77,
+                 12.06,
                  12.64,
-                 11.76,
-                 13.79,
-                 12.78,
-                 12.53,
-                 12.70,
-                 14.38,
-                 12.94,
+                 14.41,
                  12.79,
-                 13.73,
-                 11.80,
+                 12.79,
+                 12.97,
+                 12.22,
+                 12.45,
+                 12.41,
+                 13.45,
                  12.38,
-                 12.49,
-                 13.35,
-                 12.39,
-                 -99,
-                 -99,
-                 12.16
+                 13.96,
+                 13.95,
+                 12.15
     ]
 
     mass_df = pd.DataFrame(zip(groupIDs, mass_list), columns=['groupID', 'prospector_log_mass'])

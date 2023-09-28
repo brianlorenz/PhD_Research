@@ -248,6 +248,6 @@ def make_overview_plot_clusters(n_clusters, norm_method, color_gals=False, bpt_c
     fig.savefig(imd.cluster_dir + f'/cluster_stats/overview_clusters{save_str}.pdf')
 
 
-# make_overview_plot_clusters(23)
-# make_overview_plot_clusters(23, color_gals=True)
-# make_overview_plot_clusters(23, bpt_color=True, paper_overview=True, prospector_spec=False)
+make_overview_plot_clusters(20, norm_method='luminosity', paper_overview=True)
+# make_overview_plot_clusters(20, norm_method='luminosity', color_gals=True)
+# make_overview_plot_clusters(20, bpt_color=True, paper_overview=True, prospector_spec=False)

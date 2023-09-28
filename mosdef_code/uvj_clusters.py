@@ -236,7 +236,7 @@ def plot_uvj_cluster(groupID, axis_obj='False'):
 
     # Plot the composite SED as a red X
     ax.plot(uvj_composite['V_J'], uvj_composite['U_V'],
-            ls='', marker='x', markersize=8, markeredgewidth=2, color='red', label='Composite SED')
+            ls='', marker='x', markersize=8, markeredgewidth=2, color='black', label='Composite SED')
 
     if axis_obj == 'False':
         ax.legend(fontsize=legendfont - 4)
@@ -307,7 +307,7 @@ def plot_uvj_cluster_paper(groupID, axis_obj='False'):
 
     # Plot the composite SED as a red X
     ax.plot(uvj_composite['V_J'], uvj_composite['U_V'],
-            ls='', marker='x', markersize=8, markeredgewidth=2, color='red', label='Composite SED')
+            ls='', marker='x', markersize=8, markeredgewidth=2, color='black', label='Composite SED')
 
     if axis_obj == 'False':
         ax.legend(fontsize=legendfont - 4)
@@ -382,7 +382,7 @@ def plot_full_uvj(n_clusters, color_type='None', include_unused_gals='No'):
 
     if include_unused_gals!='Only':
         ax.plot(composite_uvj_df['V_J'], composite_uvj_df['U_V'],
-                ls='', marker='x', markersize=5, markeredgewidth=2, color='red')
+                ls='', marker='x', markersize=10, markeredgewidth=2, color='black')
 
     
 
@@ -390,7 +390,8 @@ def plot_full_uvj(n_clusters, color_type='None', include_unused_gals='No'):
     for groupID in range(n_clusters):
         row = composite_uvj_df.iloc[groupID]
         if include_unused_gals!='Only':
-            ax.text(row['V_J'] - 0.02, row['U_V'] + 0.03, f'{groupID}', size=12, fontweight='bold', color='red')
+            pass
+            # ax.text(row['V_J'] - 0.02, row['U_V'] + 0.03, f'{groupID}', size=12, fontweight='bold', color='black')
         if color_type != 'None':
             cmap = mpl.cm.inferno
             cluster_row_idx = cluster_summary_df['groupID'] == groupID
@@ -467,7 +468,7 @@ def setup_uvj_plot(ax, galaxy_uvj_df, composite_uvj_df, axis_obj='False', includ
 
     # Plots all galaxy UVJs in grey
     ax.plot(galaxy_uvj_df['V_J'], galaxy_uvj_df['U_V'],
-            ls='', marker='o', markersize=1.5, color='grey', label='All Galaxies')
+            ls='', marker='o', markersize=2.5, color='grey', label='All Galaxies')
 
     if axis_obj == 'False':
         if include_unused_gals!='Only':
@@ -492,7 +493,7 @@ def setup_uvj_plot(ax, galaxy_uvj_df, composite_uvj_df, axis_obj='False', includ
 # plot_all_uvj_clusters_paper(23)
 # plot_all_uvj_clusters(23)
 # observe_all_uvj(23, individual_gals=False, composite_uvjs=True)
-# plot_full_uvj(23, include_unused_gals='No')
+plot_full_uvj(20, include_unused_gals='No')
 # plot_full_uvj(23, include_unused_gals='Only')
 # plot_full_uvj(23, color_type='balmer')
 # plot_full_uvj(23, color_type='ssfr')

@@ -128,6 +128,7 @@ def gen_phot(res, obs, mod, sps, non_par_sfh):
     all_mfrac = np.zeros((len(idx_high_weights)))
     all_line_fluxes = np.zeros((len(line_fluxes), len(idx_high_weights)))
     all_line_fluxes_erg = np.zeros((len(line_fluxes), len(idx_high_weights)))
+    all_sfrs = np.zeros(len(idx_high_weights))
     for i, weight_idx in enumerate(idx_high_weights):
         print(f'Finding mean model for {i}')
         theta_val = res['chain'][weight_idx, :]
@@ -135,6 +136,7 @@ def gen_phot(res, obs, mod, sps, non_par_sfh):
             theta_val, obs, sps=sps)
         line_waves, line_fluxes = sps.get_galaxy_elines()
         all_line_fluxes[:, i] = line_fluxes
+        all_sfrs[i] = sps.sfr_avg() 
         if non_par_sfh == False:
             # When there are multiple agebins, I don't know how to find the mass to convert with
             mass = mod.params['mass']

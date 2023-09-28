@@ -1,6 +1,6 @@
 import initialize_mosdef_dirs as imd
 
-run_name = 'mask_lya'
+run_name = 'tage_prior_z1gyr'
 
 print('')
 print('')
