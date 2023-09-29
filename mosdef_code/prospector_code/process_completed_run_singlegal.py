@@ -63,15 +63,15 @@ def main_process():
     # cfig = reader.subcorner(res)
     # cfig.savefig(prospector_plots_dir + f'/{run_name}_plots' + f'/group{groupID}_cfig.pdf')
 
-    all_spec, all_phot, all_mfrac, all_line_fluxes, all_line_fluxes_erg, line_waves, weights, idx_high_weights = gen_phot(res, obs, mod, sps, non_par_sfh)
-    compute_quantiles(res, obs, mod, sps, all_spec, all_phot, all_mfrac, all_line_fluxes, all_line_fluxes_erg, line_waves, weights, idx_high_weights, groupID)
+    all_spec, all_phot, all_mfrac, all_line_fluxes, all_line_fluxes_erg, all_total_masses, all_tages, all_logzsols, all_taus, all_dust2s, all_dustindexs, line_waves, weights, idx_high_weights = gen_phot(res, obs, mod, sps, non_par_sfh)
+    compute_quantiles(res, obs, mod, sps, all_spec, all_phot, all_mfrac, all_line_fluxes, all_line_fluxes_erg, all_total_masses, all_tages, all_logzsols, all_taus, all_dust2s, all_dustindexs, line_waves, weights, idx_high_weights, groupID)
     
     # Now repeat but just with the continuum
     mod.params['add_neb_emission'] = np.array([False])
     print('Set neb emission to false, computing continuum')
-    all_spec, all_phot, all_mfrac, all_line_fluxes, all_line_fluxes_erg, line_waves, weights, idx_high_weights = gen_phot(
+    all_spec, all_phot, all_mfrac, all_line_fluxes, all_line_fluxes_erg, all_total_masses, all_tages, all_logzsols, all_taus, all_dust2s, all_dustindexs, line_waves, weights, idx_high_weights = gen_phot(
         res, obs, mod, sps, non_par_sfh)
-    compute_quantiles(res, obs, mod, sps, all_spec, all_phot, all_mfrac, all_line_fluxes, all_line_fluxes_erg, line_waves, weights, idx_high_weights, groupID, cont=True)
+    compute_quantiles(res, obs, mod, sps, all_spec, all_phot, all_mfrac, all_line_fluxes, all_line_fluxes_erg, all_total_masses, all_tages, all_logzsols, all_taus, all_dust2s, all_dustindexs, line_waves, weights, idx_high_weights, groupID, cont=True)
 
 
 def read_output(file, get_sps=True):
@@ -133,16 +133,28 @@ def gen_phot(res, obs, mod, sps, non_par_sfh):
     all_spec = np.zeros((len(spec), len(idx_high_weights)))
     all_phot = np.zeros((len(phot), len(idx_high_weights)))
     all_mfrac = np.zeros((len(idx_high_weights)))
+    all_total_masses = np.zeros((len(idx_high_weights)))
+    all_tages = np.zeros((len(idx_high_weights)))
+    all_logzsols = np.zeros((len(idx_high_weights)))
+    all_taus = np.zeros((len(idx_high_weights)))
+    all_dust2s = np.zeros((len(idx_high_weights)))
+    all_dustindexs = np.zeros((len(idx_high_weights)))
     all_line_fluxes = np.zeros((len(line_fluxes), len(idx_high_weights)))
     all_line_fluxes_erg = np.zeros((len(line_fluxes), len(idx_high_weights)))
     # all_sfrs = np.zeros(len(idx_high_weights))
     for i, weight_idx in enumerate(idx_high_weights):
         print(f'Finding mean model for {i}')
         theta_val = res['chain'][weight_idx, :]
+        theta_names = res['theta_labels']
+        all_total_masses[i] = theta_val[theta_names.index('mass')]
+        all_tages[i] = theta_val[theta_names.index('tage')]
+        all_logzsols[i] = theta_val[theta_names.index('logzsol')]
+        all_taus[i] = theta_val[theta_names.index('tau')]
+        all_dust2s[i] = theta_val[theta_names.index('dust2')]
+        all_dustindexs[i] = theta_val[theta_names.index('dust_index')]
         all_spec[:, i], all_phot[:, i], all_mfrac[i] = mod.mean_model(
             theta_val, obs, sps=sps)
         line_waves, line_fluxes = sps.get_galaxy_elines()
-        breakpoint()
         all_line_fluxes[:, i] = line_fluxes
         if non_par_sfh == False:
             # When there are multiple agebins, I don't know how to find the mass to convert with
@@ -152,38 +164,45 @@ def gen_phot(res, obs, mod, sps, non_par_sfh):
                 line_fluxes_erg_s, mod.params['zred'])
             all_line_fluxes_erg[:, i] = line_fluxes_erg_s_cm2
 
-    return all_spec, all_phot, all_mfrac, all_line_fluxes, all_line_fluxes_erg, line_waves, weights, idx_high_weights
+    return all_spec, all_phot, all_mfrac, all_line_fluxes, all_line_fluxes_erg, all_total_masses, all_tages, all_logzsols, all_taus, all_dust2s, all_dustindexs, line_waves, weights, idx_high_weights
 
+def take_one_quantile_photspec(array, weights, idx_high_weights):
+    """Performs the quantile calculation for photometry of spectra"""
+    perc16 = np.array([quantile(array[i, :], 16, weights=weights[idx_high_weights])
+                       for i in range(array.shape[0])])
+    perc50 = np.array([quantile(array[i, :], 50, weights=weights[idx_high_weights])
+                       for i in range(array.shape[0])])
+    perc84 = np.array([quantile(array[i, :], 84, weights=weights[idx_high_weights])
+                       for i in range(array.shape[0])])
+    return perc16, perc50, perc84
 
-def compute_quantiles(res, obs, mod, sps, all_spec, all_phot, all_mfrac, all_line_fluxes, all_line_fluxes_erg, line_waves, weights, idx_high_weights, groupID, cont=False):
+def take_one_quantile_thetaprop(theta_array, weights, idx_high_weights):
+    """Performs the quantile calculation for something from the chain"""
+    perc16, perc50, perc84 = quantile(theta_array, [16,50,84], weights=weights[idx_high_weights])
+    return perc16, perc50, perc84
+
+def compute_quantiles(res, obs, mod, sps, all_spec, all_phot, all_mfrac, all_line_fluxes, all_line_fluxes_erg, all_total_masses, all_tages, all_logzsols, all_taus, all_dust2s, all_dustindexs, line_waves, weights, idx_high_weights, groupID, cont=False):
     # Find the mean photometery, spectra
-    phot16 = np.array([quantile(all_phot[i, :], 16, weights=weights[idx_high_weights])
-                       for i in range(all_phot.shape[0])])
-    phot50 = np.array([quantile(all_phot[i, :], 50, weights=weights[idx_high_weights])
-                       for i in range(all_phot.shape[0])])
-    phot84 = np.array([quantile(all_phot[i, :], 84, weights=weights[idx_high_weights])
-                       for i in range(all_phot.shape[0])])
-    spec16 = np.array([quantile(all_spec[i, :], 16, weights=weights[idx_high_weights])
-                       for i in range(all_spec.shape[0])])
-    spec50 = np.array([quantile(all_spec[i, :], 50, weights=weights[idx_high_weights])
-                       for i in range(all_spec.shape[0])])
-    spec84 = np.array([quantile(all_spec[i, :], 84, weights=weights[idx_high_weights])
-                       for i in range(all_spec.shape[0])])
+    phot16, phot50, phot84 = take_one_quantile_photspec(all_phot, weights, idx_high_weights)
+    spec16, spec50, spec84 = take_one_quantile_photspec(all_spec, weights, idx_high_weights)
+    lines16, lines50, lines84 = take_one_quantile_photspec(all_line_fluxes, weights, idx_high_weights)
+    lines16_erg, lines50_erg, lines84_erg = take_one_quantile_photspec(all_line_fluxes_erg, weights, idx_high_weights)
 
-    lines16 = np.array([quantile(all_line_fluxes[i, :], 16, weights=weights[idx_high_weights])
-                        for i in range(all_line_fluxes.shape[0])])
-    lines50 = np.array([quantile(all_line_fluxes[i, :], 50, weights=weights[idx_high_weights])
-                        for i in range(all_line_fluxes.shape[0])])
-    lines84 = np.array([quantile(all_line_fluxes[i, :], 84, weights=weights[idx_high_weights])
-                        for i in range(all_line_fluxes.shape[0])])
+    ### EDIT SAVE NAME HERE
+    save_str = f'group{groupID}'
 
-    lines16_erg = np.array([quantile(all_line_fluxes_erg[i, :], 16, weights=weights[idx_high_weights])
-                            for i in range(all_line_fluxes_erg.shape[0])])
-    lines50_erg = np.array([quantile(all_line_fluxes_erg[i, :], 50, weights=weights[idx_high_weights])
-                            for i in range(all_line_fluxes_erg.shape[0])])
-    lines84_erg = np.array([quantile(all_line_fluxes_erg[i, :], 84, weights=weights[idx_high_weights])
-                            for i in range(all_line_fluxes_erg.shape[0])])
+    if cont == False:
+        surviving_masses = all_mfrac*all_total_masses
+        surviving_mass16, surviving_mass50, surviving_mass84 = take_one_quantile_thetaprop(surviving_masses, weights, idx_high_weights)
+        tage16, tage50, tage84 = take_one_quantile_thetaprop(all_tages, weights, idx_high_weights)
+        logzsol16, logzsol50, logzsol84 = take_one_quantile_thetaprop(all_logzsols, weights, idx_high_weights)
+        tau16, tau50, tau84 = take_one_quantile_thetaprop(all_taus, weights, idx_high_weights)
+        dust2_16, dust2_50, dust2_84 = take_one_quantile_thetaprop(all_dust2s, weights, idx_high_weights)
+        dustindex16, dustindex50, dustindex84 = take_one_quantile_thetaprop(all_dustindexs, weights, idx_high_weights)
 
+        prop_df = pd.DataFrame(zip([surviving_mass16], [surviving_mass50], [surviving_mass84],  [tage16], [tage50], [tage84], [logzsol16], [logzsol50], [logzsol84], [tau16], [tau50], [tau84], [dust2_16], [dust2_50], [dust2_84], [dustindex16], [dustindex50], [dustindex84]), columns = ['surviving_mass16', 'surviving_mass50', 'surviving_mass84',  'tage16', 'tage50', 'tage84', 'logzsol16', 'logzsol50', 'logzsol84', 'tau16', 'tau50', 'tau84', 'dust2_16', 'dust2_50', 'dust2_84', 'dustindex16', 'dustindex50', 'dustindex84'])
+        prop_df.to_csv(prospector_csvs_dir + f'/{save_str}_props.csv', index=False)
+    
     # Setup wavelength ranges
     phot_wavelength = np.array(
         [f.wave_effective for f in res['obs']['filters']])
@@ -224,8 +243,7 @@ def compute_quantiles(res, obs, mod, sps, all_spec, all_phot, all_mfrac, all_lin
     
 
 
-    ### EDIT SAVE NAME HERE
-    save_str = f'group{groupID}'
+    
 
 
     if cont==False:

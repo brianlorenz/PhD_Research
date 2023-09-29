@@ -26,21 +26,24 @@ def find_median_redshifts(n_clusters):
     median_zs = []
     groupIDs = []
     for groupID in range(n_clusters):
-        files_list = os.listdir(imd.cluster_dir + f'/{groupID}')
-        names_list = [file[:-9] for file in files_list]
-        z_list = []
-        for name in names_list:
-            try:
-                z = ascii.read(
-                    f'/Users/brianlorenz/mosdef/sed_csvs/{name}_sed.csv').to_pandas()['Z_MOSFIRE'].iloc[0]
-            except FileNotFoundError:
-                z = ascii.read(
-                    f'/Users/brianlorenz/mosdef/sed_csvs/{name}_3DHST_sed.csv').to_pandas()['Z_MOSFIRE'].iloc[0]
-            z_list.append(z)
+        # files_list = os.listdir(imd.cluster_dir + f'/{groupID}')
+        # names_list = [file[:-9] for file in files_list]
+        # z_list = []
+        # for name in names_list:
+        #     try:
+        #         z = ascii.read(
+        #             f'/Users/brianlorenz/mosdef/sed_csvs/{name}_sed.csv').to_pandas()['Z_MOSFIRE'].iloc[0]
+        #     except FileNotFoundError:
+        #         z = ascii.read(
+        #             f'/Users/brianlorenz/mosdef/sed_csvs/{name}_3DHST_sed.csv').to_pandas()['Z_MOSFIRE'].iloc[0]
+        #     z_list.append(z)
+        group_df = ascii.read(imd.cluster_indiv_dfs_dir + f'/{groupID}_cluster_df.csv').to_pandas()
+        breakpoint()
         median_z = np.median(z_list)
         median_zs.append(median_z)
         groupIDs.append(groupID)
 
+    
     median_z_df = pd.DataFrame(zip(groupIDs, median_zs), columns=[
                                'groupID', 'median_z'])
     median_z_df.to_csv(imd.composite_seds_dir + '/median_zs.csv', index=False)
