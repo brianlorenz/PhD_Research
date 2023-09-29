@@ -1,6 +1,6 @@
 import initialize_mosdef_dirs as imd
 
-run_name = 'tage_prior_z1gyr'
+run_name = 'metallicity_prior'
 
 print('')
 print('')

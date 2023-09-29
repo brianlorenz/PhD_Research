@@ -183,7 +183,7 @@ def compute_quantiles(res, obs, mod, sps, all_spec, all_phot, all_mfrac, all_lin
     lines16_erg, lines50_erg, lines84_erg = take_one_quantile_photspec(all_line_fluxes_erg, weights, idx_high_weights)
 
     ### EDIT SAVE NAME HERE
-    save_str = f'group{groupID}'
+    save_str = f'/group{groupID}'
 
     if cont == False:
         surviving_masses = all_mfrac*all_total_masses
@@ -195,7 +195,7 @@ def compute_quantiles(res, obs, mod, sps, all_spec, all_phot, all_mfrac, all_lin
         dustindex16, dustindex50, dustindex84 = take_one_quantile_thetaprop(all_dustindexs, weights, idx_high_weights)
 
         prop_df = pd.DataFrame(zip([surviving_mass16], [surviving_mass50], [surviving_mass84],  [tage16], [tage50], [tage84], [logzsol16], [logzsol50], [logzsol84], [tau16], [tau50], [tau84], [dust2_16], [dust2_50], [dust2_84], [dustindex16], [dustindex50], [dustindex84]), columns = ['surviving_mass16', 'surviving_mass50', 'surviving_mass84',  'tage16', 'tage50', 'tage84', 'logzsol16', 'logzsol50', 'logzsol84', 'tau16', 'tau50', 'tau84', 'dust2_16', 'dust2_50', 'dust2_84', 'dustindex16', 'dustindex50', 'dustindex84'])
-        prop_df.to_csv(prospector_csvs_dir + f'/{save_str}_props.csv', index=False)
+        prop_df.to_csv(prospector_csvs_dir + f'/{run_name}_csvs/{save_str}_props.csv', index=False)
     
     # Setup wavelength ranges
     phot_wavelength = np.array(
@@ -241,9 +241,9 @@ def compute_quantiles(res, obs, mod, sps, all_spec, all_phot, all_mfrac, all_lin
 
 
     if cont==False:
-        phot_df.to_csv(prospector_csvs_dir + f'/{save_str}_phot.csv', index=False)
-        spec_df.to_csv(prospector_csvs_dir + f'/{save_str}_spec.csv', index=False)
-        line_df.to_csv(prospector_csvs_dir + f'/{save_str}_lines.csv', index=False)
+        phot_df.to_csv(prospector_csvs_dir + f'/{run_name}_csvs/{save_str}_phot.csv', index=False)
+        spec_df.to_csv(prospector_csvs_dir + f'/{run_name}_csvs/{save_str}_spec.csv', index=False)
+        line_df.to_csv(prospector_csvs_dir + f'/{run_name}_csvs/{save_str}_lines.csv', index=False)
 
         def save_obj(obj, name, run_name):
             with open(prospector_csvs_dir + f'/{run_name}_csvs' + '/' + name + '.pkl', 'wb+') as f:
@@ -263,8 +263,8 @@ def compute_quantiles(res, obs, mod, sps, all_spec, all_phot, all_mfrac, all_lin
             print('Could not pickle mod')
     
     else:
-        phot_df.to_csv(prospector_csvs_dir + f'/{save_str}_cont_phot.csv', index=False)
-        spec_df.to_csv(prospector_csvs_dir + f'/{save_str}_cont_spec.csv', index=False)
+        phot_df.to_csv(prospector_csvs_dir + f'/{run_name}_csvs/{save_str}_cont_phot.csv', index=False)
+        spec_df.to_csv(prospector_csvs_dir + f'/{run_name}_csvs/{save_str}_cont_spec.csv', index=False)
 
 
 # function from tom to get theta values for different percentiles

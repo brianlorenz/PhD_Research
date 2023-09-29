@@ -25,7 +25,7 @@ from compute_cluster_sfrs import compute_cluster_sfrs
 from balmer_dec_histogram import compute_balmer_lower_limits, plot_balmer_hist
 from compute_indiv_sfrs_from_halpha import compute_indiv_sfrs
 from plot_group_hists import plot_group_hists
-from prospector_masses import add_masses_to_cluster_summary_df, save_masses
+from prospector_output_props import add_masses_to_cluster_summary_df, save_masses
 
 
 '''Starting point: One folder ('cluster_folder') that contains: 
@@ -41,7 +41,7 @@ Specify the directories in initialize_mosdef_dirsl;k
 # Set the total number of clusters
 n_clusters = 20
 # Set the name of the prospector run
-run_name = 'tage_prior_z1gyr'
+run_name = 'metallicity_prior'
 norm_method = 'luminosity'
 # Set which group numbers to ignore since their data is not good
 ignore_groups = []
@@ -116,9 +116,9 @@ imd.check_and_make_dir(imd.composite_filter_sedpy_dir)
 
 # Re-fit the prospector spectra in the same way that we fit the mosdef ones:
 
-# setup_all_prospector_fit_csvs(n_clusters, run_name)
-# fit_all_prospector_emission(n_clusters, run_name)
-# multiply_fit_by_lumdist(n_clusters, run_name)
+setup_all_prospector_fit_csvs(n_clusters, run_name)
+fit_all_prospector_emission(n_clusters, run_name)
+multiply_fit_by_lumdist(n_clusters, run_name)
 # save_masses(n_clusters, run_name) # Make sure to update the mass values
 # add_masses_to_cluster_summary_df(n_clusters, run_name) # Adds masses and computes sfr/ssfr
 
