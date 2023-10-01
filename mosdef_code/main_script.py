@@ -6,6 +6,7 @@ import string
 import numpy as np
 import initialize_mosdef_dirs as imd
 
+
 from composite_sed import get_all_composite_seds
 from stack_spectra import stack_all_spectra
 from fit_emission import fit_all_emission, compute_bootstrap_uncertainties
@@ -25,7 +26,7 @@ from compute_cluster_sfrs import compute_cluster_sfrs
 from balmer_dec_histogram import compute_balmer_lower_limits, plot_balmer_hist
 from compute_indiv_sfrs_from_halpha import compute_indiv_sfrs
 from plot_group_hists import plot_group_hists
-from prospector_output_props import add_masses_to_cluster_summary_df, save_masses
+from prospector_output_props import add_props_to_cluster_summary_df, save_props
 
 
 '''Starting point: One folder ('cluster_folder') that contains: 
@@ -116,9 +117,9 @@ imd.check_and_make_dir(imd.composite_filter_sedpy_dir)
 
 # Re-fit the prospector spectra in the same way that we fit the mosdef ones:
 
-setup_all_prospector_fit_csvs(n_clusters, run_name)
-fit_all_prospector_emission(n_clusters, run_name)
-multiply_fit_by_lumdist(n_clusters, run_name)
-# save_masses(n_clusters, run_name) # Make sure to update the mass values
-# add_masses_to_cluster_summary_df(n_clusters, run_name) # Adds masses and computes sfr/ssfr
+# setup_all_prospector_fit_csvs(n_clusters, run_name)
+# fit_all_prospector_emission(n_clusters, run_name)
+# multiply_fit_by_lumdist(n_clusters, run_name)
+# save_props(n_clusters, run_name) # Make sure to update the mass values
+# add_props_to_cluster_summary_df(n_clusters, run_name) # Adds masses and computes sfr/ssfr
 

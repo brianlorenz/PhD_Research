@@ -31,7 +31,7 @@ def setup_prospector_fit_csv(groupID, run_name):
     spec_df['err_f_lambda_d'] = spec_df['err_f_lambda_d'] * redshift_cor
     spec_df_merge = spec_df[['rest_wavelength', 'f_lambda', 'err_f_lambda_d', 'err_f_lambda_u']]
 
-    cont_df = ascii.read(imd.prospector_fit_csvs_dir + f'/{run_name}_csvs/{groupID}_cont_spec.csv').to_pandas()
+    cont_df = ascii.read(imd.prospector_fit_csvs_dir + f'/{run_name}_csvs/group{groupID}_cont_spec.csv').to_pandas()
     cont_df = cont_df.rename(columns = {'spec50_flambda' : 'cont_f_lambda'})
     cont_df['cont_err_f_lambda_d'] = cont_df['cont_f_lambda'] - cont_df['spec16_flambda']
     cont_df['cont_err_f_lambda_u'] = cont_df['spec84_flambda'] - cont_df['cont_f_lambda']

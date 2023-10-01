@@ -276,4 +276,4 @@ def make_plots_a_vs_b(reduce_plot_count=False):
     plot_cluster_summaries('cluster_av_prospector_log_ssfr', 'computed_log_ssfr', 'prospector/ssfr_compare_to_cluster', color_var='balmer_dec_with_limit', ignore_groups=ignore_groups, lower_limit=lower_limit, one_to_one=True, plot_lims=[-11, -7.5, -11, -7.5])
 
 
-make_plots_a_vs_b(reduce_plot_count=True)
+# make_plots_a_vs_b(reduce_plot_count=True)

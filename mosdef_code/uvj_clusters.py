@@ -493,7 +493,7 @@ def setup_uvj_plot(ax, galaxy_uvj_df, composite_uvj_df, axis_obj='False', includ
 # plot_all_uvj_clusters_paper(23)
 # plot_all_uvj_clusters(23)
 # observe_all_uvj(23, individual_gals=False, composite_uvjs=True)
-plot_full_uvj(20, include_unused_gals='No')
+# plot_full_uvj(20, include_unused_gals='No')
 # plot_full_uvj(23, include_unused_gals='Only')
 # plot_full_uvj(23, color_type='balmer')
 # plot_full_uvj(23, color_type='ssfr')

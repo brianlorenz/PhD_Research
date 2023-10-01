@@ -50,7 +50,7 @@ def compute_cluster_sfrs(lower_limit=True, luminosity=False, prospector=False):
         halpha_lums = halpha_fluxes
     if prospector == True:
         halpha_lums = cluster_summary_df['prospector_halpha_luminosity']
-        log_median_masses = cluster_summary_df['surviving_mass_50']
+        log_median_masses = np.log10(cluster_summary_df['surviving_mass50'])
         prospector_balmer_avs = cluster_summary_df['prospector_balmer_av']
         prospector_balmer_ahalphas = 3.33*(prospector_balmer_avs / 4.05)
 

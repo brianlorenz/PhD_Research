@@ -293,7 +293,7 @@ def get_composite_filter(selected_points, wavelength_min, wavelength_max, compos
     return filt_response_df
 
 
-def vis_composite_sed(total_sed, composite_sed=0, composite_filters=0, groupID=-99, std_scatter=0, run_filters=True, axis_obj='False', grey_points=False, errorbars=True):
+def vis_composite_sed(total_sed, composite_sed=0, composite_filters=0, groupID=-99, std_scatter=0, run_filters=True, axis_obj='False', grey_points=False, errorbars=True, scale_5000=False):
     """
     If you set an axis obj, it will overwrite the others, and make sure to set a groupID
     """
@@ -329,12 +329,22 @@ def vis_composite_sed(total_sed, composite_sed=0, composite_filters=0, groupID=-
 
     plt.set_cmap('plasma')  # coolwarm
 
+    if scale_5000 == True:
+        interp_fluxes = interpolate.interp1d(composite_sed['rest_wavelength'], composite_sed['f_lambda'])
+        flux_at_5000 = interp_fluxes(5000)
+        composite_sed['f_lambda'] = composite_sed['f_lambda']/flux_at_5000
+        composite_sed['err_f_lambda_d'] = composite_sed['err_f_lambda_d']/flux_at_5000
+        composite_sed['err_f_lambda_u'] = composite_sed['err_f_lambda_u']/flux_at_5000
+        total_sed['rest_f_lambda_norm'] =  total_sed['rest_f_lambda_norm'] / flux_at_5000
+
     if grey_points == True:
         point_color = 'dimgrey'
     else:
         point_color = total_sed[good_idx]['v4id']
     ax_sed.scatter(total_sed[good_idx]['rest_wavelength'], total_sed[good_idx]
                    ['rest_f_lambda_norm'], s=2, c=point_color, zorder=1)
+
+    
 
     if errorbars == True:
         ax_sed.errorbar(composite_sed['rest_wavelength'], composite_sed['f_lambda'],

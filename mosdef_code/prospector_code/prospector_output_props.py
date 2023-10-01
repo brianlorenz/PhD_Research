@@ -5,6 +5,7 @@ from astropy.io import ascii
 import os
 from balmer_avs import compute_balmer_av
 from compute_cluster_sfrs import compute_cluster_sfrs
+import sys
 
 def save_props(n_clusters, run_name):
     prop_dfs = []
@@ -19,7 +20,14 @@ def save_props(n_clusters, run_name):
 def add_props_to_cluster_summary_df(n_clusters, run_name):
     total_prop_df = ascii.read(imd.prospector_output_dir + f'/{run_name}_props.csv').to_pandas()
     cluster_summary_df = imd.read_cluster_summary_df()
-    cluster_summary_df = cluster_summary_df.merge(total_prop_df, left_on='groupID', right_on='groupID')
+    # If there is no such column, merge the dataframes. If there is, check if we can do nothing or if instead we must update the column values
+    if 'surviving_mass50' in cluster_summary_df.columns:
+        if cluster_summary_df['surviving_mass50'].iloc[0] != total_prop_df['surviving_mass50'].iloc[0]:
+            sys.exit('Need to code this - new columns should REPLACE the old ones when merging')
+    else:
+        cluster_summary_df = cluster_summary_df.merge(total_prop_df, left_on='groupID', right_on='groupID')
+
+
     halphas = []
     err_halphas = []
     halpha_lums = []
@@ -67,7 +75,6 @@ def add_props_to_cluster_summary_df(n_clusters, run_name):
         err_O3N2_metallicity_lows.append(err_O3N2_metallicity_low)
         err_O3N2_metallicity_highs.append(err_O3N2_metallicity_high)
 
-    cluster_summary_df['prospector_log_mass'] = mass_df['prospector_log_mass']
     cluster_summary_df['prospector_halpha_flux'] = halphas
     cluster_summary_df['err_prospector_halpha_flux'] = err_halphas
     cluster_summary_df['prospector_halpha_luminosity'] = halpha_lums
@@ -85,4 +92,4 @@ def add_props_to_cluster_summary_df(n_clusters, run_name):
     compute_cluster_sfrs(prospector=True)    
 
 # save_props(20, 'metallicity_prior')
-add_props_to_cluster_summary_df(20, 'metallicity_prior')
+# add_props_to_cluster_summary_df(20, 'metallicity_prior')
