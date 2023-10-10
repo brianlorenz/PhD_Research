@@ -217,8 +217,8 @@ def make_plots_a_vs_b(reduce_plot_count=False):
         plot_cluster_summaries('median_indiv_halphas', 'ha_flux', 'sfrs/ha_flux_compare_nonorm', color_var='median_log_mass', plot_lims=[6e-18, 8e-16, 6e-18, 8e-16], one_to_one=True, ignore_groups=ignore_groups, log=True)
         plot_cluster_summaries('median_halpha_luminosity', 'ha_flux', 'sfrs/ha_luminosity_compare_nonorm', color_var='median_log_mass', plot_lims=[3e41, 4e42, 3e41, 4e42], one_to_one=True, ignore_groups=ignore_groups, log=True, yerr=True)
         plot_cluster_summaries('median_indiv_halphas', 'ha_flux', 'sfrs/ha_flux_compare_nonorm_balmer', color_var='balmer_dec', plot_lims=[6e-18, 8e-16, 6e-18, 8e-16], one_to_one=True, ignore_groups=ignore_groups, log=True)
-        plot_cluster_summaries('median_log_sfr', 'computed_log_sfr', 'sfrs/sfr_compare', color_var='balmer_dec', plot_lims=[0.3, 3, 0.3, 3], one_to_one=True, ignore_groups=ignore_groups, lower_limit=lower_limit)
-        plot_cluster_summaries('median_log_ssfr', 'computed_log_ssfr', 'sfrs/ssfr_compare', color_var='balmer_dec', plot_lims=[-10.7, -6.5, -10.7, -6.5], one_to_one=True, ignore_groups=ignore_groups, lower_limit=lower_limit)
+        plot_cluster_summaries('median_log_sfr', 'computed_log_sfr', 'sfrs/sfr_compare', color_var='balmer_dec', plot_lims=[0.3, 3, 0.3, 3], one_to_one=True, ignore_groups=ignore_groups, lower_limit=lower_limit, yerr=True)
+        plot_cluster_summaries('median_log_ssfr', 'computed_log_ssfr', 'sfrs/ssfr_compare', color_var='balmer_dec', plot_lims=[-10.7, -6.5, -10.7, -6.5], one_to_one=True, ignore_groups=ignore_groups, lower_limit=lower_limit, yerr=True)
         plot_cluster_summaries('computed_log_sfr_with_limit', 'median_indiv_computed_log_sfr', 'sfrs/sfr_indiv_vs_cluster', color_var='balmer_dec', plot_lims=[0.3, 3, 0.3, 3], one_to_one=True, ignore_groups=ignore_groups, lower_limit=lower_limit)
         plot_cluster_summaries('computed_log_ssfr_with_limit', 'median_indiv_computed_log_ssfr', 'sfrs/ssfr_indiv_vs_cluster', color_var='balmer_dec', plot_lims=[-10.7, -6.5, -10.7, -6.5], one_to_one=True, ignore_groups=ignore_groups, lower_limit=lower_limit)
         plot_cluster_summaries('computed_log_sfr_with_limit', 'override_flux', 'sfrs/sfr_compare_new_vs_old_method', color_var='balmer_dec', plot_lims=[0.3, 3, 0.3, 3], one_to_one=True, ignore_groups=ignore_groups, lower_limit=lower_limit)
@@ -280,4 +280,4 @@ def make_plots_a_vs_b(reduce_plot_count=False):
     plot_cluster_summaries('median_log_mass', 'dustindex50', 'prospector/dust_index_mass', color_var='balmer_dec', ignore_groups=ignore_groups)
     plot_cluster_summaries('logzsol50', 'dustindex50', 'prospector/dust_index_prospmetals', color_var='balmer_dec', ignore_groups=ignore_groups)
 
-make_plots_a_vs_b(reduce_plot_count=True)
+# make_plots_a_vs_b(reduce_plot_count=False)
