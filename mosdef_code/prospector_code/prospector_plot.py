@@ -85,7 +85,7 @@ def make_single_plot(groupID, run_name, add_spec=False, mask=False, savename='Fa
 
 def make_all_singleplots(n_clusters, run_name):
     for groupID in range(n_clusters):
-        if os.path.exists(imd.prospector_fit_csvs_dir + f'/{run_name}_csvs/{groupID}_cont_phot.csv'):
+        if os.path.exists(imd.prospector_fit_csvs_dir + f'/{run_name}_csvs/group{groupID}_cont_phot.csv'):
             print(f'Making plot for group {groupID}')
             make_single_plot(groupID, run_name)
             make_single_plot(groupID, run_name, add_spec=True)
@@ -319,7 +319,7 @@ def make_all_prospector_plots(n_clusters, run_name):
 
     '''
     for groupID in range(n_clusters):
-        if os.path.exists(imd.prospector_fit_csvs_dir + f'/{run_name}_csvs/{groupID}_cont_phot.csv'):
+        if os.path.exists(imd.prospector_fit_csvs_dir + f'/{run_name}_csvs/group{groupID}_cont_phot.csv'):
             print(f'Making plot for group {groupID}')
             make_plots(groupID, run_name, label_lines=False)
 

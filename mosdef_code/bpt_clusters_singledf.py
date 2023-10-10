@@ -129,7 +129,7 @@ def plot_bpt_all_composites(color_code='None'):
     imd.check_and_make_dir(imd.cluster_dir+f'/cluster_stats/bpts/')
     fig.savefig(imd.cluster_dir+f'/cluster_stats/bpts/all_groups_bpt{add_str}.pdf')
 
-def plot_bpt(savename='None', axis_obj='False', composite_bpt_point=[-47], composite_bpt_errs=0, use_other_df = 0, use_df='False', add_background=False, color_gals=False, add_prospector='False', groupID=-1, skip_gals=False):
+def plot_bpt(savename='None', axis_obj='False', composite_bpt_point=[-47], composite_bpt_errs=0, use_other_df = 0, use_df='False', add_background=False, color_gals=False, add_prospector='False', groupID=-1, skip_gals=False, plot_median=False):
     """Plots the bpt diagram for the objects in zobjs
 
     Parameters:
@@ -144,6 +144,7 @@ def plot_bpt(savename='None', axis_obj='False', composite_bpt_point=[-47], compo
     add_prospector (str): Set to run name to add the point from the recent prospector fit
     groupID (int): groupID when using prospector
     skip_gals (Boolean): Set to true to not plot the galaxies in the cluster
+    plot_median (Boolean): SEt to True to add an X for the median of the galaxies
 
     Returns:
     """
@@ -186,6 +187,8 @@ def plot_bpt(savename='None', axis_obj='False', composite_bpt_point=[-47], compo
     
     cmap = mpl.cm.plasma
     norm = mpl.colors.Normalize(vmin=1, vmax=len(gal_df)) 
+    n2has = []
+    o3hbs = []
     if skip_gals==False:
         for gal in range(len(gal_df)):
             row = gal_df.iloc[gal]
@@ -193,9 +196,16 @@ def plot_bpt(savename='None', axis_obj='False', composite_bpt_point=[-47], compo
                 rgba = cmap(norm(row['group_gal_id']))
             else:
                 rgba = 'black'
-            ax.errorbar(row['log_NII_Ha'], row['log_OIII_Hb'], xerr=row[
+            if row['log_NII_Ha']>-98 and row['log_OIII_Hb']>-98:
+                n2has.append(row['log_NII_Ha'])
+                o3hbs.append(row['log_OIII_Hb'])
+                ax.errorbar(row['log_NII_Ha'], row['log_OIII_Hb'], xerr=row[
                             'log_NII_Ha_err'], yerr=row['log_OIII_Hb_err'], marker='o', color=rgba, ecolor='grey', ls='None', zorder=1)
-    
+    if plot_median == True:
+        median_n2ha = np.median(n2has)
+        median_o3hb = np.median(o3hbs)
+        ax.plot(median_n2ha, median_o3hb, marker='x', color='red', ls='None', zorder=100, markersize=10, mew=3)
+
     # gal_df_2 = gal_df[gal_df['agn_flag']>3]
     # ax.errorbar(gal_df_2['log_NII_Ha'], gal_df_2['log_OIII_Hb'], xerr=gal_df_2[
     #                 'log_NII_Ha_err'], yerr=gal_df_2['log_OIII_Hb_err'], marker='o', color='orange', ecolor='grey', ls='None')

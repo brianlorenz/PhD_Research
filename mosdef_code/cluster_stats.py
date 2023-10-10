@@ -20,12 +20,19 @@ def plot_similarity_cluster(groupID, zobjs, similarity_matrix, axis_obj='False')
     galaxies = zobjs[zobjs['cluster_num'] == groupID]
     similarities = []
     similarities_composite = []
+    median_similarities = []
     num_galaxies = len(galaxies)
     for i in range(num_galaxies):
         for j in range(num_galaxies - i):
             if i != j:
                 similarities.append(
                     similarity_matrix[galaxies.iloc[i]['new_index'], galaxies.iloc[j]['new_index']])
+        gal_sims = []
+        for j in range(num_galaxies):
+            #Find and save the mean similarity
+            if i != j:
+                gal_sims.append(similarity_matrix[galaxies.iloc[i]['new_index'], galaxies.iloc[j]['new_index']])
+        median_similarities.append(np.median(gal_sims))
     mock_composite_sed = read_mock_composite_sed(groupID)
     for i in range(num_galaxies):
         mock_sed = read_mock_sed(
@@ -36,6 +43,8 @@ def plot_similarity_cluster(groupID, zobjs, similarity_matrix, axis_obj='False')
     #galaxies['similarity_composite'] = similarities_composite
     zobjs.loc[zobjs['cluster_num'] == groupID,
                 'similarity_composite'] = similarities_composite
+    zobjs.loc[zobjs['cluster_num'] == groupID,
+                'median_similarity_to_group'] = median_similarities
 
     galaxies = zobjs.loc[zobjs['cluster_num'] == groupID]
 
@@ -56,6 +65,8 @@ def plot_similarity_cluster(groupID, zobjs, similarity_matrix, axis_obj='False')
     
     mean_sim = np.mean(similarities)
     mean_sim_to_composite = np.mean(similarities_composite)
+    median_sim_to_composite = np.median(similarities_composite)
+    std_sim_to_composite = np.std(similarities_composite)
     
     if axis_obj == 'False':
         ax.set_xlabel('Similarity', fontsize=axisfont)
@@ -72,6 +83,11 @@ def plot_similarity_cluster(groupID, zobjs, similarity_matrix, axis_obj='False')
 
         bins = np.arange(0, 1.05, 0.05)
         ax.hist(similarities_composite, bins=bins, color='black')
+        ax.vlines(median_sim_to_composite, 0, 10, color='orange')
+        ax.vlines(median_sim_to_composite-2*std_sim_to_composite, 0, 10, color='red')
+        ax.text(0.1, 0.9, f'Median similarity to composite {median_sim_to_composite}', transform=ax.transAxes)
+        ax.text(0.1, 0.8, f'2 Std similarity to composite {2*std_sim_to_composite}', transform=ax.transAxes)
+        
 
         ax.set_xlim(-0.05, 1.05)
         ax.set_xlabel('Similarity to Composite', fontsize=axisfont)
@@ -117,4 +133,4 @@ def plot_all_similarity(n_clusters):
     sim_df = pd.DataFrame(zip(groupIDs, mean_sims, mean_sim_to_composites), columns=['groupID', 'mean_sim', 'mean_sim_to_composite'])
     sim_df.to_csv(imd.cluster_similarity_plots_dir+'/composite_similarities.csv', index=False)
 
-# plot_all_similarity(23)
+plot_all_similarity(20)

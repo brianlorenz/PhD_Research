@@ -265,8 +265,9 @@ def fit_emission(groupID, norm_method, constrain_O3=False, axis_group=-1, save_n
         err_log_N2_Ha_measures_high_value = err_log_N2_Ha_measures_high - measured_log_N2_Ha[0]
         err_log_O3_Hb_measures_low_value = measured_log_O3_Hb[0] - err_log_O3_Hb_measures_low
         err_log_O3_Hb_measures_high_value = err_log_O3_Hb_measures_high - measured_log_O3_Hb[0]
-        err_metal_low_value = O3N2_metal - err_metal_low
-        err_metal_high_value = err_metal_high - O3N2_metal
+        # Taking absolute value to encompass the point if the error ends up negative somehow
+        err_metal_low_value = np.abs(O3N2_metal - err_metal_low)
+        err_metal_high_value = np.abs(err_metal_high - O3N2_metal)
         err_metal_low = [err_metal_low_value for i in range(len(line_list))]
         err_metal_high = [err_metal_high_value for i in range(len(line_list))]
         err_log_N2_Ha_measures_low = [err_log_N2_Ha_measures_low_value for i in range(len(line_list))]
@@ -296,7 +297,6 @@ def fit_emission(groupID, norm_method, constrain_O3=False, axis_group=-1, save_n
     fit_df = pd.DataFrame(zip(line_names, line_centers_rest,
                               z_offset, err_z_offset, hb_scales, err_hb_scales, ha_scales, err_ha_scales, velocity, err_velocity, amps, err_amps, sigs, err_sigs, fluxes, err_fluxes, balmer_dec, err_balmer_dec_low, err_balmer_dec_high, measured_O3N2_metal, err_metal_low, err_metal_high, measured_log_N2_Ha, err_log_N2_Ha_measures_low, err_log_N2_Ha_measures_high, measured_log_O3_Hb, err_log_O3_Hb_measures_low, err_log_O3_Hb_measures_high), columns=['line_name', 'line_center_rest', 'z_offset', 'err_z_offset', 'hb_scale', 'err_hb_scale', 'ha_scale', 'err_ha_scale', 'fixed_velocity', 'err_fixed_velocity', 'amplitude', 'err_amplitude', 'sigma', 'err_sigma', 'flux', 'err_flux', 'balmer_dec', 'err_balmer_dec_low', 'err_balmer_dec_high', 'O3N2_metallicity', 'err_O3N2_metallicity_low', 'err_O3N2_metallicity_high', 'log_N2_Ha', 'err_log_N2_Ha_low', 'err_log_N2_Ha_high', 'log_O3_Hb', 'err_log_O3_Hb_low', 'err_log_O3_Hb_high'])
     fit_df['signal_noise_ratio'] = fit_df['flux']/fit_df['err_flux']
-
 
     if axis_group > -1:
         if bootstrap_num > -1:
@@ -972,6 +972,7 @@ def compute_bootstrap_uncertainties(n_clusters, save_name, bootstrap=-1, cluster
 # for axis_group in range(8):
 #     plot_emission_fit(0, 'cluster_norm', axis_group=axis_group, save_name='both_sfms_4bin_median_2axis_boot100')
 
-# fit_emission(0, 'cluster_norm', constrain_O3=False, axis_group=0, save_name='norm_1_sn3_filtered_cont_renorm', scaled='False', run_name='False')
+# fit_all_emission(n_clusters, norm_method, ignore_groups, bootstrap=bootstrap)
+fit_emission(15, 'luminosity')
 
 # fit_all_emission(19, 'cluster_norm', [], bootstrap=1000, halpha_scaled=True)

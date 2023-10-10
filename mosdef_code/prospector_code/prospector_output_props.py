@@ -6,6 +6,7 @@ import os
 from balmer_avs import compute_balmer_av
 from compute_cluster_sfrs import compute_cluster_sfrs
 import sys
+import numpy as np
 
 def save_props(n_clusters, run_name):
     prop_dfs = []
@@ -75,6 +76,7 @@ def add_props_to_cluster_summary_df(n_clusters, run_name):
         err_O3N2_metallicity_lows.append(err_O3N2_metallicity_low)
         err_O3N2_metallicity_highs.append(err_O3N2_metallicity_high)
 
+    cluster_summary_df['prospector_log_mass'] = np.log10(cluster_summary_df['surviving_mass50'])
     cluster_summary_df['prospector_halpha_flux'] = halphas
     cluster_summary_df['err_prospector_halpha_flux'] = err_halphas
     cluster_summary_df['prospector_halpha_luminosity'] = halpha_lums

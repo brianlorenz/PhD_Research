@@ -35,6 +35,7 @@ def make_tfig_cfig(run_name):
         file_shortname = file[:-19]
 
         res, obs, mod = reader.results_from(imd.mosdef_dir + f'/prospector_singlegal_tests/' + file)
+        breakpoint()
 
         tfig = reader.traceplot(res)
         tfig.savefig(prospector_plots_dir + f'/{run_name}_plots' + f'/{file_shortname}_tfig.pdf')
