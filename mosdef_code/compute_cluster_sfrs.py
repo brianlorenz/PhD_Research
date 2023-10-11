@@ -1,18 +1,19 @@
 import initialize_mosdef_dirs as imd
 from cosmology_calcs import flux_to_luminosity
 from compute_new_sfrs import correct_ha_lum_for_dust, ha_lum_to_sfr
+from balmer_avs import compute_balmer_av
 import numpy as np
 from astropy.io import ascii
 import random
 
-def compute_cluster_sfrs(lower_limit=True, luminosity=False, prospector=False, n_loops_monte_carlo=1000):
+def compute_cluster_sfrs(lower_limit=True, luminosity=False, prospector=False, bootstrap = -1):
     """
     
     Parameters:
     lower_limit (boolean): Set to true to use the lower limits computed in balmer_dec_histogram
     luminosity (boolean): Set to false if the fluxes are already in luminosity space
     prospector (boolean): Set to true if you want to compute the prospector SFRs
-    n_loops_monte_carlo (float): Number of times to loop monte carlo. -1 to skip errors
+    bootstrap (float): Number of boostrapped emission measurements - set to -1 to skip error calucation
     """
     cluster_summary_df = imd.read_cluster_summary_df()
 
@@ -47,9 +48,9 @@ def compute_cluster_sfrs(lower_limit=True, luminosity=False, prospector=False, n
     AV = cluster_summary_df['AV']
 
     #Convert the Balmer AV to A_Halpha using https://iopscience.iop.org/article/10.1088/0004-637X/763/2/145/pdf
-    balmer_ahalphas = 3.33*(balmer_avs / 4.05)
-    err_balmer_halphas_low = 3.33*(err_balmer_avs_low / 4.05)
-    err_balmer_halphas_high = 3.33*(err_balmer_avs_high / 4.05)
+    balmer_ahalphas = compute_balmer_ahalpha_from_AV(balmer_avs)
+    err_balmer_halphas_low = compute_balmer_ahalpha_from_AV(err_balmer_avs_low)
+    err_balmer_halphas_high = compute_balmer_ahalpha_from_AV(err_balmer_avs_high)
     # ahalphas = 3.33*(AV / 4.05)*2
 
     # Convert ha to luminsoty
@@ -62,7 +63,7 @@ def compute_cluster_sfrs(lower_limit=True, luminosity=False, prospector=False, n
         err_halpha_lums = cluster_summary_df['err_prospector_halpha_luminosity']
         prospector_log_median_masses = np.log10(cluster_summary_df['surviving_mass50'])
         prospector_balmer_avs = cluster_summary_df['prospector_balmer_av']
-        prospector_balmer_ahalphas = 3.33*(prospector_balmer_avs / 4.05)
+        prospector_balmer_ahalphas = compute_balmer_ahalpha_from_AV(prospector_balmer_avs)
 
     log_halpha_sfrs, log_halpha_ssfrs = perform_sfr_computation(halpha_lums, balmer_ahalphas, log_median_masses, imf='Hao_Chabrier')
     if prospector == True:
@@ -70,13 +71,15 @@ def compute_cluster_sfrs(lower_limit=True, luminosity=False, prospector=False, n
 
 
     # Monte carlor errors on sfr
-    if n_loops_monte_carlo > 0:
-        err_sfr_low, err_sfr_high, err_ssfr_low, err_ssfr_high = get_sfr_errs(n_loops_monte_carlo, halpha_lums, err_halpha_lums, balmer_ahalphas, err_balmer_halphas_low, err_balmer_halphas_high, log_median_masses, log_halpha_sfrs, log_halpha_ssfrs, imf='Hao_Chabrier')
+    if bootstrap > 0:
+        err_sfr_low, err_sfr_high, err_ssfr_low, err_ssfr_high = get_sfr_errs(bootstrap, halpha_lums, err_halpha_lums, balmer_ahalphas, err_balmer_halphas_low, err_balmer_halphas_high, log_median_masses, log_halpha_sfrs, log_halpha_ssfrs, median_redshifts, luminosity, imf='Hao_Chabrier')
     else:
         err_sfr_low = -99
         err_sfr_high = -99
         err_ssfr_low = -99
         err_ssfr_high = -99
+
+    breakpoint()
 
     if prospector == True:
         cluster_summary_df['prospector_log_sfr'] = prospector_av_log_halpha_sfrs
@@ -136,27 +139,40 @@ def perform_sfr_computation(halpha_lums, balmer_ahalphas, log_median_masses, imf
 
     return log_halpha_sfrs, log_halpha_ssfrs
 
-def get_sfr_errs(n_loops_monte_carlo, halpha_lums, err_halpha_lums, balmer_ahalphas, err_balmer_halphas_low, err_balmer_halphas_high, log_median_masses, log_halpha_sfrs, log_halpha_ssfrs, imf='Hao_Chabrier'):
+def get_sfr_errs(bootstrap, halpha_lums, err_halpha_lums, balmer_ahalphas, err_balmer_halphas_low, err_balmer_halphas_high, log_median_masses, log_halpha_sfrs, log_halpha_ssfrs, median_redshifts, luminosity, imf='Hao_Chabrier'):
     #save distriubiton of generated sfrs and ssfrs
-    sfrs = []
-    ssfrs = []
-   
-    # perturb the data
-    new_ha_lums = [[np.random.normal(loc=halpha_lums.iloc[j], scale=err_halpha_lums.iloc[j]) for j in range(len(halpha_lums))] for i in range(n_loops_monte_carlo)]
-    new_balmer_ahalphas = [[draw_asymettric_error(balmer_ahalphas.iloc[j], err_balmer_halphas_low.iloc[j], err_balmer_halphas_high.iloc[j]) for j in range(len(balmer_ahalphas))] for i in range(n_loops_monte_carlo)]
+    err_sfr_lows = []
+    err_sfr_highs = []
+    err_ssfr_lows = []
+    err_ssfr_highs = []
+    for groupID in range(len(halpha_lums)):
+        boot_dfs = [ascii.read(imd.emission_fit_dir + f'/emission_fitting_boot_csvs/{groupID}_emission_fits_{bootstrap_num}.csv').to_pandas() for bootstrap_num in range(bootstrap)]
+        if luminosity == True:
+            new_ha_lums = [boot_dfs[i]['ha_flux'].iloc[0] for i in range(bootstrap)]
+        else:
+            new_ha_fluxes = [boot_dfs[i]['ha_flux'].iloc[0] for i in range(bootstrap)]
+            new_halpha_lums = flux_to_luminosity(new_ha_fluxes, median_redshifts[groupID])
+        new_balmer_decs = [boot_dfs[i]['balmer_dec'].iloc[0] for i in range(bootstrap)]
+        new_balmer_avs = [compute_balmer_av(new_balmer_decs[i]) for i in range(bootstrap)]
+        new_balmer_ahalphas = [compute_balmer_ahalpha_from_AV(new_balmer_avs[i]) for i in range(bootstrap)]
 
-    sfr_outs = [perform_sfr_computation(np.array(new_ha_lums[j1]), np.array(new_balmer_ahalphas[j1]), log_median_masses.to_numpy(), replace_nan=True) for j1 in range(len(new_balmer_ahalphas))]
-    all_log_sfrs = [sfr_outs[i][0] for i in range(len(sfr_outs))]
-    all_log_ssfrs = [sfr_outs[i][1] for i in range(len(sfr_outs))]
-    all_sfrs  = 10**np.array(all_log_sfrs)
-    all_ssfrs  = 10**np.array(all_log_ssfrs)
-    sfr_measured = 10**log_halpha_sfrs.to_numpy()
-    ssfr_measured = 10**log_halpha_ssfrs.to_numpy()
-    err_sfr_low = np.log10(sfr_measured - np.percentile(all_sfrs, 16, axis=0))
-    err_sfr_high = np.log10(np.percentile(all_sfrs, 84, axis=0) - sfr_measured)
-    err_ssfr_low = np.log10(ssfr_measured - np.percentile(all_ssfrs, 16, axis=0))
-    err_ssfr_high = np.log10(np.percentile(all_ssfrs, 84, axis=0) - ssfr_measured)
-    
+        sfr_outs = [perform_sfr_computation(np.array(new_ha_lums[j1]), np.array(new_balmer_ahalphas[j1]), log_median_masses.to_numpy(), replace_nan=True) for j1 in range(len(new_balmer_ahalphas))]
+        all_log_sfrs = [sfr_outs[i][0] for i in range(len(sfr_outs))]
+        all_log_ssfrs = [sfr_outs[i][1] for i in range(len(sfr_outs))]
+        all_sfrs  = 10**np.array(all_log_sfrs)
+        all_ssfrs  = 10**np.array(all_log_ssfrs)
+        sfr_measured = 10**log_halpha_sfrs.to_numpy()
+        ssfr_measured = 10**log_halpha_ssfrs.to_numpy()
+        err_sfr_low = np.log10(sfr_measured - np.percentile(all_sfrs, 16, axis=0))
+        err_sfr_high = np.log10(np.percentile(all_sfrs, 84, axis=0) - sfr_measured)
+        err_ssfr_low = np.log10(ssfr_measured - np.percentile(all_ssfrs, 16, axis=0))
+        err_ssfr_high = np.log10(np.percentile(all_ssfrs, 84, axis=0) - ssfr_measured)
+        err_sfr_lows.append(err_sfr_low)
+        err_sfr_highs.append(err_sfr_high)
+        err_ssfr_lows.append(err_ssfr_low)
+        err_sfr_highs.append(err_sfr_high)
+        print('TESTING - Make sure errors are computed properly for one group and saved')
+        breakpoint()
     return err_sfr_low, err_sfr_high, err_ssfr_low, err_ssfr_high
 
 def draw_asymettric_error(center, low_err, high_err):
@@ -170,5 +186,11 @@ def draw_asymettric_error(center, low_err, high_err):
         new_value = center + np.abs(draw)
     return new_value
 
+def compute_balmer_ahalpha_from_AV(balmer_avs):
+    """Compues the Balmer Halpha given the AV"""
+    balmer_halphas = 3.33*(balmer_avs / 4.05)
+    return balmer_halphas
 
-# compute_cluster_sfrs(luminosity=True, n_loops_monte_carlo=1000)
+
+
+# compute_cluster_sfrs(luminosity=False, bootstrap=100)

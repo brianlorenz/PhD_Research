@@ -67,7 +67,7 @@ def make_overview_plot_clusters(n_clusters, norm_method, color_gals=False, bpt_c
         if paper_overview==False:
             ax.text(0.85, 0.85, f'{n_gals}', transform=ax.transAxes, fontsize=fontsize)
         ax.set_xlabel('Wavelength', fontsize=fontsize)
-        ax.set_ylabel('Normalized Flux', fontsize=fontsize)
+        ax.set_ylabel('Normalized F$_\lambda$', fontsize=fontsize)
         ax.tick_params(labelsize = fontsize)
         set_aspect_1(ax)
 
@@ -89,7 +89,7 @@ def make_overview_plot_clusters(n_clusters, norm_method, color_gals=False, bpt_c
             ax.plot(spec_df['wavelength'], spec_df['f_lambda']*scale_factor, color='black', linewidth=2, label='Composite')
 
             ax.set_xlabel('Wavelength', fontsize=fontsize, labelpad=30)
-            ax.set_ylabel('Normalized Flux', fontsize=fontsize)
+            ax.set_ylabel('Normalized F$_\lambda$', fontsize=fontsize)
             ax.tick_params(labelsize = fontsize)
             ax.set_ylim(-0.1, 1.5)
         

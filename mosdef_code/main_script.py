@@ -67,11 +67,11 @@ imd.check_and_make_dir(imd.composite_filter_sedpy_dir)
 # remove_dissimilar_gals(n_clusters) ### Run this only once
 
 # # Begin running all the functions
-print('Generating composite seds...')
-get_all_composite_seds(n_clusters, run_filters=True)
-print('Generating composite spectra...')
-stack_all_spectra(n_clusters, norm_method, bootstrap=bootstrap, ignore_groups=ignore_groups)
-print('Fitting emission lines...')
+# print('Generating composite seds...')
+# get_all_composite_seds(n_clusters, run_filters=True)
+# print('Generating composite spectra...')
+# stack_all_spectra(n_clusters, norm_method, bootstrap=bootstrap, ignore_groups=ignore_groups)
+# print('Fitting emission lines...')
 
 # # # Check for agn and  - cuts down to 20
 # check_for_all_agn(n_clusters)
