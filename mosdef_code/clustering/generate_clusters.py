@@ -41,7 +41,7 @@ def generate_clusters(n_clusters, stop_to_eval=True, skip_slow_steps=False):
     # Cross-correlate the mock seds
     if skip_slow_steps==False:
         correlate_all_seds(zobjs)
-        affinity_matrix = ascii.read(imd.cluster_dir + '/similarity_matrix.csv').to_pandas().to_numpy()
+    affinity_matrix = ascii.read(imd.cluster_dir + '/similarity_matrix.csv').to_pandas().to_numpy()
 
     # Evaluate how many clusters to make
     if stop_to_eval==True:

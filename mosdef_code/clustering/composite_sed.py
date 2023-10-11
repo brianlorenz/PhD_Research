@@ -384,6 +384,7 @@ def vis_composite_sed(total_sed, composite_sed=0, composite_filters=0, groupID=-
     if axis_obj == 'False':
         plt.tight_layout()
         imd.check_and_make_dir(imd.composite_sed_images_dir)
+        imd.check_and_make_dir(imd.composite_sed_images_dir+ f'/{filt_dir}')
         fig.savefig(imd.composite_sed_images_dir + f'/{filt_dir}{groupID}_sed.pdf')
         plt.close()
     else:

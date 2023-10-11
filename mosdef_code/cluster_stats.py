@@ -13,6 +13,8 @@ from mosdef_obj_data_funcs import read_sed, read_mock_sed, read_mock_composite_s
 import matplotlib.pyplot as plt
 import initialize_mosdef_dirs as imd
 from cross_correlate import get_cross_cor
+import shutil
+
 
 
 def plot_similarity_cluster(groupID, zobjs, similarity_matrix, axis_obj='False'):
@@ -87,7 +89,16 @@ def plot_similarity_cluster(groupID, zobjs, similarity_matrix, axis_obj='False')
         ax.vlines(median_sim_to_composite-2*std_sim_to_composite, 0, 10, color='red')
         ax.text(0.1, 0.9, f'Median similarity to composite {median_sim_to_composite}', transform=ax.transAxes)
         ax.text(0.1, 0.8, f'2 Std similarity to composite {2*std_sim_to_composite}', transform=ax.transAxes)
-        
+
+        # Flag galaxies for removal
+        zeros = np.zeros(len(galaxies))
+        galaxies['deletion_flag'] = zeros
+        galaxies = galaxies.reset_index(drop=True)
+        std_cutoff = median_sim_to_composite-2*std_sim_to_composite
+        for i in range(len(galaxies)):
+            gal_similarity = galaxies.iloc[i]['similarity_composite']
+            if gal_similarity < std_cutoff and gal_similarity < 0.8:
+                galaxies.loc[i, 'deletion_flag'] = 1
 
         ax.set_xlim(-0.05, 1.05)
         ax.set_xlabel('Similarity to Composite', fontsize=axisfont)
@@ -133,4 +144,49 @@ def plot_all_similarity(n_clusters):
     sim_df = pd.DataFrame(zip(groupIDs, mean_sims, mean_sim_to_composites), columns=['groupID', 'mean_sim', 'mean_sim_to_composite'])
     sim_df.to_csv(imd.cluster_similarity_plots_dir+'/composite_similarities.csv', index=False)
 
-plot_all_similarity(20)
+def remove_dissimilar_gals(n_clusters):
+    """Removes galaxies from our sample that are not similar to their clusters"""
+    
+    filtered_gal_df = ascii.read(imd.loc_filtered_gal_df).to_pandas()
+    removed_gal_df = ascii.read(imd.loc_removed_gal_df).to_pandas()
+    zobjs = ascii.read(imd.cluster_dir + '/zobjs_clustered.csv', data_start=1).to_pandas()
+    for groupID in range(n_clusters):
+        similarities_df = ascii.read(imd.cluster_similarity_composite_dir + f'/{groupID}_similarity_composite.csv').to_pandas()
+        group_df = ascii.read(imd.cluster_indiv_dfs_dir + f'/{groupID}_cluster_df.csv').to_pandas()
+        
+
+        for i in range(len(similarities_df)):
+            if similarities_df.loc[i]['deletion_flag'] == 1:
+                field = similarities_df.loc[i]['field']
+                v4id = similarities_df.loc[i]['v4id']
+
+                remove_row = np.logical_and(group_df['field']==field, group_df['v4id']==v4id)
+                remove_row_idx = group_df[remove_row].index[0]
+                group_df = group_df.drop(remove_row_idx)
+
+                # Remove from filtered and move to removed
+                gal_df_row = np.logical_and(filtered_gal_df['field']==field, filtered_gal_df['v4id']==v4id)
+                gal_df_row_idx = filtered_gal_df[gal_df_row].index[0]
+                filtered_gal_df[gal_df_row]
+                removed_gal_df.append(filtered_gal_df[gal_df_row])
+                filtered_gal_df = filtered_gal_df.drop(gal_df_row_idx)
+                
+                zobjs_row = np.logical_and(zobjs['field']==field, zobjs['v4id']==v4id)
+                zobjs_row_idx = zobjs[zobjs_row].index[0]
+                zobjs = zobjs.drop(zobjs_row_idx)
+
+                filename = f'{field}_{v4id}_mock.pdf'
+                cluster_num = similarities_df.loc[i]["cluster_num"]
+                # breakpoint()
+                os.remove(imd.cluster_dir + f'/{cluster_num}/' + filename)
+
+                similarities_df = similarities_df.drop(i)
+
+        group_df.to_csv(imd.cluster_indiv_dfs_dir + f'/{groupID}_cluster_df.csv', index=False)
+        similarities_df.to_csv(imd.cluster_similarity_composite_dir + f'/{groupID}_similarity_composite.csv', index=False)
+    
+    zobjs.to_csv(imd.cluster_dir + '/zobjs_clustered.csv', index=False)
+    filtered_gal_df.to_csv(imd.loc_filtered_gal_df, index=False)
+    removed_gal_df.to_csv(imd.loc_removed_gal_df, index=False)
+# remove_dissimilar_gals(20)
+# plot_all_similarity(20)

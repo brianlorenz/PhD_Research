@@ -27,6 +27,8 @@ from balmer_dec_histogram import compute_balmer_lower_limits, plot_balmer_hist
 from compute_indiv_sfrs_from_halpha import compute_indiv_sfrs
 from plot_group_hists import plot_group_hists
 from prospector_output_props import add_props_to_cluster_summary_df, save_props
+from cluster_stats import plot_all_similarity, remove_dissimilar_gals
+from generate_clusters import generate_clusters, read_filtered_gal_df
 
 
 '''Starting point: One folder ('cluster_folder') that contains: 
@@ -57,50 +59,56 @@ imd.check_and_make_dir(imd.composite_filter_csvs_dir)
 imd.check_and_make_dir(imd.composite_filter_images_dir)
 imd.check_and_make_dir(imd.composite_filter_sedpy_dir)
 
-# # Begin running all the functions
-# print('Generating composite seds...')
-# get_all_composite_seds(n_clusters, run_filters=True)
-# print('Generating composite spectra...')
-# stack_all_spectra(n_clusters, norm_method, bootstrap=bootstrap, ignore_groups=ignore_groups)
-# print('Fitting emission lines...')
+# generate_clusters(20, stop_to_eval=False, skip_slow_steps=True)
 
-# # # Check for agn and list which groups do not have enough galaxies - cuts down to 20
+# get_all_composite_seds(n_clusters, run_filters=False)
+# gen_all_mock_composites(n_clusters)
+# plot_all_similarity(n_clusters)
+# remove_dissimilar_gals(n_clusters) ### Run this only once
+
+# # Begin running all the functions
+print('Generating composite seds...')
+get_all_composite_seds(n_clusters, run_filters=True)
+print('Generating composite spectra...')
+stack_all_spectra(n_clusters, norm_method, bootstrap=bootstrap, ignore_groups=ignore_groups)
+print('Fitting emission lines...')
+
+# # # Check for agn and  - cuts down to 20
 # check_for_all_agn(n_clusters)
 
 # # Re-fit the emission of the composites and now fit the boostrapped ones
-# fit_all_emission(n_clusters, 'cluster_norm', ignore_groups, bootstrap=bootstrap, halpha_scaled=halpha_scaled)
-# fit_all_emission(n_clusters, norm_method, ignore_groups, bootstrap=bootstrap)
+fit_all_emission(n_clusters, norm_method, ignore_groups, bootstrap=bootstrap)
 
-# # # Add the bootstrapped uncertainties
-# compute_bootstrap_uncertainties(n_clusters, 'None', bootstrap=bootstrap, clustering=True, ignore_groups=ignore_groups, halpha_scaled=halpha_scaled)
+breakpoint()
+
+# # # Add the bootstrapped uncertainties - shouldn't do this currently
 # compute_bootstrap_uncertainties(n_clusters, 'None', bootstrap=bootstrap, clustering=True, ignore_groups=ignore_groups)
 
 # # # Add the normalizations to the group dfs
-# add_norm_factors(n_clusters)
+add_norm_factors(n_clusters)
 
-# make_clusters_summary_df(n_clusters, ignore_groups, halpha_scaled=halpha_scaled)
-# make_clusters_summary_df(n_clusters, ignore_groups)
+make_clusters_summary_df(n_clusters, ignore_groups)
 
 # # Need to do a few things to composites (measure uvj, generate mocks sed, etc. before we can plot)
-# print('Generating plots')
-# gen_all_mock_composites(n_clusters)
-# observe_all_uvj(n_clusters, individual_gals=False, composite_uvjs=True)
-# print('Done - composite SEDs are ready')
+print('Generating plots')
+gen_all_mock_composites(n_clusters)
+observe_all_uvj(n_clusters, individual_gals=False, composite_uvjs=True)
+print('Done - composite SEDs are ready')
 
 # # Figure out which groups to exclude from plots - CHECK THRESHOLD in /cluster_stats/similarities/composite_similarities.csv
 # remove_groups_by_similiary(n_clusters, sim_thresh=0.8)
 
 # # Compute the ssfr for the groups
-# plot_balmer_hist(n_clusters, bootstrap)
-# compute_balmer_lower_limits()
-# compute_cluster_sfrs(luminosity=True)
-# compute_indiv_sfrs(n_clusters, lower_limit=True)
+plot_balmer_hist(n_clusters, bootstrap)
+compute_balmer_lower_limits()
+compute_cluster_sfrs(luminosity=True)
+compute_indiv_sfrs(n_clusters, lower_limit=True)
 
 # # Have to run this twice, since ignore_groups won't be loaded properly the first time
-# generate_newer_cluster_plots(n_clusters, norm_method)
-# plot_group_hists(n_clusters)
+generate_newer_cluster_plots(n_clusters, norm_method)
+plot_group_hists(n_clusters)
 
-# generate_all_cluster_plots(n_clusters)
+generate_all_cluster_plots(n_clusters)
 # breakpoint()
 
 

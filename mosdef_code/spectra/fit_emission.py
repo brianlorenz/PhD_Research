@@ -53,7 +53,7 @@ def fit_emission(groupID, norm_method, constrain_O3=False, axis_group=-1, save_n
     Saves a csv of the fits for all of the lines
     """
     # Number of loops in Monte Carlo
-    n_loops = 10
+    n_loops = 0
 
     if axis_group > -1:
         if bootstrap_num > -1:
@@ -718,7 +718,7 @@ def fit_all_emission(n_clusters, norm_method, ignore_groups, constrain_O3=False,
         print(f'Fitting emission for {i}')
         if i<4:
             continue
-        # fit_emission(i, norm_method, constrain_O3=constrain_O3, halpha_scaled=halpha_scaled)
+        fit_emission(i, norm_method, constrain_O3=constrain_O3, halpha_scaled=halpha_scaled)
         if bootstrap > -1:
             for bootstrap_num in range(bootstrap):
                 fit_emission(i, norm_method, constrain_O3=constrain_O3, bootstrap_num=bootstrap_num, halpha_scaled=halpha_scaled)
@@ -973,6 +973,6 @@ def compute_bootstrap_uncertainties(n_clusters, save_name, bootstrap=-1, cluster
 #     plot_emission_fit(0, 'cluster_norm', axis_group=axis_group, save_name='both_sfms_4bin_median_2axis_boot100')
 
 # fit_all_emission(n_clusters, norm_method, ignore_groups, bootstrap=bootstrap)
-fit_emission(15, 'luminosity')
+# fit_emission(15, 'luminosity')
 
 # fit_all_emission(19, 'cluster_norm', [], bootstrap=1000, halpha_scaled=True)
