@@ -116,7 +116,10 @@ def plot_group_hists(n_clusters):
     # Balmer and AV vs mass total
     def plot_all_groups(xvars, yvars, groupIDs, ylabel, color_var='None'):
         fig, ax = plt.subplots(figsize=(8,8))
-        ignore_groups = imd.ignore_groups
+        try:
+            ignore_groups = imd.ignore_groups
+        except:
+            ignore_groups = []
         for groupID in groupIDs:
             if groupID in ignore_groups:
                 continue
@@ -171,7 +174,10 @@ def plot_group_hists(n_clusters):
     plot_all_groups(group_mass_tuples, group_av_tuples, groupIDs, 'AV')
 
     fig, ax = plt.subplots(figsize=(8,8))
-    ignore_groups = imd.ignore_groups
+    try:
+        ignore_groups = imd.ignore_groups
+    except:
+        ignore_groups = []
     for groupID in groupIDs:
         if groupID in ignore_groups:
             continue

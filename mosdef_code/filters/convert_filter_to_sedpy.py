@@ -38,8 +38,7 @@ def find_median_redshifts(n_clusters):
         #             f'/Users/brianlorenz/mosdef/sed_csvs/{name}_3DHST_sed.csv').to_pandas()['Z_MOSFIRE'].iloc[0]
         #     z_list.append(z)
         group_df = ascii.read(imd.cluster_indiv_dfs_dir + f'/{groupID}_cluster_df.csv').to_pandas()
-        breakpoint()
-        median_z = np.median(z_list)
+        median_z = np.median(group_df['Z_MOSFIRE'])
         median_zs.append(median_z)
         groupIDs.append(groupID)
 

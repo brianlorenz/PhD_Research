@@ -28,7 +28,7 @@ def luminosity_to_flux(luminosities, redshift):
 
     return fluxes
 
-def flux_to_luminosity(fluxes, redshift, flux_errs = np.array(-1)):
+def flux_to_luminosity(fluxes, redshift, flux_errs = np.array([-1])):
     '''
     Given a redshift, converts a  flux (erg/s/cm^2) to a luminosity (erg/s). Uses WMAP9 cosmology
 

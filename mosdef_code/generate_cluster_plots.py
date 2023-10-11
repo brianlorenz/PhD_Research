@@ -89,7 +89,11 @@ def generate_all_cluster_plots(n_clusters, overview=False):
 
 
 def generate_newer_cluster_plots(n_clusters, norm_method):
-    ignore_groups = imd.ignore_groups
+    try:
+        ignore_groups = imd.ignore_groups
+    except:
+        ignore_groups = []
+
 
     imd.check_and_make_dir(imd.cluster_dir + f'/cluster_stats/sfrs')
     

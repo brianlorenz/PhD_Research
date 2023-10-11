@@ -51,7 +51,9 @@ ignore_groups = []
 # ignore_groups = [0,1,2,3,4,5,6,7,8,9,10,11,19]
 # ignore_groups = [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19]
 # Set hwo many times to bootstrap
-bootstrap = 1000
+big_bootstrap_num = 1000
+# bootstrap = big_bootstrap_num
+bootstrap = -1
 halpha_scaled=False
 
 imd.check_and_make_dir(imd.cluster_dir + '/composite_filters')
@@ -77,51 +79,51 @@ imd.check_and_make_dir(imd.composite_filter_sedpy_dir)
 # check_for_all_agn(n_clusters)
 
 # # Re-fit the emission of the composites and now fit the boostrapped ones
-fit_all_emission(n_clusters, norm_method, ignore_groups, bootstrap=bootstrap)
+# fit_all_emission(n_clusters, norm_method, ignore_groups, bootstrap=bootstrap)
+bootstrap = -1
+# fit_all_emission(n_clusters, norm_method, ignore_groups, bootstrap=bootstrap)
 
-breakpoint()
-
-# # # Add the bootstrapped uncertainties - shouldn't do this currently
-# compute_bootstrap_uncertainties(n_clusters, 'None', bootstrap=bootstrap, clustering=True, ignore_groups=ignore_groups)
+#Used to compute boostrapped uncertanties here
 
 # # # Add the normalizations to the group dfs
-add_norm_factors(n_clusters)
+# add_norm_factors(n_clusters)
 
-make_clusters_summary_df(n_clusters, ignore_groups)
+# make_clusters_summary_df(n_clusters, ignore_groups)
 
 # # Need to do a few things to composites (measure uvj, generate mocks sed, etc. before we can plot)
-print('Generating plots')
-gen_all_mock_composites(n_clusters)
-observe_all_uvj(n_clusters, individual_gals=False, composite_uvjs=True)
-print('Done - composite SEDs are ready')
+# print('Generating plots')
+# gen_all_mock_composites(n_clusters)
+# observe_all_uvj(n_clusters, individual_gals=False, composite_uvjs=True)
+# print('Done - composite SEDs are ready')
 
 # # Figure out which groups to exclude from plots - CHECK THRESHOLD in /cluster_stats/similarities/composite_similarities.csv
 # remove_groups_by_similiary(n_clusters, sim_thresh=0.8)
 
 # # Compute the ssfr for the groups
-plot_balmer_hist(n_clusters, bootstrap)
-compute_balmer_lower_limits()
-compute_cluster_sfrs(luminosity=True)
-compute_indiv_sfrs(n_clusters, lower_limit=True)
+# bootstrap = big_bootstrap_num
+# plot_balmer_hist(n_clusters, bootstrap)
+# bootstrap = -1
+# compute_balmer_lower_limits()
+# compute_cluster_sfrs(luminosity=True)
+# compute_indiv_sfrs(n_clusters, lower_limit=True)
 
 # # Have to run this twice, since ignore_groups won't be loaded properly the first time
-generate_newer_cluster_plots(n_clusters, norm_method)
-plot_group_hists(n_clusters)
+# generate_newer_cluster_plots(n_clusters, norm_method)
+# plot_group_hists(n_clusters)
 
-generate_all_cluster_plots(n_clusters)
+# generate_all_cluster_plots(n_clusters)
 # breakpoint()
 
 
 # Prepare for prospector:
-# print('Preparing data for Prospector')
+print('Preparing data for Prospector')
 # find_median_redshifts(n_clusters)
 # convert_all_folders_to_sedpy(n_clusters)
 # convert_folder_to_maggies(imd.composite_sed_csvs_dir)
 
 # Plot of all of the scaled composites, must be run after convert_folder_to_maggies
 # plot_scaled_composites(n_clusters)
-# Scale and re-fit the spectra using the scale that was used for the composites
-# scale_all_spectra(n_clusters)
+
 
 # Re-fit the prospector spectra in the same way that we fit the mosdef ones:
 
@@ -131,3 +133,13 @@ generate_all_cluster_plots(n_clusters)
 # save_props(n_clusters, run_name) # Make sure to update the mass values
 # add_props_to_cluster_summary_df(n_clusters, run_name) # Adds masses and computes sfr/ssfr
 
+
+
+
+### OLD
+
+# Scale and re-fit the spectra using the scale that was used for the composites
+# scale_all_spectra(n_clusters)
+
+# # # Add the bootstrapped uncertainties - shouldn't do this currently
+# compute_bootstrap_uncertainties(n_clusters, 'None', bootstrap=bootstrap, clustering=True, ignore_groups=ignore_groups)
