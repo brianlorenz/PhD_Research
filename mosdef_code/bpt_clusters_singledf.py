@@ -10,7 +10,7 @@ import cluster_data_funcs as cdf
 from astropy.io import ascii
 import matplotlib as mpl
 from axis_ratio_funcs import read_filtered_ar_df, read_interp_axis_ratio
-
+from plot_vals import *
 
 def get_bpt_coords(gal_df):
     """Gets the row(s) corresponding to one object
@@ -183,7 +183,7 @@ def plot_bpt(savename='None', axis_obj='False', composite_bpt_point=[-47], compo
     if add_background==True:
         filtered_gal_df = ascii.read(imd.loc_filtered_gal_df).to_pandas()
         filtered_gal_df = get_bpt_coords(filtered_gal_df)
-        ax.plot(filtered_gal_df['log_NII_Ha'], filtered_gal_df['log_OIII_Hb'], marker='o', color='grey', ls='None', markersize=1.5, zorder=1)
+        ax.plot(filtered_gal_df['log_NII_Ha'], filtered_gal_df['log_OIII_Hb'], marker='o', color=grey_point_color, ls='None', markersize=grey_point_size, alpha=grey_point_alpha, zorder=1)
     
     cmap = mpl.cm.plasma
     norm = mpl.colors.Normalize(vmin=1, vmax=len(gal_df)) 

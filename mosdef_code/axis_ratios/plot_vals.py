@@ -16,6 +16,10 @@ full_page_axisfont = 18
 light_color = '#DF7B15'
 dark_color = '#2D1B99'
 
+grey_point_color = 'dimgrey'
+grey_point_alpha = 0.7
+grey_point_size = 3
+
 
 # Turns the plot into a square, mainitaining the axis limits you set
 def scale_aspect(ax):

@@ -119,7 +119,7 @@ def make_overview_plot_clusters(n_clusters, norm_method, color_gals=False, bpt_c
 
         ax = fig.add_subplot(gs[plot_row_idx, 2])
 
-        ax.plot(filtered_gal_df['log_mass'], filtered_gal_df['log_use_sfr'], marker='o', color='grey', ls='None', markersize=2)
+        ax.plot(filtered_gal_df['log_mass'], filtered_gal_df['log_use_sfr'], marker='o', color=grey_point_color, ls='None', markersize=grey_point_size)
         # ax.plot(group_df['log_mass'], group_df['log_use_sfr'], marker='o', color='black', ls='None')
         ax.plot(clusters_summary_row['median_log_mass'], clusters_summary_row['median_log_sfr'], marker='x', color='red', ls='None', markersize=10, mew=3, zorder=10000)
         ax.plot(clusters_summary_row['median_log_mass'], clusters_summary_row['computed_log_sfr_with_limit'], marker='x', color='blue', ls='None', markersize=10, mew=3, zorder=10000)
@@ -262,6 +262,5 @@ def make_overview_plot_clusters(n_clusters, norm_method, color_gals=False, bpt_c
     fig.savefig(imd.cluster_dir + f'/cluster_stats/overview_clusters{save_str}.pdf')
 
 
-# make_overview_plot_clusters(20, norm_method='luminosity', paper_overview=True)
-# make_overview_plot_clusters(20, norm_method='luminosity', color_gals=True)
+make_overview_plot_clusters(20, norm_method='luminosity', paper_overview=True)
 # make_overview_plot_clusters(20, bpt_color=True, paper_overview=True, prospector_spec=False)

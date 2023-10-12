@@ -147,12 +147,11 @@ def get_sfr_errs(bootstrap, halpha_lums, err_halpha_lums, balmer_ahalphas, err_b
     for groupID in range(len(halpha_lums)):
         boot_dfs = [ascii.read(imd.emission_fit_dir + f'/emission_fitting_boot_csvs/{groupID}_emission_fits_{bootstrap_num}.csv').to_pandas() for bootstrap_num in range(bootstrap)]
         ha_row = boot_dfs[0][boot_dfs[0]['line_name'] == 'Halpha'].index[0]
-        
         if luminosity == True:
             new_ha_lums = [boot_dfs[i]['flux'].iloc[ha_row] for i in range(bootstrap)]
         else:
             new_ha_fluxes = [boot_dfs[i]['flux'].iloc[ha_row] for i in range(bootstrap)]
-            new_halpha_lums = flux_to_luminosity(new_ha_fluxes, median_redshifts[groupID])
+            new_halpha_lums = [flux_to_luminosity(new_ha_fluxes[i], median_redshifts[groupID]) for i in range(bootstrap)]
         new_balmer_decs = [boot_dfs[i]['balmer_dec'].iloc[ha_row] for i in range(bootstrap)]
         new_balmer_avs = [compute_balmer_av(new_balmer_decs[i]) for i in range(bootstrap)]
         new_balmer_ahalphas = [compute_balmer_ahalpha_from_AV(new_balmer_avs[i]) for i in range(bootstrap)]
@@ -171,7 +170,7 @@ def get_sfr_errs(bootstrap, halpha_lums, err_halpha_lums, balmer_ahalphas, err_b
         err_sfr_lows.append(err_sfr_low)
         err_sfr_highs.append(err_sfr_high)
         err_ssfr_lows.append(err_ssfr_low)
-        err_ssfr_highs.append(err_sfr_high)
+        err_ssfr_highs.append(err_ssfr_high)
         
     return err_sfr_lows, err_sfr_highs, err_ssfr_lows, err_ssfr_highs
 
@@ -193,4 +192,4 @@ def compute_balmer_ahalpha_from_AV(balmer_avs):
 
 
 
-# compute_cluster_sfrs(luminosity=False, bootstrap=100)
+compute_cluster_sfrs(luminosity=True, bootstrap=1000)

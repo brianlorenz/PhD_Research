@@ -235,4 +235,3 @@ def merge_emission(ar_df):
                                 'field', 'v4id'], right_on=['FIELD_STR', 'V4ID'])
     return ar_line_merge
 
-read_sed('AEGIS', 379)

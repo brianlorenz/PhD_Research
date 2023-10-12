@@ -468,7 +468,7 @@ def setup_uvj_plot(ax, galaxy_uvj_df, composite_uvj_df, axis_obj='False', includ
 
     # Plots all galaxy UVJs in grey
     ax.plot(galaxy_uvj_df['V_J'], galaxy_uvj_df['U_V'],
-            ls='', marker='o', markersize=2.5, color='grey', label='All Galaxies')
+            ls='', marker='o', markersize=grey_point_size, color=grey_point_color, alpha=grey_point_alpha, label='All Galaxies')
 
     if axis_obj == 'False':
         if include_unused_gals!='Only':
