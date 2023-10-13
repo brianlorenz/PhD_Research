@@ -204,7 +204,7 @@ def plot_bpt(savename='None', axis_obj='False', composite_bpt_point=[-47], compo
     if plot_median == True:
         median_n2ha = np.median(n2has)
         median_o3hb = np.median(o3hbs)
-        ax.plot(median_n2ha, median_o3hb, marker='x', color='red', ls='None', zorder=100, markersize=10, mew=3)
+        # ax.plot(median_n2ha, median_o3hb, marker='x', color='red', ls='None', zorder=100, markersize=10, mew=3)
 
     # gal_df_2 = gal_df[gal_df['agn_flag']>3]
     # ax.errorbar(gal_df_2['log_NII_Ha'], gal_df_2['log_OIII_Hb'], xerr=gal_df_2[

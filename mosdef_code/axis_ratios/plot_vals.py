@@ -19,6 +19,10 @@ dark_color = '#2D1B99'
 grey_point_color = '#BBBBBB'
 grey_point_size = 3
 
+cluster_marker = 's'
+cluster_marker_color = 'blue'
+cluster_marker_size = '8'
+
 
 # Turns the plot into a square, mainitaining the axis limits you set
 def scale_aspect(ax):

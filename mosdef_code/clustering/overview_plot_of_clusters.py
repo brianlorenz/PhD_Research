@@ -18,11 +18,14 @@ prospector_run = 'dust_index_test'
 fontsize = 16
 rows_per_page = 7
 
+
 def setup_figs(n_clusters, norm_method, color_gals=False, bpt_color=False, paper_overview=False, prospector_spec=True):
     # Sort the groups
     clusters_summary_df = ascii.read(imd.loc_cluster_summary_df).to_pandas()
     clusters_summary_df_sorted = clusters_summary_df.sort_values('median_U_V', ascending=True)
     groupIDs = clusters_summary_df_sorted['groupID'].to_numpy()
+    #Manually order them here
+    groupIDs = [3, 12, 14, 2, 6, 10, 5, 13, 19, 16, 9, 17, 7, 1, 0, 11, 4, 8, 18, 15]
     # Split into multiple pages if making the plot for the paper
     groupID_sets = []
     save_strs = []
@@ -141,9 +144,8 @@ def make_overview_plot_clusters(groupIDs, import_save_str, n_clusters, norm_meth
         ax = fig.add_subplot(gs[plot_row_idx, 2])
 
         ax.plot(filtered_gal_df['log_mass'], filtered_gal_df['log_use_sfr'], marker='o', color=grey_point_color, ls='None', markersize=grey_point_size)
-        # ax.plot(group_df['log_mass'], group_df['log_use_sfr'], marker='o', color='black', ls='None')
-        ax.plot(clusters_summary_row['median_log_mass'], clusters_summary_row['median_log_sfr'], marker='x', color='red', ls='None', markersize=10, mew=3, zorder=10000)
-        ax.plot(clusters_summary_row['median_log_mass'], clusters_summary_row['computed_log_sfr_with_limit'], marker='x', color='blue', ls='None', markersize=10, mew=3, zorder=10000)
+        # ax.plot(clusters_summary_row['median_log_mass'], clusters_summary_row['median_log_sfr'], marker='x', color='red', ls='None', markersize=10, mew=3, zorder=10000)
+        ax.plot(clusters_summary_row['median_log_mass'], clusters_summary_row['computed_log_sfr_with_limit'], marker=cluster_marker, color=cluster_marker_color, ls='None', markersize=cluster_marker_size, zorder=10000)
         computed_sfr = clusters_summary_row['computed_log_sfr_with_limit']
         if clusters_summary_row['flag_balmer_lower_limit'].iloc[0] == 1:
             ax.vlines(clusters_summary_row['median_log_mass'], computed_sfr, computed_sfr+100000, color='blue')
@@ -156,7 +158,11 @@ def make_overview_plot_clusters(groupIDs, import_save_str, n_clusters, norm_meth
             if color_gals:
                 rgba = cmap(norm(row['group_gal_id']))
             else:
-                rgba = 'black'
+                cmap = mpl.cm.plasma
+                norm = mpl.colors.Normalize(vmin=-0.5, vmax=1.0) 
+                o3hb = np.log10(row['oiii_5008_flux']/row['hb_flux'])
+                rgba = cmap(norm(o3hb))
+                # rgba = 'black'
         
             ax.plot(row['log_mass'], row['log_use_sfr'], marker='o', color=rgba, ls='None')
 
@@ -211,12 +217,12 @@ def make_overview_plot_clusters(groupIDs, import_save_str, n_clusters, norm_meth
             ax.plot(row['V_J'], row['U_V'], marker='o', color=rgba, ls='None')
 
         # Add the median
-        ax.plot(clusters_summary_row['median_V_J'], clusters_summary_row['median_U_V'], marker='x', color='red', ls='None', markersize=10, mew=3)
+        # ax.plot(clusters_summary_row['median_V_J'], clusters_summary_row['median_U_V'], marker='x', color='red', ls='None', markersize=10, mew=3)
         # Add the measurement from the composite uvj
         composite_uvj_df = ascii.read(imd.composite_uvj_dir + '/composite_uvjs.csv').to_pandas()
         uvj_composite = composite_uvj_df[composite_uvj_df['groupID'] == groupID]
         ax.plot(uvj_composite['V_J'], uvj_composite['U_V'],
-            ls='', marker='x', markersize=10, mew=3, color='blue', label='Composite SED')
+            ls='', marker=cluster_marker, markersize=cluster_marker_size, color=cluster_marker_color, label='Composite SED')
 
         in_x_range = np.logical_and(group_df['V_J']>xrange[0], group_df['V_J']<xrange[1])
         in_y_range = np.logical_and(group_df['U_V']>yrange[0], group_df['U_V']<yrange[1])
@@ -257,7 +263,7 @@ def make_overview_plot_clusters(groupIDs, import_save_str, n_clusters, norm_meth
         
         log_N2_Ha_group_errs = [clusters_summary_row['err_log_N2_Ha_low'], clusters_summary_row['err_log_N2_Ha_high']]
         log_O3_Hb_group_errs = [clusters_summary_row['err_log_O3_Hb_low'], clusters_summary_row['err_log_O3_Hb_high']]
-        ax.plot(log_N2_Ha_group, log_O3_Hb_group, marker='x', color='blue', markersize=10, mew=3, ls='None', zorder=10000, label='Composite')
+        ax.plot(log_N2_Ha_group, log_O3_Hb_group, marker=cluster_marker, color=cluster_marker_color, markersize=cluster_marker_size, ls='None', zorder=10000, label='Composite')
         ax.hlines(log_O3_Hb_group, log_N2_Ha_group-log_N2_Ha_group_errs[0], log_N2_Ha_group+log_N2_Ha_group_errs[1], color='blue')
         ax.vlines(log_N2_Ha_group, log_O3_Hb_group-log_O3_Hb_group_errs[0], log_O3_Hb_group+log_O3_Hb_group_errs[1], color='blue')
         # ax.errorbar(log_N2_Ha_group, log_O3_Hb_group, xerr=log_N2_Ha_group_errs, yerr=log_O3_Hb_group_errs, marker='x', color='blue', markersize=10, mew=3, ls='None')

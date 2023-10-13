@@ -6,13 +6,14 @@ import numpy as np
 from astropy.io import ascii
 import random
 
-def compute_cluster_sfrs(lower_limit=True, luminosity=False, prospector=False, bootstrap = 1000):
+def compute_cluster_sfrs(lower_limit=True, luminosity=False, prospector=False, monte_carlo = True, bootstrap=-1):
     """
     
     Parameters:
     lower_limit (boolean): Set to true to use the lower limits computed in balmer_dec_histogram
     luminosity (boolean): Set to false if the fluxes are already in luminosity space
     prospector (boolean): Set to true if you want to compute the prospector SFRs
+    monte_carlo (boolean): Set to true to use the monte-carlo emission fits to compute errors
     bootstrap (float): Number of boostrapped emission measurements - set to -1 to skip error calucation
     """
     cluster_summary_df = imd.read_cluster_summary_df()
@@ -70,8 +71,10 @@ def compute_cluster_sfrs(lower_limit=True, luminosity=False, prospector=False, b
         prospector_av_log_halpha_sfrs, prospector_av_log_halpha_ssfrs = perform_sfr_computation(prospector_halpha_lums, prospector_balmer_ahalphas, prospector_log_median_masses, imf='Hao_Chabrier')
 
 
-    # Monte carlor errors on sfr
-    if bootstrap > 0:
+    # Monte carlo or bootstrap errors on sfr
+    if monte_carlo == True:
+        err_sfr_low, err_sfr_high, err_ssfr_low, err_ssfr_high = get_montecarlo_errs(log_median_masses, log_halpha_sfrs, log_halpha_ssfrs, median_redshifts, luminosity, imf='Hao_Chabrier')
+    elif bootstrap > 0:
         err_sfr_low, err_sfr_high, err_ssfr_low, err_ssfr_high = get_sfr_errs(bootstrap, halpha_lums, err_halpha_lums, balmer_ahalphas, err_balmer_halphas_low, err_balmer_halphas_high, log_median_masses, log_halpha_sfrs, log_halpha_ssfrs, median_redshifts, luminosity, imf='Hao_Chabrier')
     else:
         err_sfr_low = -99
@@ -137,6 +140,44 @@ def perform_sfr_computation(halpha_lums, balmer_ahalphas, log_median_masses, imf
         log_halpha_ssfrs = np.nan_to_num(log_halpha_ssfrs, nan=-99)
 
     return log_halpha_sfrs, log_halpha_ssfrs
+
+
+def get_montecarlo_errs(log_median_masses, log_halpha_sfrs, log_halpha_ssfrs, median_redshifts, luminosity, imf='Hao_Chabrier'):
+    #save distriubiton of generated sfrs and ssfrs
+    err_log_sfr_lows = []
+    err_log_sfr_highs = []
+    err_log_ssfr_lows = []
+    err_log_ssfr_highs = []
+    for groupID in range(len(log_median_masses)):
+        monte_carlo_df = ascii.read(imd.emission_fit_dir + f'/emission_fit_monte_carlos/{groupID}_monte_carlo.csv').to_pandas()
+        if luminosity == True:
+            new_ha_lums = monte_carlo_df['ha_flux']
+        else:
+            new_ha_fluxes = monte_carlo_df['ha_flux']
+            new_ha_lums = flux_to_luminosity(new_ha_fluxes, median_redshifts[groupID]) 
+        new_balmer_decs = monte_carlo_df['balmer_dec']
+        new_balmer_avs = compute_balmer_av(new_balmer_decs)
+        new_balmer_ahalphas = compute_balmer_ahalpha_from_AV(new_balmer_avs)
+
+        sfr_outs = perform_sfr_computation(new_ha_lums, new_balmer_ahalphas, log_median_masses.iloc[groupID])
+        all_log_sfrs = sfr_outs[0] 
+        all_log_ssfrs = sfr_outs[1]
+        all_sfrs  = 10**all_log_sfrs
+        all_ssfrs  = 10**all_log_ssfrs
+        sfr_measured = 10**log_halpha_sfrs[groupID]
+        ssfr_measured = 10**log_halpha_ssfrs[groupID]
+        err_log_sfr_low = 0.4343 * ((sfr_measured - np.percentile(all_sfrs, 16)) / sfr_measured)
+        err_log_sfr_high = 0.4343 * ((np.percentile(all_sfrs, 86) - sfr_measured) / sfr_measured)
+        err_log_ssfr_low = 0.4343 * ((ssfr_measured - np.percentile(all_ssfrs, 16)) / ssfr_measured)
+        err_log_ssfr_high = 0.4343 * ((np.percentile(all_ssfrs, 86) - ssfr_measured) / ssfr_measured)
+        err_log_sfr_lows.append(err_log_sfr_low)
+        err_log_sfr_highs.append(err_log_sfr_high)
+        err_log_ssfr_lows.append(err_log_ssfr_low)
+        err_log_ssfr_highs.append(err_log_ssfr_high)
+        
+    return err_log_sfr_lows, err_log_sfr_highs, err_log_ssfr_lows, err_log_ssfr_highs
+
+
 
 def get_sfr_errs(bootstrap, halpha_lums, err_halpha_lums, balmer_ahalphas, err_balmer_halphas_low, err_balmer_halphas_high, log_median_masses, log_halpha_sfrs, log_halpha_ssfrs, median_redshifts, luminosity, imf='Hao_Chabrier'):
     #save distriubiton of generated sfrs and ssfrs

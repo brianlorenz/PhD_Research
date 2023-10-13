@@ -288,4 +288,4 @@ def make_plots_a_vs_b(reduce_plot_count=False):
     # plot_cluster_summaries('logzsol50', 'dustindex50', 'prospector/dust_index_prospmetals', color_var='balmer_dec', ignore_groups=ignore_groups)
     # plot_cluster_summaries('O3N2_metallicity', 'dustindex50', 'prospector/dust_index_metals', color_var='balmer_dec', ignore_groups=ignore_groups)
 
-# make_plots_a_vs_b(reduce_plot_count=False)
+make_plots_a_vs_b(reduce_plot_count=False)

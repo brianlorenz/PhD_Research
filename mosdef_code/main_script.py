@@ -79,8 +79,8 @@ imd.check_and_make_dir(imd.composite_filter_sedpy_dir)
 
 # # Re-fit the emission of the composites and now fit the boostrapped ones
 # fit_all_emission(n_clusters, norm_method, ignore_groups, bootstrap=bootstrap)
-bootstrap = -1
-fit_all_emission(n_clusters, norm_method, ignore_groups, bootstrap=bootstrap)
+# bootstrap = -1
+# fit_all_emission(n_clusters, norm_method, ignore_groups, bootstrap=bootstrap)
 
 #Used to compute boostrapped uncertanties here
 
@@ -103,7 +103,7 @@ fit_all_emission(n_clusters, norm_method, ignore_groups, bootstrap=bootstrap)
 # plot_balmer_hist(n_clusters, bootstrap)
 # bootstrap = -1
 # compute_balmer_lower_limits()
-# compute_cluster_sfrs(luminosity=True)
+# compute_cluster_sfrs(luminosity=True, monte_carlo=True)
 # compute_indiv_sfrs(n_clusters, lower_limit=True)
 
 # # Have to run this twice, since ignore_groups won't be loaded properly the first time

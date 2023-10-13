@@ -403,9 +403,9 @@ def get_filt_list(target_folder):
     target_folder (str) - location of folder containing sedpy filter .par files
 
     """
-    filt_files = [file.replace('.par', '') for file in os.listdir(
-        target_folder) if '_red.par' in file]
+    filt_files = [file.replace('.par', '') for file in os.listdir(target_folder) if '_red.par' in file]
     filt_files.sort()
+    breakpoint()
     filt_list = observate.load_filters(filt_files, directory=target_folder)
     return filt_list
 
