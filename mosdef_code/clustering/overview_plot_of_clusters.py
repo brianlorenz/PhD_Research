@@ -16,38 +16,59 @@ import matplotlib as mpl
 prospector_run = 'dust_index_test'
 
 fontsize = 16
+rows_per_page = 7
 
-def make_overview_plot_clusters(n_clusters, norm_method, color_gals=False, bpt_color=False, paper_overview=False, prospector_spec=True):
+def setup_figs(n_clusters, norm_method, color_gals=False, bpt_color=False, paper_overview=False, prospector_spec=True):
+    # Sort the groups
+    clusters_summary_df = ascii.read(imd.loc_cluster_summary_df).to_pandas()
+    clusters_summary_df_sorted = clusters_summary_df.sort_values('median_U_V', ascending=True)
+    groupIDs = clusters_summary_df_sorted['groupID'].to_numpy()
+    # Split into multiple pages if making the plot for the paper
+    groupID_sets = []
+    save_strs = []
+    if paper_overview==True:
+        n_figures = int(np.ceil(n_clusters / rows_per_page))
+        for page_num in range(n_figures):
+            groupID_sets.append(groupIDs[(rows_per_page*page_num) : rows_per_page*(1+page_num)])
+            save_strs.append(f'_page{page_num}')
+    else:
+        groupID_sets.append(groupIDs)
+        save_strs.append('')
+    for i in range(len(groupID_sets)):
+        groupIDs = groupID_sets[i]
+        save_str = save_strs[i]
+        
+        make_overview_plot_clusters(groupIDs, save_str, n_clusters, norm_method, color_gals=color_gals, bpt_color=bpt_color, paper_overview=paper_overview, prospector_spec=prospector_spec)
+
+
+def make_overview_plot_clusters(groupIDs, import_save_str, n_clusters, norm_method, color_gals=False, bpt_color=False, paper_overview=False, prospector_spec=True):
     """
     Parameters:
+    groupIDs (list): Which group IDs to plot, in order. Will also set the number of rows
     prospector_spec (boolean): Set to true (and update runname above) to add prospector spectra to plot
     
     """
-    #Set up the array (nrows, ncol)
-    # fig, axarr = plt.subplots(n_clusters, 4, figsize=(16, n_clusters*4))
 
-    fig = plt.figure(figsize=(24, n_clusters*4))
-    gs = GridSpec(n_clusters, 5, left=0.05, right=0.96, wspace=0.1, hspace=0.3, top=0.98, bottom=0.02)
+    n_rows = len(groupIDs)
+    fig = plt.figure(figsize=(24, n_rows*4))
+    gs = GridSpec(n_rows, 5, left=0.05, right=0.96, wspace=0.1, hspace=0.3, top=0.98, bottom=0.02)
 
+    
     clusters_summary_df = ascii.read(imd.loc_cluster_summary_df).to_pandas()
 
     filtered_gal_df = ascii.read(imd.loc_filtered_gal_df).to_pandas()
     filtered_gal_df['log_use_sfr'] = np.log10(filtered_gal_df['use_sfr'])
 
-    clusters_summary_df_sorted=clusters_summary_df.sort_values('median_log_ssfr', ascending=False)
+    
     #Manages which row to plot in
     plot_row_idx = 0
 
-    for i in range(len(clusters_summary_df_sorted)): 
-        if i >= n_clusters:
-            print(f'Exiting after {n_clusters} rows, but there are {len(clusters_summary_df_sorted)} total')
-            continue
-        groupID = clusters_summary_df_sorted['groupID'].iloc[i]
+    for groupID in groupIDs: 
+        i = clusters_summary_df[clusters_summary_df['groupID'] == groupID].index[0]
 
         group_df = ascii.read(imd.cluster_indiv_dfs_dir + f'/{groupID}_cluster_df.csv').to_pandas()
         group_df['log_use_sfr'] = np.log10(group_df['use_sfr'])
         n_gals = len(group_df)
-        # breakpoint()
 
         clusters_summary_row = clusters_summary_df[clusters_summary_df['groupID']==groupID]
 
@@ -231,11 +252,11 @@ def make_overview_plot_clusters(n_clusters, norm_method, color_gals=False, bpt_c
         # ax.plot(group_df['log_mass'], group_df['log_use_sfr'], marker='o', color='black', ls='None')
 
         # Add the measured value of the cluster
-        log_N2_Ha_group = clusters_summary_df_sorted['log_N2_Ha'].iloc[i]
-        log_O3_Hb_group = clusters_summary_df_sorted['log_O3_Hb'].iloc[i]
+        log_N2_Ha_group = clusters_summary_row['log_N2_Ha']
+        log_O3_Hb_group = clusters_summary_row['log_O3_Hb']
         
-        log_N2_Ha_group_errs = [clusters_summary_df_sorted['err_log_N2_Ha_low'].iloc[i], clusters_summary_df_sorted['err_log_N2_Ha_high'].iloc[i]]
-        log_O3_Hb_group_errs = [clusters_summary_df_sorted['err_log_O3_Hb_low'].iloc[i], clusters_summary_df_sorted['err_log_O3_Hb_high'].iloc[i]]
+        log_N2_Ha_group_errs = [clusters_summary_row['err_log_N2_Ha_low'], clusters_summary_row['err_log_N2_Ha_high']]
+        log_O3_Hb_group_errs = [clusters_summary_row['err_log_O3_Hb_low'], clusters_summary_row['err_log_O3_Hb_high']]
         ax.plot(log_N2_Ha_group, log_O3_Hb_group, marker='x', color='blue', markersize=10, mew=3, ls='None', zorder=10000, label='Composite')
         ax.hlines(log_O3_Hb_group, log_N2_Ha_group-log_N2_Ha_group_errs[0], log_N2_Ha_group+log_N2_Ha_group_errs[1], color='blue')
         ax.vlines(log_N2_Ha_group, log_O3_Hb_group-log_O3_Hb_group_errs[0], log_O3_Hb_group+log_O3_Hb_group_errs[1], color='blue')
@@ -259,8 +280,8 @@ def make_overview_plot_clusters(n_clusters, norm_method, color_gals=False, bpt_c
         save_str = '_color'
     else:
         save_str = ''
-    fig.savefig(imd.cluster_dir + f'/cluster_stats/overview_clusters{save_str}.pdf')
+    fig.savefig(imd.cluster_dir + f'/cluster_stats/overview_clusters{save_str}{import_save_str}.pdf')
 
 
-make_overview_plot_clusters(20, norm_method='luminosity', paper_overview=True)
+# setup_figs(20, norm_method='luminosity', paper_overview=False)
 # make_overview_plot_clusters(20, bpt_color=True, paper_overview=True, prospector_spec=False)

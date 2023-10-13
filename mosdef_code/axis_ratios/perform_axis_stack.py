@@ -18,7 +18,7 @@ from dust_model import plot_dust_model
 from plot_sfr_metallicity import plot_sfr_metals
 from plot_balmer_vs_all import plot_balmer_vs_all
 
-random.seed(3284923)
+# random.seed(3284923)
 
 
 #18 bins, 2 mass 3 ssfr

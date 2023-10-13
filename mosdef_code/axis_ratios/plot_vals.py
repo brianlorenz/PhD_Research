@@ -16,8 +16,7 @@ full_page_axisfont = 18
 light_color = '#DF7B15'
 dark_color = '#2D1B99'
 
-grey_point_color = 'dimgrey'
-grey_point_alpha = 0.7
+grey_point_color = '#BBBBBB'
 grey_point_size = 3
 
 

@@ -192,4 +192,4 @@ def compute_balmer_ahalpha_from_AV(balmer_avs):
 
 
 
-compute_cluster_sfrs(luminosity=True, bootstrap=1000)
+# compute_cluster_sfrs(luminosity=True, bootstrap=1000)

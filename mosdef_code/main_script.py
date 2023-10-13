@@ -1,5 +1,4 @@
 '''Runs all methods after clustering the SEDs'''
-
 import sys
 import os
 import string
@@ -81,7 +80,7 @@ imd.check_and_make_dir(imd.composite_filter_sedpy_dir)
 # # Re-fit the emission of the composites and now fit the boostrapped ones
 # fit_all_emission(n_clusters, norm_method, ignore_groups, bootstrap=bootstrap)
 bootstrap = -1
-# fit_all_emission(n_clusters, norm_method, ignore_groups, bootstrap=bootstrap)
+fit_all_emission(n_clusters, norm_method, ignore_groups, bootstrap=bootstrap)
 
 #Used to compute boostrapped uncertanties here
 
@@ -116,7 +115,7 @@ bootstrap = -1
 
 
 # Prepare for prospector:
-print('Preparing data for Prospector')
+# print('Preparing data for Prospector')
 # find_median_redshifts(n_clusters)
 # convert_all_folders_to_sedpy(n_clusters)
 # convert_folder_to_maggies(imd.composite_sed_csvs_dir)

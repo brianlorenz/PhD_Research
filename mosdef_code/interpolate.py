@@ -17,7 +17,7 @@ import matplotlib.pyplot as plt
 import initialize_mosdef_dirs as imd
 
 
-np.random.seed(seed=901969)
+# np.random.seed(seed=901969)
 
 # Generate the 20 evenly spaced (in log space) filters
 log_filter_centers = np.linspace(np.log10(1300), np.log10(20000), 20)

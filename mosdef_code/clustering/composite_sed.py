@@ -340,14 +340,12 @@ def vis_composite_sed(total_sed, composite_sed=0, composite_filters=0, groupID=-
 
     if grey_points == True:
         point_color = grey_point_color
-        alpha = grey_point_alpha
         size = grey_point_size
     else:
         point_color = total_sed[good_idx]['v4id']
-        alpha = 1
         size = 2
     ax_sed.scatter(total_sed[good_idx]['rest_wavelength'], total_sed[good_idx]
-                   ['rest_f_lambda_norm'], s=size, c=point_color, zorder=1, alpha=alpha)
+                   ['rest_f_lambda_norm'], s=size, c=point_color, zorder=1)
 
     
 
