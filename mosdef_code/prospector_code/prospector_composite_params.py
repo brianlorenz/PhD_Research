@@ -99,9 +99,11 @@ def build_obs(**kwargs):
     zs_df = ascii.read(median_zs_file).to_pandas()
     obs['z'] = zs_df[zs_df['groupID'] == groupID]['median_z'].iloc[0]
 
+    print('Reading Filters')
     # load photometric filters
     obs["filters"] = get_filt_list(filt_folder)
 
+    print('Loading Photometry')
     # load photometry
     sed_data = ascii.read(sed_file).to_pandas()
     obs["phot_wave"] = sed_data['redshifted_wavelength'].to_numpy()
@@ -110,11 +112,12 @@ def build_obs(**kwargs):
     # Add 5 percent in quadrature to errors
     data_05p = (sed_data['f_maggies_red']) * 0.05
     obs['maggies_unc'] = (np.sqrt(data_05p**2 + (sed_data['err_f_maggies_avg_red'])**2)).to_numpy()
-        
+    
+    print('Applying Mask')
     # Phot mask that allows everything
     # obs["phot_mask"] = np.array([m > 0 for m in obs['maggies']])
     # Phot mask around emission lines
-    filt_mask = check_filt_transmission(filt_folder, obs['z'])
+    # filt_mask = check_filt_transmission(filt_folder, obs['z'])
     # Phot mask out anything blueward of 1500
     redshifted_lya_cutoff = 1500*(1+obs['z'])
     ly_mask = obs["phot_wave"] > redshifted_lya_cutoff
@@ -129,6 +132,8 @@ def build_obs(**kwargs):
     obs['spectrum'] = None
     obs['mask'] = None
     obs['unc'] = None
+
+    print('obs complete')
 
     return obs
 
@@ -215,7 +220,7 @@ def build_model(object_redshift=0.0, fixed_metallicity=None, add_duste=True,
     #   'units': 'Gyr^{-1}',
     #   'prior': <class 'prospect.models.priors.LogUniform'>(mini=0.1,maxi=30)}
     
-
+    print('Creating model')
 
     model_params = TemplateLibrary["parametric_sfh"]
 
@@ -295,6 +300,8 @@ def build_model(object_redshift=0.0, fixed_metallicity=None, add_duste=True,
     # specifications
     model = sedmodel.SedModel(model_params)
 
+    print('model complete')
+
     return model
 
 # --------------
@@ -361,6 +368,7 @@ def get_filt_list(target_folder):
     filt_files = [file.replace('.par', '') for file in os.listdir(
         target_folder) if '_red.par' in file]
     filt_files.sort()
+    print(f'Found filter files, e.g. {filt_files[0]}')
     filt_list = observate.load_filters(filt_files, directory=target_folder)
     return filt_list
 
