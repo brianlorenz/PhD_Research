@@ -11,7 +11,7 @@ from cluster_stats import plot_similarity_cluster
 from stack_spectra import plot_spec
 from composite_sed import vis_composite_sed
 from plot_cluster_a_vs_b import plot_cluster_summaries, make_plots_a_vs_b
-from overview_plot_of_clusters import make_overview_plot_clusters
+from overview_plot_of_clusters import make_overview_plot_clusters, setup_figs
 from bpt_clusters_singledf import plot_bpt_all_composites
 from composite_and_spec_overview import composite_and_spec_overview
 from plot_similarity_matrix import plot_sim_matrix
@@ -118,7 +118,7 @@ def generate_newer_cluster_plots(n_clusters, norm_method):
     plot_sim_matrix(n_clusters)
 
     composite_and_spec_overview(n_clusters, ignore_groups, norm_method=norm_method)
-    make_overview_plot_clusters(n_clusters, norm_method, bpt_color=True, paper_overview=False, prospector_spec=False)
+    setup_figs(n_clusters, norm_method, bpt_color=True, paper_overview=False, prospector_spec=False)
     
     color_codes = ['None', 'log_mass', 'log_sfr', 'balmer_dec', 'metallicity', 'log_ssfr']
     for color_code in color_codes:

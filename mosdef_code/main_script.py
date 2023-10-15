@@ -79,7 +79,7 @@ imd.check_and_make_dir(imd.composite_filter_sedpy_dir)
 
 # # Re-fit the emission of the composites and now fit the boostrapped ones
 # fit_all_emission(n_clusters, norm_method, ignore_groups, bootstrap=bootstrap)
-# bootstrap = -1
+bootstrap = -1
 # fit_all_emission(n_clusters, norm_method, ignore_groups, bootstrap=bootstrap)
 
 #Used to compute boostrapped uncertanties here
@@ -107,10 +107,10 @@ imd.check_and_make_dir(imd.composite_filter_sedpy_dir)
 # compute_indiv_sfrs(n_clusters, lower_limit=True)
 
 # # Have to run this twice, since ignore_groups won't be loaded properly the first time
-# generate_newer_cluster_plots(n_clusters, norm_method)
-# plot_group_hists(n_clusters)
+generate_newer_cluster_plots(n_clusters, norm_method)
+plot_group_hists(n_clusters)
 
-# generate_all_cluster_plots(n_clusters)
+generate_all_cluster_plots(n_clusters)
 # breakpoint()
 
 
