@@ -236,10 +236,10 @@ def build_model(object_redshift=0.0, fixed_metallicity=None, add_duste=True,
     # model_params['nebemlineinspec'] = true_param
     # model_params['add_dust_emission'] = true_param
     # # model_params['sfh'] = sfh_param
-    # model_params['dust1'] = {'N': 1, 'isfree': False,
-    #                          'depends_on': to_dust1, 'init': 1.0}
-    # model_params['dust1_fraction'] = {'N': 1, 'isfree': True, 'init': 1.0}
-
+    
+    
+    
+    
 
     # Adjust model initial values
     model_params["dust_type"]['init'] = 0 #  set to 4 for a Kriek and Conroy curve
@@ -249,8 +249,16 @@ def build_model(object_redshift=0.0, fixed_metallicity=None, add_duste=True,
     model_params["mass"]["init"] = 1e12
     # model_params['gas_logz'] = {'N': 1, 'isfree': True, 'init': 0.0}
 
+    # dust component for older stellar light
+    # model_params['dust1'] = {'N': 1, 'isfree': False,
+    #                          'depends_on': to_dust1, 'init': 1.0}
+    # model_params['dust1_fraction'] = {'N': 1, 'isfree': True, 'init': 1.0}
+
     # Add a parameter for the slope of the attenuation curve
     model_params['dust_index'] = {'N': 1, 'isfree': True, 'init': -0.7}
+    # model_params['dust1_index'] = {'N': 1, 'isfree': True, 'init': -1.0}
+    # model_params['uvb'] = {'N': 1, 'isfree': True, 'init': -0.7}
+
 
     # adjust priors
     model_params["dust2"]["prior"] = priors.TopHat(mini=0.0, maxi=4.0)
