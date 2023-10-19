@@ -43,7 +43,7 @@ Specify the directories in initialize_mosdef_dirsl;k
 # Set the total number of clusters
 n_clusters = 20
 # Set the name of the prospector run
-run_name = 'metallicity_prior'
+run_name = 'removed_gals'
 norm_method = 'luminosity'
 # Set which group numbers to ignore since their data is not good
 ignore_groups = []
@@ -107,10 +107,10 @@ bootstrap = -1
 # compute_indiv_sfrs(n_clusters, lower_limit=True)
 
 # # Have to run this twice, since ignore_groups won't be loaded properly the first time
-generate_newer_cluster_plots(n_clusters, norm_method)
-plot_group_hists(n_clusters)
+# generate_newer_cluster_plots(n_clusters, norm_method)
+# plot_group_hists(n_clusters)
 
-generate_all_cluster_plots(n_clusters)
+# generate_all_cluster_plots(n_clusters)
 # breakpoint()
 
 
@@ -126,11 +126,11 @@ generate_all_cluster_plots(n_clusters)
 
 # Re-fit the prospector spectra in the same way that we fit the mosdef ones:
 
-# setup_all_prospector_fit_csvs(n_clusters, run_name)
-# fit_all_prospector_emission(n_clusters, run_name)
-# multiply_fit_by_lumdist(n_clusters, run_name)
-# save_props(n_clusters, run_name) # Make sure to update the mass values
-# add_props_to_cluster_summary_df(n_clusters, run_name) # Adds masses and computes sfr/ssfr
+setup_all_prospector_fit_csvs(n_clusters, run_name)
+fit_all_prospector_emission(n_clusters, run_name)
+multiply_fit_by_lumdist(n_clusters, run_name)
+save_props(n_clusters, run_name) # Make sure to update the mass values
+add_props_to_cluster_summary_df(n_clusters, run_name) # Adds masses and computes sfr/ssfr
 
 
 

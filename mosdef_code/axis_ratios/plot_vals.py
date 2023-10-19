@@ -21,7 +21,8 @@ grey_point_size = 3
 
 cluster_marker = 's'
 cluster_marker_color = 'blue'
-cluster_marker_size = '8'
+cluster_marker_size = 8
+paper_maker_size = 10
 
 
 # Turns the plot into a square, mainitaining the axis limits you set

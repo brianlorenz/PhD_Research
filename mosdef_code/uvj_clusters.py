@@ -22,6 +22,7 @@ import cluster_data_funcs as cdf
 import matplotlib as mpl
 from plot_vals import *
 from generate_clusters import read_filtered_gal_df, read_removed_gal_df
+from plot_cluster_a_vs_b import get_row_color
 
 
 def get_uvj(field, v4id):
@@ -441,7 +442,7 @@ def plot_full_uvj(n_clusters, color_type='None', include_unused_gals='No'):
     plt.close()
 
 
-def setup_uvj_plot(ax, galaxy_uvj_df, composite_uvj_df, axis_obj='False', include_unused_gals='No'):
+def setup_uvj_plot(ax, galaxy_uvj_df, composite_uvj_df, axis_obj='False', include_unused_gals='No', paper_fig=False):
     """Plots all background galaxies and clusters onto the UVJ diagram, as well as the lines
 
     Parameters:
@@ -473,8 +474,14 @@ def setup_uvj_plot(ax, galaxy_uvj_df, composite_uvj_df, axis_obj='False', includ
     if axis_obj == 'False':
         if include_unused_gals!='Only':
             # Plot all composites as purple X
-            ax.plot(composite_uvj_df['V_J'], composite_uvj_df['U_V'],
-                    ls='', marker='x', markersize=5, markeredgewidth=2, color='purple', label='All Composite SEDs')
+            if paper_fig == False:
+                ax.plot(composite_uvj_df['V_J'], composite_uvj_df['U_V'],
+                        ls='', marker='x', markersize=5, markeredgewidth=2, color='purple', label='All Composite SEDs')
+    if paper_fig == True:
+        for i in range(len(composite_uvj_df)):
+            color = get_row_color(i)
+            ax.plot(composite_uvj_df.iloc[i]['V_J'], composite_uvj_df.iloc[i]['U_V'],
+                            ls='', marker='o', mew=1, mec='black', markersize=paper_maker_size, color=color, label='All Composite SEDs')
 
     # UVJ diagram lines
     ax.plot((-100, 0.69), (1.3, 1.3), color='black')

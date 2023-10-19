@@ -56,7 +56,7 @@ def fit_emission(groupID, norm_method, constrain_O3=False, axis_group=-1, save_n
     if bootstrap_num > -1:
         n_loops = 0
     else:
-        n_loops = 1000
+        n_loops = 100
 
     if axis_group > -1:
         if bootstrap_num > -1:

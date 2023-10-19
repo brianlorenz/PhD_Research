@@ -1,6 +1,6 @@
 import initialize_mosdef_dirs as imd
 
-run_name = 'metallicity_prior'
+run_name = 'removed_gals'
 
 print('')
 print('')

@@ -26,6 +26,7 @@ total_sed_csvs_dir = composite_seds_dir + '/total_sed_csvs'
 mock_composite_sed_csvs_dir = composite_seds_dir + '/mock_composite_sed_csvs'
 mock_composite_sed_images_dir = composite_seds_dir + '/mock_composite_sed_images'
 cluster_indiv_dfs_dir = cluster_dir + '/cluster_indiv_dfs'
+sed_paper_figures_dir = cluster_dir + '/paper_figures'
 
 # Composite filter curves
 composite_filters_dir = cluster_dir + '/composite_filters'
@@ -117,6 +118,7 @@ loc_eazy_uvj_fits = mosdef_dir + '/Mosdef_cats/mosdef_eazy_uvj_latest.fits'
 loc_eazy_uvj_cat = mosdef_dir + '/Mosdef_cats/mosdef_eazy_uvj_latest.csv'
 loc_eqwidth_cat = mosdef_dir + '/Mosdef_cats/compile_ew_bc03smc0p2.txt'
 loc_composite_beta_df = cluster_dir + '/beta_composite_measure.csv'
+loc_color_df = cluster_dir + '/colors.csv'
 
 
 

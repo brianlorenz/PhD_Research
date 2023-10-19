@@ -26,6 +26,14 @@ def setup_figs(n_clusters, norm_method, color_gals=False, bpt_color=False, paper
     groupIDs = clusters_summary_df_sorted['groupID'].to_numpy()
     #Manually order them here
     groupIDs = [3, 12, 14, 2, 6, 10, 5, 13, 19, 16, 9, 17, 7, 1, 0, 11, 4, 8, 18, 15]
+    
+    #Assign colors
+    cmap = mpl.cm.coolwarm
+    norm = mpl.colors.Normalize(vmin=0.5, vmax=1.5) 
+    rgbas = [cmap(norm(clusters_summary_df[clusters_summary_df['groupID'] == i]['median_U_V'].iloc[0])) for i in groupIDs]
+    color_df = pd.DataFrame(zip(groupIDs, rgbas), columns=['groupID', 'rgba'])
+    color_df.to_csv(imd.loc_color_df, index=False)
+
     # Split into multiple pages if making the plot for the paper
     groupID_sets = []
     save_strs = []
@@ -286,7 +294,10 @@ def make_overview_plot_clusters(groupIDs, import_save_str, n_clusters, norm_meth
         save_str = '_color'
     else:
         save_str = ''
-    fig.savefig(imd.cluster_dir + f'/cluster_stats/overview_clusters{save_str}{import_save_str}.pdf')
+    if paper_overview==True:
+        fig.savefig(imd.cluster_dir + f'/paper_figures/overview_clusters{save_str}{import_save_str}.pdf')
+    else:
+        fig.savefig(imd.cluster_dir + f'/cluster_stats/overview_clusters{save_str}{import_save_str}.pdf')
 
 
 # setup_figs(20, norm_method='luminosity', paper_overview=False)

@@ -19,7 +19,7 @@ from prospector_plot import make_all_prospector_plots_2groups, make_all_prospect
 # groupID4 = 18
 
 # All groups
-run_name = 'metallicity_prior'
+run_name = 'removed_gals'
 n_clusters = 20
 
 
