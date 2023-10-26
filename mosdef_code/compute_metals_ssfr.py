@@ -85,5 +85,13 @@ def compute_metals(n_clusters, ignore_groups):
     breakpoint()
     cluster_summary_df.to_csv(imd.loc_cluster_summary_df, index=False)
 
+def add_sanders_metallicity(ax):
+    # Relation for O3N2 Computed metallicities form Sanders
+    masses = np.arange(8,12,0.01)
+    O3N2s = -0.94 * masses + 10.72
+    O3N2_metallicities, errs_O3N2_metallicities = compute_O3N2_metallicity(O3N2s, -99*np.ones(len(O3N2s)))
+    ax.plot(masses, O3N2_metallicities, ls='--', color='black', label='Sanders+ 2018')
+
+
 # ignore_groups = [19]
 # compute_metals(23, ignore_groups)

@@ -1,4 +1,7 @@
 import numpy as np
+import pandas as pd
+import initialize_mosdef_dirs as imd
+from astropy.io import ascii
 
 stellar_mass_label = 'log$_{10}$(M$_*$ / M$_\odot$)'
 av_extra_label = 'A$_V$ HII - A$_V$ star'
@@ -22,7 +25,11 @@ grey_point_size = 3
 cluster_marker = 's'
 cluster_marker_color = 'blue'
 cluster_marker_size = 8
-paper_maker_size = 10
+
+paper_marker_edge_width = 1
+paper_mec = 'black'
+paper_marker_size = 10
+
 
 
 # Turns the plot into a square, mainitaining the axis limits you set
@@ -38,5 +45,22 @@ def set_aspect_1(ax):
     ax.set_aspect(1./ax.get_data_ratio())
 
 number_color = 'darkgrey'
+
+
+def get_row_color(groupID):
+    color_df = pd.read_csv(imd.loc_color_df)
+    color_row = color_df[color_df['groupID']==groupID]
+    rgba = color_row['rgba'].iloc[0]
+    rgba = rgba.replace('(','')
+    rgba = rgba.replace(')','')
+    rgba = rgba.replace(',','')
+    rgba = rgba.split(' ')
+    rgba = [float(value) for value in rgba]
+    return rgba
+
+def get_row_size(groupID):
+    group_df = ascii.read(imd.cluster_indiv_dfs_dir + f'/{groupID}_cluster_df.csv')
+    size = len(group_df)
+    return size 
 
 # cbar = fig.colorbar(mpl.cm.ScalarMappable(norm=norm, cmap=cmap), ax=ax, fraction=0.046, pad=0.04)

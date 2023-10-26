@@ -90,6 +90,17 @@ def make_all_singleplots(n_clusters, run_name):
             make_single_plot(groupID, run_name)
             make_single_plot(groupID, run_name, add_spec=True)
 
+def make_all_singleplots_2groups(groupID1, groupID2, groupID3, groupID4, run_name):
+    groupIDs = [groupID1, groupID2, groupID3, groupID4]
+    for groupID in groupIDs:
+        # if groupID == 0:
+        #     continue
+        for i in range(5):
+            if os.path.exists(imd.prospector_fit_csvs_dir + f'/{run_name}_csvs/group{groupID}_trial{i}_cont_phot.csv'):
+                print(f'Making plot for group {groupID} trial {i}')
+                make_single_plot(groupID, run_name, trial=i)
+                make_single_plot(groupID, run_name, add_spec=True, trial=i)
+
 def make_plots(groupID, run_name, mask=False, savename='False', trial=-1, label_lines=True):
     """Plots the observations vs the sps model
 

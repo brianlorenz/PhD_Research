@@ -79,12 +79,7 @@ def plot_cluster_summaries(x_var, y_var, savename, color_var='None', plot_lims='
         ax.text(row[x_var], row[y_var], f"{int(row['groupID'])}", color='black')
 
     if add_leja_sfms:
-        redshift = 2
-        mode = 'ridge'
-        logmasses = np.arange(9, 11, 0.02)
-        logSFRs = np.array([leja2022_sfms(logmass, redshift, mode) for logmass in logmasses])
-        logssfrs = np.log10((10**logSFRs) / (10**logmasses))
-        ax.plot(logmasses, logssfrs, color='black', marker='None', ls='-', zorder=1, label=f'Leja SFMS z={redshift}, type={mode}')
+        add_leja_sfms(ax)
         ax.legend()
 
     if plot_lims != 'None':
@@ -198,7 +193,7 @@ def plot_a_vs_b_paper(x_var, y_var, x_label, y_label, savename, axis_obj='False'
     yerr (boolean): Set to true to plot errorbars on the yaxis
     prospector_run_name (str): Set to the prospector run name if using
     """
-    markersize = 10
+    markersize = paper_marker_size
 
     if axis_obj == 'False':
         fig, ax = plt.subplots(figsize=(8, 8))
@@ -304,18 +299,16 @@ def assign_color(color_var):
     else:
         norm = mpl.colors.Normalize(vmin=-10, vmax=10) 
     return norm
-    
 
-def get_row_color(groupID):
-    color_df = pd.read_csv(imd.loc_color_df)
-    color_row = color_df[color_df['groupID']==groupID]
-    rgba = color_row['rgba'].iloc[0]
-    rgba = rgba.replace('(','')
-    rgba = rgba.replace(')','')
-    rgba = rgba.replace(',','')
-    rgba = rgba.split(' ')
-    rgba = [float(value) for value in rgba]
-    return rgba
+def add_leja_sfms(ax):
+    redshift = 2
+    mode = 'ridge'
+    # mode = 'mean'
+    logmasses = np.arange(9, 11, 0.02)
+    logSFRs = np.array([leja2022_sfms(logmass, redshift, mode) for logmass in logmasses])
+    logssfrs = np.log10((10**logSFRs) / (10**logmasses))
+    ax.plot(logmasses, logssfrs, color='black', marker='None', ls='--', zorder=1, label=f'Leja SFMS z={redshift}, {mode}')
+ 
 
 def make_plots_a_vs_b(reduce_plot_count=False):
     """Plots variables in cluster_summary_df against each other

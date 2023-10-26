@@ -1,6 +1,6 @@
 import initialize_mosdef_dirs as imd
 
-run_name = 'removed_gals'
+run_name = 'dust_parameters'
 
 print('')
 print('')

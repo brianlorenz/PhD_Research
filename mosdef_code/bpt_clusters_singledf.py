@@ -71,6 +71,22 @@ def calc_log_ratio(top_flux, top_err, bot_flux, bot_err):
         ((1 / bot_flux) * top_err)**2 + ((-top_flux / (bot_flux**2)) * bot_err)**2)
     return log_ratio, log_ratio_err
 
+def add_composite_bpts(ax):
+    clusters_summary_df = ascii.read(imd.loc_cluster_summary_df).to_pandas()
+    for i in range(len(clusters_summary_df)):
+        groupID = clusters_summary_df['groupID'].iloc[i]
+        log_N2_Ha_group = clusters_summary_df['log_N2_Ha'].iloc[i]
+        log_O3_Hb_group = clusters_summary_df['log_O3_Hb'].iloc[i]
+        
+        log_N2_Ha_group_errs = [[clusters_summary_df['err_log_N2_Ha_low'].iloc[i]], [clusters_summary_df['err_log_N2_Ha_high'].iloc[i]]]
+        log_O3_Hb_group_errs = [[clusters_summary_df['err_log_O3_Hb_low'].iloc[i]], [clusters_summary_df['err_log_O3_Hb_high'].iloc[i]]]
+        
+        rgba = get_row_color(i)
+        size = paper_marker_size
+        # size = get_row_size(i)
+
+        ax.errorbar(log_N2_Ha_group, log_O3_Hb_group, xerr=log_N2_Ha_group_errs, yerr=log_O3_Hb_group_errs, marker='o', color=rgba, markersize=size, mec=paper_mec, mew=paper_marker_edge_width, ls='None', zorder=10000)
+
 def plot_bpt_all_composites(color_code='None'):
     fig, ax = plt.subplots(figsize=(8,7))
     clusters_summary_df = ascii.read(imd.loc_cluster_summary_df).to_pandas()
