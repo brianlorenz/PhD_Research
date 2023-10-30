@@ -21,11 +21,10 @@ def make_paper_plots(n_clusters, norm_method):
     # Prospector AV vs Mass, and Balmer dec measured vs mass
     # AV vs Balmer decrement - how much extra attenuation?
     # Attenuation curve figure(s) - what controsl it
-    make_AV_panel_fig()
+    # make_AV_panel_fig()
 
     # SFR comparison between prospector and emission lines
     pass
-
 
     #ssfr vs mass, metallicity vs mass
     # make_ssfr_mass_metallicity_fig()
@@ -36,16 +35,21 @@ def make_paper_plots(n_clusters, norm_method):
     # UVJ and BPT 2-panel with all the stacks
     # make_uvj_bpt_fig()
 
-    pass
 
 def make_AV_panel_fig():
-    fig = plt.figure(figsize=(12, 6))
+    fig = plt.figure(figsize=(12, 12))
     gs = GridSpec(2, 2, left=0.11, right=0.96, bottom=0.12, wspace=0.28, height_ratios=[1,1],width_ratios=[1,1])
     ax_av_mass = fig.add_subplot(gs[0, 0])
     ax_balmer_mass = fig.add_subplot(gs[0, 1])
-
-    plot_a_vs_b_paper('median_log_mass', 'balmer_av', stellar_mass_label, balmer_av_label, 'None', axis_obj=ax_balmer_mass, yerr=True, plot_lims=[9, 11.5, 2, 12], fig=fig, use_color_df=True) #, color_var='median_U_V'
-    for ax in [ax_av_mass, ax_balmer_mass]:
+    ax_balmer_av_compare = fig.add_subplot(gs[1, 0])
+    ax_dust_index = fig.add_subplot(gs[1, 1])
+    prospector_dust2_label = 'Prospector dust2'
+    dust_index_label = 'Prospector dust_index'
+    plot_a_vs_b_paper('median_log_mass', 'dust2_50', stellar_mass_label, prospector_dust2_label, 'None', axis_obj=ax_av_mass, yerr=True, plot_lims=[9, 11.5, -0.2, 5], fig=fig, use_color_df=True) 
+    plot_a_vs_b_paper('median_log_mass', 'balmer_av', stellar_mass_label, balmer_av_label, 'None', axis_obj=ax_balmer_mass, yerr=True, plot_lims=[9, 11.5, -0.2, 5], fig=fig, use_color_df=True) 
+    plot_a_vs_b_paper('dust2_50', 'balmer_av', prospector_dust2_label, balmer_av_label, 'None', axis_obj=ax_balmer_av_compare, yerr=True, plot_lims=[-0.2, 5, -0.2, 5], fig=fig, use_color_df=True, prospector_xerr=True, one_to_one=True, factor_of_2=True)
+    plot_a_vs_b_paper('median_log_mass', 'dustindex50', stellar_mass_label, dust_index_label, 'None', axis_obj=ax_dust_index, yerr=True, plot_lims=[9, 11.5, -1.2, 0], fig=fig, use_color_df=True) 
+    for ax in [ax_av_mass, ax_balmer_mass, ax_balmer_av_compare, ax_dust_index]:
         scale_aspect(ax)
         # ax.legend(fontsize=full_page_axisfont-4)
     fig.savefig(imd.sed_paper_figures_dir + '/dust_panel.pdf')

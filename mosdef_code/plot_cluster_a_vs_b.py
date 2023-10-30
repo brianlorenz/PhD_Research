@@ -178,7 +178,7 @@ def plot_ratio(x_var_numerator, x_var_denominator, y_var_numerator, y_var_denomi
 
     fig.savefig(imd.cluster_dir + f'/cluster_stats/{savename}.pdf', bbox_inches='tight')
 
-def plot_a_vs_b_paper(x_var, y_var, x_label, y_label, savename, axis_obj='False', color_var='None', plot_lims='None', lower_limit=False, one_to_one=False, ignore_groups=[], log=False, add_leja_sfms=False, yerr=False, prospector_run_name = '', fig='None', use_color_df=True):
+def plot_a_vs_b_paper(x_var, y_var, x_label, y_label, savename, axis_obj='False', color_var='None', plot_lims='None', lower_limit=False, one_to_one=False, ignore_groups=[], log=False, add_leja_sfms=False, yerr=False, prospector_run_name = '', fig='None', use_color_df=True, prospector_xerr=False, factor_of_2=False):
     """Plots two columsn of cluster_summary_df against each other
     
     Parameters:
@@ -232,14 +232,21 @@ def plot_a_vs_b_paper(x_var, y_var, x_label, y_label, savename, axis_obj='False'
         else:
             marker='o'
         if yerr == True:
-            try:
-                ax.errorbar(row[x_var], row[y_var], yerr=np.array([[row['err_'+y_var+'_low'], row['err_'+y_var+'_high']]]).T, color=rgba, marker=marker, ls='None', zorder=3, mec='black', ms=markersize)
-            except:
-                pass
-            try:
-                ax.errorbar(row[x_var], row[y_var], yerr=row['err_'+y_var], color=rgba, marker=marker, ls='None', zorder=3, mec='black', ms=markersize)
-            except:
-                pass
+            if prospector_xerr == True:
+                ax.errorbar(row[x_var], row[y_var], xerr=np.array([[row[x_var]-row[x_var.replace('_50','_16')], row[x_var.replace('_50','_84')]-row[x_var]]]).T, yerr=np.array([[row['err_'+y_var+'_low'], row['err_'+y_var+'_high']]]).T, color=rgba, marker=marker, ls='None', zorder=3, mec='black', ms=markersize)
+            else:
+                try:
+                    ax.errorbar(row[x_var], row[y_var], yerr=np.array([[row['err_'+y_var+'_low'], row['err_'+y_var+'_high']]]).T, color=rgba, marker=marker, ls='None', zorder=3, mec='black', ms=markersize)
+                except:
+                    pass
+                try:
+                    ax.errorbar(row[x_var], row[y_var], yerr=np.array([[row[y_var]-row[y_var.replace('50','16')], row[y_var.replace('50','84')]-row[y_var]]]).T, color=rgba, marker=marker, ls='None', zorder=3, mec='black', ms=markersize)
+                except:
+                    pass
+                try:
+                    ax.errorbar(row[x_var], row[y_var], yerr=row['err_'+y_var], color=rgba, marker=marker, ls='None', zorder=3, mec='black', ms=markersize)
+                except:
+                    pass
         else:
             ax.plot(row[x_var], row[y_var], color=rgba, marker=marker, ls='None', zorder=3, mec='black', ms=markersize)
             
@@ -276,6 +283,7 @@ def plot_a_vs_b_paper(x_var, y_var, x_label, y_label, savename, axis_obj='False'
         xlims = ax.get_xlim()
         ylims = ax.get_ylim()
         ax.plot([-20, 20e60], [-20, 20e60], ls='--', color='red')
+        ax.plot([-10, 10], [-20, 20], ls='--', color='orange')
         ax.set_xlim(xlims)
         ax.set_ylim(ylims)
         # ax.plot([0,1],[0,1], transform=ax.transAxes, ls='--', color='red')
