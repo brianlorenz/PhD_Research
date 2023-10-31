@@ -152,7 +152,7 @@ def gen_phot(res, obs, mod, sps, non_par_sfh):
         all_taus[i] = theta_val[theta_names.index('tau')]
         all_dust2s[i] = theta_val[theta_names.index('dust2')]
         all_dustindexs[i] = theta_val[theta_names.index('dust_index')]
-        # Compute SFR
+        # Compute SFR - https://github.com/bd-j/prospector/issues/166
         all_sfrs[i] = compute_SFR(all_total_masses[i], all_tages[i], all_taus[i])
         all_spec[:, i], all_phot[:, i], all_mfrac[i] = mod.mean_model(
             theta_val, obs, sps=sps)

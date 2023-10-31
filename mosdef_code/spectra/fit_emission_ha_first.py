@@ -421,7 +421,6 @@ def fit_all_emission(n_clusters, norm_method, ignore_groups, constrain_O3=False,
             for bootstrap_num in range(bootstrap):
                 fit_emission(i, norm_method, constrain_O3=constrain_O3, bootstrap_num=bootstrap_num)
 
-
 def fit_all_axis_ratio_emission(n_groups, save_name=''):
     """Runs the fit_emission() function on every cluster
 
