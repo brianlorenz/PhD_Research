@@ -9,6 +9,7 @@ import numpy as np
 import pandas as pd
 import pickle
 import initialize_mosdef_dirs as imd
+import matplotlib.pyplot as plt
 from prospector_plot import make_all_singleplots_2groups, make_all_prospector_plots_2groups, make_all_prospector_plots, make_all_singleplots
 
 # 2 groups sectoin
@@ -40,7 +41,7 @@ def make_tfig_cfig(run_name):
         tfig.savefig(imd.prospector_plot_dir + f'/{run_name}_plots' + f'/{file_shortname}_tfig.pdf')
         cfig = reader.subcorner(res)
         cfig.savefig(imd.prospector_plot_dir + f'/{run_name}_plots' + f'/{file_shortname}_cfig.pdf')
-
+        plt.close('all')
 
 
 
@@ -49,4 +50,4 @@ def make_tfig_cfig(run_name):
 # make_all_prospector_plots(n_clusters, run_name)
 # make_all_singleplots(n_clusters, run_name)
 # make_all_prospector_plots_2groups(0, 7, 8, 11, run_name)
-make_all_singleplots_2groups(0, 7, 8, 11, run_name)
+# make_all_singleplots_2groups(0, 7, 8, 11, run_name)

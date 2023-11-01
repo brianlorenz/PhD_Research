@@ -353,7 +353,8 @@ def vis_composite_sed(total_sed, composite_sed=0, composite_filters=0, groupID=-
         ax_sed.errorbar(composite_sed['rest_wavelength'], composite_sed['f_lambda'],
                         yerr=[composite_sed['err_f_lambda_d'], composite_sed['err_f_lambda_u']], ls='', marker='o', markersize=4, color='red', mec='black', zorder=2)
     else:
-        ax_sed.plot(composite_sed['rest_wavelength'], composite_sed['f_lambda'], ls='', marker='o', markersize=4, color='red', mec='black', zorder=2)
+        # ax_sed.plot(composite_sed['rest_wavelength'], composite_sed['f_lambda'], ls='', marker='o', markersize=4, color='red', mec='black', zorder=2)
+        ax_sed.plot(composite_sed['rest_wavelength'], composite_sed['f_lambda'], ls='', marker='o', markersize=6, color=get_row_color(groupID), mec='black', zorder=2)
 
     # Parse the scattter into 16th and 84th percetile arrays
     if axis_obj == 'False':

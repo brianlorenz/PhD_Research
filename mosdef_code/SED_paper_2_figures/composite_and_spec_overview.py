@@ -63,29 +63,6 @@ def composite_and_spec_overview(n_clusters, ignore_groups, norm_method):
         ax_spec.set_xlabel('Rest Wavelength ($\AA$)', fontsize=single_column_axisfont, labelpad=30)
         ax_spec.set_ylabel('Normalized Flux', fontsize=single_column_axisfont, labelpad=16)
         ax_spec.tick_params(labelsize = single_column_axisfont)
-
-        # Label the emisison lines
-        for line in line_list:
-            name = line[0]
-            center = line[1]
-            # line_range = np.logical_and(spec_df['wavelength']>(center-5), spec_df['wavelength']<(center+5))
-            line_range = np.logical_and(spec_df['wavelength']>(center-1), spec_df['wavelength']<(center+1))
-            height = np.max(spec_df[line_range]['f_lambda']*scale_factor)
-            ylims = ax_spec.get_ylim()[0]
-            height_pct = (height-ylims[0]) / (ylims[1]-ylims[0])
-            # ax.axvline(center, ymin=-0, ymax=0.78, color='black', ls='--')
-            ax_spec.axvline(center, color='mediumseagreen', ls='--')
-            if len(name) > 8:
-                offset = -8
-            else:
-                offset = len(name)*-2.7
-            if i%nrows==0:
-                if name=='Halpha': name='H$\\alpha$'
-                if name=='Hbeta': name='H$\\beta$'
-                if name=='O3_5008' or name=='O3_4960': name='O[III]'
-                if name=='N2_6550' or name=='N2_6585': name='N[II]'
-                ax_spec.text(center+3+offset, np.min([ylims[1]-0.1, height+0.2]), name, fontsize=single_column_axisfont)
-
         
         
     imd.check_and_make_dir(imd.cluster_paper_figures)
@@ -162,6 +139,31 @@ def composite_sed_and_spec_indiv(n_clusters, norm_method):
         
         imd.check_and_make_dir(imd.cluster_dir + '/cluster_stats/inidiv_sed_specs/')
         fig.savefig(imd.cluster_dir + f'/cluster_stats/inidiv_sed_specs/group{groupID}_sed_spec.pdf')
+
+# Label the emisison lines
+def label_elines(ax, spec_df, scale_factor):
+    for line in line_list:
+        name = line[0]
+        center = line[1]
+        # line_range = np.logical_and(spec_df['wavelength']>(center-5), spec_df['wavelength']<(center+5))
+        line_range = np.logical_and(spec_df['wavelength']>(center-1), spec_df['wavelength']<(center+1))
+        height = np.max(spec_df[line_range]['f_lambda']*scale_factor)
+        ylims = ax.get_ylim()[0]
+        height_pct = (height-ylims[0]) / (ylims[1]-ylims[0])
+        # ax.axvline(center, ymin=-0, ymax=0.78, color='black', ls='--')
+        
+        if len(name) > 8:
+            offset = -8
+        else:
+            offset = len(name)*-2.7
+        
+        ax.axvline(center, color='mediumseagreen', ls='--')
+        if name=='Halpha': name='H$\\alpha$'
+        if name=='Hbeta': name='H$\\beta$'
+        if name=='O3_5008' or name=='O3_4960': name='O[III]'
+        if name=='N2_6550' or name=='N2_6585': name='N[II]'
+        print(f'{center+3+offset}, {np.min([ylims[1]-0.1, height+0.2])}')
+        ax.text(center+3+offset, np.min([ylims[1]-0.1, height+0.2]), name, fontsize=single_column_axisfont)
 
 
 # ignore_groups = imd.ignore_groups

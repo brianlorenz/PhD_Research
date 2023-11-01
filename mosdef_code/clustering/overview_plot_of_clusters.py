@@ -12,6 +12,7 @@ from matplotlib.gridspec import GridSpec
 from bpt_clusters_singledf import plot_bpt
 from uvj_clusters import setup_uvj_plot
 import matplotlib as mpl
+from composite_and_spec_overview import label_elines
 
 prospector_run = 'dust_index_test'
 
@@ -61,7 +62,10 @@ def make_overview_plot_clusters(groupIDs, import_save_str, n_clusters, norm_meth
     """
 
     n_rows = len(groupIDs)
-    fig = plt.figure(figsize=(24, n_rows*4))
+    if paper_overview == False:
+        fig = plt.figure(figsize=(24, n_rows*4))
+    else:
+        fig = plt.figure(figsize=(22, n_rows*4))
     gs = GridSpec(n_rows, 5, left=0.05, right=0.96, wspace=0.1, hspace=0.3, top=0.98, bottom=0.02)
 
     
@@ -70,6 +74,8 @@ def make_overview_plot_clusters(groupIDs, import_save_str, n_clusters, norm_meth
     filtered_gal_df = ascii.read(imd.loc_filtered_gal_df).to_pandas()
     filtered_gal_df['log_use_sfr'] = np.log10(filtered_gal_df['use_sfr'])
 
+    similarity_df = ascii.read(imd.cluster_dir+'/cluster_stats/similarities/composite_similarities.csv').to_pandas()
+    clusters_summary_df = clusters_summary_df.merge(similarity_df, on='groupID')
     
     #Manages which row to plot in
     plot_row_idx = 0
@@ -98,6 +104,10 @@ def make_overview_plot_clusters(groupIDs, import_save_str, n_clusters, norm_meth
         
         if paper_overview==False:
             ax.text(0.85, 0.85, f'{n_gals}', transform=ax.transAxes, fontsize=fontsize)
+        if paper_overview==True:
+            ax.text(0.65, 0.91, f'N = {n_gals}', transform=ax.transAxes, fontsize=fontsize)
+            ax.text(0.65, 0.83, f'S = {clusters_summary_row["mean_sim_to_composite"].iloc[0]:.2f}', transform=ax.transAxes, fontsize=fontsize)
+            
         ax.set_xlabel('Wavelength', fontsize=fontsize)
         ax.set_ylabel('Normalized F$_\lambda$', fontsize=fontsize)
         ax.tick_params(labelsize = fontsize)
@@ -109,25 +119,26 @@ def make_overview_plot_clusters(groupIDs, import_save_str, n_clusters, norm_meth
 
         ### Spectrum Plot --------------------------------------------
         # Set up the broken axis
-        plot_lims = ((4850, 5020), (6535, 6595))
+        plot_lims = ((4850, 5020), (6530, 6595))
         ax = brokenaxes(xlims=plot_lims, subplot_spec=gs[plot_row_idx, 1])
 
         # Can change the norm_method here
-        try:
-            spec_df = read_composite_spectrum(groupID, norm_method, scaled='False')
-            halpha_range = np.logical_and(spec_df['wavelength']>6560, spec_df['wavelength']<6570)
-            peak_halpha = np.max(spec_df[halpha_range]['f_lambda'])
-            scale_factor = 1.0/peak_halpha
-            ax.plot(spec_df['wavelength'], spec_df['f_lambda']*scale_factor, color='black', linewidth=2, label='Composite')
+        spec_df = read_composite_spectrum(groupID, norm_method, scaled='False')
+        halpha_range = np.logical_and(spec_df['wavelength']>6560, spec_df['wavelength']<6570)
+        peak_halpha = np.max(spec_df[halpha_range]['f_lambda'])
+        scale_factor = 1.0/peak_halpha
+        ax.plot(spec_df['wavelength'], spec_df['f_lambda']*scale_factor, color='black', linewidth=2, label='Composite')
 
-            ax.set_xlabel('Wavelength', fontsize=fontsize, labelpad=30)
-            ax.set_ylabel('Normalized F$_\lambda$', fontsize=fontsize)
-            ax.tick_params(labelsize = fontsize)
-            ax.set_ylim(-0.1, 1.5)
+        if groupID == groupIDs[0]:
+            label_elines(ax, spec_df, scale_factor)
+
+        ax.set_xlabel('Wavelength', fontsize=fontsize, labelpad=30)
+        ax.set_ylabel('Normalized F$_\lambda$', fontsize=fontsize)
+        ax.tick_params(labelsize = fontsize)
+        ax.set_ylim(-0.1, 1.5)
         
         
-        except:
-            pass
+        
         # scale_aspect(ax)
 
         # Add prospector spectrum
@@ -153,24 +164,23 @@ def make_overview_plot_clusters(groupIDs, import_save_str, n_clusters, norm_meth
 
         ax.plot(filtered_gal_df['log_mass'], filtered_gal_df['log_use_sfr'], marker='o', color=grey_point_color, ls='None', markersize=grey_point_size)
         # ax.plot(clusters_summary_row['median_log_mass'], clusters_summary_row['median_log_sfr'], marker='x', color='red', ls='None', markersize=10, mew=3, zorder=10000)
-        ax.plot(clusters_summary_row['median_log_mass'], clusters_summary_row['computed_log_sfr_with_limit'], marker=cluster_marker, color=cluster_marker_color, ls='None', markersize=cluster_marker_size, zorder=10000)
+        ax.plot(clusters_summary_row['median_log_mass'], clusters_summary_row['computed_log_sfr_with_limit'], marker=cluster_marker, color=get_row_color(groupID), mew=paper_marker_edge_width, mec=paper_mec, ls='None', markersize=paper_marker_size, zorder=10000)
         computed_sfr = clusters_summary_row['computed_log_sfr_with_limit']
         if clusters_summary_row['flag_balmer_lower_limit'].iloc[0] == 1:
-            ax.vlines(clusters_summary_row['median_log_mass'], computed_sfr, computed_sfr+100000, color='blue')
+            ax.vlines(clusters_summary_row['median_log_mass'], computed_sfr, computed_sfr+100000, color=get_row_color(groupID))
         
         cmap = mpl.cm.plasma
         norm = mpl.colors.Normalize(vmin=1, vmax=n_gals) 
-        print(n_gals)
         for gal in range(len(group_df)):
             row = group_df.iloc[gal]
             if color_gals:
                 rgba = cmap(norm(row['group_gal_id']))
             else:
-                cmap = mpl.cm.plasma
-                norm = mpl.colors.Normalize(vmin=-0.5, vmax=1.0) 
-                o3hb = np.log10(row['oiii_5008_flux']/row['hb_flux'])
-                rgba = cmap(norm(o3hb))
-                # rgba = 'black'
+                # cmap = mpl.cm.plasma
+                # norm = mpl.colors.Normalize(vmin=-0.5, vmax=1.0) 
+                # o3hb = np.log10(row['oiii_5008_flux']/row['hb_flux'])
+                # rgba = cmap(norm(o3hb))
+                rgba = 'black'
         
             ax.plot(row['log_mass'], row['log_use_sfr'], marker='o', color=rgba, ls='None')
 
@@ -182,6 +192,7 @@ def make_overview_plot_clusters(groupIDs, import_save_str, n_clusters, norm_meth
         in_both_range = np.logical_and(in_mass_range, in_sfr_range)
         n_gals_in_range = len(group_df[in_both_range])
         if paper_overview==False:
+        
             ax.text(0.05, 0.85, f'{n_gals_in_range}', transform=ax.transAxes, fontsize=fontsize)
 
         # Plot lines of constant ssfr
@@ -192,7 +203,8 @@ def make_overview_plot_clusters(groupIDs, import_save_str, n_clusters, norm_meth
             ssfr_l_sfrs = np.log10(10**ssfr_l_masses * ssfrs[k] / 10**9)
             label_loc = np.log10(10**label_locs[k] * ssfrs[k] / 10**9) - 0.1
             ax.plot(ssfr_l_masses, ssfr_l_sfrs, ls='--', color='orange')
-            ax.text(label_locs[k], label_loc, f'{ssfrs[k]} Gyr$^{-1}$', rotation=50)
+            if groupID == groupIDs[0]:
+                ax.text(label_locs[k], label_loc, f'{ssfrs[k]} Gyr$^{-1}$', rotation=50, fontsize=12)
 
         ax.set_xlabel(stellar_mass_label, fontsize=fontsize)
         ax.set_ylabel(sfr_label, fontsize=fontsize)
@@ -230,13 +242,14 @@ def make_overview_plot_clusters(groupIDs, import_save_str, n_clusters, norm_meth
         composite_uvj_df = ascii.read(imd.composite_uvj_dir + '/composite_uvjs.csv').to_pandas()
         uvj_composite = composite_uvj_df[composite_uvj_df['groupID'] == groupID]
         ax.plot(uvj_composite['V_J'], uvj_composite['U_V'],
-            ls='', marker=cluster_marker, markersize=cluster_marker_size, color=cluster_marker_color, label='Composite SED')
+            ls='', marker=cluster_marker, markersize=paper_marker_size, color=get_row_color(groupID), mew=paper_marker_edge_width, mec=paper_mec, label='Composite SED')
 
         in_x_range = np.logical_and(group_df['V_J']>xrange[0], group_df['V_J']<xrange[1])
         in_y_range = np.logical_and(group_df['U_V']>yrange[0], group_df['U_V']<yrange[1])
         in_both_range_uvj = np.logical_and(in_x_range, in_y_range)
         n_gals_in_range_uvj = len(group_df[in_both_range_uvj])
-        ax.text(0.85, 0.85, f'{n_gals_in_range_uvj}', transform=ax.transAxes, fontsize=fontsize)
+        if paper_overview == False:
+            ax.text(0.85, 0.85, f'{n_gals_in_range_uvj}', transform=ax.transAxes, fontsize=fontsize)
         # ax.plot(group_df['log_mass'], group_df['log_use_sfr'], marker='o', color='black', ls='None')
 
         ax.set_xlabel('V-J', fontsize=fontsize)
@@ -262,7 +275,8 @@ def make_overview_plot_clusters(groupIDs, import_save_str, n_clusters, norm_meth
         in_y_range = np.logical_and(group_df_bpt['log_OIII_Hb']>yrange[0], group_df_bpt['log_OIII_Hb']<yrange[1])
         in_both_range_bpt = np.logical_and(in_x_range, in_y_range)
         n_gals_in_range_bpt = len(group_df[in_both_range_bpt])
-        ax.text(0.85, 0.85, f'{n_gals_in_range_bpt}', transform=ax.transAxes, fontsize=fontsize)
+        if paper_overview == False:
+            ax.text(0.85, 0.85, f'{n_gals_in_range_bpt}', transform=ax.transAxes, fontsize=fontsize)
         # ax.plot(group_df['log_mass'], group_df['log_use_sfr'], marker='o', color='black', ls='None')
 
         # Add the measured value of the cluster
@@ -271,9 +285,9 @@ def make_overview_plot_clusters(groupIDs, import_save_str, n_clusters, norm_meth
         
         log_N2_Ha_group_errs = [clusters_summary_row['err_log_N2_Ha_low'], clusters_summary_row['err_log_N2_Ha_high']]
         log_O3_Hb_group_errs = [clusters_summary_row['err_log_O3_Hb_low'], clusters_summary_row['err_log_O3_Hb_high']]
-        ax.plot(log_N2_Ha_group, log_O3_Hb_group, marker=cluster_marker, color=cluster_marker_color, markersize=cluster_marker_size, ls='None', zorder=10000, label='Composite')
-        ax.hlines(log_O3_Hb_group, log_N2_Ha_group-log_N2_Ha_group_errs[0], log_N2_Ha_group+log_N2_Ha_group_errs[1], color='blue')
-        ax.vlines(log_N2_Ha_group, log_O3_Hb_group-log_O3_Hb_group_errs[0], log_O3_Hb_group+log_O3_Hb_group_errs[1], color='blue')
+        ax.plot(log_N2_Ha_group, log_O3_Hb_group, marker=cluster_marker, color=get_row_color(groupID), markersize=paper_marker_size, mew=paper_marker_edge_width, mec=paper_mec, ls='None', zorder=10000, label='Composite')
+        ax.hlines(log_O3_Hb_group, log_N2_Ha_group-log_N2_Ha_group_errs[0], log_N2_Ha_group+log_N2_Ha_group_errs[1], color=get_row_color(groupID))
+        ax.vlines(log_N2_Ha_group, log_O3_Hb_group-log_O3_Hb_group_errs[0], log_O3_Hb_group+log_O3_Hb_group_errs[1], color=get_row_color(groupID))
         # ax.errorbar(log_N2_Ha_group, log_O3_Hb_group, xerr=log_N2_Ha_group_errs, yerr=log_O3_Hb_group_errs, marker='x', color='blue', markersize=10, mew=3, ls='None')
         # ax.errorbar(log_N2_Ha_group, log_O3_Hb_group, xerr=log_N2_Ha_group_errs, yerr=log_O3_Hb_group_errs, marker='o', color='blue')
         # Add the point from prospector
@@ -286,7 +300,8 @@ def make_overview_plot_clusters(groupIDs, import_save_str, n_clusters, norm_meth
         # ax.legend(framealpha=1)
         scale_aspect(ax)
 
-        ax.text(1.1, 0.3, f'Group {groupID}', transform=ax.transAxes, fontsize=20, rotation=270)
+        if paper_overview == False:
+            ax.text(1.1, 0.3, f'Group {groupID}', transform=ax.transAxes, fontsize=20, rotation=270)
 
         plot_row_idx = plot_row_idx + 1
     # plt.tight_layout()

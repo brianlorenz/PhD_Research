@@ -20,6 +20,7 @@ def make_clusters_summary_df(n_clusters, ignore_groups, use_ha_first_csvs=False,
     halpha_scaled_values = []
 
     median_zs = []
+    weighted_median_zs = []
 
     median_uvs = []
     median_vjs = []
@@ -81,15 +82,23 @@ def make_clusters_summary_df(n_clusters, ignore_groups, use_ha_first_csvs=False,
     for groupID in range(n_clusters):
 
         # Read in the df
-        group_df = ascii.read(imd.cluster_indiv_dfs_dir + f'/{groupID}_cluster_df.csv')
+        group_df = ascii.read(imd.cluster_indiv_dfs_dir + f'/{groupID}_cluster_df.csv').to_pandas()
         group_df['log_use_sfr'] = np.log10(group_df['use_sfr'])
         n_gals = len(group_df)
         halpha_scaled_value = halpha_scaled
 
+        def weighted_quantiles(values, weights, quantiles=0.5):
+            i = np.argsort(values)
+            c = np.cumsum(weights[i])
+            return values[i[np.searchsorted(c, np.array(quantiles) * c[-1])]]
 
         # Compute properties
         median_z = np.median(group_df['Z_MOSFIRE'])
-    
+        print(f'group{groupID}')
+        # ### WORKING HERE - ARE THE -99s BREAKING IT? 
+        group_df['zero_ha_flux'] = group_df['ha_flux']
+        group_df.loc[group_df['zero_ha_flux'] == -999.0, 'zero_ha_flux'] = 0
+        weighted_median_z = weighted_quantiles(group_df['Z_MOSFIRE'].to_numpy(), group_df['zero_ha_flux'].to_numpy())
         median_vj = np.median(group_df[group_df['V_J']>0]['V_J'])
         median_uv = np.median(group_df[group_df['U_V']>0]['U_V'])
 
@@ -113,6 +122,7 @@ def make_clusters_summary_df(n_clusters, ignore_groups, use_ha_first_csvs=False,
         halpha_scaled_values.append(halpha_scaled_value)
 
         median_zs.append(median_z)
+        weighted_median_zs.append(weighted_median_z)
 
         median_vjs.append(median_vj)
         median_uvs.append(median_uv)
@@ -229,7 +239,7 @@ def make_clusters_summary_df(n_clusters, ignore_groups, use_ha_first_csvs=False,
 
             
     # Build into DataFrame
-    clusters_summary_df = pd.DataFrame(zip(groupIDs, n_galss, halpha_scaled_values, median_zs, median_masses, mean_masses, norm_median_masses, median_sfrs, median_ssfrs, median_res, median_halphas, norm_median_halphas, median_halpha_lums, av_medians, err_av_median_lows, err_av_median_highs, beta_medians, err_beta_median_lows, err_beta_median_highs, median_vjs, median_uvs, ha_fluxes, err_ha_fluxes, hb_fluxes, err_hb_fluxes, hb_sns, balmer_decs, err_balmer_dec_lows, err_balmer_dec_highs, balmer_dec_sns, balmer_avs, err_balmer_av_lows, err_balmer_av_highs, O3N2_metallicities, err_O3N2_metallicity_lows, err_O3N2_metallicity_highs, log_N2_Has, err_log_N2_Has_low, err_log_N2_Has_high, log_O3_Hbs, err_log_O3_Hbs_low, err_log_O3_Hbs_high), columns=['groupID', 'n_gals', 'halpha_scaled_spectra', 'redshift', 'median_log_mass', 'mean_log_mass', 'norm_median_log_mass', 'median_log_sfr', 'median_log_ssfr', 'median_re', 'median_indiv_halphas', 'norm_median_halphas', 'median_halpha_luminosity', 'AV', 'err_AV_low', 'err_AV_high', 'beta', 'err_beta_low', 'err_beta_high', 'median_V_J', 'median_U_V', 'ha_flux', 'err_ha_flux', 'hb_flux', 'err_hb_flux', 'hb_snr', 'balmer_dec', 'err_balmer_dec_low', 'err_balmer_dec_high', 'balmer_dec_snr', 'balmer_av', 'err_balmer_av_low', 'err_balmer_av_high', 'O3N2_metallicity', 'err_O3N2_metallicity_low', 'err_O3N2_metallicity_high', 'log_N2_Ha', 'err_log_N2_Ha_low', 'err_log_N2_Ha_high', 'log_O3_Hb', 'err_log_O3_Hb_low', 'err_log_O3_Hb_high'])
+    clusters_summary_df = pd.DataFrame(zip(groupIDs, n_galss, halpha_scaled_values, median_zs, weighted_median_zs, median_masses, mean_masses, norm_median_masses, median_sfrs, median_ssfrs, median_res, median_halphas, norm_median_halphas, median_halpha_lums, av_medians, err_av_median_lows, err_av_median_highs, beta_medians, err_beta_median_lows, err_beta_median_highs, median_vjs, median_uvs, ha_fluxes, err_ha_fluxes, hb_fluxes, err_hb_fluxes, hb_sns, balmer_decs, err_balmer_dec_lows, err_balmer_dec_highs, balmer_dec_sns, balmer_avs, err_balmer_av_lows, err_balmer_av_highs, O3N2_metallicities, err_O3N2_metallicity_lows, err_O3N2_metallicity_highs, log_N2_Has, err_log_N2_Has_low, err_log_N2_Has_high, log_O3_Hbs, err_log_O3_Hbs_low, err_log_O3_Hbs_high), columns=['groupID', 'n_gals', 'halpha_scaled_spectra', 'redshift', 'flux_weighted_redshift', 'median_log_mass', 'mean_log_mass', 'norm_median_log_mass', 'median_log_sfr', 'median_log_ssfr', 'median_re', 'median_indiv_halphas', 'norm_median_halphas', 'median_halpha_luminosity', 'AV', 'err_AV_low', 'err_AV_high', 'beta', 'err_beta_low', 'err_beta_high', 'median_V_J', 'median_U_V', 'ha_flux', 'err_ha_flux', 'hb_flux', 'err_hb_flux', 'hb_snr', 'balmer_dec', 'err_balmer_dec_low', 'err_balmer_dec_high', 'balmer_dec_snr', 'balmer_av', 'err_balmer_av_low', 'err_balmer_av_high', 'O3N2_metallicity', 'err_O3N2_metallicity_low', 'err_O3N2_metallicity_high', 'log_N2_Ha', 'err_log_N2_Ha_low', 'err_log_N2_Ha_high', 'log_O3_Hb', 'err_log_O3_Hb_low', 'err_log_O3_Hb_high'])
     clusters_summary_df.to_csv(imd.loc_cluster_summary_df, index=False)
 
 # make_clusters_summary_df(23, ignore_groups=[19], use_ha_first_csvs=False)

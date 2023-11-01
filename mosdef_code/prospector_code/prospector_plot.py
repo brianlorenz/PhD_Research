@@ -77,6 +77,9 @@ def make_single_plot(groupID, run_name, add_spec=False, mask=False, savename='Fa
                      1.1 * np.percentile(phot_df['rest_wavelength'] * rest_frame_original_phot, 99))
     ax.set_xlim(phot_df['rest_wavelength'].iloc[0] -
                      30, phot_df['rest_wavelength'].iloc[-1] + 3000)
+    if trial > -1:
+        ax.text(0.12, 0.92, f'Trial {trial}', transform=ax.transAxes, fontsize=14)
+    
     ax.legend()
     ax.set_ylabel("$\lambda$ F$_\lambda$", fontsize = single_column_axisfont)
     ax.set_xlabel("Wavelength ($\AA$)", fontsize=single_column_axisfont)
@@ -89,6 +92,7 @@ def make_all_singleplots(n_clusters, run_name):
             print(f'Making plot for group {groupID}')
             make_single_plot(groupID, run_name)
             make_single_plot(groupID, run_name, add_spec=True)
+            plt.close('all')
 
 def make_all_singleplots_2groups(groupID1, groupID2, groupID3, groupID4, run_name):
     groupIDs = [groupID1, groupID2, groupID3, groupID4]
@@ -100,6 +104,7 @@ def make_all_singleplots_2groups(groupID1, groupID2, groupID3, groupID4, run_nam
                 print(f'Making plot for group {groupID} trial {i}')
                 make_single_plot(groupID, run_name, trial=i)
                 make_single_plot(groupID, run_name, add_spec=True, trial=i)
+                plt.close('all')
 
 def make_plots(groupID, run_name, mask=False, savename='False', trial=-1, label_lines=True):
     """Plots the observations vs the sps model
