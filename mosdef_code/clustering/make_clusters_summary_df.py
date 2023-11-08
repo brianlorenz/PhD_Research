@@ -94,8 +94,6 @@ def make_clusters_summary_df(n_clusters, ignore_groups, use_ha_first_csvs=False,
 
         # Compute properties
         median_z = np.median(group_df['Z_MOSFIRE'])
-        print(f'group{groupID}')
-        # ### WORKING HERE - ARE THE -99s BREAKING IT? 
         group_df['zero_ha_flux'] = group_df['ha_flux']
         group_df.loc[group_df['zero_ha_flux'] == -999.0, 'zero_ha_flux'] = 0
         weighted_median_z = weighted_quantiles(group_df['Z_MOSFIRE'].to_numpy(), group_df['zero_ha_flux'].to_numpy())

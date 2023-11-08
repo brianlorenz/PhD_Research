@@ -310,8 +310,8 @@ def assign_color(color_var):
 
 def add_leja_sfms(ax):
     redshift = 2
-    mode = 'ridge'
-    # mode = 'mean'
+    # mode = 'ridge'
+    mode = 'mean'
     logmasses = np.arange(9, 11, 0.02)
     logSFRs = np.array([leja2022_sfms(logmass, redshift, mode) for logmass in logmasses])
     logssfrs = np.log10((10**logSFRs) / (10**logmasses))
@@ -409,4 +409,4 @@ def make_plots_a_vs_b(reduce_plot_count=False):
     plot_cluster_summaries('median_log_mass', 'dust2_50', 'prospector/dust2_mass', color_var='balmer_dec', ignore_groups=ignore_groups)
     plot_cluster_summaries('AV', 'dust2_50', 'prospector/dust2_medianAVA', color_var='balmer_dec', ignore_groups=ignore_groups, one_to_one=True)
 
-make_plots_a_vs_b(reduce_plot_count=True)
+# make_plots_a_vs_b(reduce_plot_count=True)

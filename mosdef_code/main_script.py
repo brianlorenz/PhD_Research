@@ -87,7 +87,7 @@ bootstrap = -1
 # # # Add the normalizations to the group dfs
 # add_norm_factors(n_clusters)
 
-make_clusters_summary_df(n_clusters, ignore_groups)
+# make_clusters_summary_df(n_clusters, ignore_groups)
 
 # # Need to do a few things to composites (measure uvj, generate mocks sed, etc. before we can plot)
 # print('Generating plots')
@@ -126,11 +126,11 @@ make_clusters_summary_df(n_clusters, ignore_groups)
 
 # Re-fit the prospector spectra in the same way that we fit the mosdef ones:
 
-setup_all_prospector_fit_csvs(n_clusters, run_name)
-fit_all_prospector_emission(n_clusters, run_name)
-multiply_fit_by_lumdist(n_clusters, run_name)
-save_props(n_clusters, run_name) # Make sure to update the mass values
-add_props_to_cluster_summary_df(n_clusters, run_name) # Adds masses and computes sfr/ssfr
+# setup_all_prospector_fit_csvs(n_clusters, run_name)
+# fit_all_prospector_emission(n_clusters, run_name)
+# multiply_fit_by_lumdist(n_clusters, run_name)
+# save_props(n_clusters, run_name) # Make sure to update the mass values
+# add_props_to_cluster_summary_df(n_clusters, run_name) # Adds masses and computes sfr/ssfr
 
 
 

@@ -136,6 +136,8 @@ def ha_lum_to_sfr(intrinsic_halpha_lums, imf='Chabrier'):
         sfr = 10**(-41.056) * intrinsic_halpha_lums
     if imf == 'Salpeter':
         sfr = 7.9 * 10**(-42) * intrinsic_halpha_lums
+    if imf == 'Mariska':
+        sfr = 5.5 * 10**(-42) * intrinsic_halpha_lums
     return sfr
 
 

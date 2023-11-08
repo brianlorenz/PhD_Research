@@ -27,7 +27,7 @@ def make_paper_plots(n_clusters, norm_method):
     pass
 
     #ssfr vs mass, metallicity vs mass
-    # make_ssfr_mass_metallicity_fig()
+    make_ssfr_mass_metallicity_fig()
 
     # Dust mass figure? Can we measure this?
     pass

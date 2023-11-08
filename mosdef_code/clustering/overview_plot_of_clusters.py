@@ -23,7 +23,7 @@ rows_per_page = 7
 def setup_figs(n_clusters, norm_method, color_gals=False, bpt_color=False, paper_overview=False, prospector_spec=True):
     # Sort the groups
     clusters_summary_df = ascii.read(imd.loc_cluster_summary_df).to_pandas()
-    clusters_summary_df_sorted = clusters_summary_df.sort_values('median_U_V', ascending=True)
+    clusters_summary_df_sorted = clusters_summary_df.sort_values('median_log_mass', ascending=True)
     groupIDs = clusters_summary_df_sorted['groupID'].to_numpy()
     #Manually order them here
     groupIDs = [3, 12, 14, 2, 6, 10, 5, 13, 19, 16, 9, 17, 7, 1, 0, 11, 4, 8, 18, 15]
@@ -32,6 +32,8 @@ def setup_figs(n_clusters, norm_method, color_gals=False, bpt_color=False, paper
     cmap = mpl.cm.coolwarm
     norm = mpl.colors.Normalize(vmin=0.5, vmax=1.5) 
     rgbas = [cmap(norm(clusters_summary_df[clusters_summary_df['groupID'] == i]['median_U_V'].iloc[0])) for i in groupIDs]
+    # norm = mpl.colors.Normalize(vmin=9.3, vmax=11.2) 
+    # rgbas = [cmap(norm(clusters_summary_df[clusters_summary_df['groupID'] == i]['median_log_mass'].iloc[0])) for i in groupIDs]
     color_df = pd.DataFrame(zip(groupIDs, rgbas), columns=['groupID', 'rgba'])
     color_df.to_csv(imd.loc_color_df, index=False)
 

@@ -242,7 +242,7 @@ def build_model(object_redshift=0.0, fixed_metallicity=None, add_duste=True,
     
 
     # Adjust model initial values
-    model_params["dust_type"]['init'] = 0 #  set to 4 for a Kriek and Conroy curve
+    model_params["dust_type"]['init'] = 4 #  set to 4 for a Kriek and Conroy curve
     model_params["dust2"]["init"] = 0.1
     # model_params["logzsol"]["init"] = 0
     # model_params["tage"]["init"] = 13.
@@ -262,7 +262,7 @@ def build_model(object_redshift=0.0, fixed_metallicity=None, add_duste=True,
 
     # adjust priors
     model_params["dust2"]["prior"] = priors.TopHat(mini=0.0, maxi=4.0)
-    model_params["dust_index"]["prior"] = priors.TopHat(mini=-1.2, maxi=-0.2)
+    model_params["dust_index"]["prior"] = priors.TopHat(mini=-1.7, maxi=0.3)
     # model_params["dust1_fraction"]["prior"] = priors.TopHat(mini=0.0, maxi=2.0)
     model_params["tau"]["prior"] = priors.LogUniform(mini=1e-1, maxi=10)
     model_params["mass"]["prior"] = priors.LogUniform(mini=1e10, maxi=1e16)
