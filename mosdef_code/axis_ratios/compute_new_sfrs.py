@@ -136,8 +136,10 @@ def ha_lum_to_sfr(intrinsic_halpha_lums, imf='Chabrier'):
         sfr = 10**(-41.056) * intrinsic_halpha_lums
     if imf == 'Salpeter':
         sfr = 7.9 * 10**(-42) * intrinsic_halpha_lums
-    if imf == 'Mariska':
+    if imf == 'Combined':
         sfr = 5.5 * 10**(-42) * intrinsic_halpha_lums
+    if imf == 'subsolar':
+        sfr = 4.266 * 10**(-42) * intrinsic_halpha_lums # Shapley 2023 https://iopscience.iop.org/article/10.3847/1538-4357/acea5a/pdf
     return sfr
 
 

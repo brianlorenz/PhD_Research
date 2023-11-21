@@ -82,7 +82,7 @@ def add_composite_bpts(ax):
         log_O3_Hb_group_errs = [[clusters_summary_df['err_log_O3_Hb_low'].iloc[i]], [clusters_summary_df['err_log_O3_Hb_high'].iloc[i]]]
         
         rgba = get_row_color(i)
-        size = paper_marker_size
+        size = get_row_size(i)
         # size = get_row_size(i)
 
         ax.errorbar(log_N2_Ha_group, log_O3_Hb_group, xerr=log_N2_Ha_group_errs, yerr=log_O3_Hb_group_errs, marker='o', color=rgba, markersize=size, mec=paper_mec, mew=paper_marker_edge_width, ls='None', zorder=10000)

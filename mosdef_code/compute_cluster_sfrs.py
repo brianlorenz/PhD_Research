@@ -69,14 +69,14 @@ def compute_cluster_sfrs(lower_limit=True, luminosity=False, prospector=False, m
 
     log_halpha_sfrs, log_halpha_ssfrs = perform_sfr_computation(halpha_lums, balmer_ahalphas, log_median_masses, imf='Hao_Chabrier')
     if prospector == True:
-        prospector_av_log_halpha_sfrs, prospector_av_log_halpha_ssfrs = perform_sfr_computation(prospector_halpha_lums, prospector_balmer_ahalphas, prospector_log_median_masses, imf='Mariska')
+        prospector_av_log_halpha_sfrs, prospector_av_log_halpha_ssfrs = perform_sfr_computation(prospector_halpha_lums, prospector_balmer_ahalphas, prospector_log_median_masses, imf='subsolar')
 
 
     # Monte carlo or bootstrap errors on sfr
     if monte_carlo == True:
-        err_sfr_low, err_sfr_high, err_ssfr_low, err_ssfr_high = get_montecarlo_errs(log_median_masses, log_halpha_sfrs, log_halpha_ssfrs, median_redshifts, luminosity, imf='Mariska')
+        err_sfr_low, err_sfr_high, err_ssfr_low, err_ssfr_high = get_montecarlo_errs(log_median_masses, log_halpha_sfrs, log_halpha_ssfrs, median_redshifts, luminosity, imf='subsolar')
     elif bootstrap > 0:
-        err_sfr_low, err_sfr_high, err_ssfr_low, err_ssfr_high = get_sfr_errs(bootstrap, halpha_lums, err_halpha_lums, balmer_ahalphas, err_balmer_halphas_low, err_balmer_halphas_high, log_median_masses, log_halpha_sfrs, log_halpha_ssfrs, median_redshifts, luminosity, imf='Mariska')
+        err_sfr_low, err_sfr_high, err_ssfr_low, err_ssfr_high = get_sfr_errs(bootstrap, halpha_lums, err_halpha_lums, balmer_ahalphas, err_balmer_halphas_low, err_balmer_halphas_high, log_median_masses, log_halpha_sfrs, log_halpha_ssfrs, median_redshifts, luminosity, imf='subsolar')
     else:
         err_sfr_low = -99
         err_sfr_high = -99
@@ -129,9 +129,9 @@ def compute_cluster_sfrs(lower_limit=True, luminosity=False, prospector=False, m
     cluster_summary_df.to_csv(imd.loc_cluster_summary_df, index=False)
 
 
-def perform_sfr_computation(halpha_lums, balmer_ahalphas, log_median_masses, imf='Mariska', replace_nan=False):
+def perform_sfr_computation(halpha_lums, balmer_ahalphas, log_median_masses, imf='subsolar', replace_nan=False):
     intrinsic_halpha_lums = correct_ha_lum_for_dust(halpha_lums, balmer_ahalphas)
-    halpha_sfrs = ha_lum_to_sfr(intrinsic_halpha_lums, imf='Mariska')
+    halpha_sfrs = ha_lum_to_sfr(intrinsic_halpha_lums, imf='subsolar')
     log_halpha_sfrs = np.log10(halpha_sfrs)
      # Divide by mean mass for sSFR
     halpha_ssfrs = halpha_sfrs / (10**log_median_masses)
@@ -143,7 +143,7 @@ def perform_sfr_computation(halpha_lums, balmer_ahalphas, log_median_masses, imf
     return log_halpha_sfrs, log_halpha_ssfrs
 
 
-def get_montecarlo_errs(log_median_masses, log_halpha_sfrs, log_halpha_ssfrs, median_redshifts, luminosity, imf='Mariska'):
+def get_montecarlo_errs(log_median_masses, log_halpha_sfrs, log_halpha_ssfrs, median_redshifts, luminosity, imf='subsolar'):
     #save distriubiton of generated sfrs and ssfrs
     err_log_sfr_lows = []
     err_log_sfr_highs = []
@@ -180,7 +180,7 @@ def get_montecarlo_errs(log_median_masses, log_halpha_sfrs, log_halpha_ssfrs, me
 
 
 
-def get_sfr_errs(bootstrap, halpha_lums, err_halpha_lums, balmer_ahalphas, err_balmer_halphas_low, err_balmer_halphas_high, log_median_masses, log_halpha_sfrs, log_halpha_ssfrs, median_redshifts, luminosity, imf='Mariska'):
+def get_sfr_errs(bootstrap, halpha_lums, err_halpha_lums, balmer_ahalphas, err_balmer_halphas_low, err_balmer_halphas_high, log_median_masses, log_halpha_sfrs, log_halpha_ssfrs, median_redshifts, luminosity, imf='subsolar'):
     #save distriubiton of generated sfrs and ssfrs
     err_sfr_lows = []
     err_sfr_highs = []

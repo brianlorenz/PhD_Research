@@ -166,7 +166,7 @@ def make_overview_plot_clusters(groupIDs, import_save_str, n_clusters, norm_meth
 
         ax.plot(filtered_gal_df['log_mass'], filtered_gal_df['log_use_sfr'], marker='o', color=grey_point_color, ls='None', markersize=grey_point_size)
         # ax.plot(clusters_summary_row['median_log_mass'], clusters_summary_row['median_log_sfr'], marker='x', color='red', ls='None', markersize=10, mew=3, zorder=10000)
-        ax.plot(clusters_summary_row['median_log_mass'], clusters_summary_row['computed_log_sfr_with_limit'], marker=cluster_marker, color=get_row_color(groupID), mew=paper_marker_edge_width, mec=paper_mec, ls='None', markersize=paper_marker_size, zorder=10000)
+        ax.plot(clusters_summary_row['median_log_mass'], clusters_summary_row['computed_log_sfr_with_limit'], marker=cluster_marker, color=get_row_color(groupID), mew=paper_marker_edge_width, mec=paper_mec, ls='None', markersize=get_row_size(i), zorder=10000)
         computed_sfr = clusters_summary_row['computed_log_sfr_with_limit']
         if clusters_summary_row['flag_balmer_lower_limit'].iloc[0] == 1:
             ax.vlines(clusters_summary_row['median_log_mass'], computed_sfr, computed_sfr+100000, color=get_row_color(groupID))
@@ -287,7 +287,7 @@ def make_overview_plot_clusters(groupIDs, import_save_str, n_clusters, norm_meth
         
         log_N2_Ha_group_errs = [clusters_summary_row['err_log_N2_Ha_low'], clusters_summary_row['err_log_N2_Ha_high']]
         log_O3_Hb_group_errs = [clusters_summary_row['err_log_O3_Hb_low'], clusters_summary_row['err_log_O3_Hb_high']]
-        ax.plot(log_N2_Ha_group, log_O3_Hb_group, marker=cluster_marker, color=get_row_color(groupID), markersize=paper_marker_size, mew=paper_marker_edge_width, mec=paper_mec, ls='None', zorder=10000, label='Composite')
+        ax.plot(log_N2_Ha_group, log_O3_Hb_group, marker=cluster_marker, color=get_row_color(groupID), markersize=get_row_size(i), mew=paper_marker_edge_width, mec=paper_mec, ls='None', zorder=10000, label='Composite')
         ax.hlines(log_O3_Hb_group, log_N2_Ha_group-log_N2_Ha_group_errs[0], log_N2_Ha_group+log_N2_Ha_group_errs[1], color=get_row_color(groupID))
         ax.vlines(log_N2_Ha_group, log_O3_Hb_group-log_O3_Hb_group_errs[0], log_O3_Hb_group+log_O3_Hb_group_errs[1], color=get_row_color(groupID))
         # ax.errorbar(log_N2_Ha_group, log_O3_Hb_group, xerr=log_N2_Ha_group_errs, yerr=log_O3_Hb_group_errs, marker='x', color='blue', markersize=10, mew=3, ls='None')

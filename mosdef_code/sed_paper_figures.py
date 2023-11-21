@@ -15,7 +15,7 @@ from compute_metals_ssfr import add_sanders_metallicity
 
 def make_paper_plots(n_clusters, norm_method):
     # Overview figure
-    setup_figs(n_clusters, norm_method, bpt_color=True, paper_overview=True, prospector_spec=False)
+    # setup_figs(n_clusters, norm_method, bpt_color=True, paper_overview=True, prospector_spec=False)
 
     ### Potentially 4 panels? Or maybe different figures
     # Prospector AV vs Mass, and Balmer dec measured vs mass
@@ -26,14 +26,14 @@ def make_paper_plots(n_clusters, norm_method):
     # SFR comparison between prospector and emission lines
     pass
 
-    #ssfr vs mass, metallicity vs mass
-    make_ssfr_mass_metallicity_fig()
+    #sfr/mass/uvj/bpt
+    make_sfr_mass_uvj_bpt_4panel()
+
 
     # Dust mass figure? Can we measure this?
     pass
 
-    # UVJ and BPT 2-panel with all the stacks
-    # make_uvj_bpt_fig()
+
 
 
 def make_AV_panel_fig():
@@ -45,10 +45,10 @@ def make_AV_panel_fig():
     ax_dust_index = fig.add_subplot(gs[1, 1])
     prospector_dust2_label = 'Prospector dust2'
     dust_index_label = 'Prospector dust_index'
-    plot_a_vs_b_paper('median_log_mass', 'dust2_50', stellar_mass_label, prospector_dust2_label, 'None', axis_obj=ax_av_mass, yerr=True, plot_lims=[9, 11.5, -0.2, 5], fig=fig, use_color_df=True) 
-    plot_a_vs_b_paper('median_log_mass', 'balmer_av', stellar_mass_label, balmer_av_label, 'None', axis_obj=ax_balmer_mass, yerr=True, plot_lims=[9, 11.5, -0.2, 5], fig=fig, use_color_df=True) 
-    plot_a_vs_b_paper('dust2_50', 'balmer_av', prospector_dust2_label, balmer_av_label, 'None', axis_obj=ax_balmer_av_compare, yerr=True, plot_lims=[-0.2, 5, -0.2, 5], fig=fig, use_color_df=True, prospector_xerr=True, one_to_one=True, factor_of_2=True)
-    plot_a_vs_b_paper('median_log_mass', 'dustindex50', stellar_mass_label, dust_index_label, 'None', axis_obj=ax_dust_index, yerr=True, plot_lims=[9, 11.5, -1.2, 0], fig=fig, use_color_df=True) 
+    # plot_a_vs_b_paper('median_log_mass', 'dust2_50', stellar_mass_label, prospector_dust2_label, 'None', axis_obj=ax_av_mass, yerr=True, plot_lims=[9, 11.5, -0.2, 5], fig=fig, use_color_df=True) 
+    plot_a_vs_b_paper('median_log_mass', 'balmer_av_with_limit', stellar_mass_label, balmer_av_label, 'None', axis_obj=ax_balmer_mass, yerr=True, plot_lims=[9, 11.5, -0.2, 5], fig=fig, use_color_df=True, lower_limit=True) 
+    # plot_a_vs_b_paper('dust2_50', 'balmer_av', prospector_dust2_label, balmer_av_label, 'None', axis_obj=ax_balmer_av_compare, yerr=True, plot_lims=[-0.2, 5, -0.2, 5], fig=fig, use_color_df=True, prospector_xerr=True, one_to_one=True, factor_of_2=True)
+    # plot_a_vs_b_paper('median_log_mass', 'dustindex50', stellar_mass_label, dust_index_label, 'None', axis_obj=ax_dust_index, yerr=True, plot_lims=[9, 11.5, -1.2, 0], fig=fig, use_color_df=True) 
     for ax in [ax_av_mass, ax_balmer_mass, ax_balmer_av_compare, ax_dust_index]:
         scale_aspect(ax)
         # ax.legend(fontsize=full_page_axisfont-4)
@@ -101,6 +101,49 @@ def make_uvj_bpt_fig():
     fig.savefig(imd.sed_paper_figures_dir + '/uvj_bpt.pdf')
     plt.close('all')
     
+def make_sfr_mass_uvj_bpt_4panel():
+    fig = plt.figure(figsize=(12, 12))
+    gs = GridSpec(2, 2, left=0.11, right=0.96, bottom=0.12, wspace=0.28, height_ratios=[1,1],width_ratios=[1,1])
+    ax_ssfr = fig.add_subplot(gs[0, 0])
+    ax_metallicity = fig.add_subplot(gs[0, 1])
+    ax_uvj = fig.add_subplot(gs[1, 0])
+    ax_bpt = fig.add_subplot(gs[1, 1])
+    #SFR/Metallicity
+    plot_a_vs_b_paper('median_log_mass', 'computed_log_ssfr_with_limit', stellar_mass_label, ssfr_label, 'None', axis_obj=ax_ssfr, yerr=True, plot_lims=[9, 11.5, -10.8, -7.5], lower_limit=True, fig=fig, use_color_df=True) #, color_var='median_U_V'
+    plot_a_vs_b_paper('median_log_mass', 'O3N2_metallicity', stellar_mass_label, metallicity_label, 'None', axis_obj=ax_metallicity, yerr=True, plot_lims=[9, 11.5, 8, 9], fig=fig)
+    gal_df = ascii.read(imd.loc_filtered_gal_df).to_pandas()
+    gal_df['log_use_ssfr'] = np.log10(gal_df['use_sfr']/(10**gal_df['log_mass']))
+    ax_ssfr.plot(gal_df['log_mass'], gal_df['log_use_ssfr'], color=grey_point_color, markersize=grey_point_size, marker='o', ls='None')
+    # for groupID in range(20):
+    #     group_df = ascii.read(imd.cluster_indiv_dfs_dir + f'/{groupID}_cluster_df.csv').to_pandas()
+    #     group_df['log_use_ssfr'] = np.log10(group_df['use_sfr']/(10**group_df['log_mass']))
+    #     ok_balmer_rows = np.logical_and(group_df['ha_detflag_sfr']==0, group_df['hb_detflag_sfr']==0)
+    #     ax_ssfr.plot(group_df[ok_balmer_rows]['log_mass'], group_df[ok_balmer_rows]['log_use_ssfr'], color='black', markersize=grey_point_size, marker='o', ls='None')
+    add_sanders_metallicity(ax_metallicity)
+    add_leja_sfms(ax_ssfr)
+    for ax in [ax_ssfr, ax_metallicity]:
+        scale_aspect(ax)
+        ax.legend(fontsize=full_page_axisfont-4)
 
+    # UVJs of all galaxies
+    galaxy_uvj_df = ascii.read(imd.uvj_dir + '/galaxy_uvjs.csv').to_pandas()
+    # UVJs of all composite SEDs
+    composite_uvj_df = ascii.read(imd.composite_uvj_dir + '/composite_uvjs.csv').to_pandas()
+    setup_uvj_plot(ax_uvj, galaxy_uvj_df, composite_uvj_df, include_unused_gals='No', paper_fig=True)
+    ax_uvj.set_xlabel('V-J', fontsize=full_page_axisfont)
+    ax_uvj.set_ylabel('U-V', fontsize=full_page_axisfont)
+
+    #BPT Diagram
+    plot_bpt(axis_obj=ax_bpt, skip_gals=True, add_background=True)
+    add_composite_bpts(ax_bpt)
+    ax_bpt.set_xlabel('log(N[II] 6583 / H$\\alpha$)', fontsize=full_page_axisfont)
+    ax_bpt.set_ylabel('log(O[III] 5007 / H$\\beta$)', fontsize=full_page_axisfont)
+
+    ax_uvj.tick_params(labelsize=full_page_axisfont)
+    ax_bpt.tick_params(labelsize=full_page_axisfont)
+
+    scale_aspect(ax_uvj)
+    scale_aspect(ax_bpt)
+    fig.savefig(imd.sed_paper_figures_dir + '/mass_sfr_uvj_bpt.pdf')
 
 make_paper_plots(20, 'luminosity')

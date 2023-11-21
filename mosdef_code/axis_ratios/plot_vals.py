@@ -60,7 +60,7 @@ def get_row_color(groupID):
 
 def get_row_size(groupID):
     group_df = ascii.read(imd.cluster_indiv_dfs_dir + f'/{groupID}_cluster_df.csv')
-    size = len(group_df)
+    size = 2.2*np.sqrt(len(group_df)) 
     return size 
 
 # cbar = fig.colorbar(mpl.cm.ScalarMappable(norm=norm, cmap=cmap), ax=ax, fraction=0.046, pad=0.04)

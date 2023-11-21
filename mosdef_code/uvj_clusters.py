@@ -480,7 +480,7 @@ def setup_uvj_plot(ax, galaxy_uvj_df, composite_uvj_df, axis_obj='False', includ
         for i in range(len(composite_uvj_df)):
             color = get_row_color(i)
             ax.plot(composite_uvj_df.iloc[i]['V_J'], composite_uvj_df.iloc[i]['U_V'],
-                            ls='', marker='o', mew=paper_marker_edge_width, mec=paper_mec, markersize=paper_marker_size, color=color, label='All Composite SEDs')
+                            ls='', marker='o', mew=paper_marker_edge_width, mec=paper_mec, markersize=get_row_size(i), color=color, label='All Composite SEDs')
 
     # UVJ diagram lines
     ax.plot((-100, 0.69), (1.3, 1.3), color='black')

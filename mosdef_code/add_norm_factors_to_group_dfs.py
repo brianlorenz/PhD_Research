@@ -29,6 +29,7 @@ def add_norm_factors(n_clusters):
 
         # Add the column to group_df and save it
         group_df['norm_factor'] = norm_factors
+        group_df['balmer_dec'] = group_df['ha_flux'] / group_df['hb_flux']
 
         group_df.to_csv(imd.cluster_indiv_dfs_dir + f'/{groupID}_cluster_df.csv', index=False)
 

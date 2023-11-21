@@ -6,10 +6,11 @@ from leja_sfms_redshift import leja2022_sfms
 from astropy.io import ascii
 import os
 import pandas as pd
+import sys
 if os.path.exists(imd.loc_cluster_summary_df): 
     cluster_summary_df = imd.read_cluster_summary_df()
 
-def plot_cluster_summaries(x_var, y_var, savename, color_var='None', plot_lims='None', one_to_one=False, ignore_groups=[], log=False, lower_limit=False, add_leja_sfms=False, yerr=False, prospector_run_name = ''):
+def plot_cluster_summaries(x_var, y_var, savename, color_var='None', plot_lims='None', one_to_one=False, ignore_groups=[], log=False, lower_limit=False, add_leja=False, yerr=False, prospector_run_name = ''):
     """Plots two columsn of cluster_summary_df against each other
     
     Parameters:
@@ -21,7 +22,7 @@ def plot_cluster_summaries(x_var, y_var, savename, color_var='None', plot_lims='
     one_to_one (boolean): Set to True to add a 1-1 line
     log (boolean): Set to True to make it a log-log plot
     lower_limit (boolean): Set to true to use lower limit SFRs and hollow out those points
-    add_leja_sfms (boolean): If True, add the sfms from Leja 2022 to the plot
+    add_leja (boolean): If True, add the sfms from Leja 2022 to the plot
     yerr (boolean): Set to true to plot errorbars on the yaxis
     prospector_run_name (str): Set to the prospector run name if using
     """
@@ -31,6 +32,7 @@ def plot_cluster_summaries(x_var, y_var, savename, color_var='None', plot_lims='
     if lower_limit == True:
         y_var = y_var+'_with_limit'
         savename = savename+'_with_limit'
+
 
     if y_var == 'override_flux_with_limit':
         cluster_summary_df2 = ascii.read(imd.mosdef_dir + '/Clustering_20230823_scaledtoindivha/cluster_summary.csv').to_pandas()
@@ -78,7 +80,7 @@ def plot_cluster_summaries(x_var, y_var, savename, color_var='None', plot_lims='
             
         ax.text(row[x_var], row[y_var], f"{int(row['groupID'])}", color='black')
 
-    if add_leja_sfms:
+    if add_leja:
         add_leja_sfms(ax)
         ax.legend()
 
@@ -113,6 +115,7 @@ def plot_cluster_summaries(x_var, y_var, savename, color_var='None', plot_lims='
         # ax.plot([0,1],[0,1], transform=ax.transAxes, ls='--', color='red')
 
     fig.savefig(imd.cluster_dir + f'/cluster_stats/{savename}.pdf', bbox_inches='tight')
+    plt.close('all')
 
 def plot_ratio(x_var_numerator, x_var_denominator, y_var_numerator, y_var_denominator, savename, color_var='None', plot_lims='None', one_to_one=False, ignore_groups=[], log=False, lower_limit=False):
     """Plots two columsn of cluster_summary_df against each other
@@ -177,8 +180,9 @@ def plot_ratio(x_var_numerator, x_var_denominator, y_var_numerator, y_var_denomi
     ax.set_ylabel(f'{y_var_numerator} / {y_var_denominator}', fontsize=full_page_axisfont)
 
     fig.savefig(imd.cluster_dir + f'/cluster_stats/{savename}.pdf', bbox_inches='tight')
+    plt.close('all')
 
-def plot_a_vs_b_paper(x_var, y_var, x_label, y_label, savename, axis_obj='False', color_var='None', plot_lims='None', lower_limit=False, one_to_one=False, ignore_groups=[], log=False, add_leja_sfms=False, yerr=False, prospector_run_name = '', fig='None', use_color_df=True, prospector_xerr=False, factor_of_2=False):
+def plot_a_vs_b_paper(x_var, y_var, x_label, y_label, savename, axis_obj='False', color_var='None', plot_lims='None', lower_limit=False, one_to_one=False, ignore_groups=[], log=False, add_leja=False, yerr=False, prospector_run_name = '', fig='None', use_color_df=True, prospector_xerr=False, factor_of_2=False):
     """Plots two columsn of cluster_summary_df against each other
     
     Parameters:
@@ -189,11 +193,10 @@ def plot_a_vs_b_paper(x_var, y_var, x_label, y_label, savename, axis_obj='False'
     plot_lims (list of 4): [xmin, xmax, ymin, ymax]
     one_to_one (boolean): Set to True to add a 1-1 line
     log (boolean): Set to True to make it a log-log plot
-    add_leja_sfms (boolean): If True, add the sfms from Leja 2022 to the plot
+    add_leja (boolean): If True, add the sfms from Leja 2022 to the plot
     yerr (boolean): Set to true to plot errorbars on the yaxis
     prospector_run_name (str): Set to the prospector run name if using
     """
-    markersize = paper_marker_size
 
     if axis_obj == 'False':
         fig, ax = plt.subplots(figsize=(8, 8))
@@ -204,6 +207,7 @@ def plot_a_vs_b_paper(x_var, y_var, x_label, y_label, savename, axis_obj='False'
         if i in ignore_groups:
             continue
         row = cluster_summary_df.iloc[i]
+        markersize = get_row_size(i)
 
         if prospector_run_name != '':
             if os.path.exists(imd.prospector_emission_fits_dir + f'/{prospector_run_name}_emission_fits/{i}_emission_fits.csv'):
@@ -252,7 +256,7 @@ def plot_a_vs_b_paper(x_var, y_var, x_label, y_label, savename, axis_obj='False'
             
         # ax.text(row[x_var], row[y_var], f"{int(row['groupID'])}", color='black')
 
-    if add_leja_sfms:
+    if add_leja:
         redshift = 2
         mode = 'ridge'
         logmasses = np.arange(9, 11, 0.02)
@@ -357,7 +361,7 @@ def make_plots_a_vs_b(reduce_plot_count=False):
         plot_cluster_summaries('median_log_mass', 'median_log_ssfr', 'sfrs/sfms', color_var='O3N2_metallicity', ignore_groups=ignore_groups)
         plot_cluster_summaries('median_log_mass', 'computed_log_ssfr', 'sfrs/sfms_computed', color_var='O3N2_metallicity', ignore_groups=ignore_groups, lower_limit=lower_limit, yerr=True, plot_lims=[9, 11, -10.5, -7.5])
         plot_cluster_summaries('median_log_mass', 'computed_log_ssfr', 'sfrs/sfms_computed_balmercolor', color_var='balmer_dec', ignore_groups=ignore_groups, lower_limit=lower_limit, yerr=True, plot_lims=[9, 11, -10.5, -7.5])
-        plot_cluster_summaries('median_log_mass', 'computed_log_ssfr', 'sfrs/sfms_with_Leja', color_var='balmer_dec', ignore_groups=ignore_groups, lower_limit=lower_limit, add_leja_sfms=True, yerr=True, plot_lims=[9, 11, -10.5, -7.5])
+        plot_cluster_summaries('median_log_mass', 'computed_log_ssfr', 'sfrs/sfms_with_Leja', color_var='balmer_dec', ignore_groups=ignore_groups, lower_limit=lower_limit, add_leja=True, yerr=True, plot_lims=[9, 11, -10.5, -7.5])
 
         # # SFR Mass
         plot_cluster_summaries('median_log_mass', 'computed_log_sfr', 'sfrs/sfr_mass_lower_limit', color_var='balmer_dec', ignore_groups=ignore_groups, lower_limit=lower_limit, yerr=True, plot_lims=[9, 11, 0.3, 3])
@@ -371,6 +375,8 @@ def make_plots_a_vs_b(reduce_plot_count=False):
 
         # # Trying to diagnose what makes the SFR high
         imd.check_and_make_dir(imd.cluster_dir + f'/cluster_stats/sfrs/diagnostics/')
+        plot_cluster_summaries('median_indiv_balmer_decs', 'balmer_dec', 'sfrs/diagnostics/balmer_dec_compare', color_var='median_log_mass', ignore_groups=ignore_groups, lower_limit=lower_limit, yerr=True, one_to_one=True)
+        sys.exit()
         plot_cluster_summaries('redshift', 'computed_log_sfr', 'sfrs/diagnostics/sfr_z_lower_limit', color_var='balmer_dec_with_limit', ignore_groups=ignore_groups, lower_limit=lower_limit, yerr=True)
         plot_cluster_summaries('target_galaxy_redshifts', 'computed_log_sfr', 'sfrs/diagnostics/sfr_ztarget_lower_limit', color_var='balmer_dec_with_limit', ignore_groups=ignore_groups, lower_limit=lower_limit, yerr=True)
         plot_cluster_summaries('target_galaxy_median_log_mass', 'computed_log_sfr', 'sfrs/diagnostics/sfr_masstarget_lower_limit', color_var='balmer_dec_with_limit', ignore_groups=ignore_groups, lower_limit=lower_limit, yerr=True)
@@ -381,7 +387,7 @@ def make_plots_a_vs_b(reduce_plot_count=False):
         plot_cluster_summaries('balmer_dec_with_limit', 'computed_log_sfr', 'sfrs/diagnostics/sfr_balmerlimit_lower_limit', color_var='balmer_dec_with_limit', ignore_groups=ignore_groups, lower_limit=lower_limit, yerr=True)
         plot_cluster_summaries('ha_flux', 'computed_log_sfr', 'sfrs/diagnostics/sfr_haflux_lower_limit', color_var='balmer_dec_with_limit', ignore_groups=ignore_groups, lower_limit=lower_limit, yerr=True)
         plot_cluster_summaries('hb_flux', 'computed_log_sfr', 'sfrs/diagnostics/sfr_hbflux_lower_limit', color_var='balmer_dec_with_limit', ignore_groups=ignore_groups, lower_limit=lower_limit, yerr=True)
-    
+        
     # #SNR Plots
     # plot_cluster_summaries('hb_snr', 'balmer_dec_snr', 'sfrs/hbeta_balmer_snr', color_var='balmer_dec_with_limit', ignore_groups=ignore_groups, one_to_one=True)
 
@@ -409,4 +415,4 @@ def make_plots_a_vs_b(reduce_plot_count=False):
     plot_cluster_summaries('median_log_mass', 'dust2_50', 'prospector/dust2_mass', color_var='balmer_dec', ignore_groups=ignore_groups)
     plot_cluster_summaries('AV', 'dust2_50', 'prospector/dust2_medianAVA', color_var='balmer_dec', ignore_groups=ignore_groups, one_to_one=True)
 
-# make_plots_a_vs_b(reduce_plot_count=True)
+# make_plots_a_vs_b(reduce_plot_count=False)
