@@ -97,7 +97,7 @@ def plot_similarity_cluster(groupID, zobjs, similarity_matrix, axis_obj='False')
         std_cutoff = median_sim_to_composite-2*std_sim_to_composite
         for i in range(len(galaxies)):
             gal_similarity = galaxies.iloc[i]['similarity_composite']
-            if gal_similarity < std_cutoff and gal_similarity < 0.8:
+            if gal_similarity < 0.8:
                 galaxies.loc[i, 'deletion_flag'] = 1
 
         ax.set_xlim(-0.05, 1.05)

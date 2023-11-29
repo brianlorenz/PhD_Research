@@ -204,7 +204,7 @@ def make_clusters_summary_df(n_clusters, ignore_groups, use_ha_first_csvs=False,
             err_balmer_dec_highs.append(emission_df.iloc[0]['err_balmer_dec_high'])
             balmer_dec_sns.append(emission_df.iloc[0]['balmer_dec'] / np.mean([emission_df.iloc[0]['err_balmer_dec_low'], emission_df.iloc[0]['err_balmer_dec_high']]))
 
-            4.05*1.97*np.log10(emission_df.iloc[0]['balmer_dec']/2.86)
+            balmer_av = 4.05*1.97*np.log10(emission_df.iloc[0]['balmer_dec']/2.86)
             # Recalculate where the errors would be if the points were at the top/bottom of their ranges
             err_balmer_av_low = balmer_av - 4.05*1.97*np.log10((emission_df.iloc[0]['balmer_dec']-emission_df.iloc[0]['err_balmer_dec_low'])/2.86)
             err_balmer_av_high = 4.05*1.97*np.log10((emission_df.iloc[0]['balmer_dec']+emission_df.iloc[0]['err_balmer_dec_high'])/2.86) - balmer_av

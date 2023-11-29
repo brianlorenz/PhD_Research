@@ -49,10 +49,10 @@ def compute_cluster_sfrs(lower_limit=True, luminosity=False, prospector=False, m
     # Another method is to try to compute using A_V rather than mass
     AV = cluster_summary_df['AV']
 
-    #Convert the Balmer AV to A_Halpha using https://iopscience.iop.org/article/10.1088/0004-637X/763/2/145/pdf
-    balmer_ahalphas = compute_balmer_ahalpha_from_AV(balmer_avs)
-    err_balmer_halphas_low = compute_balmer_ahalpha_from_AV(err_balmer_avs_low)
-    err_balmer_halphas_high = compute_balmer_ahalpha_from_AV(err_balmer_avs_high)
+    #Convert the Balmer AV to A_Halpha using https://iopscience.iop.org/article/10.1088/0004-637X/763/2/145/pdf Dominguez +2013
+    balmer_ahalphas = compute_balmer_ahalpha_from_AV(balmer_avs, law='Cardelli')
+    err_balmer_halphas_low = compute_balmer_ahalpha_from_AV(err_balmer_avs_low, law='Cardelli')
+    err_balmer_halphas_high = compute_balmer_ahalpha_from_AV(err_balmer_avs_high, law='Cardelli')
     # ahalphas = 3.33*(AV / 4.05)*2
 
     # Convert ha to luminsoty
@@ -267,10 +267,26 @@ def draw_asymettric_error(center, low_err, high_err):
         new_value = center + np.abs(draw)
     return new_value
 
-def compute_balmer_ahalpha_from_AV(balmer_avs):
+def compute_balmer_ahalpha_from_AV(balmer_avs, law='Calzetti'):
     """Compues the Balmer Halpha given the AV"""
-    balmer_halphas = 3.33*(balmer_avs / 4.05)
+    if law=='Calzetti':
+        balmer_halphas = 3.33*(balmer_avs / 4.05)
+    if law=='Cardelli':
+        balmer_halphas = balmer_avs * cardelli_law(6563)
     return balmer_halphas
 
-
+def cardelli_law(wavelength_ang):
+    #valid for 0.3um < wave < 1.1um
+    wavelength_um = wavelength_ang/10000
+    wavelength_inv_um = 1/wavelength_um
+    if wavelength_inv_um > 0.3 and wavelength_inv_um < 1.1:
+        a_x = 0.574*wavelength_inv_um**(1.61)
+        b_x = -0.527*wavelength_inv_um**(1.61)
+    elif wavelength_inv_um >= 1.1 and wavelength_inv_um < 3.3:
+        y = wavelength_inv_um - 1.82
+        a_x = 1 + 0.17699*y - 0.50447*y**2 - 0.02427*y**3 + 0.72085*y**4 + 0.01979*y**5 - 0.77530*y**6 + 0.32999*y**7
+        b_x = 1.41338*y + 2.28305*y**2 + 1.07233*y**3 - 5.38434*y**4 - 0.62251*y**5 + 5.30260*y**6 - 2.09002*y**7
+    A_lambda_divide_AV = (a_x+b_x)
+    return A_lambda_divide_AV
+# cardelli_law(6500)
 # compute_cluster_sfrs(luminosity=True, bootstrap=1000)

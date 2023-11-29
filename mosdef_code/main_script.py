@@ -47,12 +47,13 @@ run_name = 'dust_type4'
 norm_method = 'luminosity'
 # Set which group numbers to ignore since their data is not good
 ignore_groups = []
+# ignore_groups = [0,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,18,19]
 # ignore_groups = [0,1,2,3,4,5,6,7,8,9,10,11,19]
 # ignore_groups = [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19]
 # Set hwo many times to bootstrap
 big_bootstrap_num = 1000
-# bootstrap = big_bootstrap_num
-bootstrap = -1
+bootstrap = big_bootstrap_num
+# bootstrap = -1
 halpha_scaled=False
 
 imd.check_and_make_dir(imd.cluster_dir + '/composite_filters')
@@ -118,7 +119,7 @@ bootstrap = -1
 # Prepare for prospector:
 # print('Preparing data for Prospector')
 # find_median_redshifts(n_clusters)
-# convert_all_folders_to_sedpy(n_clusters)
+# convert_all_folders_to_sedpy(n_clusters, ignore_groups=ignore_groups)
 # convert_folder_to_maggies(imd.composite_sed_csvs_dir)
 
 # Plot of all of the scaled composites, must be run after convert_folder_to_maggies

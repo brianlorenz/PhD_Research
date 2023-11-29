@@ -392,7 +392,7 @@ def make_plots_a_vs_b(reduce_plot_count=False):
 
     # Prospector emission - to use, set the yvar to the prospector name, and prospector_run_name to be accurate
     imd.check_and_make_dir(imd.cluster_dir + '/cluster_stats/prospector/')
-    plot_cluster_summaries('ha_flux', 'luminosity', 'sfrs/prospector_ha_compare', color_var='median_log_mass', one_to_one=True, ignore_groups=ignore_groups, log=True, prospector_run_name='removed_gals')
+    plot_cluster_summaries('ha_flux', 'luminosity', 'sfrs/prospector_ha_compare', color_var='median_log_mass', one_to_one=True, ignore_groups=ignore_groups, log=True, prospector_run_name='dust_type4')
 
     # Prospector eline properties:
     plot_cluster_summaries('prospector_balmer_dec', 'balmer_dec', 'prospector/balmer_dec_compare', color_var='median_log_mass', ignore_groups=ignore_groups, lower_limit=lower_limit, one_to_one=True, plot_lims=[2.7, 6.5, 2.7, 6.5])
@@ -414,4 +414,4 @@ def make_plots_a_vs_b(reduce_plot_count=False):
     plot_cluster_summaries('median_log_mass', 'dust2_50', 'prospector/dust2_mass', color_var='balmer_dec', ignore_groups=ignore_groups)
     plot_cluster_summaries('AV', 'dust2_50', 'prospector/dust2_medianAVA', color_var='balmer_dec', ignore_groups=ignore_groups, one_to_one=True)
 
-# make_plots_a_vs_b(reduce_plot_count=False)
+# make_plots_a_vs_b(reduce_plot_count=True)

@@ -30,10 +30,10 @@ def setup_figs(n_clusters, norm_method, color_gals=False, bpt_color=False, paper
     
     #Assign colors
     cmap = mpl.cm.coolwarm
-    norm = mpl.colors.Normalize(vmin=0.5, vmax=1.5) 
-    rgbas = [cmap(norm(clusters_summary_df[clusters_summary_df['groupID'] == i]['median_U_V'].iloc[0])) for i in groupIDs]
-    # norm = mpl.colors.Normalize(vmin=9.3, vmax=11.2) 
-    # rgbas = [cmap(norm(clusters_summary_df[clusters_summary_df['groupID'] == i]['median_log_mass'].iloc[0])) for i in groupIDs]
+    # norm = mpl.colors.Normalize(vmin=0.5, vmax=1.5) 
+    # rgbas = [cmap(norm(clusters_summary_df[clusters_summary_df['groupID'] == i]['median_U_V'].iloc[0])) for i in groupIDs]
+    norm = mpl.colors.Normalize(vmin=9.3, vmax=11.2) 
+    rgbas = [cmap(norm(clusters_summary_df[clusters_summary_df['groupID'] == i]['median_log_mass'].iloc[0])) for i in groupIDs]
     color_df = pd.DataFrame(zip(groupIDs, rgbas), columns=['groupID', 'rgba'])
     color_df.to_csv(imd.loc_color_df, index=False)
 

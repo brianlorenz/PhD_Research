@@ -241,34 +241,44 @@ def fit_emission(groupID, norm_method, constrain_O3=False, axis_group=-1, save_n
         value_outs = [flux_list[i][0] for i in range(len(flux_list))]
         log_value_outs = [flux_list[i][1] for i in range(len(flux_list))]
         return value_outs, log_value_outs
-    all_ha_fluxes, ha_errs_low_high = compute_percentile_errs_on_line(ha_idx, fluxes[ha_idx])
-    all_hb_fluxes, hb_errs_low_high = compute_percentile_errs_on_line(hb_idx, fluxes[hb_idx])
-    all_oiii_4960_fluxes, oiii_4960_errs_low_high = compute_percentile_errs_on_line(oiii_4960_idx, fluxes[oiii_4960_idx])
-    all_oiii_5008_fluxes, oiii_5008_errs_low_high = compute_percentile_errs_on_line(oiii_5008_idx, fluxes[oiii_5008_idx])
-    all_nii_6550_fluxes, nii_6550_errs_low_high = compute_percentile_errs_on_line(nii_6550_idx, fluxes[nii_6550_idx])
-    all_nii_6585_fluxes, nii_6585_errs_low_high = compute_percentile_errs_on_line(nii_6585_idx, fluxes[nii_6585_idx])
-    all_balmer_decs = [all_ha_fluxes[i]/all_hb_fluxes[i] for i in range(len(arr_popt))]
-
-    all_N2_Has, all_log_N2_Has = list_compute_err_and_logerr(all_nii_6585_fluxes, all_ha_fluxes)
-    all_O3_Hbs, all_log_O3_Hbs = list_compute_err_and_logerr(all_oiii_5008_fluxes, all_hb_fluxes)
-    all_O3N2s, all_log_O3N2s = list_compute_err_and_logerr(all_O3_Hbs, all_N2_Has) 
-    all_O3N2_metals = [compute_O3N2_metallicity(all_log_O3N2s[i], -99)[0] for i in range(len(arr_popt))]
     
-    velocity_monte_carlo = [arr_popt[i][1] for i in range(len(arr_popt))]
-    err_velocity_low_high = np.percentile(velocity_monte_carlo, [16,84])
+    err_fluxes = -99*np.ones(len(balmer_dec))
+    err_fluxes_low = -99*np.ones(len(balmer_dec))
+    err_fluxes_high = -99*np.ones(len(balmer_dec))
     err_amps = -99*np.ones(len(balmer_dec))
     err_sigs = -99*np.ones(len(balmer_dec))
-    
-    err_velocity_low = velocity - err_velocity_low_high[0]
-    err_velocity_high = err_velocity_low_high[1] - velocity
-    err_velocity = np.mean([err_velocity_low, err_velocity_high], axis=0)
-
-    # Ha to be in line_index order
-    err_fluxes = [np.mean(ha_errs_low_high), np.mean(hb_errs_low_high), np.mean(oiii_4960_errs_low_high), np.mean(oiii_5008_errs_low_high), np.mean(nii_6550_errs_low_high), np.mean(nii_6585_errs_low_high)]
-    err_fluxes_low = [ha_errs_low_high[0], hb_errs_low_high[0], oiii_4960_errs_low_high[0], oiii_5008_errs_low_high[0], nii_6550_errs_low_high[0], nii_6585_errs_low_high[0]]
-    err_fluxes_high = [ha_errs_low_high[1], hb_errs_low_high[1], oiii_4960_errs_low_high[1], oiii_5008_errs_low_high[1], nii_6550_errs_low_high[1], nii_6585_errs_low_high[1]]
+    err_velocity_low = -99*np.ones(len(balmer_dec))
+    err_velocity_high = -99*np.ones(len(balmer_dec))
+    err_velocity = -99*np.ones(len(balmer_dec))
 
     if n_loops > 0:
+        all_ha_fluxes, ha_errs_low_high = compute_percentile_errs_on_line(ha_idx, fluxes[ha_idx])
+        all_hb_fluxes, hb_errs_low_high = compute_percentile_errs_on_line(hb_idx, fluxes[hb_idx])
+        all_oiii_4960_fluxes, oiii_4960_errs_low_high = compute_percentile_errs_on_line(oiii_4960_idx, fluxes[oiii_4960_idx])
+        all_oiii_5008_fluxes, oiii_5008_errs_low_high = compute_percentile_errs_on_line(oiii_5008_idx, fluxes[oiii_5008_idx])
+        all_nii_6550_fluxes, nii_6550_errs_low_high = compute_percentile_errs_on_line(nii_6550_idx, fluxes[nii_6550_idx])
+        all_nii_6585_fluxes, nii_6585_errs_low_high = compute_percentile_errs_on_line(nii_6585_idx, fluxes[nii_6585_idx])
+        all_balmer_decs = [all_ha_fluxes[i]/all_hb_fluxes[i] for i in range(len(arr_popt))]
+
+        all_N2_Has, all_log_N2_Has = list_compute_err_and_logerr(all_nii_6585_fluxes, all_ha_fluxes)
+        all_O3_Hbs, all_log_O3_Hbs = list_compute_err_and_logerr(all_oiii_5008_fluxes, all_hb_fluxes)
+        all_O3N2s, all_log_O3N2s = list_compute_err_and_logerr(all_O3_Hbs, all_N2_Has) 
+        all_O3N2_metals = [compute_O3N2_metallicity(all_log_O3N2s[i], -99)[0] for i in range(len(arr_popt))]
+    
+
+        velocity_monte_carlo = [arr_popt[i][1] for i in range(len(arr_popt))]
+        err_velocity_low_high = np.percentile(velocity_monte_carlo, [16,84])
+        
+        err_velocity_low = velocity - err_velocity_low_high[0]
+        err_velocity_high = err_velocity_low_high[1] - velocity
+        err_velocity = np.mean([err_velocity_low, err_velocity_high], axis=0)
+
+        # Ha to be in line_index order
+        err_fluxes = [np.mean(ha_errs_low_high), np.mean(hb_errs_low_high), np.mean(oiii_4960_errs_low_high), np.mean(oiii_5008_errs_low_high), np.mean(nii_6550_errs_low_high), np.mean(nii_6585_errs_low_high)]
+        err_fluxes_low = [ha_errs_low_high[0], hb_errs_low_high[0], oiii_4960_errs_low_high[0], oiii_5008_errs_low_high[0], nii_6550_errs_low_high[0], nii_6585_errs_low_high[0]]
+        err_fluxes_high = [ha_errs_low_high[1], hb_errs_low_high[1], oiii_4960_errs_low_high[1], oiii_5008_errs_low_high[1], nii_6550_errs_low_high[1], nii_6585_errs_low_high[1]]
+
+    
         monte_carlo_df = pd.DataFrame(zip(velocity_monte_carlo, all_ha_fluxes, all_hb_fluxes, all_oiii_4960_fluxes, all_oiii_5008_fluxes, all_nii_6550_fluxes, all_nii_6585_fluxes, all_balmer_decs, all_N2_Has, all_log_N2_Has, all_O3_Hbs, all_log_O3_Hbs, all_O3N2s, all_log_O3N2s, all_O3N2_metals), columns = ['velocity', 'ha_flux', 'hb_flux', 'oiii_4960_flux', 'oiii_5008_flux', 'nii_6550_flux', 'nii_6585_flux', 'balmer_dec', 'N2_Ha', 'log_N2_Ha', 'O3_Hb', 'log_O3_Hb', 'O3N2', 'log_O3N2', 'O3N2_metallicity'])
         imd.check_and_make_dir(imd.emission_fit_dir + '/emission_fit_monte_carlos/')
         monte_carlo_df.to_csv(imd.emission_fit_dir + f'/emission_fit_monte_carlos/{groupID}_monte_carlo.csv', index=False)

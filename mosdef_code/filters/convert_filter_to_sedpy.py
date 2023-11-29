@@ -114,13 +114,15 @@ def convert_filters_to_sedpy(target_folder, groupID):
                     index=False, sep=' ', header=False)
 
 
-def convert_all_folders_to_sedpy(n_clusters):
+def convert_all_folders_to_sedpy(n_clusters, ignore_groups=[]):
     """Runs the above convert_folder_to_sedpy script on multiple folders
 
     Parameters:
         n_clusters(int): Number of clusters
     """
     for groupID in range(n_clusters):
+        if groupID in ignore_groups:
+            continue
         target_folder = imd.composite_filter_csvs_dir + \
             f'/{groupID}_filter_csvs/'
         print(

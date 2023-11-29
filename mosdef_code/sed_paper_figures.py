@@ -16,7 +16,7 @@ from balmer_avs import compute_balmer_av
 
 def make_paper_plots(n_clusters, norm_method):
     # Overview figure
-    # setup_figs(n_clusters, norm_method, bpt_color=True, paper_overview=True, prospector_spec=False)
+    setup_figs(n_clusters, norm_method, bpt_color=True, paper_overview=True, prospector_spec=False)
 
     ### Potentially 4 panels? Or maybe different figures
     # Prospector AV vs Mass, and Balmer dec measured vs mass
@@ -28,7 +28,7 @@ def make_paper_plots(n_clusters, norm_method):
     pass
 
     #sfr/mass/uvj/bpt
-    # make_sfr_mass_uvj_bpt_4panel()
+    make_sfr_mass_uvj_bpt_4panel()
 
 
     # Dust mass figure? Can we measure this?
@@ -54,8 +54,8 @@ def make_AV_panel_fig():
     mosdef_data_balmeravs = compute_balmer_av(mosdef_data_decs)
     ax_balmer_mass.plot(mosdef_data_mass, mosdef_data_balmeravs, color='black', marker='s', ms=10, mec='black', ls='None', zorder=1000000, label='z=2.3 MOSDEF (Shapley+ 2022)')
     ax_balmer_mass.legend(fontsize=14)
-    plot_a_vs_b_paper('dust2_50', 'balmer_av_with_limit', prospector_dust2_label, balmer_av_label, 'None', axis_obj=ax_balmer_av_compare, yerr=True, plot_lims=[-0.2, 5, -0.2, 5], fig=fig, use_color_df=True, prospector_xerr=True, one_to_one=True, factor_of_2=True, lower_limit=True)
-    plot_a_vs_b_paper('median_log_mass', 'dustindex50', stellar_mass_label, dust_index_label, 'None', axis_obj=ax_dust_index, yerr=True, plot_lims=[9, 11.5, -1.2, 0], fig=fig, use_color_df=True) 
+    plot_a_vs_b_paper('dust2_50', 'balmer_av_with_limit', prospector_dust2_label, balmer_av_label, 'None', axis_obj=ax_balmer_av_compare, yerr=True, plot_lims=[-0.2, 2, -0.2, 5], fig=fig, use_color_df=True, prospector_xerr=True, one_to_one=True, factor_of_2=True, lower_limit=True)
+    plot_a_vs_b_paper('median_log_mass', 'dustindex50', stellar_mass_label, dust_index_label, 'None', axis_obj=ax_dust_index, yerr=True, plot_lims=[9, 11.5, -1.5, 0.5], fig=fig, use_color_df=True) 
     for ax in [ax_av_mass, ax_balmer_mass, ax_balmer_av_compare, ax_dust_index]:
         scale_aspect(ax)
         # ax.legend(fontsize=full_page_axisfont-4)
