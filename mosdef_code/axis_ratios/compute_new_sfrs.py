@@ -9,6 +9,7 @@ import matplotlib.pyplot as plt
 
 
 
+
 def convert_ha_to_sfr():
     '''Performs the whole process of adding the new sfr column to mosdef_all_cats_v2'''
     # Read in the dataframe and isolate the relevant columns
@@ -80,9 +81,9 @@ def filter_ar_df(ar_df):
 
     return ar_df
 
-def correct_av_for_dust(avs_stellar):
+def correct_av_for_dust(avs_stellar, factor=1):
     """Find the formula in Reddy et al 2015"""
-    avs_balmer = avs_stellar
+    avs_balmer = factor*avs_stellar
     return avs_balmer
 
 def apply_dust_law(avs_balmer, target_wave=6565, R_V=4.05):

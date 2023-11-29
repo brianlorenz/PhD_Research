@@ -312,10 +312,9 @@ def assign_color(color_var):
         norm = mpl.colors.Normalize(vmin=-10, vmax=10) 
     return norm
 
-def add_leja_sfms(ax):
+def add_leja_sfms(ax, mode='mean'):
     redshift = 2
     # mode = 'ridge'
-    mode = 'mean'
     logmasses = np.arange(9, 11, 0.02)
     logSFRs = np.array([leja2022_sfms(logmass, redshift, mode) for logmass in logmasses])
     logssfrs = np.log10((10**logSFRs) / (10**logmasses))

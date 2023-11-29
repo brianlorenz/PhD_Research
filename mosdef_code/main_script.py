@@ -21,7 +21,7 @@ from check_for_agn import check_for_all_agn
 from filter_groups import remove_groups_by_similiary
 from make_clusters_summary_df import make_clusters_summary_df
 from add_norm_factors_to_group_dfs import add_norm_factors
-from compute_cluster_sfrs import compute_cluster_sfrs
+from compute_cluster_sfrs import compute_cluster_sfrs, compute_new_sfrs_compositepaper
 from balmer_dec_histogram import compute_balmer_lower_limits, plot_balmer_hist
 from compute_indiv_sfrs_from_halpha import compute_indiv_sfrs
 from plot_group_hists import plot_group_hists
@@ -43,7 +43,7 @@ Specify the directories in initialize_mosdef_dirsl;k
 # Set the total number of clusters
 n_clusters = 20
 # Set the name of the prospector run
-run_name = 'removed_gals'
+run_name = 'dust_type4'
 norm_method = 'luminosity'
 # Set which group numbers to ignore since their data is not good
 ignore_groups = []
@@ -104,6 +104,7 @@ bootstrap = -1
 # bootstrap = -1
 # compute_balmer_lower_limits()
 # compute_cluster_sfrs(luminosity=True, monte_carlo=True)
+# compute_new_sfrs_compositepaper(n_clusters, imf='subsolar')
 # compute_indiv_sfrs(n_clusters, lower_limit=True)
 
 # # Have to run this twice, since ignore_groups won't be loaded properly the first time

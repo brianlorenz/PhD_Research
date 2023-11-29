@@ -1,6 +1,6 @@
 import initialize_mosdef_dirs as imd
 from cosmology_calcs import flux_to_luminosity
-from compute_new_sfrs import correct_ha_lum_for_dust, ha_lum_to_sfr
+from compute_new_sfrs import correct_ha_lum_for_dust, ha_lum_to_sfr, correct_av_for_dust, apply_dust_law
 from balmer_avs import compute_balmer_av
 import numpy as np
 from astropy.io import ascii
@@ -67,7 +67,7 @@ def compute_cluster_sfrs(lower_limit=True, luminosity=False, prospector=False, m
         prospector_balmer_avs = cluster_summary_df['prospector_balmer_av']
         prospector_balmer_ahalphas = compute_balmer_ahalpha_from_AV(prospector_balmer_avs)
 
-    log_halpha_sfrs, log_halpha_ssfrs = perform_sfr_computation(halpha_lums, balmer_ahalphas, log_median_masses, imf='Hao_Chabrier')
+    log_halpha_sfrs, log_halpha_ssfrs = perform_sfr_computation(halpha_lums, balmer_ahalphas, log_median_masses, imf='subsolar')
     if prospector == True:
         prospector_av_log_halpha_sfrs, prospector_av_log_halpha_ssfrs = perform_sfr_computation(prospector_halpha_lums, prospector_balmer_ahalphas, prospector_log_median_masses, imf='subsolar')
 
@@ -127,6 +127,46 @@ def compute_cluster_sfrs(lower_limit=True, luminosity=False, prospector=False, m
 
     
     cluster_summary_df.to_csv(imd.loc_cluster_summary_df, index=False)
+
+def compute_new_sfrs_compositepaper(n_clusters, imf='subsolar'):
+    """Computes SFRs for all of the galaxies - using dust correction where possible, AV (with a factor) if not, and the same conversion as the composites"""
+    for groupID in range(n_clusters):
+        group_df = ascii.read(imd.cluster_indiv_dfs_dir + f'/{groupID}_cluster_df.csv').to_pandas()
+        halpha_fluxes = group_df['ha_flux']
+        hbeta_fluxes = group_df['hb_flux']
+        balmer_decs = halpha_fluxes / hbeta_fluxes
+        redshifts = group_df['Z_MOSFIRE']
+        AVs = group_df['AV']
+        log_masses = group_df['log_mass']
+
+        balmer_avs = compute_balmer_av(balmer_decs)
+        balmer_ahalphas = compute_balmer_ahalpha_from_AV(balmer_avs)
+
+        halpha_lums = flux_to_luminosity(halpha_fluxes, redshifts)
+
+        log_balmer_sfrs, log_balmer_ssfrs = perform_sfr_computation(halpha_lums, balmer_ahalphas, log_masses, imf=imf)
+        balmer_sfrs = 10**log_balmer_sfrs
+        group_df['recomputed_balmerdec_sfr'] = balmer_sfrs
+
+        avs_balmer_from_stellar = correct_av_for_dust(AVs, factor=2)
+        avs_balmer_6565 = apply_dust_law(avs_balmer_from_stellar, target_wave=6565)
+        log_av_sfrs, log_av_ssfrs = perform_sfr_computation(halpha_lums, avs_balmer_6565, log_masses, imf=imf)
+        av_sfrs = 10**log_av_sfrs
+        group_df['recomputed_AV_sfr'] = av_sfrs
+
+        group_df['recomputed_sfr'] = np.ones(len(log_av_sfrs))
+        # Find where the Hbeta readings are good, use sfr_corr for that
+        halpha_good = group_df['ha_detflag_sfr'] == 0
+        hbeta_good = group_df['hb_detflag_sfr'] == 0
+        use_balmer_dec = np.logical_and(halpha_good, hbeta_good)
+        group_df.loc[use_balmer_dec, 'recomputed_sfr'] = group_df[use_balmer_dec]['recomputed_balmerdec_sfr']
+
+
+        # Find where Halpha is good but Hbeta is not, and use the halpha sfrs for that
+        use_av_sfr = ~use_balmer_dec
+        group_df.loc[use_av_sfr, 'recomputed_sfr'] = group_df[use_av_sfr]['recomputed_AV_sfr']
+        group_df.to_csv(imd.cluster_indiv_dfs_dir + f'/{groupID}_cluster_df.csv', index=False)
+
 
 
 def perform_sfr_computation(halpha_lums, balmer_ahalphas, log_median_masses, imf='subsolar', replace_nan=False):
@@ -231,7 +271,6 @@ def compute_balmer_ahalpha_from_AV(balmer_avs):
     """Compues the Balmer Halpha given the AV"""
     balmer_halphas = 3.33*(balmer_avs / 4.05)
     return balmer_halphas
-
 
 
 # compute_cluster_sfrs(luminosity=True, bootstrap=1000)

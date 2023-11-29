@@ -19,7 +19,7 @@ def compute_indiv_sfrs(n_clusters, lower_limit=True):
     for groupID in range(n_clusters):
         group_df = ascii.read(imd.cluster_indiv_dfs_dir + f'/{groupID}_cluster_df.csv').to_pandas()
         halpha_fluxes = group_df['ha_flux']
-        balmer_av = cluster_summary_df.iloc[groupID]['balmer_av']
+        cluster_summary_df.iloc[groupID]['balmer_av']
         if lower_limit == True:
             balmer_av = cluster_summary_df.iloc[groupID]['balmer_av_with_limit']
         redshift = group_df['Z_MOSFIRE']

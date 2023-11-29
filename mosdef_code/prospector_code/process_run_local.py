@@ -20,7 +20,7 @@ from prospector_plot import make_all_singleplots_2groups, make_all_prospector_pl
 # groupID4 = 18
 
 # All groups
-run_name = 'dust_parameters'
+run_name = 'dust_type4'
 n_clusters = 20
 
 
@@ -46,8 +46,8 @@ def make_tfig_cfig(run_name):
 
 
 
-# make_tfig_cfig(run_name)
-# make_all_prospector_plots(n_clusters, run_name)
-# make_all_singleplots(n_clusters, run_name)
+make_tfig_cfig(run_name)
+make_all_prospector_plots(n_clusters, run_name)
+make_all_singleplots(n_clusters, run_name)
 # make_all_prospector_plots_2groups(0, 7, 8, 11, run_name)
 # make_all_singleplots_2groups(0, 7, 8, 11, run_name)
