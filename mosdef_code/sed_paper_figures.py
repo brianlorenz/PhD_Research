@@ -25,7 +25,7 @@ def make_paper_plots(n_clusters, norm_method):
     make_AV_panel_fig()
 
     # SFR comparison between prospector and emission lines
-    pass
+    make_SFR_compare_fig()
 
     #sfr/mass/uvj/bpt
     make_sfr_mass_uvj_bpt_4panel()
@@ -61,6 +61,13 @@ def make_AV_panel_fig():
         # ax.legend(fontsize=full_page_axisfont-4)
     fig.savefig(imd.sed_paper_figures_dir + '/dust_panel.pdf')
     plt.close('all')
+
+
+def make_SFR_compare_fig():
+    fig = plt.figure(figsize=(12, 12))
+    gs = GridSpec(1, 1, left=0.11, right=0.96, bottom=0.12)
+    ax_sfr = fig.add_subplot(gs[0, 0])
+    plot_a_vs_b_paper('prospector_log_ssfr', 'computed_log_ssfr_with_limit', ssfr_label, ssfr_label, 'None', axis_obj=ax_sfr, yerr=True, lower_limit=True, plot_lims=[-11, -7, -11, -7], fig=fig, one_to_one=True, use_color_df=True)
 
 
 def make_ssfr_mass_metallicity_fig():

@@ -61,15 +61,15 @@ def main_process(groupID, run_name, non_par_sfh):
     # cfig = reader.subcorner(res)
     # cfig.savefig(prospector_plots_dir + f'/{run_name}_plots' + f'/group{groupID}_cfig.pdf')
 
-    all_spec, all_phot, all_mfrac, all_line_fluxes, all_line_fluxes_erg, all_total_masses, all_tages, all_logzsols, all_taus, all_dust2s, all_dustindexs, all_sfrs, line_waves, weights, idx_high_weights = gen_phot(res, obs, mod, sps, non_par_sfh)
-    compute_quantiles(res, obs, mod, sps, all_spec, all_phot, all_mfrac, all_line_fluxes, all_line_fluxes_erg, all_total_masses, all_tages, all_logzsols, all_taus, all_dust2s, all_dustindexs, all_sfrs, line_waves, weights, idx_high_weights, groupID)
+    all_spec, all_phot, all_mfrac, all_line_fluxes, all_line_fluxes_erg, all_total_masses, all_tages, all_logzsols, all_taus, all_dust2s, all_dustindexs, all_sfrs, all_ssfrs, line_waves, weights, idx_high_weights = gen_phot(res, obs, mod, sps, non_par_sfh)
+    compute_quantiles(res, obs, mod, sps, all_spec, all_phot, all_mfrac, all_line_fluxes, all_line_fluxes_erg, all_total_masses, all_tages, all_logzsols, all_taus, all_dust2s, all_dustindexs, all_sfrs, all_ssfrs, line_waves, weights, idx_high_weights, groupID)
     
     # Now repeat but just with the continuum
     mod.params['add_neb_emission'] = np.array([False])
     print('Set neb emission to false, computing continuum')
-    all_spec, all_phot, all_mfrac, all_line_fluxes, all_line_fluxes_erg, all_total_masses, all_tages, all_logzsols, all_taus, all_dust2s, all_dustindexs, all_sfrs, line_waves, weights, idx_high_weights = gen_phot(
+    all_spec, all_phot, all_mfrac, all_line_fluxes, all_line_fluxes_erg, all_total_masses, all_tages, all_logzsols, all_taus, all_dust2s, all_dustindexs, all_sfrs, all_ssfrs, line_waves, weights, idx_high_weights = gen_phot(
         res, obs, mod, sps, non_par_sfh)
-    compute_quantiles(res, obs, mod, sps, all_spec, all_phot, all_mfrac, all_line_fluxes, all_line_fluxes_erg, all_total_masses, all_tages, all_logzsols, all_taus, all_dust2s, all_dustindexs, all_sfrs, line_waves, weights, idx_high_weights, groupID, cont=True)
+    compute_quantiles(res, obs, mod, sps, all_spec, all_phot, all_mfrac, all_line_fluxes, all_line_fluxes_erg, all_total_masses, all_tages, all_logzsols, all_taus, all_dust2s, all_dustindexs, all_sfrs, all_ssfrs, line_waves, weights, idx_high_weights, groupID, cont=True)
 
 def compute_SFR(mass, tage, tau):
     psi = mass * (tage/tau**2) * np.exp(-tage/tau) / (gamma(2) * gammainc(2, tage/tau)) * 1e-9
@@ -139,6 +139,7 @@ def gen_phot(res, obs, mod, sps, non_par_sfh):
     all_dust2s = np.zeros((len(idx_high_weights)))
     all_dustindexs = np.zeros((len(idx_high_weights)))
     all_sfrs = np.zeros(len(idx_high_weights))
+    all_ssfrs = np.zeros(len(idx_high_weights))
     all_line_fluxes = np.zeros((len(line_fluxes), len(idx_high_weights)))
     all_line_fluxes_erg = np.zeros((len(line_fluxes), len(idx_high_weights)))
     # all_sfrs = np.zeros(len(idx_high_weights))
@@ -155,6 +156,7 @@ def gen_phot(res, obs, mod, sps, non_par_sfh):
             all_dustindexs[i] = theta_val[theta_names.index('dust_index')]
         # Compute SFR - https://github.com/bd-j/prospector/issues/166
         all_sfrs[i] = compute_SFR(all_total_masses[i], all_tages[i], all_taus[i])
+        all_ssfrs[i] = all_sfrs[i]/all_total_masses[i]
         all_spec[:, i], all_phot[:, i], all_mfrac[i] = mod.mean_model(
             theta_val, obs, sps=sps)
         line_waves, line_fluxes = sps.get_galaxy_elines()
@@ -167,7 +169,7 @@ def gen_phot(res, obs, mod, sps, non_par_sfh):
                 line_fluxes_erg_s, mod.params['zred'])
             all_line_fluxes_erg[:, i] = line_fluxes_erg_s_cm2
 
-    return all_spec, all_phot, all_mfrac, all_line_fluxes, all_line_fluxes_erg, all_total_masses, all_tages, all_logzsols, all_taus, all_dust2s, all_dustindexs, all_sfrs, line_waves, weights, idx_high_weights
+    return all_spec, all_phot, all_mfrac, all_line_fluxes, all_line_fluxes_erg, all_total_masses, all_tages, all_logzsols, all_taus, all_dust2s, all_dustindexs, all_sfrs, all_ssfrs, line_waves, weights, idx_high_weights
 
 def take_one_quantile_photspec(array, weights, idx_high_weights):
     """Performs the quantile calculation for photometry of spectra"""
@@ -184,7 +186,7 @@ def take_one_quantile_thetaprop(theta_array, weights, idx_high_weights):
     perc16, perc50, perc84 = quantile(theta_array, [16,50,84], weights=weights[idx_high_weights])
     return perc16, perc50, perc84
 
-def compute_quantiles(res, obs, mod, sps, all_spec, all_phot, all_mfrac, all_line_fluxes, all_line_fluxes_erg, all_total_masses, all_tages, all_logzsols, all_taus, all_dust2s, all_dustindexs, all_sfrs, line_waves, weights, idx_high_weights, groupID, cont=False):
+def compute_quantiles(res, obs, mod, sps, all_spec, all_phot, all_mfrac, all_line_fluxes, all_line_fluxes_erg, all_total_masses, all_tages, all_logzsols, all_taus, all_dust2s, all_dustindexs, all_sfrs, all_ssfrs, line_waves, weights, idx_high_weights, groupID, cont=False):
     # Find the mean photometery, spectra
     phot16, phot50, phot84 = take_one_quantile_photspec(all_phot, weights, idx_high_weights)
     spec16, spec50, spec84 = take_one_quantile_photspec(all_spec, weights, idx_high_weights)
@@ -203,8 +205,9 @@ def compute_quantiles(res, obs, mod, sps, all_spec, all_phot, all_mfrac, all_lin
         dust2_16, dust2_50, dust2_84 = take_one_quantile_thetaprop(all_dust2s, weights, idx_high_weights)
         dustindex16, dustindex50, dustindex84 = take_one_quantile_thetaprop(all_dustindexs, weights, idx_high_weights)
         sfr16, sfr50, sfr84 = take_one_quantile_thetaprop(all_sfrs, weights, idx_high_weights)
+        ssfr16, ssfr50, ssfr84 = take_one_quantile_thetaprop(all_ssfrs, weights, idx_high_weights)
 
-        prop_df = pd.DataFrame(zip([surviving_mass16], [surviving_mass50], [surviving_mass84],  [tage16], [tage50], [tage84], [logzsol16], [logzsol50], [logzsol84], [tau16], [tau50], [tau84], [dust2_16], [dust2_50], [dust2_84], [dustindex16], [dustindex50], [dustindex84], [sfr16], [sfr50], [sfr84]), columns = ['surviving_mass16', 'surviving_mass50', 'surviving_mass84',  'tage16', 'tage50', 'tage84', 'logzsol16', 'logzsol50', 'logzsol84', 'tau16', 'tau50', 'tau84', 'dust2_16', 'dust2_50', 'dust2_84', 'dustindex16', 'dustindex50', 'dustindex84', 'sfr16', 'sfr50', 'sfr84'])
+        prop_df = pd.DataFrame(zip([surviving_mass16], [surviving_mass50], [surviving_mass84],  [tage16], [tage50], [tage84], [logzsol16], [logzsol50], [logzsol84], [tau16], [tau50], [tau84], [dust2_16], [dust2_50], [dust2_84], [dustindex16], [dustindex50], [dustindex84], [sfr16], [sfr50], [sfr84], [ssfr16], [ssfr50], [ssfr84]), columns = ['surviving_mass16', 'surviving_mass50', 'surviving_mass84',  'tage16', 'tage50', 'tage84', 'logzsol16', 'logzsol50', 'logzsol84', 'tau16', 'tau50', 'tau84', 'dust2_16', 'dust2_50', 'dust2_84', 'dustindex16', 'dustindex50', 'dustindex84', 'sfr16', 'sfr50', 'sfr84', 'ssfr16', 'ssfr50', 'ssfr84'])
         prop_df.to_csv(prospector_csvs_dir + f'/{run_name}_csvs/{save_str}_props.csv', index=False)
     
     # Setup wavelength ranges
