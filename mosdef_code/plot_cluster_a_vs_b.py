@@ -236,6 +236,7 @@ def plot_a_vs_b_paper(x_var, y_var, x_label, y_label, savename, axis_obj='False'
                 yerr = False
             else:
                 marker='o'
+                yerr = True
         else:
             marker='o'
         if yerr == True:
@@ -244,6 +245,7 @@ def plot_a_vs_b_paper(x_var, y_var, x_label, y_label, savename, axis_obj='False'
             else:
                 try:
                     ax.errorbar(row[x_var], row[y_var], yerr=np.array([[row['err_'+y_var+'_low'], row['err_'+y_var+'_high']]]).T, color=rgba, marker=marker, ls='None', zorder=3, mec='black', ms=markersize)
+                    print(np.array([[row['err_'+y_var+'_low'], row['err_'+y_var+'_high']]]).T)
                 except:
                     pass
                 try:
@@ -257,6 +259,7 @@ def plot_a_vs_b_paper(x_var, y_var, x_label, y_label, savename, axis_obj='False'
         else:
             ax.plot(row[x_var], row[y_var], color=rgba, marker=marker, ls='None', zorder=3, mec='black', ms=markersize)
             
+            pass
         # ax.text(row[x_var], row[y_var], f"{int(row['groupID'])}", color='black')
 
     if add_leja:

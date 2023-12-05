@@ -65,7 +65,7 @@ def compute_cluster_sfrs(lower_limit=True, luminosity=False, prospector=False, m
         err_halpha_lums = cluster_summary_df['err_prospector_halpha_luminosity']
         prospector_log_median_masses = np.log10(cluster_summary_df['surviving_mass50'])
         prospector_balmer_avs = cluster_summary_df['prospector_balmer_av']
-        prospector_balmer_ahalphas = compute_balmer_ahalpha_from_AV(prospector_balmer_avs)
+        prospector_balmer_ahalphas = compute_balmer_ahalpha_from_AV(prospector_balmer_avs, law='Cardelli')
 
     log_halpha_sfrs, log_halpha_ssfrs = perform_sfr_computation(halpha_lums, balmer_ahalphas, log_median_masses, imf='subsolar')
     if prospector == True:
@@ -140,7 +140,7 @@ def compute_new_sfrs_compositepaper(n_clusters, imf='subsolar'):
         log_masses = group_df['log_mass']
 
         balmer_avs = compute_balmer_av(balmer_decs)
-        balmer_ahalphas = compute_balmer_ahalpha_from_AV(balmer_avs)
+        balmer_ahalphas = compute_balmer_ahalpha_from_AV(balmer_avs, law='Cardelli')
 
         halpha_lums = flux_to_luminosity(halpha_fluxes, redshifts)
 
@@ -198,7 +198,7 @@ def get_montecarlo_errs(log_median_masses, log_halpha_sfrs, log_halpha_ssfrs, me
             new_ha_lums = flux_to_luminosity(new_ha_fluxes, median_redshifts[groupID]) 
         new_balmer_decs = monte_carlo_df['balmer_dec']
         new_balmer_avs = compute_balmer_av(new_balmer_decs)
-        new_balmer_ahalphas = compute_balmer_ahalpha_from_AV(new_balmer_avs)
+        new_balmer_ahalphas = compute_balmer_ahalpha_from_AV(new_balmer_avs, law='Cardelli')
         
         sfr_outs = perform_sfr_computation(new_ha_lums, new_balmer_ahalphas, log_median_masses.iloc[groupID])
         all_log_sfrs = sfr_outs[0] 
@@ -236,7 +236,7 @@ def get_sfr_errs(bootstrap, halpha_lums, err_halpha_lums, balmer_ahalphas, err_b
             new_halpha_lums = [flux_to_luminosity(new_ha_fluxes[i], median_redshifts[groupID]) for i in range(bootstrap)]
         new_balmer_decs = [boot_dfs[i]['balmer_dec'].iloc[ha_row] for i in range(bootstrap)]
         new_balmer_avs = [compute_balmer_av(new_balmer_decs[i]) for i in range(bootstrap)]
-        new_balmer_ahalphas = [compute_balmer_ahalpha_from_AV(new_balmer_avs[i]) for i in range(bootstrap)]
+        new_balmer_ahalphas = [compute_balmer_ahalpha_from_AV(new_balmer_avs[i], law='Cardelli') for i in range(bootstrap)]
 
         sfr_outs = [perform_sfr_computation(np.array(new_ha_lums[j1]), np.array(new_balmer_ahalphas[j1]), log_median_masses.iloc[groupID], replace_nan=True) for j1 in range(len(new_balmer_ahalphas))]
         all_log_sfrs = [sfr_outs[i][0] for i in range(len(sfr_outs))]
@@ -267,7 +267,7 @@ def draw_asymettric_error(center, low_err, high_err):
         new_value = center + np.abs(draw)
     return new_value
 
-def compute_balmer_ahalpha_from_AV(balmer_avs, law='Calzetti'):
+def compute_balmer_ahalpha_from_AV(balmer_avs, law='Cardelli'):
     """Compues the Balmer Halpha given the AV"""
     if law=='Calzetti':
         balmer_halphas = 3.33*(balmer_avs / 4.05)
