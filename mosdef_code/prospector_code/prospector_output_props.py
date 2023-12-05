@@ -25,6 +25,8 @@ def add_props_to_cluster_summary_df(n_clusters, run_name):
     if 'surviving_mass50' in cluster_summary_df.columns:
         if cluster_summary_df['surviving_mass50'].iloc[0] != total_prop_df['surviving_mass50'].iloc[0]:
             sys.exit('Need to code this - new columns should REPLACE the old ones when merging')
+        else:
+            cluster_summary_df = cluster_summary_df.merge(total_prop_df, left_on='groupID', right_on='groupID')
     else:
         cluster_summary_df = cluster_summary_df.merge(total_prop_df, left_on='groupID', right_on='groupID')
 

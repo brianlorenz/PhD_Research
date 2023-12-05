@@ -209,6 +209,9 @@ def plot_a_vs_b_paper(x_var, y_var, x_label, y_label, savename, axis_obj='False'
         row = cluster_summary_df.iloc[i]
         markersize = get_row_size(i)
 
+        if x_var == 'ssfr50':
+            row[x_var] = np.log10(row[x_var])
+
         if prospector_run_name != '':
             if os.path.exists(imd.prospector_emission_fits_dir + f'/{prospector_run_name}_emission_fits/{i}_emission_fits.csv'):
                 prospector_emission = ascii.read(imd.prospector_emission_fits_dir + f'/{prospector_run_name}_emission_fits/{i}_emission_fits.csv').to_pandas()

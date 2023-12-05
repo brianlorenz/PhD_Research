@@ -16,16 +16,16 @@ from balmer_avs import compute_balmer_av
 
 def make_paper_plots(n_clusters, norm_method):
     # Overview figure
-    setup_figs(n_clusters, norm_method, bpt_color=True, paper_overview=True, prospector_spec=False)
+    # setup_figs(n_clusters, norm_method, bpt_color=True, paper_overview=True, prospector_spec=False)
 
     ### Potentially 4 panels? Or maybe different figures
     # Prospector AV vs Mass, and Balmer dec measured vs mass
     # AV vs Balmer decrement - how much extra attenuation?
     # Attenuation curve figure(s) - what controsl it
-    make_AV_panel_fig()
+    # make_AV_panel_fig()
 
     # SFR comparison between prospector and emission lines
-    make_SFR_compare_fig()
+    # make_SFR_compare_fig()
 
     #sfr/mass/uvj/bpt
     make_sfr_mass_uvj_bpt_4panel()
@@ -67,8 +67,11 @@ def make_SFR_compare_fig():
     fig = plt.figure(figsize=(12, 12))
     gs = GridSpec(1, 1, left=0.11, right=0.96, bottom=0.12)
     ax_sfr = fig.add_subplot(gs[0, 0])
-    plot_a_vs_b_paper('prospector_log_ssfr', 'computed_log_ssfr_with_limit', ssfr_label, ssfr_label, 'None', axis_obj=ax_sfr, yerr=True, lower_limit=True, plot_lims=[-11, -7, -11, -7], fig=fig, one_to_one=True, use_color_df=True)
+    plot_a_vs_b_paper('ssfr50', 'computed_log_ssfr_with_limit', 'Prospector SED sSFR', ssfr_label, 'None', axis_obj=ax_sfr, yerr=True, lower_limit=True, plot_lims=[-10, -7.5, -10, -7.5], fig=fig, one_to_one=True, use_color_df=True)
+    ax_sfr.tick_params(labelsize=full_page_axisfont)
 
+    scale_aspect(ax_sfr)
+    fig.savefig(imd.sed_paper_figures_dir + '/ssfr_compare.pdf')
 
 def make_ssfr_mass_metallicity_fig():
     fig = plt.figure(figsize=(12, 6))
@@ -129,6 +132,7 @@ def make_sfr_mass_uvj_bpt_4panel(n_clusters=20):
         group_df = ascii.read(imd.cluster_indiv_dfs_dir + f'/{groupID}_cluster_df.csv').to_pandas()
         group_df['log_recomputed_ssfr'] = np.log10(group_df['recomputed_sfr']/(10**group_df['log_mass']))
         ax_ssfr.plot(group_df['log_mass'], group_df['log_recomputed_ssfr'], color=grey_point_color, markersize=grey_point_size, marker='o', ls='None')
+        ax_metallicity.plot(group_df['log_mass'], group_df['logoh_pp_n2'], color=grey_point_color, markersize=grey_point_size, marker='o', ls='None')
         # ok_balmer_rows = np.logical_and(group_df['ha_detflag_sfr']==0, group_df['hb_detflag_sfr']==0)
         # ax_ssfr.plot(group_df[ok_balmer_rows]['log_mass'], group_df[ok_balmer_rows]['log_recomputed_ssfr'], color='black', markersize=grey_point_size, marker='o', ls='None')
 

@@ -278,10 +278,10 @@ def fit_emission(groupID, norm_method, constrain_O3=False, axis_group=-1, save_n
         err_fluxes_low = [ha_errs_low_high[0], hb_errs_low_high[0], oiii_4960_errs_low_high[0], oiii_5008_errs_low_high[0], nii_6550_errs_low_high[0], nii_6585_errs_low_high[0]]
         err_fluxes_high = [ha_errs_low_high[1], hb_errs_low_high[1], oiii_4960_errs_low_high[1], oiii_5008_errs_low_high[1], nii_6550_errs_low_high[1], nii_6585_errs_low_high[1]]
 
-    
-        monte_carlo_df = pd.DataFrame(zip(velocity_monte_carlo, all_ha_fluxes, all_hb_fluxes, all_oiii_4960_fluxes, all_oiii_5008_fluxes, all_nii_6550_fluxes, all_nii_6585_fluxes, all_balmer_decs, all_N2_Has, all_log_N2_Has, all_O3_Hbs, all_log_O3_Hbs, all_O3N2s, all_log_O3N2s, all_O3N2_metals), columns = ['velocity', 'ha_flux', 'hb_flux', 'oiii_4960_flux', 'oiii_5008_flux', 'nii_6550_flux', 'nii_6585_flux', 'balmer_dec', 'N2_Ha', 'log_N2_Ha', 'O3_Hb', 'log_O3_Hb', 'O3N2', 'log_O3N2', 'O3N2_metallicity'])
-        imd.check_and_make_dir(imd.emission_fit_dir + '/emission_fit_monte_carlos/')
-        monte_carlo_df.to_csv(imd.emission_fit_dir + f'/emission_fit_monte_carlos/{groupID}_monte_carlo.csv', index=False)
+        if run_name == 'False':    
+            monte_carlo_df = pd.DataFrame(zip(velocity_monte_carlo, all_ha_fluxes, all_hb_fluxes, all_oiii_4960_fluxes, all_oiii_5008_fluxes, all_nii_6550_fluxes, all_nii_6585_fluxes, all_balmer_decs, all_N2_Has, all_log_N2_Has, all_O3_Hbs, all_log_O3_Hbs, all_O3N2s, all_log_O3N2s, all_O3N2_metals), columns = ['velocity', 'ha_flux', 'hb_flux', 'oiii_4960_flux', 'oiii_5008_flux', 'nii_6550_flux', 'nii_6585_flux', 'balmer_dec', 'N2_Ha', 'log_N2_Ha', 'O3_Hb', 'log_O3_Hb', 'O3N2', 'log_O3N2', 'O3N2_metallicity'])
+            imd.check_and_make_dir(imd.emission_fit_dir + '/emission_fit_monte_carlos/')
+            monte_carlo_df.to_csv(imd.emission_fit_dir + f'/emission_fit_monte_carlos/{groupID}_monte_carlo.csv', index=False)
 
 
     # Compute metallicities
