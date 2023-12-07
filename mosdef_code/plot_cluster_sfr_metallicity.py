@@ -17,7 +17,8 @@ from sympy import Symbol
 
 def plot_cluster_sfr_metals(plot_ssfr=False, plot_re=False, plot_sanders=False, mass_color=False, show_mass=False):
     summary_df = ascii.read(imd.loc_cluster_summary_df).to_pandas()
-    ignore_groups = imd.ignore_groups
+    # ignore_groups = imd.ignore_groups
+    ignore_groups = []
     fig, ax = plt.subplots(figsize = (8,8))
 
     # Plot the points
@@ -61,9 +62,13 @@ def plot_cluster_sfr_metals(plot_ssfr=False, plot_re=False, plot_sanders=False, 
                 ax.set_xlabel('log(SFR/R_e)', fontsize=fontsize)
         if row['flag_balmer_lower_limit'] == 1:
             marker = '^'
+            yerr=yerr=np.array([[0,0]]).T
         else:
             marker = 'o'
-        ax.errorbar(x_points, row['O3N2_metallicity'], yerr=np.array([[row['err_O3N2_metallicity_low'], row['err_O3N2_metallicity_high']]]).T, color=rgba, marker=marker, ls='None', zorder=3)
+            yerr=yerr=np.array([[row['err_O3N2_metallicity_low'], row['err_O3N2_metallicity_high']]]).T
+    
+        ax.errorbar(x_points, row['O3N2_metallicity'], yerr=yerr, color=rgba, marker=marker, ls='None', zorder=3)
+
         ax.text(x_points, row['O3N2_metallicity'], f"{int(row['groupID'])}", color='black')
         zorder=15-i
         ax.set_ylabel('12 + log(O/H)', fontsize=fontsize)

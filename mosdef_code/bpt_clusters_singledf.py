@@ -145,7 +145,7 @@ def plot_bpt_all_composites(color_code='None'):
     imd.check_and_make_dir(imd.cluster_dir+f'/cluster_stats/bpts/')
     fig.savefig(imd.cluster_dir+f'/cluster_stats/bpts/all_groups_bpt{add_str}.pdf')
 
-def plot_bpt(savename='None', axis_obj='False', composite_bpt_point=[-47], composite_bpt_errs=0, use_other_df = 0, use_df='False', add_background=False, color_gals=False, add_prospector='False', groupID=-1, skip_gals=False, plot_median=False):
+def plot_bpt(savename='None', axis_obj='False', composite_bpt_point=[-47], composite_bpt_errs=0, use_other_df = 0, use_df='False', add_background=False, color_gals=False, add_prospector='False', groupID=-1, skip_gals=False, plot_median=False, snr_background=0):
     """Plots the bpt diagram for the objects in zobjs
 
     Parameters:
@@ -199,7 +199,12 @@ def plot_bpt(savename='None', axis_obj='False', composite_bpt_point=[-47], compo
     if add_background==True:
         filtered_gal_df = ascii.read(imd.loc_filtered_gal_df).to_pandas()
         filtered_gal_df = get_bpt_coords(filtered_gal_df)
-        ax.plot(filtered_gal_df['log_NII_Ha'], filtered_gal_df['log_OIII_Hb'], marker='o', color=grey_point_color, ls='None', markersize=grey_point_size, zorder=1)
+        filtered_gal_df['hb_snr'] = filtered_gal_df['hb_flux']/filtered_gal_df['err_hb_flux']
+        filtered_gal_df['nii_6585_snr'] = filtered_gal_df['nii_6585_flux']/filtered_gal_df['err_nii_6585_flux']
+        hb_detected = filtered_gal_df['hb_snr']>snr_background
+        nii_detected = filtered_gal_df['nii_6585_snr']>snr_background
+        both_detected = np.logical_and(hb_detected, nii_detected)
+        ax.plot(filtered_gal_df[both_detected]['log_NII_Ha'], filtered_gal_df[both_detected]['log_OIII_Hb'], marker='o', color=grey_point_color, ls='None', markersize=grey_point_size, zorder=1)
     
     cmap = mpl.cm.plasma
     norm = mpl.colors.Normalize(vmin=1, vmax=len(gal_df)) 

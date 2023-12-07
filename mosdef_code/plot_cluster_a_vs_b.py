@@ -245,7 +245,6 @@ def plot_a_vs_b_paper(x_var, y_var, x_label, y_label, savename, axis_obj='False'
             else:
                 try:
                     ax.errorbar(row[x_var], row[y_var], yerr=np.array([[row['err_'+y_var+'_low'], row['err_'+y_var+'_high']]]).T, color=rgba, marker=marker, ls='None', zorder=3, mec='black', ms=markersize)
-                    print(np.array([[row['err_'+y_var+'_low'], row['err_'+y_var+'_high']]]).T)
                 except:
                     pass
                 try:
@@ -293,10 +292,14 @@ def plot_a_vs_b_paper(x_var, y_var, x_label, y_label, savename, axis_obj='False'
         xlims = ax.get_xlim()
         ylims = ax.get_ylim()
         ax.plot([-20, 20e60], [-20, 20e60], ls='--', color='red')
-        ax.plot([-10, 10], [-20, 20], ls='--', color='orange')
         ax.set_xlim(xlims)
         ax.set_ylim(ylims)
         # ax.plot([0,1],[0,1], transform=ax.transAxes, ls='--', color='red')
+
+    if factor_of_2:
+        ax.plot([-10, 10], [-9, 11], ls='--', color='orange')
+        # ax.plot([-10, 10], [-20, 20], ls='--', color='orange')
+
     
     if axis_obj == 'False':
         fig.savefig(imd.cluster_dir + f'/paper_figures/{savename}.pdf', bbox_inches='tight')

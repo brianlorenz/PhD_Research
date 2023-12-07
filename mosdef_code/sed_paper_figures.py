@@ -10,6 +10,7 @@ from astropy.io import ascii
 from plot_cluster_a_vs_b import add_leja_sfms
 from compute_metals_ssfr import add_sanders_metallicity
 from balmer_avs import compute_balmer_av
+from plot_dust_model_vis import make_vis_plot
 
 
 
@@ -28,7 +29,10 @@ def make_paper_plots(n_clusters, norm_method):
     # make_SFR_compare_fig()
 
     #sfr/mass/uvj/bpt
-    make_sfr_mass_uvj_bpt_4panel()
+    # make_sfr_mass_uvj_bpt_4panel(snr_thresh=3)
+
+    # Dust model figure
+    # make_dust_fig()
 
 
     # Dust mass figure? Can we measure this?
@@ -52,7 +56,7 @@ def make_AV_panel_fig():
     mosdef_data_mass = np.array([9.252764612954188, 9.73301737756714, 10.0173775671406, 10.437598736176936]) #Shapley 2022
     mosdef_data_decs = np.array([3.337349397590363, 3.4548192771084363, 3.7801204819277103, 4.512048192771086])
     mosdef_data_balmeravs = compute_balmer_av(mosdef_data_decs)
-    ax_balmer_mass.plot(mosdef_data_mass, mosdef_data_balmeravs, color='black', marker='s', ms=10, mec='black', ls='None', zorder=1000000, label='z=2.3 MOSDEF (Shapley+ 2022)')
+    ax_balmer_mass.plot(mosdef_data_mass, mosdef_data_balmeravs, color='black', marker='s', ms=10, mec='black', ls='--', zorder=1000000, label='z=2.3 MOSDEF (Shapley+ 2022)')
     ax_balmer_mass.legend(fontsize=14)
     plot_a_vs_b_paper('dust2_50', 'balmer_av_with_limit', prospector_dust2_label, balmer_av_label, 'None', axis_obj=ax_balmer_av_compare, yerr=True, plot_lims=[-0.2, 2, -0.2, 5], fig=fig, use_color_df=True, prospector_xerr=True, one_to_one=True, factor_of_2=True, lower_limit=True)
     plot_a_vs_b_paper('median_log_mass', 'dustindex50', stellar_mass_label, dust_index_label, 'None', axis_obj=ax_dust_index, yerr=True, plot_lims=[9, 11.5, -1.5, 0.5], fig=fig, use_color_df=True) 
@@ -64,7 +68,7 @@ def make_AV_panel_fig():
 
 
 def make_SFR_compare_fig():
-    fig = plt.figure(figsize=(12, 12))
+    fig = plt.figure(figsize=(8, 8))
     gs = GridSpec(1, 1, left=0.11, right=0.96, bottom=0.12)
     ax_sfr = fig.add_subplot(gs[0, 0])
     plot_a_vs_b_paper('ssfr50', 'computed_log_ssfr_with_limit', 'Prospector SED sSFR', ssfr_label, 'None', axis_obj=ax_sfr, yerr=True, lower_limit=True, plot_lims=[-10, -7.5, -10, -7.5], fig=fig, one_to_one=True, use_color_df=True)
@@ -118,7 +122,7 @@ def make_uvj_bpt_fig():
     fig.savefig(imd.sed_paper_figures_dir + '/uvj_bpt.pdf')
     plt.close('all')
     
-def make_sfr_mass_uvj_bpt_4panel(n_clusters=20):
+def make_sfr_mass_uvj_bpt_4panel(n_clusters=20, snr_thresh=2):
     fig = plt.figure(figsize=(12, 12))
     gs = GridSpec(2, 2, left=0.11, right=0.96, bottom=0.12, wspace=0.28, height_ratios=[1,1],width_ratios=[1,1])
     ax_ssfr = fig.add_subplot(gs[0, 0])
@@ -130,9 +134,19 @@ def make_sfr_mass_uvj_bpt_4panel(n_clusters=20):
     plot_a_vs_b_paper('median_log_mass', 'O3N2_metallicity', stellar_mass_label, metallicity_label, 'None', axis_obj=ax_metallicity, yerr=True, plot_lims=[9, 11.5, 8, 9], fig=fig)
     for groupID in range(n_clusters):
         group_df = ascii.read(imd.cluster_indiv_dfs_dir + f'/{groupID}_cluster_df.csv').to_pandas()
+        group_df['hb_SNR'] = group_df['hb_flux'] / group_df['err_hb_flux']
+        group_df['nii_6585_SNR'] = group_df['nii_6585_flux'] / group_df['err_nii_6585_flux']
+        hb_detected_rows = group_df['hb_SNR']>snr_thresh
+        nii_detected_rows = group_df['nii_6585_SNR']>snr_thresh
+        both_detected = np.logical_and(nii_detected_rows, hb_detected_rows)
         group_df['log_recomputed_ssfr'] = np.log10(group_df['recomputed_sfr']/(10**group_df['log_mass']))
         ax_ssfr.plot(group_df['log_mass'], group_df['log_recomputed_ssfr'], color=grey_point_color, markersize=grey_point_size, marker='o', ls='None')
-        ax_metallicity.plot(group_df['log_mass'], group_df['logoh_pp_n2'], color=grey_point_color, markersize=grey_point_size, marker='o', ls='None')
+        #Compute metallicity
+        group_df['N2Ha'] = group_df['nii_6585_flux'] / group_df['ha_flux']
+        group_df['O3Hb'] = group_df['oiii_5008_flux'] / group_df['hb_flux']
+        group_df['O3N2_metallicity'] = 8.97-0.39*np.log10(group_df['O3Hb'] / group_df['N2Ha']) 
+        
+        ax_metallicity.plot(group_df[both_detected]['log_mass'], group_df[both_detected]['O3N2_metallicity'], color=grey_point_color, markersize=grey_point_size, marker='o', ls='None')
         # ok_balmer_rows = np.logical_and(group_df['ha_detflag_sfr']==0, group_df['hb_detflag_sfr']==0)
         # ax_ssfr.plot(group_df[ok_balmer_rows]['log_mass'], group_df[ok_balmer_rows]['log_recomputed_ssfr'], color='black', markersize=grey_point_size, marker='o', ls='None')
 
@@ -152,7 +166,7 @@ def make_sfr_mass_uvj_bpt_4panel(n_clusters=20):
     ax_uvj.set_ylabel('U-V', fontsize=full_page_axisfont)
 
     #BPT Diagram
-    plot_bpt(axis_obj=ax_bpt, skip_gals=True, add_background=True)
+    plot_bpt(axis_obj=ax_bpt, skip_gals=True, add_background=True, snr_background=snr_thresh)
     add_composite_bpts(ax_bpt)
     ax_bpt.set_xlabel('log(N[II] 6583 / H$\\alpha$)', fontsize=full_page_axisfont)
     ax_bpt.set_ylabel('log(O[III] 5007 / H$\\beta$)', fontsize=full_page_axisfont)
@@ -163,5 +177,28 @@ def make_sfr_mass_uvj_bpt_4panel(n_clusters=20):
     scale_aspect(ax_uvj)
     scale_aspect(ax_bpt)
     fig.savefig(imd.sed_paper_figures_dir + '/mass_sfr_uvj_bpt.pdf')
+
+def make_dust_fig():
+    fig = plt.figure(figsize=(8, 8))
+    gs = GridSpec(1, 1, left=0.11, right=0.96, bottom=0.12)
+    ax_dust_model = fig.add_subplot(gs[0, 0])
+    cluster_summary_df = ascii.read(imd.loc_cluster_summary_df).to_pandas()
+    logsfrs = cluster_summary_df['computed_log_sfr_with_limit']
+    sfrs = 10**logsfrs
+    metallicities = cluster_summary_df['O3N2_metallicity']
+    res = cluster_summary_df['median_re']
+    balmer_av = cluster_summary_df['balmer_av_with_limit']
+
+    a = 2.15
+    n = 1.4
+    x_axis_vals = 10**(a*metallicities) * sfrs**(1/n)
+    make_vis_plot(x_axis_vals, balmer_av, '', '', '', axis_obj=ax_dust_model, fig=fig)
+    
+    ax_dust_model.set_ylim(-0.1,4)
+    ax_dust_model.tick_params(labelsize=full_page_axisfont)
+    ax_dust_model.set_xlabel('$10^{a\\times metallicity}\\times SFR^{1/n}$', fontsize=full_page_axisfont)
+    ax_dust_model.set_ylabel('Balmer AV', fontsize=full_page_axisfont)
+
+    fig.savefig(imd.sed_paper_figures_dir + '/dust_model.pdf')
 
 make_paper_plots(20, 'luminosity')
