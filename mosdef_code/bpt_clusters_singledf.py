@@ -85,7 +85,11 @@ def add_composite_bpts(ax):
         size = get_row_size(i)
         # size = get_row_size(i)
 
-        ax.errorbar(log_N2_Ha_group, log_O3_Hb_group, xerr=log_N2_Ha_group_errs, yerr=log_O3_Hb_group_errs, marker='o', color=rgba, markersize=size, mec=paper_mec, mew=paper_marker_edge_width, ls='None', zorder=10000)
+        if clusters_summary_df.iloc[i]['flag_hb_limit'] == 1:  
+            log_O3_Hb_group = clusters_summary_df['log_O3_Hb_lower_limit'].iloc[i]
+            ax.plot(log_N2_Ha_group, log_O3_Hb_group, marker='^', color=rgba, markersize=size, mec=paper_mec, mew=paper_marker_edge_width, ls='None', zorder=10000)
+        else:
+            ax.errorbar(log_N2_Ha_group, log_O3_Hb_group, xerr=log_N2_Ha_group_errs, yerr=log_O3_Hb_group_errs, marker='o', color=rgba, markersize=size, mec=paper_mec, mew=paper_marker_edge_width, ls='None', zorder=10000)
 
 def plot_bpt_all_composites(color_code='None'):
     fig, ax = plt.subplots(figsize=(8,7))

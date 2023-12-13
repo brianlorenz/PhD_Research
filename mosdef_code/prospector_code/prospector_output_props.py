@@ -7,6 +7,7 @@ from balmer_avs import compute_balmer_av
 from compute_cluster_sfrs import compute_cluster_sfrs
 import sys
 import numpy as np
+from dust_equations_prospector import dust2_to_AV
 
 def save_props(n_clusters, run_name):
     prop_dfs = []
@@ -26,10 +27,13 @@ def add_props_to_cluster_summary_df(n_clusters, run_name):
         if cluster_summary_df['surviving_mass50'].iloc[0] != total_prop_df['surviving_mass50'].iloc[0]:
             sys.exit('Need to code this - new columns should REPLACE the old ones when merging')
         else:
-            cluster_summary_df = cluster_summary_df.merge(total_prop_df, left_on='groupID', right_on='groupID')
+            pass
     else:
         cluster_summary_df = cluster_summary_df.merge(total_prop_df, left_on='groupID', right_on='groupID')
 
+    cluster_summary_df['Prospector_AV_16'] = dust2_to_AV(cluster_summary_df['dust2_16'])
+    cluster_summary_df['Prospector_AV_50'] = dust2_to_AV(cluster_summary_df['dust2_50'])
+    cluster_summary_df['Prospector_AV_84'] = dust2_to_AV(cluster_summary_df['dust2_84'])
 
     halphas = []
     err_halphas = []

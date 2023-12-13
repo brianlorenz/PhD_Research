@@ -275,6 +275,12 @@ def compute_balmer_ahalpha_from_AV(balmer_avs, law='Cardelli'):
         balmer_halphas = balmer_avs * cardelli_law(6563)
     return balmer_halphas
 
+def compute_balmer_AV_from_ahalpha(balmer_halphas, law='Cardelli'):
+    """Compues the Balmer Halpha given the AV"""
+    if law=='Cardelli':
+        balmer_avs = balmer_halphas * cardelli_law(6563)
+    return balmer_avs
+
 def cardelli_law(wavelength_ang):
     #valid for 0.3um < wave < 1.1um
     wavelength_um = wavelength_ang/10000

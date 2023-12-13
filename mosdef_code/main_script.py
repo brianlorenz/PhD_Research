@@ -5,7 +5,6 @@ import string
 import numpy as np
 import initialize_mosdef_dirs as imd
 
-
 from composite_sed import get_all_composite_seds
 from stack_spectra import stack_all_spectra
 from fit_emission import fit_all_emission, compute_bootstrap_uncertainties
@@ -103,7 +102,7 @@ bootstrap = -1
 # bootstrap = big_bootstrap_num
 # plot_balmer_hist(n_clusters, bootstrap)
 # bootstrap = -1
-# compute_balmer_lower_limits()
+# compute_balmer_lower_limits(sig_noise_thresh=2)
 # compute_cluster_sfrs(luminosity=True, monte_carlo=True)
 # compute_new_sfrs_compositepaper(n_clusters, imf='subsolar')
 # compute_indiv_sfrs(n_clusters, lower_limit=True)

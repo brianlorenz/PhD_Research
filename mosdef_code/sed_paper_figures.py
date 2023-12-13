@@ -11,6 +11,8 @@ from plot_cluster_a_vs_b import add_leja_sfms
 from compute_metals_ssfr import add_sanders_metallicity
 from balmer_avs import compute_balmer_av
 from plot_dust_model_vis import make_vis_plot
+from compute_cluster_sfrs import compute_balmer_AV_from_ahalpha
+from scipy.stats import linregress
 
 
 
@@ -23,7 +25,7 @@ def make_paper_plots(n_clusters, norm_method):
     # Prospector AV vs Mass, and Balmer dec measured vs mass
     # AV vs Balmer decrement - how much extra attenuation?
     # Attenuation curve figure(s) - what controsl it
-    # make_AV_panel_fig()
+    make_AV_panel_fig()
 
     # SFR comparison between prospector and emission lines
     # make_SFR_compare_fig()
@@ -48,9 +50,9 @@ def make_AV_panel_fig():
     ax_balmer_mass = fig.add_subplot(gs[0, 1])
     ax_balmer_av_compare = fig.add_subplot(gs[1, 0])
     ax_dust_index = fig.add_subplot(gs[1, 1])
-    prospector_dust2_label = 'Prospector dust2'
+    prospector_dust2_label = 'Prospector A$_V$'
     dust_index_label = 'Prospector dust_index'
-    plot_a_vs_b_paper('median_log_mass', 'dust2_50', stellar_mass_label, prospector_dust2_label, 'None', axis_obj=ax_av_mass, yerr=True, plot_lims=[9, 11.5, -0.2, 2.5], fig=fig, use_color_df=True) 
+    plot_a_vs_b_paper('median_log_mass', 'Prospector_AV_50', stellar_mass_label, prospector_dust2_label, 'None', axis_obj=ax_av_mass, yerr=True, plot_lims=[9, 11.5, -0.2, 2.5], fig=fig, use_color_df=True) 
     plot_a_vs_b_paper('median_log_mass', 'balmer_av_with_limit', stellar_mass_label, balmer_av_label, 'None', axis_obj=ax_balmer_mass, yerr=True, plot_lims=[9, 11.5, -0.2, 5], fig=fig, use_color_df=True, lower_limit=True) 
     # Shapley's data
     mosdef_data_mass = np.array([9.252764612954188, 9.73301737756714, 10.0173775671406, 10.437598736176936]) #Shapley 2022
@@ -58,13 +60,26 @@ def make_AV_panel_fig():
     mosdef_data_balmeravs = compute_balmer_av(mosdef_data_decs)
     ax_balmer_mass.plot(mosdef_data_mass, mosdef_data_balmeravs, color='black', marker='s', ms=10, mec='black', ls='--', zorder=1000000, label='z=2.3 MOSDEF (Shapley+ 2022)')
     ax_balmer_mass.legend(fontsize=14)
-    plot_a_vs_b_paper('dust2_50', 'balmer_av_with_limit', prospector_dust2_label, balmer_av_label, 'None', axis_obj=ax_balmer_av_compare, yerr=True, plot_lims=[-0.2, 2, -0.2, 5], fig=fig, use_color_df=True, prospector_xerr=True, one_to_one=True, factor_of_2=True, lower_limit=True)
+    plot_a_vs_b_paper('Prospector_AV_50', 'balmer_av_with_limit', prospector_dust2_label, balmer_av_label, 'None', axis_obj=ax_balmer_av_compare, yerr=True, plot_lims=[-0.2, 2, -0.2, 5], fig=fig, use_color_df=True, prospector_xerr=True, one_to_one=True, factor_of_2=True, lower_limit=True)
+    regress_res = find_best_fit('Prospector_AV_50', 'balmer_av_with_limit', exclude_limit=True)
+    x_regress = np.arange(-0.2, 2, 0.1)
+    ax_balmer_av_compare.plot(x_regress, regress_res.intercept + regress_res.slope*x_regress, color='black', label='Linear fit', ls='--')
     plot_a_vs_b_paper('median_log_mass', 'dustindex50', stellar_mass_label, dust_index_label, 'None', axis_obj=ax_dust_index, yerr=True, plot_lims=[9, 11.5, -1.5, 0.5], fig=fig, use_color_df=True) 
     for ax in [ax_av_mass, ax_balmer_mass, ax_balmer_av_compare, ax_dust_index]:
         scale_aspect(ax)
         # ax.legend(fontsize=full_page_axisfont-4)
     fig.savefig(imd.sed_paper_figures_dir + '/dust_panel.pdf')
     plt.close('all')
+
+def find_best_fit(x_col, y_col, exclude_limit=True):
+    cluster_summary_df = ascii.read(imd.loc_cluster_summary_df).to_pandas()
+    if exclude_limit == True:
+        cluster_summary_df = cluster_summary_df[cluster_summary_df['flag_hb_limit']==0]
+    xvals = cluster_summary_df[x_col]
+    yvals = cluster_summary_df[y_col]
+    regress_res = linregress(xvals, yvals)
+    return regress_res
+
 
 
 def make_SFR_compare_fig():
@@ -131,7 +146,7 @@ def make_sfr_mass_uvj_bpt_4panel(n_clusters=20, snr_thresh=2):
     ax_bpt = fig.add_subplot(gs[1, 1])
     #SFR/Metallicity
     plot_a_vs_b_paper('median_log_mass', 'computed_log_ssfr_with_limit', stellar_mass_label, ssfr_label, 'None', axis_obj=ax_ssfr, yerr=True, plot_lims=[9, 11.5, -10.8, -7.5], lower_limit=True, fig=fig, use_color_df=True) #, color_var='median_U_V'
-    plot_a_vs_b_paper('median_log_mass', 'O3N2_metallicity', stellar_mass_label, metallicity_label, 'None', axis_obj=ax_metallicity, yerr=True, plot_lims=[9, 11.5, 8, 9], fig=fig)
+    plot_a_vs_b_paper('median_log_mass', 'O3N2_metallicity_upper_limit', stellar_mass_label, metallicity_label, 'None', axis_obj=ax_metallicity, yerr=True, plot_lims=[9, 11.5, 8.15, 9.17], fig=fig, upper_limit=True)
     for groupID in range(n_clusters):
         group_df = ascii.read(imd.cluster_indiv_dfs_dir + f'/{groupID}_cluster_df.csv').to_pandas()
         group_df['hb_SNR'] = group_df['hb_flux'] / group_df['err_hb_flux']
