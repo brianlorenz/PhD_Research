@@ -430,4 +430,10 @@ def make_plots_a_vs_b(reduce_plot_count=False):
     plot_cluster_summaries('median_log_mass', 'dust2_50', 'prospector/dust2_mass', color_var='balmer_dec', ignore_groups=ignore_groups)
     plot_cluster_summaries('AV', 'dust2_50', 'prospector/dust2_medianAVA', color_var='balmer_dec', ignore_groups=ignore_groups, one_to_one=True)
 
+    # Dust model
+    plot_cluster_summaries('O3N2_metallicity', 'balmer_av', 'dust_model_vis/abalmer_vs_metals', color_var='median_log_mass', ignore_groups=ignore_groups, lower_limit=True)
+    plot_cluster_summaries('computed_log_sfr_with_limit', 'balmer_av', 'dust_model_vis/abalmer_vs_sfr', color_var='median_log_mass', ignore_groups=ignore_groups, lower_limit=True)
+    plot_cluster_summaries('O3N2_metallicity', 'computed_log_sfr', 'dust_model_vis/sfr_metal', color_var='median_log_mass', ignore_groups=ignore_groups, lower_limit=True)
+
+
 # make_plots_a_vs_b(reduce_plot_count=True)

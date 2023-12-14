@@ -381,8 +381,9 @@ def plot_full_uvj(n_clusters, color_type='None', include_unused_gals='No'):
     #         ls='', marker='x', markersize=5, markeredgewidth=2, color='red', label='Bad Composite SEDs')
 
     if include_unused_gals!='Only':
-        ax.plot(composite_uvj_df['V_J'], composite_uvj_df['U_V'],
-                ls='', marker='x', markersize=10, markeredgewidth=2, color='black')
+        pass
+        # ax.plot(composite_uvj_df['V_J'], composite_uvj_df['U_V'],
+        #         ls='', marker='x', markersize=10, markeredgewidth=2, color='black')
 
     
 
@@ -392,6 +393,7 @@ def plot_full_uvj(n_clusters, color_type='None', include_unused_gals='No'):
         if include_unused_gals!='Only':
             pass
             # ax.text(row['V_J'] - 0.02, row['U_V'] + 0.03, f'{groupID}', size=12, fontweight='bold', color='black')
+        marker = 'o'
         if color_type != 'None':
             cmap = mpl.cm.inferno
             cluster_row_idx = cluster_summary_df['groupID'] == groupID
@@ -400,6 +402,20 @@ def plot_full_uvj(n_clusters, color_type='None', include_unused_gals='No'):
                 cluster_colorval = cluster_summary_df[cluster_row_idx]['balmer_dec']
                 cbar_label = 'Balmer Dec'
                 add_str = '_balmer_color'
+            elif color_type == 'balmer_av_with_limit':
+                norm = mpl.colors.Normalize(vmin=0, vmax=3) 
+                cluster_colorval = cluster_summary_df[cluster_row_idx]['balmer_av_with_limit']
+                cbar_label = 'Nebular AV'
+                add_str = '_balmerav_limit_color'
+                if cluster_summary_df[cluster_row_idx]['flag_hb_limit'].iloc[0] == True:
+                    marker = '^'
+            elif color_type == 'prospector_av_with_limit':
+                norm = mpl.colors.Normalize(vmin=0, vmax=2) 
+                cluster_colorval = cluster_summary_df[cluster_row_idx]['Prospector_AV_50']
+                cbar_label = 'Prospector Stellar AV'
+                add_str = '_stellarav_limit_color'
+                if cluster_summary_df[cluster_row_idx]['flag_hb_limit'].iloc[0] == True:
+                    marker = '^'
             elif color_type == 'ssfr':
                 norm = mpl.colors.Normalize(vmin=-9.5, vmax=-8.25)
                 cluster_colorval = cluster_summary_df[cluster_row_idx]['median_log_ssfr'] 
@@ -415,7 +431,7 @@ def plot_full_uvj(n_clusters, color_type='None', include_unused_gals='No'):
 
             rgba = cmap(norm(cluster_colorval))
             ax.plot(row['V_J'], row['U_V'],
-                ls='', marker='o', markersize=6, markeredgewidth=2, color=rgba)
+                ls='', marker=marker, markersize=6, markeredgewidth=2, color=rgba)
             
         
 
@@ -501,6 +517,6 @@ def setup_uvj_plot(ax, galaxy_uvj_df, composite_uvj_df, axis_obj='False', includ
 # observe_all_uvj(23, individual_gals=False, composite_uvjs=True)
 # plot_full_uvj(20, include_unused_gals='No')
 # plot_full_uvj(23, include_unused_gals='Only')
-# plot_full_uvj(23, color_type='balmer')
+# plot_full_uvj(20, color_type='prospector_av_with_limit')
 # plot_full_uvj(23, color_type='ssfr')
 # plot_full_uvj(23, color_type='metallicity')

@@ -50,10 +50,14 @@ def make_AV_panel_fig():
     ax_balmer_mass = fig.add_subplot(gs[0, 1])
     ax_balmer_av_compare = fig.add_subplot(gs[1, 0])
     ax_dust_index = fig.add_subplot(gs[1, 1])
-    prospector_dust2_label = 'Prospector A$_V$'
+    prospector_dust2_label = 'Prospector Stellar A$_V$'
     dust_index_label = 'Prospector dust_index'
     plot_a_vs_b_paper('median_log_mass', 'Prospector_AV_50', stellar_mass_label, prospector_dust2_label, 'None', axis_obj=ax_av_mass, yerr=True, plot_lims=[9, 11.5, -0.2, 2.5], fig=fig, use_color_df=True) 
     plot_a_vs_b_paper('median_log_mass', 'balmer_av_with_limit', stellar_mass_label, balmer_av_label, 'None', axis_obj=ax_balmer_mass, yerr=True, plot_lims=[9, 11.5, -0.2, 5], fig=fig, use_color_df=True, lower_limit=True) 
+    regress_res = find_best_fit('median_log_mass', 'balmer_av_with_limit', exclude_limit=True)
+    x_regress = np.arange(9, 11.5, 0.1)
+    ax_balmer_mass.plot(x_regress, regress_res.intercept + regress_res.slope*x_regress, color='gray', label=f'Linear Fit', ls='--')
+    print(f'Best fit to nebular av vs mass: slope {regress_res.slope}, yint {regress_res.intercept}')
     # Shapley's data
     mosdef_data_mass = np.array([9.252764612954188, 9.73301737756714, 10.0173775671406, 10.437598736176936]) #Shapley 2022
     mosdef_data_decs = np.array([3.337349397590363, 3.4548192771084363, 3.7801204819277103, 4.512048192771086])
@@ -213,6 +217,28 @@ def make_dust_fig():
     ax_dust_model.tick_params(labelsize=full_page_axisfont)
     ax_dust_model.set_xlabel('$10^{a\\times metallicity}\\times SFR^{1/n}$', fontsize=full_page_axisfont)
     ax_dust_model.set_ylabel('Balmer AV', fontsize=full_page_axisfont)
+
+    from plot_sfr_metallicity import sanders_plane
+    from dust_model import const2
+    def compute_sanders_metals(log_mass, fm_s):
+        '''
+        Parameters:
+        log_mass: Log stellar mass
+        fm_s: log sfrs (array)
+        '''
+        fm_m = (log_mass-10)*np.ones(len(fm_s))
+        fm_metals = sanders_plane(log_mass, fm_s)
+        return fm_metals
+    sanders_log_sfrs = np.arange(0, 3, 0.1)
+    sanders_log_mass = 10.5
+    sanders_metallicities = compute_sanders_metals(sanders_log_mass, sanders_log_sfrs)
+    
+    sanders_x_axis_vals = 10**(a*sanders_metallicities) * (10**sanders_log_sfrs)**(1/n)
+    sanders_yvals = sanders_x_axis_vals*const2
+    ax_dust_model.plot(sanders_x_axis_vals, sanders_yvals, ls='--', color='blue')
+
+
+    ax_dust_model.set_xscale('log')
 
     fig.savefig(imd.sed_paper_figures_dir + '/dust_model.pdf')
 

@@ -9,7 +9,7 @@ sfr_label = 'log$_{10}$(SFR) (M$_\odot$ / yr)'
 ssfr_label = 'log$_{10}$(sSFR) (yr$^{-1}$)'
 balmer_label = 'Balmer decrement (H$_\\alpha$ / H$_\\beta$)'
 a_balmer_label = 'A$_\mathrm{Balmer}$'
-balmer_av_label = 'Balmer A$_V$'
+balmer_av_label = 'Nebular A$_V$'
 metallicity_label = '12 + log(O/H)'
 
 single_column_axisfont = 24

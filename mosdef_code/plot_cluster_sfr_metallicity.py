@@ -100,23 +100,20 @@ def plot_cluster_sfr_metals(plot_ssfr=False, plot_re=False, plot_sanders=False, 
     # ax.plot(x_plot, metal_vals, ls='--', color='#8E248C', marker='None', zorder=2)
     # get_slope(x_plot[0], x_plot[-1], metal_vals[0], metal_vals[-1])
 
-    # # high mass
-    # A_lambda = 1.9
-    # re = 0.41
-    # sfrs = [float(solve(const2 * 10**(a*metal_vals[i]) * (x/(re**2))**(1/n) - A_lambda, x)[0]) for i in range(len(metal_vals))] #Dust
-    # sfrs=np.array(sfrs)
-    # log_sfrs = np.log10(sfrs)
-    # if plot_ssfr == True:
-    #     log_mass = 10.25
-    #     x_plot = np.log10(sfrs/(10**log_mass))
-    #     label = '$R_\mathrm{eff} = 0.4$, $A_\mathrm{balmer} = 1.9$' + f', mass={log_mass}'
-    # else:
-    #     x_plot = log_sfrs
-    #     label = '$R_\mathrm{eff} = 0.4$, $A_\mathrm{balmer} = 1.9$'
-    #     if plot_re==True:
-    #         x_plot = np.log10(10**log_sfrs/re)
-    # ax.plot(x_plot, metal_vals, ls='--', color='#FF640A', marker='None', zorder=2)
-    # get_slope(x_plot[0], x_plot[-1], metal_vals[0], metal_vals[-1])
+    def plot_dust(A_lambda, re=1):
+        # low mass
+        sfrs = [float(solve(const2 * 10**(a*metal_vals[i]) * (x/(re**2))**(1/n) - A_lambda, x)[0]) for i in range(len(metal_vals))] #Dust
+        sfrs=np.array(sfrs)
+        # metal_vals = np.log10(A_lambda / ((const2) * ((sfrs/(re**2))**(1/n)))) / a
+        log_sfrs = np.log10(sfrs)
+        x_plot = log_sfrs
+        label = '$R_\mathrm{eff} = 0.25$, $A_\mathrm{balmer} = 0.85$'
+        ax.plot(x_plot, metal_vals, ls='--', color='#8E248C', marker='None', zorder=2)
+    plot_dust(0.5)
+    plot_dust(1)
+    plot_dust(1.5)
+    plot_dust(2, re=2)
+    plot_dust(2.5, re=2)
 
     # high mass
     if plot_ssfr == True:
@@ -241,7 +238,7 @@ def plot_cluster_sfr_metals(plot_ssfr=False, plot_re=False, plot_sanders=False, 
 # plot_sfr_metals('whitaker_sfms_boot100', plot_re=True)
 
 
-plot_cluster_sfr_metals(plot_sanders=True)
-plot_cluster_sfr_metals(plot_sanders=True, mass_color=True)
-plot_cluster_sfr_metals(plot_sanders=True, mass_color=True, show_mass=True)
+# plot_cluster_sfr_metals(plot_sanders=True)
+# plot_cluster_sfr_metals(plot_sanders=True, mass_color=True)
+# plot_cluster_sfr_metals(plot_sanders=True, mass_color=True, show_mass=True)
 
