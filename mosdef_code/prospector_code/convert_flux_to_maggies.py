@@ -24,6 +24,9 @@ def redshift_f_lambda(data_df, groupID):
     data_df['f_lambda_scaled_red'] = data_df['f_lambda_scaled'] / (1+median_z)
     data_df['err_f_lambda_u_scaled_red'] = data_df['err_f_lambda_u_scaled'] / (1+median_z)
     data_df['err_f_lambda_d_scaled_red'] = data_df['err_f_lambda_d_scaled'] / (1+median_z)
+    data_df['f_lambda_red'] = data_df['f_lambda'] / (1+median_z)
+    data_df['err_f_lambda_u_red'] = data_df['err_f_lambda_u'] / (1+median_z)
+    data_df['err_f_lambda_d_red'] = data_df['err_f_lambda_d'] / (1+median_z)
     data_df['redshifted_wavelength'] = data_df['rest_wavelength'] * (1+median_z)
     return data_df
 
@@ -43,12 +46,12 @@ def convert_flux_to_maggies(target_file):
     data_df = normalize_flux_5000(data_df)
     data_df = redshift_f_lambda(data_df, groupID)
 
-    f_nu = data_df['f_lambda_scaled_red'] * (data_df['redshifted_wavelength']**2) * 3.34 * 10**(-19)
+    f_nu = data_df['f_lambda_red'] * (data_df['redshifted_wavelength']**2) * 3.34 * 10**(-19)
     f_jy = f_nu * (10**23)
     maggies = f_jy / 3631
-    erru = data_df['err_f_lambda_u_scaled_red'] * \
+    erru = data_df['err_f_lambda_u_red'] * \
         ((data_df['rest_wavelength']**2) * 3.34 * 10**(-19)) * (10**23) / 3631
-    errd = data_df['err_f_lambda_d_scaled_red'] * \
+    errd = data_df['err_f_lambda_d_red'] * \
         ((data_df['rest_wavelength']**2) * 3.34 * 10**(-19)) * (10**23) / 3631
     data_df['f_maggies_red'] = maggies
     data_df['err_f_maggies_u_red'] = erru

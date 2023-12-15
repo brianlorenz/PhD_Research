@@ -25,7 +25,7 @@ def make_paper_plots(n_clusters, norm_method):
     # Prospector AV vs Mass, and Balmer dec measured vs mass
     # AV vs Balmer decrement - how much extra attenuation?
     # Attenuation curve figure(s) - what controsl it
-    make_AV_panel_fig()
+    # make_AV_panel_fig()
 
     # SFR comparison between prospector and emission lines
     # make_SFR_compare_fig()
@@ -34,7 +34,7 @@ def make_paper_plots(n_clusters, norm_method):
     # make_sfr_mass_uvj_bpt_4panel(snr_thresh=3)
 
     # Dust model figure
-    # make_dust_fig()
+    make_dust_fig()
 
 
     # Dust mass figure? Can we measure this?
@@ -229,13 +229,17 @@ def make_dust_fig():
         fm_m = (log_mass-10)*np.ones(len(fm_s))
         fm_metals = sanders_plane(log_mass, fm_s)
         return fm_metals
-    sanders_log_sfrs = np.arange(0, 3, 0.1)
-    sanders_log_mass = 10.5
-    sanders_metallicities = compute_sanders_metals(sanders_log_mass, sanders_log_sfrs)
-    
-    sanders_x_axis_vals = 10**(a*sanders_metallicities) * (10**sanders_log_sfrs)**(1/n)
-    sanders_yvals = sanders_x_axis_vals*const2
-    ax_dust_model.plot(sanders_x_axis_vals, sanders_yvals, ls='--', color='blue')
+    sanders_log_sfrs = np.arange(0.5, 1.7, 0.1)
+    masses = [9, 9.5, 10, 10.5, 11]
+    colors = ['red', 'blue', 'green', 'black', 'orange']
+    sfregions = [1, 1, 2, 2, 2]
+    for i in range(len(masses)):
+        sanders_log_mass = masses[i]
+        sanders_metallicities = compute_sanders_metals(sanders_log_mass, sanders_log_sfrs)
+        
+        sanders_x_axis_vals = 10**(a*sanders_metallicities) * ((10**sanders_log_sfrs)/(sfregions[i]**2))**(1/n)
+        sanders_yvals = sanders_x_axis_vals*const2
+        ax_dust_model.plot(sanders_x_axis_vals, sanders_yvals, ls='--', color=colors[i])
 
 
     ax_dust_model.set_xscale('log')

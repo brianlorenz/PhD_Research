@@ -11,6 +11,9 @@ import pickle
 import initialize_mosdef_dirs as imd
 import matplotlib.pyplot as plt
 from prospector_plot import make_all_singleplots_2groups, make_all_prospector_plots_2groups, make_all_prospector_plots, make_all_singleplots
+from fit_prospector_emission import multiply_fit_by_lumdist, setup_all_prospector_fit_csvs, fit_all_prospector_emission
+from prospector_output_props import add_props_to_cluster_summary_df, save_props
+
 
 # 2 groups sectoin
 # run_name = 'par_ly_mask'
@@ -20,7 +23,7 @@ from prospector_plot import make_all_singleplots_2groups, make_all_prospector_pl
 # groupID4 = 18
 
 # All groups
-run_name = 'dust_type4'
+run_name = 'dust_type4_rerun'
 n_clusters = 20
 
 
@@ -49,5 +52,12 @@ def make_tfig_cfig(run_name):
 make_tfig_cfig(run_name)
 make_all_prospector_plots(n_clusters, run_name)
 make_all_singleplots(n_clusters, run_name)
+setup_all_prospector_fit_csvs(n_clusters, run_name)
+fit_all_prospector_emission(n_clusters, run_name)
+multiply_fit_by_lumdist(n_clusters, run_name)
+save_props(n_clusters, run_name) # Make sure to update the mass values
+add_props_to_cluster_summary_df(n_clusters, run_name) # Adds masses and computes sfr/ssfr
+
+
 # make_all_prospector_plots_2groups(0, 7, 8, 11, run_name)
 # make_all_singleplots_2groups(0, 7, 8, 11, run_name)

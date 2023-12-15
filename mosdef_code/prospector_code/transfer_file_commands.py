@@ -1,6 +1,6 @@
 import initialize_mosdef_dirs as imd
 
-run_name = 'dust_type4'
+run_name = 'dust_type4_rerun'
 
 print('')
 print('')
