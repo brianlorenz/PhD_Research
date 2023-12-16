@@ -102,7 +102,7 @@ bootstrap = -1
 # bootstrap = big_bootstrap_num
 # plot_balmer_hist(n_clusters, bootstrap)
 # bootstrap = -1
-# compute_balmer_lower_limits(sig_noise_thresh=2)
+compute_balmer_lower_limits(sig_noise_thresh=2)
 # compute_cluster_sfrs(luminosity=True, monte_carlo=True)
 # compute_new_sfrs_compositepaper(n_clusters, imf='subsolar')
 # compute_indiv_sfrs(n_clusters, lower_limit=True)

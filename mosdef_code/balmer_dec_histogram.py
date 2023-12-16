@@ -135,7 +135,7 @@ def compute_balmer_lower_limits(sig_noise_thresh=3, hb_sig_noise_thresh=2):
     # Save the data frame with the limit added
     cluster_summary_df.to_csv(imd.loc_cluster_summary_df, index=False)
 
-    # compute_cluster_sfrs(lower_limit=True)
+    compute_cluster_sfrs(lower_limit=True)
     
 
 
