@@ -23,7 +23,7 @@ from prospector_output_props import add_props_to_cluster_summary_df, save_props
 # groupID4 = 18
 
 # All groups
-run_name = 'dust_type4_rerun'
+run_name = 'dust4_new_scale'
 n_clusters = 20
 
 
@@ -49,14 +49,14 @@ def make_tfig_cfig(run_name):
 
 
 
-make_tfig_cfig(run_name)
-make_all_prospector_plots(n_clusters, run_name)
-make_all_singleplots(n_clusters, run_name)
-setup_all_prospector_fit_csvs(n_clusters, run_name)
-fit_all_prospector_emission(n_clusters, run_name)
-multiply_fit_by_lumdist(n_clusters, run_name)
-save_props(n_clusters, run_name) # Make sure to update the mass values
-add_props_to_cluster_summary_df(n_clusters, run_name) # Adds masses and computes sfr/ssfr
+# make_tfig_cfig(run_name)
+# make_all_prospector_plots(n_clusters, run_name)
+# make_all_singleplots(n_clusters, run_name)
+# setup_all_prospector_fit_csvs(n_clusters, run_name)
+# fit_all_prospector_emission(n_clusters, run_name)
+# multiply_fit_by_lumdist(n_clusters, run_name)
+# save_props(n_clusters, run_name) # Make sure to update the mass values
+# add_props_to_cluster_summary_df(n_clusters, run_name) # Adds masses and computes sfr/ssfr
 
 
 # make_all_prospector_plots_2groups(0, 7, 8, 11, run_name)

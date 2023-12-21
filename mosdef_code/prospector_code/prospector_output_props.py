@@ -24,16 +24,22 @@ def add_props_to_cluster_summary_df(n_clusters, run_name):
     cluster_summary_df = imd.read_cluster_summary_df()
     # If there is no such column, merge the dataframes. If there is, check if we can do nothing or if instead we must update the column values
     if 'surviving_mass50' in cluster_summary_df.columns:
-        if cluster_summary_df['surviving_mass50'].iloc[0] != total_prop_df['surviving_mass50'].iloc[0]:
-            sys.exit('Need to code this - new columns should REPLACE the old ones when merging')
-        else:
-            pass
-    else:
-        cluster_summary_df = cluster_summary_df.merge(total_prop_df, left_on='groupID', right_on='groupID')
+        print('Replacing old columns in cluster_summary_df')
+        drop_colnames = total_prop_df.columns[total_prop_df.columns != 'groupID']
+        cluster_summary_df = cluster_summary_df.drop(columns=drop_colnames)
+
+    cluster_summary_df = cluster_summary_df.merge(total_prop_df, left_on='groupID', right_on='groupID')
 
     cluster_summary_df['Prospector_AV_16'] = dust2_to_AV(cluster_summary_df['dust2_16'])
     cluster_summary_df['Prospector_AV_50'] = dust2_to_AV(cluster_summary_df['dust2_50'])
     cluster_summary_df['Prospector_AV_84'] = dust2_to_AV(cluster_summary_df['dust2_84'])
+    
+    cluster_summary_df['AV_difference_with_limit'] = cluster_summary_df['balmer_av_with_limit'] - cluster_summary_df['Prospector_AV_50']
+    cluster_summary_df['err_AV_difference_with_limit_low'] = np.sqrt(cluster_summary_df['err_balmer_av_with_limit_low']**2 + (cluster_summary_df['Prospector_AV_50']-cluster_summary_df['Prospector_AV_16'])**2)
+    cluster_summary_df['err_AV_difference_with_limit_high'] = np.sqrt(cluster_summary_df['err_balmer_av_with_limit_high']**2 + (cluster_summary_df['Prospector_AV_84']-cluster_summary_df['Prospector_AV_50'])**2)
+
+    cluster_summary_df['Prospector_ssfr50_target_mass'] = cluster_summary_df['sfr50'] / (10**cluster_summary_df['target_galaxy_median_log_mass'])
+
 
     halphas = []
     err_halphas = []

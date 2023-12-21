@@ -25,7 +25,10 @@ def make_paper_plots(n_clusters, norm_method):
     # Prospector AV vs Mass, and Balmer dec measured vs mass
     # AV vs Balmer decrement - how much extra attenuation?
     # Attenuation curve figure(s) - what controsl it
-    # make_AV_panel_fig()
+    make_AV_panel_fig()
+
+    # Prospector Dust index fig
+    # make_dust_index_fig()
 
     # SFR comparison between prospector and emission lines
     # make_SFR_compare_fig()
@@ -34,7 +37,7 @@ def make_paper_plots(n_clusters, norm_method):
     # make_sfr_mass_uvj_bpt_4panel(snr_thresh=3)
 
     # Dust model figure
-    make_dust_fig()
+    # make_dust_fig()
 
 
     # Dust mass figure? Can we measure this?
@@ -49,9 +52,9 @@ def make_AV_panel_fig():
     ax_av_mass = fig.add_subplot(gs[0, 0])
     ax_balmer_mass = fig.add_subplot(gs[0, 1])
     ax_balmer_av_compare = fig.add_subplot(gs[1, 0])
-    ax_dust_index = fig.add_subplot(gs[1, 1])
+    ax_av_difference = fig.add_subplot(gs[1, 1])
     prospector_dust2_label = 'Prospector Stellar A$_V$'
-    dust_index_label = 'Prospector dust_index'
+    av_difference_label = 'Nebular A$_V$ - Stellar A$_V$'
     plot_a_vs_b_paper('median_log_mass', 'Prospector_AV_50', stellar_mass_label, prospector_dust2_label, 'None', axis_obj=ax_av_mass, yerr=True, plot_lims=[9, 11.5, -0.2, 2.5], fig=fig, use_color_df=True) 
     plot_a_vs_b_paper('median_log_mass', 'balmer_av_with_limit', stellar_mass_label, balmer_av_label, 'None', axis_obj=ax_balmer_mass, yerr=True, plot_lims=[9, 11.5, -0.2, 5], fig=fig, use_color_df=True, lower_limit=True) 
     regress_res = find_best_fit('median_log_mass', 'balmer_av_with_limit', exclude_limit=True)
@@ -64,12 +67,14 @@ def make_AV_panel_fig():
     mosdef_data_balmeravs = compute_balmer_av(mosdef_data_decs)
     ax_balmer_mass.plot(mosdef_data_mass, mosdef_data_balmeravs, color='black', marker='s', ms=10, mec='black', ls='--', zorder=1000000, label='z=2.3 MOSDEF (Shapley+ 2022)')
     ax_balmer_mass.legend(fontsize=14)
-    plot_a_vs_b_paper('Prospector_AV_50', 'balmer_av_with_limit', prospector_dust2_label, balmer_av_label, 'None', axis_obj=ax_balmer_av_compare, yerr=True, plot_lims=[-0.2, 2, -0.2, 5], fig=fig, use_color_df=True, prospector_xerr=True, one_to_one=True, factor_of_2=True, lower_limit=True)
+    plot_a_vs_b_paper('Prospector_AV_50', 'balmer_av_with_limit', prospector_dust2_label, balmer_av_label, 'None', axis_obj=ax_balmer_av_compare, yerr=True, plot_lims=[-0.2, 2, -0.2, 5], fig=fig, use_color_df=True, prospector_xerr=True, one_to_one=False, factor_of_2=True, lower_limit=True)
     regress_res = find_best_fit('Prospector_AV_50', 'balmer_av_with_limit', exclude_limit=True)
     x_regress = np.arange(-0.2, 2, 0.1)
     ax_balmer_av_compare.plot(x_regress, regress_res.intercept + regress_res.slope*x_regress, color='black', label='Linear fit', ls='--')
-    plot_a_vs_b_paper('median_log_mass', 'dustindex50', stellar_mass_label, dust_index_label, 'None', axis_obj=ax_dust_index, yerr=True, plot_lims=[9, 11.5, -1.5, 0.5], fig=fig, use_color_df=True) 
-    for ax in [ax_av_mass, ax_balmer_mass, ax_balmer_av_compare, ax_dust_index]:
+    ax_balmer_av_compare.legend(fontsize=14, loc=2)
+    plot_a_vs_b_paper('computed_log_ssfr_with_limit', 'AV_difference', 'computed_log_ssfr_with_limit', av_difference_label, 'None', axis_obj=ax_av_difference, yerr=True, fig=fig, use_color_df=True, lower_limit=True)
+
+    for ax in [ax_av_mass, ax_balmer_mass, ax_balmer_av_compare, ax_av_difference]:
         scale_aspect(ax)
         # ax.legend(fontsize=full_page_axisfont-4)
     fig.savefig(imd.sed_paper_figures_dir + '/dust_panel.pdf')
@@ -90,11 +95,12 @@ def make_SFR_compare_fig():
     fig = plt.figure(figsize=(8, 8))
     gs = GridSpec(1, 1, left=0.11, right=0.96, bottom=0.12)
     ax_sfr = fig.add_subplot(gs[0, 0])
-    plot_a_vs_b_paper('ssfr50', 'computed_log_ssfr_with_limit', 'Prospector SED sSFR', ssfr_label, 'None', axis_obj=ax_sfr, yerr=True, lower_limit=True, plot_lims=[-10, -7.5, -10, -7.5], fig=fig, one_to_one=True, use_color_df=True)
+    
+    plot_a_vs_b_paper('Prospector_ssfr50_target_mass', 'computed_log_ssfr_with_limit', 'Prospector SED sSFR (target mass)', ssfr_label, 'None', axis_obj=ax_sfr, yerr=True, lower_limit=True, plot_lims=[-10, -7.5, -10, -7.5], fig=fig, one_to_one=True, use_color_df=True, add_numbers=True)
     ax_sfr.tick_params(labelsize=full_page_axisfont)
 
     scale_aspect(ax_sfr)
-    fig.savefig(imd.sed_paper_figures_dir + '/ssfr_compare.pdf')
+    fig.savefig(imd.sed_paper_figures_dir + '/ssfr_compare_targetmass.pdf')
 
 def make_ssfr_mass_metallicity_fig():
     fig = plt.figure(figsize=(12, 6))
@@ -245,5 +251,18 @@ def make_dust_fig():
     ax_dust_model.set_xscale('log')
 
     fig.savefig(imd.sed_paper_figures_dir + '/dust_model.pdf')
+
+def make_dust_index_fig():
+    fig = plt.figure(figsize=(8, 8))
+    gs = GridSpec(1, 1, left=0.11, right=0.96, bottom=0.12)
+    ax_dust_index = fig.add_subplot(gs[0, 0])
+    
+    dust_index_label = 'Prospector dust_index'
+
+    plot_a_vs_b_paper('median_log_mass', 'dustindex50', stellar_mass_label, dust_index_label, 'None', axis_obj=ax_dust_index, yerr=True, plot_lims=[9, 11.5, -1.7, 1.0], fig=fig, use_color_df=True, lower_limit=False)
+    ax_dust_index.tick_params(labelsize=full_page_axisfont)
+
+    scale_aspect(ax_dust_index)
+    fig.savefig(imd.sed_paper_figures_dir + '/dust_index.pdf')
 
 make_paper_plots(20, 'luminosity')

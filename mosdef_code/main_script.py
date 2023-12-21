@@ -42,7 +42,7 @@ Specify the directories in initialize_mosdef_dirsl;k
 # Set the total number of clusters
 n_clusters = 20
 # Set the name of the prospector run
-run_name = 'dust_type4'
+run_name = 'dust4_new_scale'
 norm_method = 'luminosity'
 # Set which group numbers to ignore since their data is not good
 ignore_groups = []
@@ -102,7 +102,7 @@ bootstrap = -1
 # bootstrap = big_bootstrap_num
 # plot_balmer_hist(n_clusters, bootstrap)
 # bootstrap = -1
-compute_balmer_lower_limits(sig_noise_thresh=2)
+# compute_balmer_lower_limits(sig_noise_thresh=2)
 # compute_cluster_sfrs(luminosity=True, monte_carlo=True)
 # compute_new_sfrs_compositepaper(n_clusters, imf='subsolar')
 # compute_indiv_sfrs(n_clusters, lower_limit=True)
@@ -131,7 +131,7 @@ compute_balmer_lower_limits(sig_noise_thresh=2)
 # fit_all_prospector_emission(n_clusters, run_name)
 # multiply_fit_by_lumdist(n_clusters, run_name)
 # save_props(n_clusters, run_name) # Make sure to update the mass values
-# add_props_to_cluster_summary_df(n_clusters, run_name) # Adds masses and computes sfr/ssfr
+add_props_to_cluster_summary_df(n_clusters, run_name) # Adds masses and computes sfr/ssfr
 
 
 

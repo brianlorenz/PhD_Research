@@ -33,6 +33,7 @@ def plot_cluster_summaries(x_var, y_var, savename, color_var='None', plot_lims='
         y_var = y_var+'_with_limit'
         savename = savename+'_with_limit'
 
+   
 
     if y_var == 'override_flux_with_limit':
         cluster_summary_df2 = ascii.read(imd.mosdef_dir + '/Clustering_20230823_scaledtoindivha/cluster_summary.csv').to_pandas()
@@ -50,7 +51,16 @@ def plot_cluster_summaries(x_var, y_var, savename, color_var='None', plot_lims='
                 row[y_var] = ha_row[y_var]
             else:
                 continue
+        
+        if x_var=='sfr50':
+            row[x_var] = np.log10(row[x_var])
 
+        if y_var=='AV_diff':
+            row[y_var] = row['balmer_av'] - row['Prospector_AV_50']
+            if row[y_var]>2.5:
+                continue
+            ax.axhline(0, ls='--', color='black')
+        
         if color_var != 'None':
             cmap = mpl.cm.inferno
             norm = assign_color(color_var)
@@ -182,7 +192,7 @@ def plot_ratio(x_var_numerator, x_var_denominator, y_var_numerator, y_var_denomi
     fig.savefig(imd.cluster_dir + f'/cluster_stats/{savename}.pdf', bbox_inches='tight')
     plt.close('all')
 
-def plot_a_vs_b_paper(x_var, y_var, x_label, y_label, savename, axis_obj='False', color_var='None', plot_lims='None', lower_limit=False, one_to_one=False, ignore_groups=[], log=False, add_leja=False, yerr=False, prospector_run_name = '', fig='None', use_color_df=True, prospector_xerr=False, factor_of_2=False, upper_limit=False):
+def plot_a_vs_b_paper(x_var, y_var, x_label, y_label, savename, axis_obj='False', color_var='None', plot_lims='None', lower_limit=False, one_to_one=False, ignore_groups=[], log=False, add_leja=False, yerr=False, prospector_run_name = '', fig='None', use_color_df=True, prospector_xerr=False, factor_of_2=False, upper_limit=False, add_numbers=False):
     """Plots two columsn of cluster_summary_df against each other
     
     Parameters:
@@ -209,8 +219,9 @@ def plot_a_vs_b_paper(x_var, y_var, x_label, y_label, savename, axis_obj='False'
         row = cluster_summary_df.iloc[i]
         markersize = get_row_size(i)
 
-        if x_var == 'ssfr50':
+        if x_var == 'ssfr50' or x_var == 'Prospector_ssfr50_target_mass':
             row[x_var] = np.log10(row[x_var])
+            
 
         if prospector_run_name != '':
             if os.path.exists(imd.prospector_emission_fits_dir + f'/{prospector_run_name}_emission_fits/{i}_emission_fits.csv'):
@@ -266,7 +277,8 @@ def plot_a_vs_b_paper(x_var, y_var, x_label, y_label, savename, axis_obj='False'
             ax.plot(row[x_var], row[y_var], color=rgba, marker=marker, ls='None', zorder=3, mec='black', ms=markersize)
             
             pass
-        # ax.text(row[x_var], row[y_var], f"{int(row['groupID'])}", color='black')
+        if add_numbers==True:
+            ax.text(row[x_var], row[y_var], f"{int(row['groupID'])}", color='black', fontsize=15)
 
     if add_leja:
         redshift = 2
@@ -304,7 +316,7 @@ def plot_a_vs_b_paper(x_var, y_var, x_label, y_label, savename, axis_obj='False'
         # ax.plot([0,1],[0,1], transform=ax.transAxes, ls='--', color='red')
 
     if factor_of_2:
-        ax.plot([-10, 10], [-9, 11], ls='--', color='orange')
+        ax.plot([-10, 10], [-9, 11], ls='--', color='red', label='Nebular A$_V$ = 1+Stellar A$_V$')
         # ax.plot([-10, 10], [-20, 20], ls='--', color='orange')
 
     
@@ -337,11 +349,13 @@ def add_leja_sfms(ax, mode='mean'):
     ax.plot(logmasses, logssfrs, color='black', marker='None', ls='--', zorder=1, label=f'Leja SFMS z={redshift}, {mode}')
  
 
-def make_plots_a_vs_b(reduce_plot_count=False):
+def make_plots_a_vs_b(reduce_plot_count=False, reduce_prospector_plots=False):
     """Plots variables in cluster_summary_df against each other
     
     Parameters:
-    reduce_plot_count (boolean): True to make all plot, false to make only some
+    reduce_plot_count (boolean): False to make all plot, True to make only some
+    prospector_plots (boolean): True to make all plot, false to make only some
+
     """
     try:
         ignore_groups = imd.ignore_groups
@@ -402,41 +416,51 @@ def make_plots_a_vs_b(reduce_plot_count=False):
         plot_cluster_summaries('balmer_dec_with_limit', 'computed_log_sfr', 'sfrs/diagnostics/sfr_balmerlimit_lower_limit', color_var='balmer_dec_with_limit', ignore_groups=ignore_groups, lower_limit=lower_limit, yerr=True)
         plot_cluster_summaries('ha_flux', 'computed_log_sfr', 'sfrs/diagnostics/sfr_haflux_lower_limit', color_var='balmer_dec_with_limit', ignore_groups=ignore_groups, lower_limit=lower_limit, yerr=True)
         plot_cluster_summaries('hb_flux', 'computed_log_sfr', 'sfrs/diagnostics/sfr_hbflux_lower_limit', color_var='balmer_dec_with_limit', ignore_groups=ignore_groups, lower_limit=lower_limit, yerr=True)
-        
-    # #SNR Plots
-    # plot_cluster_summaries('hb_snr', 'balmer_dec_snr', 'sfrs/hbeta_balmer_snr', color_var='balmer_dec_with_limit', ignore_groups=ignore_groups, one_to_one=True)
 
-    # Prospector emission - to use, set the yvar to the prospector name, and prospector_run_name to be accurate
-    imd.check_and_make_dir(imd.cluster_dir + '/cluster_stats/prospector/')
-    plot_cluster_summaries('ha_flux', 'luminosity', 'sfrs/prospector_ha_compare', color_var='median_log_mass', one_to_one=True, ignore_groups=ignore_groups, log=True, prospector_run_name='dust_type4')
+    if reduce_prospector_plots == False:    
+        # #SNR Plots
+        # plot_cluster_summaries('hb_snr', 'balmer_dec_snr', 'sfrs/hbeta_balmer_snr', color_var='balmer_dec_with_limit', ignore_groups=ignore_groups, one_to_one=True)
 
-    # Prospector eline properties:
-    plot_cluster_summaries('prospector_balmer_dec', 'balmer_dec', 'prospector/balmer_dec_compare', color_var='median_log_mass', ignore_groups=ignore_groups, lower_limit=lower_limit, one_to_one=True, plot_lims=[2.7, 6.5, 2.7, 6.5])
-    plot_cluster_summaries('O3N2_metallicity', 'prospector_O3N2_metallicity', 'prospector/metallicity_compare', color_var='median_log_mass', ignore_groups=ignore_groups, one_to_one=True, plot_lims=[7.7, 9, 7.7, 9])
-    plot_cluster_summaries('O3N2_metallicity', 'prospector_O3N2_metallicity', 'prospector/metallicity_compare_prospmassscolor', color_var='prospector_log_mass', ignore_groups=ignore_groups, one_to_one=True, plot_lims=[7.7, 9, 7.7, 9])
-    plot_cluster_summaries('O3N2_metallicity', 'prospector_O3N2_metallicity', 'prospector/metallicity_compare_balmercolor', color_var='balmer_dec_with_limit', ignore_groups=ignore_groups, one_to_one=True, plot_lims=[7.7, 9, 7.7, 9])
-    plot_cluster_summaries('cluster_av_prospector_log_ssfr', 'prospector_log_ssfr', 'prospector/prospector_ssfr_compare', color_var='balmer_dec_with_limit', ignore_groups=ignore_groups, one_to_one=True, plot_lims=[-11, -7.5, -11, -7.5])
-    plot_cluster_summaries('cluster_av_prospector_log_ssfr', 'computed_log_ssfr', 'prospector/ssfr_compare_to_cluster', color_var='balmer_dec_with_limit', ignore_groups=ignore_groups, lower_limit=lower_limit, one_to_one=True, plot_lims=[-11, -7.5, -11, -7.5])
+        # Prospector emission - to use, set the yvar to the prospector name, and prospector_run_name to be accurate
+        imd.check_and_make_dir(imd.cluster_dir + '/cluster_stats/prospector/')
+        plot_cluster_summaries('ha_flux', 'luminosity', 'sfrs/prospector_ha_compare', color_var='median_log_mass', one_to_one=True, ignore_groups=ignore_groups, log=True, prospector_run_name='dust4_new_scale')
 
-    # Prospector Dust Index
-    plot_cluster_summaries('computed_log_ssfr_with_limit', 'dustindex50', 'prospector/dust_index_ssfr', color_var='balmer_dec', ignore_groups=ignore_groups)
-    plot_cluster_summaries('median_log_mass', 'dustindex50', 'prospector/dust_index_mass', color_var='balmer_dec', ignore_groups=ignore_groups)
-    plot_cluster_summaries('balmer_dec', 'dustindex50', 'prospector/dust_index_balmer', color_var='balmer_dec', ignore_groups=ignore_groups)
-    plot_cluster_summaries('AV', 'dustindex50', 'prospector/dust_index_av', color_var='balmer_dec', ignore_groups=ignore_groups)
-    plot_cluster_summaries('logzsol50', 'dustindex50', 'prospector/dust_index_prospmetals', color_var='balmer_dec', ignore_groups=ignore_groups)
-    plot_cluster_summaries('O3N2_metallicity', 'dustindex50', 'prospector/dust_index_metals', color_var='balmer_dec', ignore_groups=ignore_groups)
+        # Prospector eline properties:
+        plot_cluster_summaries('prospector_balmer_dec', 'balmer_dec', 'prospector/balmer_dec_compare', color_var='median_log_mass', ignore_groups=ignore_groups, lower_limit=lower_limit, one_to_one=True, plot_lims=[2.7, 6.5, 2.7, 6.5])
+        plot_cluster_summaries('O3N2_metallicity', 'prospector_O3N2_metallicity', 'prospector/metallicity_compare', color_var='median_log_mass', ignore_groups=ignore_groups, one_to_one=True, plot_lims=[7.7, 9, 7.7, 9])
+        plot_cluster_summaries('O3N2_metallicity', 'prospector_O3N2_metallicity', 'prospector/metallicity_compare_prospmassscolor', color_var='prospector_log_mass', ignore_groups=ignore_groups, one_to_one=True, plot_lims=[7.7, 9, 7.7, 9])
+        plot_cluster_summaries('O3N2_metallicity', 'prospector_O3N2_metallicity', 'prospector/metallicity_compare_balmercolor', color_var='balmer_dec_with_limit', ignore_groups=ignore_groups, one_to_one=True, plot_lims=[7.7, 9, 7.7, 9])
+        plot_cluster_summaries('cluster_av_prospector_log_ssfr', 'prospector_log_ssfr', 'prospector/prospector_ssfr_compare', color_var='balmer_dec_with_limit', ignore_groups=ignore_groups, one_to_one=True, plot_lims=[-11, -7.5, -11, -7.5])
+        plot_cluster_summaries('cluster_av_prospector_log_ssfr', 'computed_log_ssfr', 'prospector/ssfr_compare_to_cluster', color_var='balmer_dec_with_limit', ignore_groups=ignore_groups, lower_limit=lower_limit, one_to_one=True, plot_lims=[-11, -7.5, -11, -7.5])
 
-    # Prospector AV
-    plot_cluster_summaries('median_log_mass', 'dust2_50', 'prospector/dust2_mass', color_var='balmer_dec', ignore_groups=ignore_groups)
-    plot_cluster_summaries('AV', 'dust2_50', 'prospector/dust2_medianAVA', color_var='balmer_dec', ignore_groups=ignore_groups, one_to_one=True)
+        # Prospector Dust Index
+        plot_cluster_summaries('computed_log_ssfr_with_limit', 'dustindex50', 'prospector/dust_index_ssfr', color_var='balmer_dec', ignore_groups=ignore_groups)
+        plot_cluster_summaries('median_log_mass', 'dustindex50', 'prospector/dust_index_mass', color_var='balmer_dec', ignore_groups=ignore_groups)
+        plot_cluster_summaries('balmer_dec', 'dustindex50', 'prospector/dust_index_balmer', color_var='balmer_dec', ignore_groups=ignore_groups)
+        plot_cluster_summaries('AV', 'dustindex50', 'prospector/dust_index_av', color_var='balmer_dec', ignore_groups=ignore_groups)
+        plot_cluster_summaries('logzsol50', 'dustindex50', 'prospector/dust_index_prospmetals', color_var='balmer_dec', ignore_groups=ignore_groups)
+        plot_cluster_summaries('O3N2_metallicity', 'dustindex50', 'prospector/dust_index_metals', color_var='balmer_dec', ignore_groups=ignore_groups)
+
+        # Prospector AV
+        plot_cluster_summaries('median_log_mass', 'dust2_50', 'prospector/dust2_mass', color_var='balmer_dec', ignore_groups=ignore_groups)
+        plot_cluster_summaries('AV', 'dust2_50', 'prospector/dust2_medianAVA', color_var='balmer_dec', ignore_groups=ignore_groups, one_to_one=True)
+        plot_cluster_summaries('Prospector_AV_50', 'dustindex50', 'prospector/dustindex_AV', color_var='median_log_mass', ignore_groups=ignore_groups, one_to_one=True)
+
+
+        #Compare 
+        plot_cluster_summaries('prospector_log_mass', 'target_galaxy_median_log_mass', 'prospector/prospector_mass_compare', color_var='median_log_mass', ignore_groups=ignore_groups, one_to_one=True)
+        plot_cluster_summaries('prospector_log_mass', 'median_log_mass', 'prospector/prospector_mass_compare_cluster', color_var='median_log_mass', ignore_groups=ignore_groups, one_to_one=True)
+        plot_cluster_summaries('sfr50', 'computed_log_sfr', 'prospector/prospector_sfr_compare', color_var='median_log_mass', ignore_groups=ignore_groups, one_to_one=True, lower_limit=True)
+
 
     # Dust model
     plot_cluster_summaries('O3N2_metallicity', 'balmer_av', 'dust_model_vis/abalmer_vs_metals', color_var='median_log_mass', ignore_groups=ignore_groups, lower_limit=True)
     plot_cluster_summaries('computed_log_sfr_with_limit', 'balmer_av', 'dust_model_vis/abalmer_vs_sfr', color_var='median_log_mass', ignore_groups=ignore_groups, lower_limit=True)
     plot_cluster_summaries('O3N2_metallicity', 'computed_log_sfr', 'dust_model_vis/sfr_metal', color_var='median_log_mass', ignore_groups=ignore_groups, lower_limit=True)
 
-    plot_cluster_summaries('computed_log_ssfr_with_limit', 'balmer_av', 'ssfr_balmerav_lower_limit', color_var='median_log_mass', ignore_groups=ignore_groups, lower_limit=True, yerr=True)
+    # Other
+    plot_cluster_summaries('computed_log_sfr_with_limit', 'AV_diff', 'sfr_vs_balmer_diff', color_var='median_log_mass', ignore_groups=ignore_groups, lower_limit=False, yerr=False, plot_lims=[-0.7, 2.1, -1.5, 2.5])
 
 
 
-# make_plots_a_vs_b(reduce_plot_count=True)
+# make_plots_a_vs_b(reduce_plot_count=True, reduce_prospector_plots=False)
