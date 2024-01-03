@@ -69,12 +69,15 @@ def plot_group_hists(n_clusters):
         lum_bins = np.arange(1e41, 1e43, 4e41)
         mass_bins = np.arange(9, 11, 0.1)
         balmer_bins = np.arange(0, 10, 0.2)
+        axis_bins = np.arange(0, 1, 0.05)
         # Histograms
         make_hist(save_dir, groupID, halpha_fluxes, 'Flux', removed_gal_number, flux_bins)
         make_hist(save_dir, groupID, halpha_luminosities, 'Luminosity', removed_gal_number, lum_bins)
         make_hist(save_dir, groupID, pseudo_ssfr, 'HaLum_Mass', removed_gal_number, lum_bins/1e11)
         make_hist(save_dir, groupID, log_masses, 'log_mass', 0, mass_bins)
         make_hist(save_dir, groupID, balmer_decs, 'Balmer_Dec', removed_gal_number_balmer, balmer_bins)
+        make_hist(save_dir, groupID, group_df['use_ratio'], 'Axis_ratio', 0, axis_bins)
+        
         
         # Balmer dec vs Mass in each group
         fig, ax = plt.subplots(figsize=(8,8))
@@ -195,4 +198,4 @@ def plot_group_hists(n_clusters):
     ax.set_ylabel('Median Individuals Balmer Dec', fontsize=single_column_axisfont)
     ax.tick_params(labelsize=single_column_axisfont)
     fig.savefig(imd.cluster_dir + '/cluster_stats/indiv_group_plots/balmer_compare.pdf', bbox_inches='tight')
-# plot_group_hists(19)
+plot_group_hists(20)

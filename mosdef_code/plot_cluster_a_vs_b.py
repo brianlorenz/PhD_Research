@@ -219,9 +219,8 @@ def plot_a_vs_b_paper(x_var, y_var, x_label, y_label, savename, axis_obj='False'
         row = cluster_summary_df.iloc[i]
         markersize = get_row_size(i)
 
-        if x_var == 'ssfr50' or x_var == 'Prospector_ssfr50_target_mass':
+        if x_var == 'ssfr50' or x_var == 'Prospector_ssfr50_target_mass' or  x_var == 'Prospector_ssfr50_normmedian_mass':
             row[x_var] = np.log10(row[x_var])
-            
 
         if prospector_run_name != '':
             if os.path.exists(imd.prospector_emission_fits_dir + f'/{prospector_run_name}_emission_fits/{i}_emission_fits.csv'):
@@ -257,6 +256,7 @@ def plot_a_vs_b_paper(x_var, y_var, x_label, y_label, savename, axis_obj='False'
                 yerr = True
         else:
             marker='o'
+        
         if yerr == True:
             if prospector_xerr == True:
                 ax.errorbar(row[x_var], row[y_var], xerr=np.array([[row[x_var]-row[x_var.replace('_50','_16')], row[x_var.replace('_50','_84')]-row[x_var]]]).T, yerr=np.array([[row['err_'+y_var+'_low'], row['err_'+y_var+'_high']]]).T, color=rgba, marker=marker, ls='None', zorder=3, mec='black', ms=markersize)

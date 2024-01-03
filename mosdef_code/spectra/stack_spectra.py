@@ -264,6 +264,17 @@ def stack_spectra(groupID, norm_method, re_observe=False, mask_negatives=False, 
     if bootstrap>0:
         start_strap = time.time()
         print('Starting bootstrap')
+
+        bootstrap_labels = np.zeros(len(interp_cluster_spectra_dfs))
+        count = 0
+        index_count = 0
+        while count < len(norm_factors):
+            num_spec_for_gal = np.sum(norm_factors == norm_factors[count])
+            for k in range(num_spec_for_gal):
+                bootstrap_labels[k+count] = index_count
+            index_count = index_count + 1
+            count = count + num_spec_for_gal
+        num_gals = index_count
         bootstrap_count = 0
         if axis_stack:
             imd.check_and_make_dir(imd.axis_cluster_data_dir + f'/{save_name}/{save_name}_spectra_boots/')
@@ -271,12 +282,24 @@ def stack_spectra(groupID, norm_method, re_observe=False, mask_negatives=False, 
             imd.check_and_make_dir(imd.composite_spec_dir + f'/{norm_method}_boot_csvs/')
         while bootstrap_count<bootstrap:
             # Resample the interp_spectrum_dfs and corresponding norm factors to bootstrap with:
-            n_gals = len(interp_cluster_spectra_dfs)
+            n_gals = index_count
             # Grab the indices of which galaxies to use
             print('Resampling...')
             keys = np.random.choice(range(n_gals), size=n_gals) 
-            boot_interp_cluster_spectra_dfs = [interp_cluster_spectra_dfs[keys[k]] for k in range(n_gals)]
-            boot_norm_factors = [norm_factors[keys[k]] for k in range(n_gals)]
+            index_values = []
+            for k in range(n_gals):
+                index_values.append(bootstrap_labels==keys[k])
+            boot_interp_cluster_spectra_dfs = []
+            boot_norm_factors = []
+            for i in range(n_gals):
+                selected_specs = [x for x, y in zip(interp_cluster_spectra_dfs, index_values[i]) if y == True]
+                selected_norms = [x for x, y in zip(norm_factors, index_values[i]) if y == True]
+                for j in range(len(selected_specs)):
+                    boot_interp_cluster_spectra_dfs.append(selected_specs[j])
+                    boot_norm_factors.append(selected_norms[j])
+
+            # boot_interp_cluster_spectra_dfs = [interp_cluster_spectra_dfs[keys[k]] for k in range(n_gals)]
+            # boot_norm_factors = [norm_factors[keys[k]] for k in range(n_gals)]
             print('Stacking...')
             boot_total_spec, boot_total_cont, boot_total_errs, boot_number_specs_by_wave, boot_norm_value_specs_by_wave = perform_stack(stack_type, boot_interp_cluster_spectra_dfs, boot_norm_factors)
             print('Making dataframe...')
@@ -844,6 +867,7 @@ def stack_axis_ratio(mass_width, split_width, starting_points, ratio_bins, save_
                         axis_group=axis_group, save_name=cluster_name, stack_type=stack_type, bootstrap=bootstrap)
             axis_group = axis_group + 1
 
-
+# stack_spectra(5, 'cluster_norm', re_observe=False,
+#                       mask_negatives=False, bootstrap=100)
 # stack_spectra(19, 'cluster_norm', re_observe=False,
 #                       mask_negatives=False)

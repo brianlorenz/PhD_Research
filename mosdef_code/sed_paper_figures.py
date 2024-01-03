@@ -25,13 +25,13 @@ def make_paper_plots(n_clusters, norm_method):
     # Prospector AV vs Mass, and Balmer dec measured vs mass
     # AV vs Balmer decrement - how much extra attenuation?
     # Attenuation curve figure(s) - what controsl it
-    make_AV_panel_fig()
+    # make_AV_panel_fig()
 
     # Prospector Dust index fig
     # make_dust_index_fig()
 
     # SFR comparison between prospector and emission lines
-    # make_SFR_compare_fig()
+    make_SFR_compare_fig()
 
     #sfr/mass/uvj/bpt
     # make_sfr_mass_uvj_bpt_4panel(snr_thresh=3)
@@ -96,11 +96,11 @@ def make_SFR_compare_fig():
     gs = GridSpec(1, 1, left=0.11, right=0.96, bottom=0.12)
     ax_sfr = fig.add_subplot(gs[0, 0])
     
-    plot_a_vs_b_paper('Prospector_ssfr50_target_mass', 'computed_log_ssfr_with_limit', 'Prospector SED sSFR (target mass)', ssfr_label, 'None', axis_obj=ax_sfr, yerr=True, lower_limit=True, plot_lims=[-10, -7.5, -10, -7.5], fig=fig, one_to_one=True, use_color_df=True, add_numbers=True)
+    plot_a_vs_b_paper('Prospector_ssfr50_normmedian_mass', 'computed_log_ssfr_with_limit', 'Prospector SED sSFR (norm median mass)', ssfr_label, 'None', axis_obj=ax_sfr, yerr=True, lower_limit=True, plot_lims=[-10, -7.5, -10, -7.5], fig=fig, one_to_one=True, use_color_df=True, add_numbers=True)
     ax_sfr.tick_params(labelsize=full_page_axisfont)
 
     scale_aspect(ax_sfr)
-    fig.savefig(imd.sed_paper_figures_dir + '/ssfr_compare_targetmass.pdf')
+    fig.savefig(imd.sed_paper_figures_dir + '/ssfr_compare_normmedmass.pdf')
 
 def make_ssfr_mass_metallicity_fig():
     fig = plt.figure(figsize=(12, 6))

@@ -375,7 +375,7 @@ def vis_composite_sed(total_sed, composite_sed=0, composite_filters=0, groupID=-
         ax.set_ylabel('Normalized Flux', fontsize=axisfont)
         ax.set_xscale('log')
 
-    ax_sed.set_ylim(0, 1.2 * np.max(composite_sed['f_lambda']))
+    ax_sed.set_ylim(-0.2*np.max(composite_sed['f_lambda']), 1.2 * np.max(composite_sed['f_lambda']))
     ax_sed.set_xlim(800, 45000)
     # ax_filt.set_ylim(-0.05, 1.05)
 

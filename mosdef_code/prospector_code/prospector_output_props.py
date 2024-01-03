@@ -39,6 +39,7 @@ def add_props_to_cluster_summary_df(n_clusters, run_name):
     cluster_summary_df['err_AV_difference_with_limit_high'] = np.sqrt(cluster_summary_df['err_balmer_av_with_limit_high']**2 + (cluster_summary_df['Prospector_AV_84']-cluster_summary_df['Prospector_AV_50'])**2)
 
     cluster_summary_df['Prospector_ssfr50_target_mass'] = cluster_summary_df['sfr50'] / (10**cluster_summary_df['target_galaxy_median_log_mass'])
+    cluster_summary_df['Prospector_ssfr50_normmedian_mass'] = cluster_summary_df['sfr50'] / (10**cluster_summary_df['norm_median_log_mass'])
 
 
     halphas = []

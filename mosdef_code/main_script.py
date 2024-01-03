@@ -79,7 +79,7 @@ imd.check_and_make_dir(imd.composite_filter_sedpy_dir)
 
 # # Re-fit the emission of the composites and now fit the boostrapped ones
 # fit_all_emission(n_clusters, norm_method, ignore_groups, bootstrap=bootstrap)
-bootstrap = -1
+# bootstrap = -1
 # fit_all_emission(n_clusters, norm_method, ignore_groups, bootstrap=bootstrap)
 
 #Used to compute boostrapped uncertanties here
@@ -131,7 +131,7 @@ bootstrap = -1
 # fit_all_prospector_emission(n_clusters, run_name)
 # multiply_fit_by_lumdist(n_clusters, run_name)
 # save_props(n_clusters, run_name) # Make sure to update the mass values
-add_props_to_cluster_summary_df(n_clusters, run_name) # Adds masses and computes sfr/ssfr
+# add_props_to_cluster_summary_df(n_clusters, run_name) # Adds masses and computes sfr/ssfr
 
 
 
