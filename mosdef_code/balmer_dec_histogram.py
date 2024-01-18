@@ -89,7 +89,6 @@ def compute_balmer_lower_limits(sig_noise_thresh=3, hb_sig_noise_thresh=2):
 
     cluster_summary_df['flag_balmer_lower_limit'] = cluster_summary_df['flag_hb_limit']
 
-
     #Measure what the limit should be
     # confident_balmer_decs = cluster_summary_df[cluster_summary_df['flag_balmer_lower_limit']==0]['balmer_dec'] 
     # balmer_limit = np.max(confident_balmer_decs)

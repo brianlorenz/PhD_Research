@@ -198,4 +198,4 @@ def plot_group_hists(n_clusters):
     ax.set_ylabel('Median Individuals Balmer Dec', fontsize=single_column_axisfont)
     ax.tick_params(labelsize=single_column_axisfont)
     fig.savefig(imd.cluster_dir + '/cluster_stats/indiv_group_plots/balmer_compare.pdf', bbox_inches='tight')
-plot_group_hists(20)
+# plot_group_hists(20)

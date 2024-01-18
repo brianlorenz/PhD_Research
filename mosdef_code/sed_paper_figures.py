@@ -25,13 +25,13 @@ def make_paper_plots(n_clusters, norm_method):
     # Prospector AV vs Mass, and Balmer dec measured vs mass
     # AV vs Balmer decrement - how much extra attenuation?
     # Attenuation curve figure(s) - what controsl it
-    # make_AV_panel_fig()
+    make_AV_panel_fig()
 
     # Prospector Dust index fig
     # make_dust_index_fig()
 
     # SFR comparison between prospector and emission lines
-    make_SFR_compare_fig()
+    # make_SFR_compare_fig()
 
     #sfr/mass/uvj/bpt
     # make_sfr_mass_uvj_bpt_4panel(snr_thresh=3)
@@ -70,9 +70,16 @@ def make_AV_panel_fig():
     plot_a_vs_b_paper('Prospector_AV_50', 'balmer_av_with_limit', prospector_dust2_label, balmer_av_label, 'None', axis_obj=ax_balmer_av_compare, yerr=True, plot_lims=[-0.2, 2, -0.2, 5], fig=fig, use_color_df=True, prospector_xerr=True, one_to_one=False, factor_of_2=True, lower_limit=True)
     regress_res = find_best_fit('Prospector_AV_50', 'balmer_av_with_limit', exclude_limit=True)
     x_regress = np.arange(-0.2, 2, 0.1)
+    print(f'Best fit to Nebular vs Stellar av: slope {regress_res.slope}, yint {regress_res.intercept}')
     ax_balmer_av_compare.plot(x_regress, regress_res.intercept + regress_res.slope*x_regress, color='black', label='Linear fit', ls='--')
     ax_balmer_av_compare.legend(fontsize=14, loc=2)
-    plot_a_vs_b_paper('computed_log_ssfr_with_limit', 'AV_difference', 'computed_log_ssfr_with_limit', av_difference_label, 'None', axis_obj=ax_av_difference, yerr=True, fig=fig, use_color_df=True, lower_limit=True)
+    plot_a_vs_b_paper('computed_log_sfr_with_limit', 'AV_difference_with_limit', 'computed_log_sfr_with_limit', av_difference_label, 'None', axis_obj=ax_av_difference, yerr=True, fig=fig, use_color_df=True, lower_limit=True, plot_lims=[0, 2, -1, 3])
+    regress_res = find_best_fit('computed_log_sfr_with_limit', 'AV_difference_with_limit', exclude_limit=True)
+    x_regress = np.arange(-1, 3, 0.1)
+    ax_av_difference.plot(x_regress, regress_res.intercept + regress_res.slope*x_regress, color='black', label='Linear fit', ls='--')
+    ax_av_difference.legend(fontsize=14, loc=2)
+    print(f'Best fit to Av difference vs SFR: slope {regress_res.slope}, yint {regress_res.intercept}')
+
 
     for ax in [ax_av_mass, ax_balmer_mass, ax_balmer_av_compare, ax_av_difference]:
         scale_aspect(ax)
@@ -96,11 +103,11 @@ def make_SFR_compare_fig():
     gs = GridSpec(1, 1, left=0.11, right=0.96, bottom=0.12)
     ax_sfr = fig.add_subplot(gs[0, 0])
     
-    plot_a_vs_b_paper('Prospector_ssfr50_normmedian_mass', 'computed_log_ssfr_with_limit', 'Prospector SED sSFR (norm median mass)', ssfr_label, 'None', axis_obj=ax_sfr, yerr=True, lower_limit=True, plot_lims=[-10, -7.5, -10, -7.5], fig=fig, one_to_one=True, use_color_df=True, add_numbers=True)
+    plot_a_vs_b_paper('log_Prospector_ssfr50_multiplied_normalized', 'computed_log_sfr_with_limit', 'Prospector Normalized SED SFR', sfr_label, 'None', axis_obj=ax_sfr, yerr=True, lower_limit=True, plot_lims=[-1, 3, -1, 3], fig=fig, one_to_one=True, use_color_df=True, add_numbers=True)
     ax_sfr.tick_params(labelsize=full_page_axisfont)
 
     scale_aspect(ax_sfr)
-    fig.savefig(imd.sed_paper_figures_dir + '/ssfr_compare_normmedmass.pdf')
+    fig.savefig(imd.sed_paper_figures_dir + '/sfr_compare_normalized.pdf')
 
 def make_ssfr_mass_metallicity_fig():
     fig = plt.figure(figsize=(12, 6))
@@ -236,11 +243,15 @@ def make_dust_fig():
         fm_metals = sanders_plane(log_mass, fm_s)
         return fm_metals
     sanders_log_sfrs = np.arange(0.5, 1.7, 0.1)
-    masses = [9, 9.5, 10, 10.5, 11]
-    colors = ['red', 'blue', 'green', 'black', 'orange']
-    sfregions = [1, 1, 2, 2, 2]
+    # masses = [9, 9.5, 10, 10.5, 11]
+    # colors = ['red', 'blue', 'green', 'black', 'orange']
+    # sfregions = [1, 1, 1, 1, 1]
+    masses = [9.5, 10, 10.5]
+    colors = ['black', 'red', 'blue']
+    sfregions = [1, 1, 1]
     for i in range(len(masses)):
         sanders_log_mass = masses[i]
+     
         sanders_metallicities = compute_sanders_metals(sanders_log_mass, sanders_log_sfrs)
         
         sanders_x_axis_vals = 10**(a*sanders_metallicities) * ((10**sanders_log_sfrs)/(sfregions[i]**2))**(1/n)
