@@ -25,7 +25,7 @@ def convert_ha_to_sfr():
     avs_balmer_6565 = apply_dust_law(avs_balmer, target_wave=6565)
 
     # Get dust-corrected halpha
-    intrinsic_halpha_lums = correct_ha_lum_for_dust(halpha_lums, avs_balmer_6565)
+    intrinsic_halpha_lums = correct_lum_for_dust(halpha_lums, avs_balmer_6565)
 
     # Derive SFR from Kennicutt 1998
     halpha_sfrs = ha_lum_to_sfr(intrinsic_halpha_lums, imf='Hao_Chabrier')
@@ -108,7 +108,7 @@ def apply_dust_law(avs_balmer, target_wave=6565, R_V=4.05):
 
     return avs_balmer_target
 
-def correct_ha_lum_for_dust(obs_luminosity, attenuation):
+def correct_lum_for_dust(obs_luminosity, attenuation):
     """Corrects observed luminsoity for attenuation
     
     Parameters:

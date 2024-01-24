@@ -1,6 +1,6 @@
 import initialize_mosdef_dirs as imd
 from cosmology_calcs import flux_to_luminosity
-from compute_new_sfrs import correct_ha_lum_for_dust, ha_lum_to_sfr, correct_av_for_dust, apply_dust_law
+from compute_new_sfrs import correct_lum_for_dust, ha_lum_to_sfr, correct_av_for_dust, apply_dust_law
 from balmer_avs import compute_balmer_av
 import numpy as np
 from astropy.io import ascii
@@ -170,7 +170,7 @@ def compute_new_sfrs_compositepaper(n_clusters, imf='subsolar'):
 
 
 def perform_sfr_computation(halpha_lums, balmer_ahalphas, log_median_masses, imf='subsolar', replace_nan=False):
-    intrinsic_halpha_lums = correct_ha_lum_for_dust(halpha_lums, balmer_ahalphas)
+    intrinsic_halpha_lums = correct_lum_for_dust(halpha_lums, balmer_ahalphas)
     halpha_sfrs = ha_lum_to_sfr(intrinsic_halpha_lums, imf='subsolar')
     log_halpha_sfrs = np.log10(halpha_sfrs)
      # Divide by mean mass for sSFR

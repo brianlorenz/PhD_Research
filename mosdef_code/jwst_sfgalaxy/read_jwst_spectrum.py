@@ -4,13 +4,13 @@ from fit_emission_jwst import fit_continuum, fit_emission
 import numpy as np
 
 flux_columns = ['flux_total', 'err_total', 'flux_dither_1', 'err_dither_1', 'flux_dither_2', 'err_dither_2']
+z_sfgalaxy = 2.925
 
 def main_read_spec():
     path_to_specs = '/Users/brianlorenz/jwst_sfgalaxy/data/'
-    z = 2.925
     spec_df = read_1d_spectrum(path_to_specs + '128561_comb_x1d.txt')
     spec_df = convert_units(spec_df) 
-    spec_df = convert_redshift(spec_df, z)
+    spec_df = convert_redshift(spec_df, z_sfgalaxy)
     return spec_df
 
 # def old_main_read_spec_old():
