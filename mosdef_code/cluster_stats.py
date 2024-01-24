@@ -188,5 +188,47 @@ def remove_dissimilar_gals(n_clusters):
     zobjs.to_csv(imd.cluster_dir + '/zobjs_clustered.csv', index=False)
     filtered_gal_df.to_csv(imd.loc_filtered_gal_df, index=False)
     removed_gal_df.to_csv(imd.loc_removed_gal_df, index=False)
+
+def remove_flagged_seds(n_clusters):
+    """Removes galaxies from our sample that are flagged by the SED algorithm"""
+    
+    filtered_gal_df = ascii.read(imd.loc_filtered_gal_df).to_pandas()
+    removed_gal_df = ascii.read(imd.loc_removed_gal_df).to_pandas()
+    zobjs = ascii.read(imd.cluster_dir + '/zobjs_clustered.csv', data_start=1).to_pandas()
+    flagged_objs = zobjs[zobjs['flag_sed']>0]
+    affected_groups = set(flagged_objs['cluster_num'].to_list())
+    for groupID in affected_groups:
+        gals_in_group = flagged_objs[flagged_objs['cluster_num']==groupID]
+        group_df = ascii.read(imd.cluster_indiv_dfs_dir + f'/{groupID}_cluster_df.csv').to_pandas()
+        
+        for i in range(len(gals_in_group)):
+            field = gals_in_group.iloc[i]['field']
+            v4id = gals_in_group.iloc[i]['v4id']
+
+            remove_row = np.logical_and(group_df['field']==field, group_df['v4id']==v4id)
+            remove_row_idx = group_df[remove_row].index[0]
+            group_df = group_df.drop(remove_row_idx)
+
+            # Remove from filtered and move to removed
+            gal_df_row = np.logical_and(filtered_gal_df['field']==field, filtered_gal_df['v4id']==v4id)
+            gal_df_row_idx = filtered_gal_df[gal_df_row].index[0]
+            filtered_gal_df[gal_df_row]
+            removed_gal_df.append(filtered_gal_df[gal_df_row])
+            filtered_gal_df = filtered_gal_df.drop(gal_df_row_idx)
+            
+            zobjs_row = np.logical_and(zobjs['field']==field, zobjs['v4id']==v4id)
+            zobjs_row_idx = zobjs[zobjs_row].index[0]
+            zobjs = zobjs.drop(zobjs_row_idx)
+
+            filename = f'{field}_{v4id}_mock.pdf'
+            os.remove(imd.cluster_dir + f'/{groupID}/' + filename)
+
+        group_df.to_csv(imd.cluster_indiv_dfs_dir + f'/{groupID}_cluster_df.csv', index=False)
+    
+    zobjs.to_csv(imd.cluster_dir + '/zobjs_clustered.csv', index=False)
+    filtered_gal_df.to_csv(imd.loc_filtered_gal_df, index=False)
+    removed_gal_df.to_csv(imd.loc_removed_gal_df, index=False)
+
+# remove_flagged_seds(20)
 # remove_dissimilar_gals(20)
 # plot_all_similarity(20)

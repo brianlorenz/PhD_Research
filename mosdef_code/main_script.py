@@ -25,8 +25,9 @@ from balmer_dec_histogram import compute_balmer_lower_limits, plot_balmer_hist
 from compute_indiv_sfrs_from_halpha import compute_indiv_sfrs
 from plot_group_hists import plot_group_hists
 from prospector_output_props import add_props_to_cluster_summary_df, save_props
-from cluster_stats import plot_all_similarity, remove_dissimilar_gals
+from cluster_stats import plot_all_similarity, remove_dissimilar_gals, remove_flagged_seds
 from generate_clusters import generate_clusters, read_filtered_gal_df
+from filter_groups import find_bad_seds
 
 
 '''Starting point: One folder ('cluster_folder') that contains: 
@@ -66,6 +67,8 @@ imd.check_and_make_dir(imd.composite_filter_sedpy_dir)
 # gen_all_mock_composites(n_clusters)
 # plot_all_similarity(n_clusters)
 # remove_dissimilar_gals(n_clusters) ### Run this only once
+# find_bad_seds(n_clusters)
+# remove_flagged_seds(n_clusters)
 
 # # Begin running all the functions
 # print('Generating composite seds...')
