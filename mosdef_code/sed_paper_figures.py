@@ -19,13 +19,13 @@ from scipy.stats import linregress
 
 def make_paper_plots(n_clusters, norm_method):
     # Overview figure
-    # setup_figs(n_clusters, norm_method, bpt_color=True, paper_overview=True, prospector_spec=False)
+    setup_figs(n_clusters, norm_method, bpt_color=True, paper_overview=True, prospector_spec=False)
 
     ### Potentially 4 panels? Or maybe different figures
     # Prospector AV vs Mass, and Balmer dec measured vs mass
     # AV vs Balmer decrement - how much extra attenuation?
     # Attenuation curve figure(s) - what controsl it
-    make_AV_panel_fig()
+    # make_AV_panel_fig()
 
     # Prospector Dust index fig
     # make_dust_index_fig()

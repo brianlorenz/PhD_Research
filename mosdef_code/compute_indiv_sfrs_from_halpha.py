@@ -1,6 +1,6 @@
 import initialize_mosdef_dirs as imd
 from cosmology_calcs import flux_to_luminosity
-from compute_new_sfrs import correct_ha_lum_for_dust, ha_lum_to_sfr
+from compute_new_sfrs import correct_lum_for_dust, ha_lum_to_sfr
 import numpy as np
 from astropy.io import ascii
 
@@ -39,7 +39,7 @@ def compute_indiv_sfrs(n_clusters, lower_limit=True):
     
 
         # Get dust-corrected halpha
-        intrinsic_halpha_lums = correct_ha_lum_for_dust(halpha_lums, balmer_ahalpha) 
+        intrinsic_halpha_lums = correct_lum_for_dust(halpha_lums, balmer_ahalpha) 
         # intrinsic_halpha_lums = correct_ha_lum_for_dust(halpha_lums, ahalphas)
 
         # Derive SFR from Hao 2011

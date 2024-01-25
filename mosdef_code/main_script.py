@@ -75,33 +75,29 @@ imd.check_and_make_dir(imd.composite_filter_sedpy_dir)
 # get_all_composite_seds(n_clusters, run_filters=True)
 # print('Generating composite spectra...')
 # stack_all_spectra(n_clusters, norm_method, bootstrap=bootstrap, ignore_groups=ignore_groups)
-# print('Fitting emission lines...')
+
 
 # # # Check for agn and  - cuts down to 20
 # check_for_all_agn(n_clusters)
 
 # # Re-fit the emission of the composites and now fit the boostrapped ones
+# print('Fitting emission lines...')
 # fit_all_emission(n_clusters, norm_method, ignore_groups, bootstrap=bootstrap)
-bootstrap = -1
+# bootstrap = -1
 # fit_all_emission(n_clusters, norm_method, ignore_groups, bootstrap=bootstrap)
-
-#Used to compute boostrapped uncertanties here
 
 # # # Add the normalizations to the group dfs
 # add_norm_factors(n_clusters)
 
 # make_clusters_summary_df(n_clusters, ignore_groups)
 
-# # Need to do a few things to composites (measure uvj, generate mocks sed, etc. before we can plot)
+# Need to do a few things to composites (measure uvj, generate mocks sed, etc. before we can plot)
 # print('Generating plots')
 # gen_all_mock_composites(n_clusters)
 # observe_all_uvj(n_clusters, individual_gals=False, composite_uvjs=True)
 # print('Done - composite SEDs are ready')
 
-# # Figure out which groups to exclude from plots - CHECK THRESHOLD in /cluster_stats/similarities/composite_similarities.csv
-# remove_groups_by_similiary(n_clusters, sim_thresh=0.8)
-
-# # Compute the ssfr for the groups
+# Compute the ssfr for the groups
 # bootstrap = big_bootstrap_num
 # plot_balmer_hist(n_clusters, bootstrap)
 # bootstrap = -1
