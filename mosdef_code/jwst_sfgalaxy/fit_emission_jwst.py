@@ -308,7 +308,7 @@ def plot_emission_fit(emission_fit_dir, save_name, total_spec_df, fit_idxs):
     ax.set_ylabel('F$_\lambda$', fontsize=axisfont)
     ax.tick_params(labelsize=ticksize, size=ticks)
 
-    fig.savefig(emission_fit_dir +
+    fig.savefig('/Users/brianlorenz/jwst_sfgalaxy/plots' +
                 f'/{save_name}_emission_fit.pdf')
     plt.close()
     return

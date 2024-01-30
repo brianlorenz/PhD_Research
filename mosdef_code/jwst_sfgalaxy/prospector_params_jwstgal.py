@@ -26,17 +26,17 @@ from astropy.io import fits
 
 
 # Directory locations on savio
-composite_sed_csvs_dir = '/global/scratch/users/brianlorenz/composite_sed_csvs'
-composite_filter_sedpy_dir = '/global/scratch/users/brianlorenz/sedpy_par_files'
-median_zs_file = '/global/scratch/users/brianlorenz/median_zs.csv'
+# composite_sed_csvs_dir = '/global/scratch/users/brianlorenz/composite_sed_csvs'
+# composite_filter_sedpy_dir = '/global/scratch/users/brianlorenz/sedpy_par_files'
+# median_zs_file = '/global/scratch/users/brianlorenz/median_zs.csv'
 
 # Directory locations on home
-# import initialize_mosdef_dirs as imd
+import initialize_mosdef_dirs as imd
 # composite_sed_csvs_dir = imd.composite_sed_csvs_dir
 # composite_filter_sedpy_dir = imd.composite_filter_sedpy_dir
 # median_zs_file = imd.composite_seds_dir + '/median_zs.csv'
 
-# %run prospector_dynesty.py --param_file='prospector_composite_params_copy.py' --outfile='composite_group0' --debug=True
+# %run prospector_dynesty.py --param_file='prospector_params_singlegal.py' --outfile='/Users/brianlorenz/mosdef/prospector_singlegal_tests/singlegal' --debug=True
 
 # set up cosmology
 cosmo = FlatLambdaCDM(H0=70, Om0=.3)
@@ -71,9 +71,53 @@ run_params = {'verbose': True,
               'add_neb': False,
               'add_duste': False,
               # SPS parameters
-              'zcontinuous': 1,
-              'groupID': -1,
+              'zcontinuous': 1
               }
+
+def get_filters(sed_df):
+    """Replaces the mosdef names of the filters with sedpy names"""
+
+    def replace_item(lst, to_replace, replace_with):
+        result = []
+        for i in lst:
+            if i == to_replace:
+                result.extend(replace_with)
+            else:
+                result.append(i)
+        return result
+    
+    filters = sed_df['filter_name']
+    filters_list = filters.values.tolist()
+
+    filters_list = replace_item(filters_list, 'f_F814W', ['wfc3_uvis_f814w'])
+    filters_list = replace_item(filters_list, 'f_F606W', ['wfc3_uvis_f606w'])
+    filters_list = replace_item(filters_list, 'fuv', ['galex_FUV'])
+    filters_list = replace_item(filters_list, 'nuv', ['galex_NUV'])
+    filters_list = replace_item(filters_list, 'ch1', ['spitzer_irac_ch1'])
+    filters_list = replace_item(filters_list, 'ch2', ['spitzer_irac_ch2'])
+    filters_list = replace_item(filters_list, 'ch3', ['spitzer_irac_ch3'])
+    filters_list = replace_item(filters_list, 'ch4', ['spitzer_irac_ch4'])
+    filters_list = replace_item(filters_list, 'f_F125W', ['wfc3_ir_f125w'])
+    filters_list = replace_item(filters_list, 'f_F140W', ['wfc3_ir_f140w'])
+    filters_list = replace_item(filters_list, 'f_F160W', ['wfc3_ir_f160w'])
+    filters_list = replace_item(filters_list, 'f_Ks', ['twomass_Ks'])
+    filters_list = replace_item(filters_list, 'f_Y', ['vista_vircam_Y'])
+    filters_list = replace_item(filters_list, 'f_J', ['twomass_J'])
+    filters_list = replace_item(filters_list, 'f_H', ['twomass_H'])
+    filters_list = replace_item(filters_list, 'f_J1', ['mayall_newfirm_J1'])
+    filters_list = replace_item(filters_list, 'f_J2', ['mayall_newfirm_J2'])
+    filters_list = replace_item(filters_list, 'f_J3', ['mayall_newfirm_J3'])
+    filters_list = replace_item(filters_list, 'f_H1', ['mayall_newfirm_H1'])
+    filters_list = replace_item(filters_list, 'f_H2', ['mayall_newfirm_H2'])
+    filters_list = replace_item(filters_list, 'f_K', ['mayall_newfirm_K'])
+    filters_list = replace_item(filters_list, 'f_Z', ['sdss_z0'])
+    filters_list = replace_item(filters_list, 'f_I', ['sdss_i0'])
+    filters_list = replace_item(filters_list, 'f_R', ['sdss_r0'])
+    filters_list = replace_item(filters_list, 'f_G', ['sdss_g0'])
+    filters_list = replace_item(filters_list, 'f_U', ['sdss_u0'])
+
+    return filters_list
+
 
 # --------------
 # OBS
@@ -86,54 +130,48 @@ def build_obs(**kwargs):
     :returns obs:
         Dictionary of observational data.
     """
-    groupID = run_params['groupID']
-    sed_file = composite_sed_csvs_dir + f'/{groupID}_sed.csv'
-    filt_folder = composite_filter_sedpy_dir + f'/{groupID}_sedpy_pars'
-
-    # test
-    print(f'Loading object {groupID}')
-
+    field = run_params['field']
+    v4id = run_params['v4id']
+    sed_file = imd.mosdef_dir + f'/seds_maggies/{field}_{v4id}_sed.csv'
+    sed_df = ascii.read(sed_file).to_pandas()
+    sed_df = sed_df[sed_df['f_lambda']>-98]
+    filters_list = get_filters(sed_df)
+    
+    
     # set up obs dict
     obs = {}
 
-    zs_df = ascii.read(median_zs_file).to_pandas()
-    obs['z'] = zs_df[zs_df['groupID'] == groupID]['median_z'].iloc[0]
+    redshift = sed_df.iloc[0]['Z_MOSFIRE']
+    obs['z'] = redshift
 
-    print('Reading Filters')
     # load photometric filters
-    obs["filters"] = get_filt_list(filt_folder)
+    obs["filters"] = observate.load_filters(filters_list)
 
-    print('Loading Photometry')
     # load photometry
-    sed_data = ascii.read(sed_file).to_pandas()
-    obs["phot_wave"] = sed_data['redshifted_wavelength'].to_numpy()
-    obs['maggies'] = (sed_data['f_maggies_red']).to_numpy()
-    #obs['maggies_unc'] = (sed_data['err_f_maggies_avg']).to_numpy()
+    obs["phot_wave"] = sed_df['redshifted_peak_wavelength'].to_numpy()
+    obs['maggies'] = (sed_df['f_maggies_red']).to_numpy()
+    obs['maggies_unc'] = (sed_df['err_f_maggies_red']).to_numpy()
     # Add 5 percent in quadrature to errors
-    data_05p = (sed_data['f_maggies_red']) * 0.05
-    obs['maggies_unc'] = (np.sqrt(data_05p**2 + (sed_data['err_f_maggies_avg_red'])**2)).to_numpy()
-    
-    print('Applying Mask')
+    # data_05p = (sed_df['f_maggies_red']) * 0.05
+    # obs['maggies_unc'] = (np.sqrt(data_05p**2 + (sed_data['err_f_maggies_avg_red'])**2)).to_numpy()
+        
     # Phot mask that allows everything
-    # obs["phot_mask"] = np.array([m > 0 for m in obs['maggies']])
+    obs["phot_mask"] = np.array([m > 0 for m in obs['maggies']])
     # Phot mask around emission lines
     # filt_mask = check_filt_transmission(filt_folder, obs['z'])
     # Phot mask out anything blueward of 1500
-    redshifted_lya_cutoff = 1500*(1+obs['z'])
-    ly_mask = obs["phot_wave"] > redshifted_lya_cutoff
+    # redshifted_lya_cutoff = 1500*(1+obs['z'])
+    # ly_mask = obs["phot_wave"] > redshifted_lya_cutoff
     # obs["phot_mask"] = np.logical_and(filt_mask, ly_mask)
     # Filter out just ly_a, not the lines (comment above line
-    obs["phot_mask"] = ly_mask
+    # obs["phot_mask"] = ly_mask
 
 
     # Add unessential bonus info.  This will be stored in output
-    obs['groupID'] = groupID
     obs['wavelength'] = None
     obs['spectrum'] = None
     obs['mask'] = None
     obs['unc'] = None
-
-    print('obs complete')
 
     return obs
 
@@ -164,7 +202,11 @@ def build_model(object_redshift=0.0, fixed_metallicity=None, add_duste=True,
     from prospect.models.templates import TemplateLibrary
     from prospect.models import priors, sedmodel
 
-    groupID = run_params['groupID']
+    field = run_params['field']
+    v4id = run_params['v4id']
+    sed_file = imd.mosdef_dir + f'/seds_maggies/{field}_{v4id}_sed.csv'
+    sed_df = ascii.read(sed_file).to_pandas()
+    redshift = sed_df.iloc[0]['Z_MOSFIRE']
 
     # ---- LIST OF PARAMETERS ----- #
     # https://dfm.io/python-fsps/current/stellarpop_api/
@@ -220,7 +262,7 @@ def build_model(object_redshift=0.0, fixed_metallicity=None, add_duste=True,
     #   'units': 'Gyr^{-1}',
     #   'prior': <class 'prospect.models.priors.LogUniform'>(mini=0.1,maxi=30)}
     
-    print('Creating model')
+
 
     model_params = TemplateLibrary["parametric_sfh"]
 
@@ -236,42 +278,30 @@ def build_model(object_redshift=0.0, fixed_metallicity=None, add_duste=True,
     # model_params['nebemlineinspec'] = true_param
     # model_params['add_dust_emission'] = true_param
     # # model_params['sfh'] = sfh_param
-    
-    
-    
-    
+    # model_params['dust1'] = {'N': 1, 'isfree': False,
+    #                          'depends_on': to_dust1, 'init': 1.0}
+    # model_params['dust1_fraction'] = {'N': 1, 'isfree': True, 'init': 1.0}
+
 
     # Adjust model initial values
-    model_params["dust_type"]['init'] = 4
+    model_params["dust_type"]['init'] = 0 #  set to 4 for a Kriek and Conroy curve
     model_params["dust2"]["init"] = 0.1
     # model_params["logzsol"]["init"] = 0
     # model_params["tage"]["init"] = 13.
-    model_params["mass"]["init"] = 1e10
+    model_params["mass"]["init"] = 1e12
     # model_params['gas_logz'] = {'N': 1, 'isfree': True, 'init': 0.0}
 
-    # dust component for older stellar light
-    if model_params["dust_type"]['init'] == 1:
-        model_params['dust1'] = {'N': 1, 'isfree': False,
-                                'depends_on': to_dust1, 'init': 1.0}
-        model_params['dust1_fraction'] = {'N': 1, 'isfree': True, 'init': 1.0}
-        model_params["dust1_fraction"]["prior"] = priors.TopHat(mini=0.0, maxi=2.0)
-    else:
-        model_params['dust_index'] = {'N': 1, 'isfree': True, 'init': 0.0}
-        model_params["dust_index"]["prior"] = priors.TopHat(mini=-1.7, maxi=1.7)
-
-
     # Add a parameter for the slope of the attenuation curve
-    # model_params['dust1_index'] = {'N': 1, 'isfree': True, 'init': -1.0}
-    # model_params['uvb'] = {'N': 1, 'isfree': True, 'init': -0.7}
+    model_params['dust_index'] = {'N': 1, 'isfree': True, 'init': -0.7}
 
     # adjust priors
     model_params["dust2"]["prior"] = priors.TopHat(mini=0.0, maxi=4.0)
+    model_params["dust_index"]["prior"] = priors.TopHat(mini=-1.2, maxi=-0.2)
+    # model_params["dust1_fraction"]["prior"] = priors.TopHat(mini=0.0, maxi=2.0)
     model_params["tau"]["prior"] = priors.LogUniform(mini=1e-1, maxi=10)
-    model_params["mass"]["prior"] = priors.LogUniform(mini=1e8, maxi=1e13)
-    model_params["logzsol"]["prior"] = priors.TopHat(mini=-0.8, maxi=0.5)
-
-    
+    model_params["mass"]["prior"] = priors.LogUniform(mini=1e10, maxi=1e16)
     # model_params["gas_logz"]["prior"] = priors.TopHat(mini=-3.0, maxi=0.0)
+    model_params["logzsol"]["prior"] = priors.TopHat(mini=-0.8, maxi=0.2)
     
 
     # Change the model parameter specifications based on some keyword arguments
@@ -283,13 +313,13 @@ def build_model(object_redshift=0.0, fixed_metallicity=None, add_duste=True,
 
     # Set to fit at median redshift
     model_params["zred"]['isfree'] = False
-    zs_df = ascii.read(median_zs_file).to_pandas()
-    median_z = zs_df[zs_df['groupID'] == groupID]['median_z'].iloc[0]
-    model_params["zred"]['init'] = median_z
+    model_params["zred"]['init'] = redshift
 
-    # Age of universe at current redshift + 1Gyr
-    tage_prior_upper = float(np.array(cosmo.age(median_z)))+1  
+    # # Age fo universe at current redshift + 1Gyr
+    # model_params['tage'] = {'N': 1, 'isfree': True, 'init': 0.5}
+    tage_prior_upper = float(np.array(cosmo.age(2.3)))+1  
     model_params["tage"]["prior"] = priors.TopHat(mini=0.0, maxi=tage_prior_upper)
+
 
 
     model_params.update(TemplateLibrary["nebular"])
@@ -309,8 +339,6 @@ def build_model(object_redshift=0.0, fixed_metallicity=None, add_duste=True,
     # Now instantiate the model using this new dictionary of parameter
     # specifications
     model = sedmodel.SedModel(model_params)
-
-    print('model complete')
 
     return model
 
@@ -375,10 +403,9 @@ def get_filt_list(target_folder):
     target_folder (str) - location of folder containing sedpy filter .par files
 
     """
-    filt_files = [file.replace('.par', '') for file in os.listdir(
-        target_folder) if '_red.par' in file]
+    filt_files = [file.replace('.par', '') for file in os.listdir(target_folder) if '_red.par' in file]
     filt_files.sort()
-    print(f'Found filter files, e.g. {filt_files[0]}')
+    breakpoint()
     filt_list = observate.load_filters(filt_files, directory=target_folder)
     return filt_list
 

@@ -37,9 +37,11 @@ def compute_sfr():
     halpha_sfr = ha_lum_to_sfr(ha_lum_dust_cor, imf='subsolar')
     err_halpha_sfr = ha_lum_to_sfr(err_ha_lum_dust_cor, imf='subsolar')
     log_halpha_sfr = np.log10(halpha_sfr)
-    breakpoint()
-    
-    # Then to SFR
+    print(f'SFR = {halpha_sfr}') 
+    print(f'log(SFR) = {log_halpha_sfr}')
+    # AV = 2.260144887862164
+    # SFR = 43.5073660955052
+    # log(SFR) = 1.638562792214519
 
 def calzetti_law(target_wave_angstrom, R_V=4.05):
     """Apply a Calzetti dust law
@@ -71,4 +73,5 @@ def compute_attenuation(hg_hd_ratio, intrinsic_hg_hd_ratio):
     attenuation_hgamma = calzetti_law(lines_dict['Hgamma']) * color_excess
     print(f'AV = {attenuation_V}')
     return attenuation_hgamma
+
 compute_sfr()

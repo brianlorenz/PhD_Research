@@ -23,7 +23,7 @@ from prospector_output_props import add_props_to_cluster_summary_df, save_props
 # groupID4 = 18
 
 # All groups
-run_name = 'dust4_new_scale'
+run_name = 'run_2024_01_25'
 n_clusters = 20
 
 

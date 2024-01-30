@@ -77,10 +77,10 @@ def make_filter_csv():
     peak_waves_df = pd.DataFrame(peak_waves, columns=['peak_wavelength'])
     filter_csv_df = translate_df.merge(
         peak_waves_df, left_index=True, right_index=True)
+    breakpoint()
     # Save the dataframe
     filter_csv_df.to_csv(folder_loc + '/suspense_filterlist.csv', index=False)
 
 
 
-# make_filter_csv()
-### Next need to read in the photometry, follow along in query_funcs
+make_filter_csv()

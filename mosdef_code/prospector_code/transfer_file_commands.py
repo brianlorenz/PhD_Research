@@ -1,6 +1,6 @@
 import initialize_mosdef_dirs as imd
 
-run_name = 'calzetti_dust_redo'
+run_name = 'run_2024_01_25'
 
 print('')
 print('')

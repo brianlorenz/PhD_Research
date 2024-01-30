@@ -25,19 +25,19 @@ def make_paper_plots(n_clusters, norm_method):
     # Prospector AV vs Mass, and Balmer dec measured vs mass
     # AV vs Balmer decrement - how much extra attenuation?
     # Attenuation curve figure(s) - what controsl it
-    # make_AV_panel_fig()
+    make_AV_panel_fig()
 
     # Prospector Dust index fig
-    # make_dust_index_fig()
+    make_dust_index_fig()
 
     # SFR comparison between prospector and emission lines
-    # make_SFR_compare_fig()
+    make_SFR_compare_fig()
 
     #sfr/mass/uvj/bpt
-    # make_sfr_mass_uvj_bpt_4panel(snr_thresh=3)
+    make_sfr_mass_uvj_bpt_4panel(snr_thresh=3)
 
     # Dust model figure
-    # make_dust_fig()
+    make_dust_fig()
 
 
     # Dust mass figure? Can we measure this?
