@@ -19,13 +19,14 @@ from scipy.stats import linregress
 
 def make_paper_plots(n_clusters, norm_method):
     # Overview figure
-    setup_figs(n_clusters, norm_method, bpt_color=True, paper_overview=True, prospector_spec=False)
+    # setup_figs(n_clusters, norm_method, bpt_color=True, paper_overview=True, prospector_spec=False)
 
     ### Potentially 4 panels? Or maybe different figures
     # Prospector AV vs Mass, and Balmer dec measured vs mass
     # AV vs Balmer decrement - how much extra attenuation?
     # Attenuation curve figure(s) - what controsl it
     make_AV_panel_fig()
+    make_av_difference_fig()
 
     # Prospector Dust index fig
     make_dust_index_fig()
@@ -45,8 +46,64 @@ def make_paper_plots(n_clusters, norm_method):
 
 
 
-
 def make_AV_panel_fig():
+    fig = plt.figure(figsize=(18, 6))
+    gs = GridSpec(1, 3, left=0.11, right=0.96, bottom=0.12, wspace=0.28,width_ratios=[1,1,1])
+    ax_av_mass = fig.add_subplot(gs[0, 0])
+    ax_balmer_mass = fig.add_subplot(gs[0, 1])
+    ax_balmer_av_compare = fig.add_subplot(gs[0, 2])
+    prospector_dust2_label = 'Prospector Stellar A$_V$'
+    plot_a_vs_b_paper('median_log_mass', 'Prospector_AV_50', stellar_mass_label, prospector_dust2_label, 'None', axis_obj=ax_av_mass, yerr=True, plot_lims=[9, 11.5, -0.2, 2.5], fig=fig, use_color_df=True) 
+    plot_a_vs_b_paper('median_log_mass', 'balmer_av_with_limit', stellar_mass_label, balmer_av_label, 'None', axis_obj=ax_balmer_mass, yerr=True, plot_lims=[9, 11.5, -0.2, 5], fig=fig, use_color_df=True, lower_limit=True) 
+    regress_res = find_best_fit('median_log_mass', 'balmer_av_with_limit', exclude_limit=True)
+    x_regress = np.arange(9, 11.8, 0.1)
+    ax_balmer_mass.plot(x_regress, regress_res.intercept + regress_res.slope*x_regress, color='gray', label=f'Linear Fit', ls='--')
+    print(f'Best fit to nebular av vs mass: slope {regress_res.slope}, yint {regress_res.intercept}')
+    # Shapley's data
+    mosdef_data_mass = np.array([9.252764612954188, 9.73301737756714, 10.0173775671406, 10.437598736176936]) #Shapley 2022
+    mosdef_data_decs = np.array([3.337349397590363, 3.4548192771084363, 3.7801204819277103, 4.512048192771086])
+    mosdef_data_balmeravs = compute_balmer_av(mosdef_data_decs)
+    ax_balmer_mass.plot(mosdef_data_mass, mosdef_data_balmeravs, color='black', marker='s', ms=10, mec='black', ls='--', zorder=1000000, label='z=2.3 MOSDEF (Shapley+ 2022)')
+    ax_balmer_mass.legend(fontsize=14)
+    regress_res = find_best_fit('Prospector_AV_50', 'balmer_av_with_limit', exclude_limit=True)
+    x_regress = np.arange(-0.2, 2.5, 0.1)
+    print(f'Best fit to Nebular vs Stellar av: slope {regress_res.slope}, yint {regress_res.intercept}')
+    ax_balmer_av_compare.plot(x_regress, regress_res.intercept + regress_res.slope*x_regress, color='black', label='Linear fit', ls='--')
+    plot_a_vs_b_paper('Prospector_AV_50', 'balmer_av_with_limit', prospector_dust2_label, balmer_av_label, 'None', axis_obj=ax_balmer_av_compare, yerr=True, plot_lims=[-0.2, 2, -0.2, 5], fig=fig, use_color_df=True, prospector_xerr=True, one_to_one=False, factor_of_2=True, lower_limit=True)
+
+    ax_balmer_av_compare.legend(fontsize=14, loc=2)
+    print(f'Best fit to Av difference vs SFR: slope {regress_res.slope}, yint {regress_res.intercept}')
+
+
+    for ax in [ax_av_mass, ax_balmer_mass, ax_balmer_av_compare]:
+        scale_aspect(ax)
+        # ax.legend(fontsize=full_page_axisfont-4)
+    fig.savefig(imd.sed_paper_figures_dir + '/attenuation_panel.pdf', bbox_inches='tight')
+    plt.close('all')
+
+def make_av_difference_fig():
+    av_difference_label = 'Nebular A$_V$ - Stellar A$_V$'
+    fig = plt.figure(figsize=(11, 7))
+    gs = GridSpec(1, 2, left=0.11, right=0.96, bottom=0.12, wspace=0.42, width_ratios=[1,1])
+    ax_avdiff_mass = fig.add_subplot(gs[0, 0])
+    ax_avdiff_sfr = fig.add_subplot(gs[0, 1])
+    plot_a_vs_b_paper('median_log_mass', 'AV_difference_with_limit', stellar_mass_label, av_difference_label, 'None', axis_obj=ax_avdiff_mass, yerr=True, fig=fig, use_color_df=True, lower_limit=True, plot_lims=[9, 11.5, -1, 3])
+    regress_res = find_best_fit('median_log_mass', 'AV_difference_with_limit', exclude_limit=True)
+    x_regress = np.arange(8, 12, 0.1)
+    ax_avdiff_mass.plot(x_regress, regress_res.intercept + regress_res.slope*x_regress, color='black', label='Linear fit', ls='--')
+    ax_avdiff_mass.legend(fontsize=14, loc=2)
+    plot_a_vs_b_paper('computed_log_sfr_with_limit', 'AV_difference_with_limit', sfr_label, av_difference_label, 'None', axis_obj=ax_avdiff_sfr, yerr=True, fig=fig, use_color_df=True, lower_limit=True, plot_lims=[0, 2, -1, 3])
+    regress_res = find_best_fit('computed_log_sfr_with_limit', 'AV_difference_with_limit', exclude_limit=True)
+    x_regress = np.arange(-1, 3, 0.1)
+    ax_avdiff_sfr.plot(x_regress, regress_res.intercept + regress_res.slope*x_regress, color='black', label='Linear fit', ls='--')
+    ax_avdiff_sfr.legend(fontsize=14, loc=2)
+    for ax in [ax_avdiff_mass, ax_avdiff_sfr]:
+        scale_aspect(ax)
+        # ax.legend(fontsize=full_page_axisfont-4)
+    fig.savefig(imd.sed_paper_figures_dir + '/av_difference.pdf', bbox_inches='tight')
+    plt.close('all')
+
+def make_AV_panel_fig_old():
     fig = plt.figure(figsize=(12, 12))
     gs = GridSpec(2, 2, left=0.11, right=0.96, bottom=0.12, wspace=0.28, height_ratios=[1,1],width_ratios=[1,1])
     ax_av_mass = fig.add_subplot(gs[0, 0])
@@ -103,7 +160,7 @@ def make_SFR_compare_fig():
     gs = GridSpec(1, 1, left=0.11, right=0.96, bottom=0.12)
     ax_sfr = fig.add_subplot(gs[0, 0])
     
-    plot_a_vs_b_paper('log_Prospector_ssfr50_multiplied_normalized', 'computed_log_sfr_with_limit', 'Prospector Normalized SED SFR', sfr_label, 'None', axis_obj=ax_sfr, yerr=True, lower_limit=True, plot_lims=[-1, 3, -1, 3], fig=fig, one_to_one=True, use_color_df=True, add_numbers=True)
+    plot_a_vs_b_paper('log_Prospector_ssfr50_multiplied_normalized', 'computed_log_sfr_with_limit', 'Prospector Normalized SED SFR', sfr_label, 'None', axis_obj=ax_sfr, yerr=True, lower_limit=True, plot_lims=[-1, 2.5, -1, 2.5], fig=fig, one_to_one=True, use_color_df=True, add_numbers=False)
     ax_sfr.tick_params(labelsize=full_page_axisfont)
 
     scale_aspect(ax_sfr)

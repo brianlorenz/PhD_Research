@@ -10,8 +10,8 @@ def plot_sed():
     ax.set_xscale('log')
     spectrum = ascii.read(spec_loc).to_pandas()
     plot_spectrum(spectrum, ax)
-    ax.errorbar(sed['peak_wavelength'], sed['f_lambda'], yerr=sed['err_f_lambda'], color='black', marker='o', ls='None')
-    ax.set_ylim(-0.4e-19,np.percentile(sed['f_lambda'], 100))
+    ax.errorbar(sed['rest_wavelength'], sed['rest_f_lambda'], yerr=sed['err_rest_f_lambda'], color='black', marker='o', ls='None')
+    ax.set_ylim(-0.4e-19,np.percentile(sed['rest_f_lambda'], 100))
     fig.savefig('/Users/brianlorenz/jwst_sfgalaxy/plots/sed_spec.pdf')
 
 

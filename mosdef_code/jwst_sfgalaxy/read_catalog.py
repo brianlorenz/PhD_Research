@@ -1,5 +1,6 @@
 from astropy.io import ascii
 import pandas as pd
+from read_jwst_spectrum import z_sfgalaxy
 
 galaxy_id = 128561
 catalog_loc = '/Users/brianlorenz/jwst_sfgalaxy/data/catalog/UVISTA_DR3_master_v1.1_SUSPENSE.cat'
@@ -13,8 +14,15 @@ def main():
     gal_row = cat_df[cat_df['id'] == galaxy_id]
     sed = match_fluxes(gal_row, filters_df)
     sed = sed.sort_values(by='peak_wavelength', ascending=True)
+    sed = deredshift(sed)
     sed.to_csv(sed_loc, index=False)
 
+
+def deredshift(sed):
+    sed['rest_wavelength'] = sed['peak_wavelength']/(1+z_sfgalaxy)
+    sed['rest_f_lambda'] = sed['f_lambda']*(1+z_sfgalaxy)
+    sed['err_rest_f_lambda'] = sed['err_f_lambda']*(1+z_sfgalaxy)
+    return sed
 
 def read_catalog():
     cat_df = ascii.read(catalog_loc).to_pandas()

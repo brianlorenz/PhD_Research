@@ -74,4 +74,4 @@ def compute_attenuation(hg_hd_ratio, intrinsic_hg_hd_ratio):
     print(f'AV = {attenuation_V}')
     return attenuation_hgamma
 
-compute_sfr()
+# compute_sfr()

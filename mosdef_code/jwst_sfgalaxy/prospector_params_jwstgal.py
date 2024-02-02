@@ -36,7 +36,7 @@ import initialize_mosdef_dirs as imd
 # composite_filter_sedpy_dir = imd.composite_filter_sedpy_dir
 # median_zs_file = imd.composite_seds_dir + '/median_zs.csv'
 
-# %run prospector_dynesty.py --param_file='prospector_params_singlegal.py' --outfile='/Users/brianlorenz/mosdef/prospector_singlegal_tests/singlegal' --debug=True
+# %run prospector_dynesty.py --param_file='prospector_params_jwstgal.py' --outfile='/Users/brianlorenz/jwst_sfgalaxy/prospector/128561_photonly' --debug=True
 
 # set up cosmology
 cosmo = FlatLambdaCDM(H0=70, Om0=.3)
@@ -74,6 +74,46 @@ run_params = {'verbose': True,
               'zcontinuous': 1
               }
 
+def filt_dict_UVISTA():
+    # Filter names, mean wavelength, sedpy name
+    filt_dict = {'Ks': [21592.313484,'vista_vircam_Ks'],
+                   'H':[16315.494764,'vista_vircam_H'],
+                   'J':[12538.108257,'vista_vircam_J'],
+                   'Y':[1.020*1e4,'vista_vircam_Y'],
+                   'nuv':[2271,'galex_NUV'],
+                   'fuv':[1528,'galex_FUV'],
+                   'ch4':[79594.229270,'spitzer_irac_ch4'],
+                   'ch3':[57593.122912,'spitzer_irac_ch3'],
+                   'ch2':[45110.187072,'spitzer_irac_ch2'],
+                   'ch1':[35634.260329,'spitzer_irac_ch1'],
+                   'zp':[9036.758778,'subaru_suprimecam_zp'],
+                   'ip':[7683.701378,'subaru_suprimecam_ip'],
+                   'rp':[6288.552034,'subaru_suprimecam_rp'],
+                   'V': [5477.746735,'subaru_suprimecam_V'],
+                   'gp':[4888.295143,'cfht_megacam_gs_9401'],
+                   'B': [4458.276253,'subaru_suprimecam_B'],
+                   'u': [3835.539763,'cfht_megacam_us_9301'],
+                   'zc':[8884.331295,'cfht_megacam_zs_9801'],
+                   'ic':[7688.085255,'cfht_megacam_is_9701'],
+                   'rc':[6255.538319,'cfht_megacam_rs_9601'],
+                   'gc':[4888.295143,'cfht_megacam_gs_9401'],
+                   'uc':[3835.539763,'cfht_megacam_us_9301'],
+                   'IA484':[4847.741846,'subaru_suprimecam_ia484'],
+                   'IA527':[5259.809173,'subaru_suprimecam_ia527'],
+                   'IA624':[6231.417204,'subaru_suprimecam_ia624'],
+                   'IA679':[6782.391640,'subaru_suprimecam_ia679'],
+                   'IA738':[7359.999142,'subaru_suprimecam_ia738'],
+                   'IA767':[7681.175937,'subaru_suprimecam_ia767'],
+                   'IB427':[4260.443823,'subaru_suprimecam_ia427'],
+                   'IB464':[4633.740464,'subaru_suprimecam_ia464'],
+                   'IB505':[5061.321629,'subaru_suprimecam_ia505'],
+                   'IB574':[5763.564255,'subaru_suprimecam_ia574'],
+                   'IB709':[7074.171933,'subaru_suprimecam_ia709'],
+                   'IB827':[8247.370619,'subaru_suprimecam_ia827'],
+                    'mips24':[24*1e4,'spitzer_mips_24']
+                    }
+    return filt_dict
+
 def get_filters(sed_df):
     """Replaces the mosdef names of the filters with sedpy names"""
 
@@ -87,37 +127,54 @@ def get_filters(sed_df):
         return result
     
     filters = sed_df['filter_name']
-    filters_list = filters.values.tolist()
+    filters_list = []
+    filt_dict = filt_dict_UVISTA()
+    for i in range(len(filters)):
+        sedpy_filt = filt_dict[filters[i]][1]
+        filters_list.append(sedpy_filt)
 
-    filters_list = replace_item(filters_list, 'f_F814W', ['wfc3_uvis_f814w'])
-    filters_list = replace_item(filters_list, 'f_F606W', ['wfc3_uvis_f606w'])
-    filters_list = replace_item(filters_list, 'fuv', ['galex_FUV'])
-    filters_list = replace_item(filters_list, 'nuv', ['galex_NUV'])
-    filters_list = replace_item(filters_list, 'ch1', ['spitzer_irac_ch1'])
-    filters_list = replace_item(filters_list, 'ch2', ['spitzer_irac_ch2'])
-    filters_list = replace_item(filters_list, 'ch3', ['spitzer_irac_ch3'])
-    filters_list = replace_item(filters_list, 'ch4', ['spitzer_irac_ch4'])
-    filters_list = replace_item(filters_list, 'f_F125W', ['wfc3_ir_f125w'])
-    filters_list = replace_item(filters_list, 'f_F140W', ['wfc3_ir_f140w'])
-    filters_list = replace_item(filters_list, 'f_F160W', ['wfc3_ir_f160w'])
-    filters_list = replace_item(filters_list, 'f_Ks', ['twomass_Ks'])
-    filters_list = replace_item(filters_list, 'f_Y', ['vista_vircam_Y'])
-    filters_list = replace_item(filters_list, 'f_J', ['twomass_J'])
-    filters_list = replace_item(filters_list, 'f_H', ['twomass_H'])
-    filters_list = replace_item(filters_list, 'f_J1', ['mayall_newfirm_J1'])
-    filters_list = replace_item(filters_list, 'f_J2', ['mayall_newfirm_J2'])
-    filters_list = replace_item(filters_list, 'f_J3', ['mayall_newfirm_J3'])
-    filters_list = replace_item(filters_list, 'f_H1', ['mayall_newfirm_H1'])
-    filters_list = replace_item(filters_list, 'f_H2', ['mayall_newfirm_H2'])
-    filters_list = replace_item(filters_list, 'f_K', ['mayall_newfirm_K'])
-    filters_list = replace_item(filters_list, 'f_Z', ['sdss_z0'])
-    filters_list = replace_item(filters_list, 'f_I', ['sdss_i0'])
-    filters_list = replace_item(filters_list, 'f_R', ['sdss_r0'])
-    filters_list = replace_item(filters_list, 'f_G', ['sdss_g0'])
-    filters_list = replace_item(filters_list, 'f_U', ['sdss_u0'])
+    # filters_list = replace_item(filters_list, 'f_F814W', ['wfc3_uvis_f814w'])
+    # filters_list = replace_item(filters_list, 'f_F606W', ['wfc3_uvis_f606w'])
+    # filters_list = replace_item(filters_list, 'fuv', ['galex_FUV'])
+    # filters_list = replace_item(filters_list, 'nuv', ['galex_NUV'])
+    # filters_list = replace_item(filters_list, 'ch1', ['spitzer_irac_ch1'])
+    # filters_list = replace_item(filters_list, 'ch2', ['spitzer_irac_ch2'])
+    # filters_list = replace_item(filters_list, 'ch3', ['spitzer_irac_ch3'])
+    # filters_list = replace_item(filters_list, 'ch4', ['spitzer_irac_ch4'])
+    # filters_list = replace_item(filters_list, 'f_F125W', ['wfc3_ir_f125w'])
+    # filters_list = replace_item(filters_list, 'f_F140W', ['wfc3_ir_f140w'])
+    # filters_list = replace_item(filters_list, 'f_F160W', ['wfc3_ir_f160w'])
+    # filters_list = replace_item(filters_list, 'f_Ks', ['twomass_Ks'])
+    # filters_list = replace_item(filters_list, 'f_Y', ['vista_vircam_Y'])
+    # filters_list = replace_item(filters_list, 'f_J', ['twomass_J'])
+    # filters_list = replace_item(filters_list, 'f_H', ['twomass_H'])
+    # filters_list = replace_item(filters_list, 'f_J1', ['mayall_newfirm_J1'])
+    # filters_list = replace_item(filters_list, 'f_J2', ['mayall_newfirm_J2'])
+    # filters_list = replace_item(filters_list, 'f_J3', ['mayall_newfirm_J3'])
+    # filters_list = replace_item(filters_list, 'f_H1', ['mayall_newfirm_H1'])
+    # filters_list = replace_item(filters_list, 'f_H2', ['mayall_newfirm_H2'])
+    # filters_list = replace_item(filters_list, 'f_K', ['mayall_newfirm_K'])
+    # filters_list = replace_item(filters_list, 'f_Z', ['sdss_z0'])
+    # filters_list = replace_item(filters_list, 'f_I', ['sdss_i0'])
+    # filters_list = replace_item(filters_list, 'f_R', ['sdss_r0'])
+    # filters_list = replace_item(filters_list, 'f_G', ['sdss_g0'])
+    # filters_list = replace_item(filters_list, 'f_U', ['sdss_u0'])
 
     return filters_list
 
+
+def read_sed_df():
+    sed_file = f'/Users/brianlorenz/jwst_sfgalaxy/data/128561_sed_maggies.csv'
+    sed_df = ascii.read(sed_file).to_pandas()
+    sed_df = sed_df[sed_df['f_lambda']>-98]
+    drop_NB_phot =  sed_df[sed_df['filter_name']=='NB711'].index
+    sed_df.drop(drop_NB_phot , inplace=True)
+    drop_NB_phot =  sed_df[sed_df['filter_name']=='NB816'].index
+    sed_df.drop(drop_NB_phot , inplace=True)
+    drop_NB_phot =  sed_df[sed_df['filter_name']=='NB118'].index
+    sed_df.drop(drop_NB_phot , inplace=True)
+    sed_df = sed_df.reset_index(drop=True)
+    return sed_df
 
 # --------------
 # OBS
@@ -130,19 +187,15 @@ def build_obs(**kwargs):
     :returns obs:
         Dictionary of observational data.
     """
-    field = run_params['field']
-    v4id = run_params['v4id']
-    sed_file = imd.mosdef_dir + f'/seds_maggies/{field}_{v4id}_sed.csv'
-    sed_df = ascii.read(sed_file).to_pandas()
-    sed_df = sed_df[sed_df['f_lambda']>-98]
+    sed_df = read_sed_df()
     filters_list = get_filters(sed_df)
+
     
     
     # set up obs dict
     obs = {}
 
-    redshift = sed_df.iloc[0]['Z_MOSFIRE']
-    obs['z'] = redshift
+    obs['z'] = 2.925
 
     # load photometric filters
     obs["filters"] = observate.load_filters(filters_list)
@@ -202,11 +255,10 @@ def build_model(object_redshift=0.0, fixed_metallicity=None, add_duste=True,
     from prospect.models.templates import TemplateLibrary
     from prospect.models import priors, sedmodel
 
-    field = run_params['field']
-    v4id = run_params['v4id']
-    sed_file = imd.mosdef_dir + f'/seds_maggies/{field}_{v4id}_sed.csv'
-    sed_df = ascii.read(sed_file).to_pandas()
-    redshift = sed_df.iloc[0]['Z_MOSFIRE']
+    
+    sed_df = read_sed_df()
+    redshift = 2.925
+
 
     # ---- LIST OF PARAMETERS ----- #
     # https://dfm.io/python-fsps/current/stellarpop_api/
@@ -405,7 +457,6 @@ def get_filt_list(target_folder):
     """
     filt_files = [file.replace('.par', '') for file in os.listdir(target_folder) if '_red.par' in file]
     filt_files.sort()
-    breakpoint()
     filt_list = observate.load_filters(filt_files, directory=target_folder)
     return filt_list
 

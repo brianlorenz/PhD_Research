@@ -11,9 +11,9 @@ def convert_sed_flux_to_maggies():
     """
     sed_df = ascii.read(sed_loc).to_pandas()
     
-    sed_df['redshifted_peak_wavelength'] = sed_df['peak_wavelength']*(1+z_sfgalaxy)
-    sed_df['redshifted_flux'] = sed_df['f_lambda'] / (1+z_sfgalaxy)
-    sed_df['err_redshifted_flux'] = sed_df['err_f_lambda'] / (1+z_sfgalaxy)
+    sed_df['redshifted_peak_wavelength'] = sed_df['rest_wavelength']*(1+z_sfgalaxy)
+    sed_df['redshifted_flux'] = sed_df['rest_f_lambda'] / (1+z_sfgalaxy)
+    sed_df['err_redshifted_flux'] = sed_df['err_rest_f_lambda'] / (1+z_sfgalaxy)
     f_nu = sed_df['redshifted_flux'] * (sed_df['redshifted_peak_wavelength']**2) * 3.34 * 10**(-19)
     f_jy = f_nu * (10**23)
     maggies = f_jy / 3631
