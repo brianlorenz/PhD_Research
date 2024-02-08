@@ -38,12 +38,12 @@ def fit_emission(spectrum, save_name, bootstrap_num=-1):
     if bootstrap_num > -1:
         n_loops = 0
     else:
-        n_loops = 100
+        n_loops = 10
 
 
     line_names = [line_list[i][0] for i in range(len(line_list))]
 
-    scale_factor = 10**20
+    scale_factor = 10**18.5
 
     # Build the initial guesses
     guess = []

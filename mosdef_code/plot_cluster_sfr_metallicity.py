@@ -108,12 +108,15 @@ def plot_cluster_sfr_metals(plot_ssfr=False, plot_re=False, plot_sanders=False, 
         log_sfrs = np.log10(sfrs)
         x_plot = log_sfrs
         label = '$R_\mathrm{eff} = 0.25$, $A_\mathrm{balmer} = 0.85$'
-        ax.plot(x_plot, metal_vals, ls='--', color='#8E248C', marker='None', zorder=2)
-    plot_dust(0.5)
-    plot_dust(1)
-    plot_dust(1.5)
-    plot_dust(2, re=2)
-    plot_dust(2.5, re=2)
+        rgba_color = cmap(norm(A_lambda))
+        ax.plot(x_plot, metal_vals, ls='--', color=rgba_color, marker='None', zorder=2)
+    for i in range(len(summary_df)):
+        plot_dust(summary_df.iloc[i]['balmer_av'], 4*summary_df.iloc[i]['median_re'])
+    # plot_dust(0.5)
+    # plot_dust(1)
+    # plot_dust(1.5)
+    # plot_dust(2, re=2)
+    # plot_dust(2.5, re=2)
 
     # high mass
     if plot_ssfr == True:
@@ -178,6 +181,7 @@ def plot_cluster_sfr_metals(plot_ssfr=False, plot_re=False, plot_sanders=False, 
     if mass_color == True and show_mass==True:
         rgba_massline = cmap(norm(log_mass))
         ax.plot(x_plot, fm_metals_highm_bot, marker='None', color=rgba_massline, ls='-')
+        
     log_mass = 10.35
     x_plot, fm_metals_highm_top, add_str2 = compute_metals(log_mass, fm_s, re) 
     if mass_color == True and show_mass==True:
@@ -238,7 +242,7 @@ def plot_cluster_sfr_metals(plot_ssfr=False, plot_re=False, plot_sanders=False, 
 # plot_sfr_metals('whitaker_sfms_boot100', plot_re=True)
 
 
-# plot_cluster_sfr_metals(plot_sanders=True)
+plot_cluster_sfr_metals(plot_sanders=True)
 # plot_cluster_sfr_metals(plot_sanders=True, mass_color=True)
 # plot_cluster_sfr_metals(plot_sanders=True, mass_color=True, show_mass=True)
 

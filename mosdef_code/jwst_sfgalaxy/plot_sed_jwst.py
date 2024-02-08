@@ -12,6 +12,9 @@ def plot_sed():
     plot_spectrum(spectrum, ax)
     ax.errorbar(sed['rest_wavelength'], sed['rest_f_lambda'], yerr=sed['err_rest_f_lambda'], color='black', marker='o', ls='None')
     ax.set_ylim(-0.4e-19,np.percentile(sed['rest_f_lambda'], 100))
+    ax.set_xlabel('Wavelength', fontsize=14)
+    ax.set_ylabel('Flux', fontsize=14)
+    ax.tick_params(labelsize=14)
     fig.savefig('/Users/brianlorenz/jwst_sfgalaxy/plots/sed_spec.pdf')
 
 

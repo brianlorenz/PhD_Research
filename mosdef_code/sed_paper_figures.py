@@ -25,11 +25,11 @@ def make_paper_plots(n_clusters, norm_method):
     # Prospector AV vs Mass, and Balmer dec measured vs mass
     # AV vs Balmer decrement - how much extra attenuation?
     # Attenuation curve figure(s) - what controsl it
-    make_AV_panel_fig()
-    make_av_difference_fig()
+    # make_AV_panel_fig()
+    # make_av_difference_fig()
 
     # Prospector Dust index fig
-    make_dust_index_fig()
+    # make_dust_index_fig()
 
     # SFR comparison between prospector and emission lines
     make_SFR_compare_fig()
@@ -159,7 +159,19 @@ def make_SFR_compare_fig():
     fig = plt.figure(figsize=(8, 8))
     gs = GridSpec(1, 1, left=0.11, right=0.96, bottom=0.12)
     ax_sfr = fig.add_subplot(gs[0, 0])
-    
+
+    # import sys
+    # cluster_summary_df = imd.read_cluster_summary_df()
+    # ratio = cluster_summary_df['log_Prospector_ssfr50_multiplied_normalized'] / cluster_summary_df['computed_log_sfr_with_limit']
+    # ax_sfr.plot(cluster_summary_df['dust2_50'], ratio, color='black', marker='o', ls='None')
+    # ax_sfr.tick_params(labelsize=full_page_axisfont)
+    # ax_sfr.set_ylabel('SFR compare ratio')
+    # ax_sfr.set_xlabel('dust2_50')
+    # scale_aspect(ax_sfr)
+    # fig.savefig(imd.sed_paper_figures_dir + '/sfr_compare_dust2_50.pdf')
+    # plt.show()
+    # sys.exit()
+
     plot_a_vs_b_paper('log_Prospector_ssfr50_multiplied_normalized', 'computed_log_sfr_with_limit', 'Prospector Normalized SED SFR', sfr_label, 'None', axis_obj=ax_sfr, yerr=True, lower_limit=True, plot_lims=[-1, 2.5, -1, 2.5], fig=fig, one_to_one=True, use_color_df=True, add_numbers=False)
     ax_sfr.tick_params(labelsize=full_page_axisfont)
 

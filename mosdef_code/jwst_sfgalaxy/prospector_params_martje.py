@@ -36,7 +36,7 @@ import initialize_mosdef_dirs as imd
 # composite_filter_sedpy_dir = imd.composite_filter_sedpy_dir
 # median_zs_file = imd.composite_seds_dir + '/median_zs.csv'
 
-# %run prospector_dynesty.py --param_file='prospector_params_jwstgal.py' --outfile='/Users/brianlorenz/jwst_sfgalaxy/prospector/128561_photonly' --debug=True
+# %run prospector_dynesty.py --param_file='prospector_params_martje.py' --outfile='/Users/brianlorenz/jwst_sfgalaxy/prospector/128561_photspec' --debug=True
 
 # set up cosmology
 cosmo = FlatLambdaCDM(H0=70, Om0=.3)
@@ -181,54 +181,95 @@ def read_sed_df():
 # --------------
 
 
-def build_obs(**kwargs):
-    """Load the obs dict
-
+def build_obs(target=128561, zred = None, **extras):
+    """Build a dictionary of observational spectroscopic data.
+        
+    :param target:
+        The target ID for which to fit the SED
+        
     :returns obs:
-        Dictionary of observational data.
+        A dictionary of observational data to use in the fit.
     """
-    sed_df = read_sed_df()
-    filters_list = get_filters(sed_df)
+    from prospect.utils.obsutils import fix_obs
+    import sedpy, glob
+    from astropy import table
+    from pathlib import Path
 
-    
-    
-    # set up obs dict
+    # The obs dictionary, empty for now
     obs = {}
 
-    obs['z'] = 2.925
+    ###
+    # Get the photometry
+    ###
+    data_path = '/Users/brianlorenz/jwst_sfgalaxy/data/'
+    addition_3 = '_hacked_pathloss'
+    det3_outdir = f'spec3_out_SUSPENSE{addition_3}'
+    UVISTA = table.QTable.read(data_path + 'catalog/UVISTA_DR3_master_v1.1_SUSPENSE.cat', format = 'ascii')
+    source_idx = np.where(UVISTA['id'] == int(target))[0][0]
 
-    # load photometric filters
-    obs["filters"] = observate.load_filters(filters_list)
+    filters = filt_dict_UVISTA()
+    filter_names = filters.keys()
 
-    # load photometry
-    obs["phot_wave"] = sed_df['redshifted_peak_wavelength'].to_numpy()
-    obs['maggies'] = (sed_df['f_maggies_red']).to_numpy()
-    obs['maggies_unc'] = (sed_df['err_f_maggies_red']).to_numpy()
-    # Add 5 percent in quadrature to errors
-    # data_05p = (sed_df['f_maggies_red']) * 0.05
-    # obs['maggies_unc'] = (np.sqrt(data_05p**2 + (sed_data['err_f_maggies_avg_red'])**2)).to_numpy()
-        
-    # Phot mask that allows everything
-    obs["phot_mask"] = np.array([m > 0 for m in obs['maggies']])
-    # Phot mask around emission lines
-    # filt_mask = check_filt_transmission(filt_folder, obs['z'])
-    # Phot mask out anything blueward of 1500
-    # redshifted_lya_cutoff = 1500*(1+obs['z'])
-    # ly_mask = obs["phot_wave"] > redshifted_lya_cutoff
-    # obs["phot_mask"] = np.logical_and(filt_mask, ly_mask)
-    # Filter out just ly_a, not the lines (comment above line
-    bad_sed_mask = obs["phot_wave"] > 1100*(1+obs['z'])
-    obs["phot_mask"] = bad_sed_mask
+    phot_array = np.zeros((3,len(filter_names))) # wavelength, flux, flux_err
+    filter_names_sedpy = []
 
+    fact = UVISTA['Ks_tot'][source_idx]/UVISTA['Ks'][[source_idx]]
 
-    # Add unessential bonus info.  This will be stored in output
-    obs['wavelength'] = None
-    obs['spectrum'] = None
-    obs['mask'] = None
-    obs['unc'] = None
+    for idx_filt, b in enumerate(filter_names):
+        phot_array[0,idx_filt] = filters[b][0] # wavelength, Angstrom
+        phot_array[1,idx_filt] = UVISTA[b][source_idx] * fact * 1e-10 # flux, maggies
+        phot_array[2,idx_filt] = UVISTA['e'+b][source_idx] * fact * 1e-10 # flux_err, maggies
+        filter_names_sedpy.append(filters[b][1:][0])
+    
+    sort_idx = np.argsort(phot_array[0,:])
+    phot_array_sorted = phot_array[:,sort_idx]
+    filter_names_sorted = np.array(filter_names_sedpy)[sort_idx]
+
+    use = (phot_array_sorted[1,:] != 0.) & (phot_array_sorted[2,:] > 0)
+
+    obs["phot_wave"] = phot_array_sorted[0,use]
+    obs["maggies"] = phot_array_sorted[1,use]
+    obs["maggies_unc"] = phot_array_sorted[2,use]
+    obs["phot_mask"] = np.full(np.shape(phot_array_sorted[1,use])[0], True)
+    print('---------PHOTOMETRY LOADED IN---------')
+
+    ###
+    # FILTERS
+    ###
+    obs["filters"] = sedpy.observate.load_filters(filter_names_sorted[use])
+    print('---------FILTER FILES LOADED---------')
+
+    ###
+    # Get the spectroscopy
+    ###
+    spec_array = np.loadtxt(f'{data_path}{target}_comb_x1d.txt', comments = '#')
+
+    # add mask for emission lines  (Halpha, NII, OIII, OII)
+    e_lines_wav = [3726.032, 4958.911, 5006.843, 6562.819, 6583.460]
+    mask = (spec_array[:,1] != 0)
+    for e_line in e_lines_wav:
+        e_line_redshifted = e_line * (1+zred)
+        width = 20
+        mask &= np.logical_not((spec_array[:,0] * 1e4 > e_line_redshifted - width) & (spec_array[:,0] * 1e4 < e_line_redshifted + width))
+
+    # A vector of vacuum wavelengths in angstroms
+    obs["wavelength"] = spec_array[:,0] * 1e4 # angstrom
+    obs["spectrum"] = spec_array[:,1] / 3631 #maggies
+    obs['unc'] = spec_array[:,2] / 3631 #maggies
+    obs['mask'] = mask
+
+    # Normalise to photometry
+    fact = np.mean(obs['maggies'][(obs['phot_wave'] > np.min(obs['wavelength'][mask])) & (obs['phot_wave'] < np.max(obs['wavelength'][mask]))])/np.mean(obs['spectrum'][mask])
+    obs['spectrum'] *= fact
+    obs['unc'] *= fact
+
+    print('---------SPECTRUM LOADED IN---------')
+
+    # This function ensures all required keys are present in the obs dictionary,
+    # adding default values if necessary
+    obs = fix_obs(obs)
 
     return obs
-
 
 # This is the default from prospector
 def build_model(object_redshift=0.0, fixed_metallicity=None, add_duste=True,
@@ -352,7 +393,7 @@ def build_model(object_redshift=0.0, fixed_metallicity=None, add_duste=True,
     model_params["dust_index"]["prior"] = priors.TopHat(mini=-1.2, maxi=-0.2)
     # model_params["dust1_fraction"]["prior"] = priors.TopHat(mini=0.0, maxi=2.0)
     model_params["tau"]["prior"] = priors.LogUniform(mini=1e-1, maxi=10)
-    model_params["mass"]["prior"] = priors.LogUniform(mini=1e10, maxi=1e16)
+    model_params["mass"]["prior"] = priors.LogUniform(mini=1e7, maxi=1e16)
     # model_params["gas_logz"]["prior"] = priors.TopHat(mini=-3.0, maxi=0.0)
     model_params["logzsol"]["prior"] = priors.TopHat(mini=-0.8, maxi=0.2)
     
