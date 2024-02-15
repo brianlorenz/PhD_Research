@@ -24,8 +24,8 @@ non_par_sfh = False
 prospector_dir = '/Users/brianlorenz/jwst_sfgalaxy/prospector/'
 plot_dir = prospector_dir + 'prospector_plots/'
 
-plot_save = '128561_photspec'
-target_file = prospector_dir + '128561_photspec_1707151348_mcmc.h5'
+plot_save = '128561_photspec_newmass'
+target_file = prospector_dir + '128561_photspec_newmass_1707765947_mcmc.h5'
 
 
 # Directory locations on home

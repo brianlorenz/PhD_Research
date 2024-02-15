@@ -7,6 +7,8 @@ from astropy.io import ascii
 import os
 import pandas as pd
 import sys
+
+
 if os.path.exists(imd.loc_cluster_summary_df): 
     cluster_summary_df = imd.read_cluster_summary_df()
 
@@ -221,7 +223,9 @@ def plot_a_vs_b_paper(x_var, y_var, x_label, y_label, savename, axis_obj='False'
 
         if x_var == 'ssfr50' or x_var == 'Prospector_ssfr50_target_mass' or  x_var == 'Prospector_ssfr50_normmedian_mass':
             row[x_var] = np.log10(row[x_var])
-
+        if x_var == 'sfr_surface':
+            row[x_var] = np.log10((10**row['computed_log_sfr_with_limit'])/ (2*np.pi * row['median_re']**2))
+            print(row[x_var])
         if prospector_run_name != '':
             if os.path.exists(imd.prospector_emission_fits_dir + f'/{prospector_run_name}_emission_fits/{i}_emission_fits.csv'):
                 prospector_emission = ascii.read(imd.prospector_emission_fits_dir + f'/{prospector_run_name}_emission_fits/{i}_emission_fits.csv').to_pandas()
@@ -238,11 +242,28 @@ def plot_a_vs_b_paper(x_var, y_var, x_label, y_label, savename, axis_obj='False'
             rgba = 'black'
         if use_color_df == True:
             rgba = get_row_color(i)
+       
  
         # Make the point a triangle if it's a lower limit
+        rotation = 0
+        mec = 'black'
         if lower_limit == True:
             if row['flag_balmer_lower_limit']==1:
                 marker='^'
+                yerr = False
+            else:
+                marker='o'
+                yerr = True
+        elif lower_limit > 5:
+            if row['flag_balmer_lower_limit']==1:
+                rotation = lower_limit
+                # marker = (3, 0, rotation)
+                arrow = u'$\u2191$'
+                rotated_marker = mpl.markers.MarkerStyle(marker=arrow)
+                rotated_marker._transform = rotated_marker.get_transform().rotate_deg(rotation)
+                marker = rotated_marker
+                markersize=16
+                # mec = rgba
                 yerr = False
             else:
                 marker='o'
@@ -259,22 +280,22 @@ def plot_a_vs_b_paper(x_var, y_var, x_label, y_label, savename, axis_obj='False'
         
         if yerr == True:
             if prospector_xerr == True:
-                ax.errorbar(row[x_var], row[y_var], xerr=np.array([[row[x_var]-row[x_var.replace('_50','_16')], row[x_var.replace('_50','_84')]-row[x_var]]]).T, yerr=np.array([[row['err_'+y_var+'_low'], row['err_'+y_var+'_high']]]).T, color=rgba, marker=marker, ls='None', zorder=3, mec='black', ms=markersize)
+                ax.errorbar(row[x_var], row[y_var], xerr=np.array([[row[x_var]-row[x_var.replace('_50','_16')], row[x_var.replace('_50','_84')]-row[x_var]]]).T, yerr=np.array([[row['err_'+y_var+'_low'], row['err_'+y_var+'_high']]]).T, color=rgba, marker=marker, ls='None', zorder=3, mec=mec, ms=markersize)
             else:
                 try:
-                    ax.errorbar(row[x_var], row[y_var], yerr=np.array([[row['err_'+y_var+'_low'], row['err_'+y_var+'_high']]]).T, color=rgba, marker=marker, ls='None', zorder=3, mec='black', ms=markersize)
+                    ax.errorbar(row[x_var], row[y_var], yerr=np.array([[row['err_'+y_var+'_low'], row['err_'+y_var+'_high']]]).T, color=rgba, marker=marker, ls='None', zorder=3, mec=mec, ms=markersize)
                 except:
                     pass
                 try:
-                    ax.errorbar(row[x_var], row[y_var], yerr=np.array([[row[y_var]-row[y_var.replace('50','16')], row[y_var.replace('50','84')]-row[y_var]]]).T, color=rgba, marker=marker, ls='None', zorder=3, mec='black', ms=markersize)
+                    ax.errorbar(row[x_var], row[y_var], yerr=np.array([[row[y_var]-row[y_var.replace('50','16')], row[y_var.replace('50','84')]-row[y_var]]]).T, color=rgba, marker=marker, ls='None', zorder=3, mec=mec, ms=markersize)
                 except:
                     pass
                 try:
-                    ax.errorbar(row[x_var], row[y_var], yerr=row['err_'+y_var], color=rgba, marker=marker, ls='None', zorder=3, mec='black', ms=markersize)
+                    ax.errorbar(row[x_var], row[y_var], yerr=row['err_'+y_var], color=rgba, marker=marker, ls='None', zorder=3, mec=mec, ms=markersize)
                 except:
                     pass
         else:
-            ax.plot(row[x_var], row[y_var], color=rgba, marker=marker, ls='None', zorder=3, mec='black', ms=markersize)
+            ax.plot(row[x_var], row[y_var], color=rgba, marker=marker, ls='None', zorder=3, mec=mec, ms=markersize)
             
             pass
         if add_numbers==True:
@@ -336,6 +357,8 @@ def assign_color(color_var):
         norm = mpl.colors.Normalize(vmin=12, vmax=14) 
     elif color_var=='median_U_V':
         norm = mpl.colors.Normalize(vmin=0.5, vmax=1.5) 
+    elif color_var=='balmer_av':
+        norm = mpl.colors.Normalize(vmin=0, vmax=3) 
     else:
         norm = mpl.colors.Normalize(vmin=-10, vmax=10) 
     return norm

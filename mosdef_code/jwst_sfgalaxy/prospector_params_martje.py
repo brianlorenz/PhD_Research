@@ -36,7 +36,7 @@ import initialize_mosdef_dirs as imd
 # composite_filter_sedpy_dir = imd.composite_filter_sedpy_dir
 # median_zs_file = imd.composite_seds_dir + '/median_zs.csv'
 
-# %run prospector_dynesty.py --param_file='prospector_params_martje.py' --outfile='/Users/brianlorenz/jwst_sfgalaxy/prospector/128561_photspec' --debug=True
+# %run prospector_dynesty.py --param_file='prospector_params_martje.py' --outfile='/Users/brianlorenz/jwst_sfgalaxy/prospector/128561_photspec_newmass' --debug=True
 
 # set up cosmology
 cosmo = FlatLambdaCDM(H0=70, Om0=.3)
@@ -382,7 +382,7 @@ def build_model(object_redshift=0.0, fixed_metallicity=None, add_duste=True,
     model_params["dust2"]["init"] = 0.1
     # model_params["logzsol"]["init"] = 0
     # model_params["tage"]["init"] = 13.
-    model_params["mass"]["init"] = 1e12
+    model_params["mass"]["init"] = 1e10
     # model_params['gas_logz'] = {'N': 1, 'isfree': True, 'init': 0.0}
 
     # Add a parameter for the slope of the attenuation curve
@@ -393,7 +393,7 @@ def build_model(object_redshift=0.0, fixed_metallicity=None, add_duste=True,
     model_params["dust_index"]["prior"] = priors.TopHat(mini=-1.2, maxi=-0.2)
     # model_params["dust1_fraction"]["prior"] = priors.TopHat(mini=0.0, maxi=2.0)
     model_params["tau"]["prior"] = priors.LogUniform(mini=1e-1, maxi=10)
-    model_params["mass"]["prior"] = priors.LogUniform(mini=1e7, maxi=1e16)
+    model_params["mass"]["prior"] = priors.LogUniform(mini=1e7, maxi=1e12)
     # model_params["gas_logz"]["prior"] = priors.TopHat(mini=-3.0, maxi=0.0)
     model_params["logzsol"]["prior"] = priors.TopHat(mini=-0.8, maxi=0.2)
     
