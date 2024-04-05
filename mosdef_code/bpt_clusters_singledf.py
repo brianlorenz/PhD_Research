@@ -87,7 +87,25 @@ def add_composite_bpts(ax):
 
         if clusters_summary_df.iloc[i]['flag_hb_limit'] == 1:  
             log_O3_Hb_group = clusters_summary_df['log_O3_Hb_lower_limit'].iloc[i]
-            ax.plot(log_N2_Ha_group, log_O3_Hb_group, marker='^', color=rgba, markersize=size, mec=paper_mec, mew=paper_marker_edge_width, ls='None', zorder=10000)
+            rotation = 180
+            # marker = (3, 0, rotation)
+            arrow = u'$\u2191$'
+            rotated_marker = mpl.markers.MarkerStyle(marker=arrow)
+            rotated_marker._transform = rotated_marker.get_transform().rotate_deg(rotation)
+            marker = rotated_marker
+            yerr = False
+            marker='s'
+            # markerfacecolor='None'
+            ax.set_xlim(-2, 1)
+            ax.set_ylim(-1.2, 1.5)
+
+            xrange = 1 - (-2)
+            yrange = 1.5 - (-1.2)
+            arrow_width = 0.005
+            arrow_length = 0.04
+            
+            ax.arrow((log_N2_Ha_group-(-2))/xrange, (log_O3_Hb_group-(-1.2))/yrange, 0, arrow_length, color=rgba, width=arrow_width, transform=ax.transAxes, zorder=1000000)
+            ax.plot(log_N2_Ha_group, log_O3_Hb_group, marker='s', color=rgba, markersize=size, mec=paper_mec, mew=paper_marker_edge_width, ls='None', zorder=10000)
         else:
             ax.errorbar(log_N2_Ha_group, log_O3_Hb_group, xerr=log_N2_Ha_group_errs, yerr=log_O3_Hb_group_errs, marker='o', color=rgba, markersize=size, mec=paper_mec, mew=paper_marker_edge_width, ls='None', zorder=10000)
 

@@ -89,7 +89,7 @@ find_bad_seds(n_clusters)
 # # # Add the normalizations to the group dfs
 # add_norm_factors(n_clusters)
 
-# make_clusters_summary_df(n_clusters, ignore_groups)
+make_clusters_summary_df(n_clusters, ignore_groups)
 
 # Need to do a few things to composites (measure uvj, generate mocks sed, etc. before we can plot)
 # print('Generating plots')

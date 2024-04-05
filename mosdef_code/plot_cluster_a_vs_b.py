@@ -247,10 +247,18 @@ def plot_a_vs_b_paper(x_var, y_var, x_label, y_label, savename, axis_obj='False'
         # Make the point a triangle if it's a lower limit
         rotation = 0
         mec = 'black'
+        markerfacecolor=rgba
         if lower_limit == True:
             if row['flag_balmer_lower_limit']==1:
-                marker='^'
+                marker='s'
                 yerr = False
+            else:
+                marker='o'
+                yerr = True
+        if lower_limit == 3:
+            if row['flag_balmer_lower_limit']==1:
+                marker='s'
+                yerr = True
             else:
                 marker='o'
                 yerr = True
@@ -262,9 +270,22 @@ def plot_a_vs_b_paper(x_var, y_var, x_label, y_label, savename, axis_obj='False'
                 rotated_marker = mpl.markers.MarkerStyle(marker=arrow)
                 rotated_marker._transform = rotated_marker.get_transform().rotate_deg(rotation)
                 marker = rotated_marker
-                markersize=16
-                # mec = rgba
                 yerr = False
+                marker='s'
+                # markerfacecolor='None'
+                xrange = plot_lims[1] - plot_lims[0]
+                yrange = plot_lims[3] - plot_lims[2]
+                arrow_width = 0.005
+                arrow_length = 0.04
+                if lower_limit <= 135:
+                    ax.arrow((row[x_var]-plot_lims[0])/xrange, (row[y_var]-plot_lims[2])/yrange, arrow_length, 0, color=rgba, width=arrow_width, transform=ax.transAxes)
+                if lower_limit >=135 and lower_limit <= 225:
+                    ax.arrow((row[x_var]-plot_lims[0])/xrange, (row[y_var]-plot_lims[2])/yrange, 0, arrow_length, color=rgba, width=arrow_width, transform=ax.transAxes)
+                if lower_limit >= 225 and lower_limit <= 315:
+                    ax.arrow((row[x_var]-plot_lims[0])/xrange, (row[y_var]-plot_lims[2])/yrange, -arrow_length, 0, color=rgba, width=arrow_width, transform=ax.transAxes)
+                if lower_limit >= 315:
+                    ax.arrow((row[x_var]-plot_lims[0])/xrange, (row[y_var]-plot_lims[2])/yrange, 0, -arrow_length, color=rgba, width=arrow_width, transform=ax.transAxes)
+                    
             else:
                 marker='o'
                 yerr = True
@@ -278,26 +299,26 @@ def plot_a_vs_b_paper(x_var, y_var, x_label, y_label, savename, axis_obj='False'
         else:
             marker='o'
         
+        
         if yerr == True:
             if prospector_xerr == True:
-                ax.errorbar(row[x_var], row[y_var], xerr=np.array([[row[x_var]-row[x_var.replace('_50','_16')], row[x_var.replace('_50','_84')]-row[x_var]]]).T, yerr=np.array([[row['err_'+y_var+'_low'], row['err_'+y_var+'_high']]]).T, color=rgba, marker=marker, ls='None', zorder=3, mec=mec, ms=markersize)
+                ax.errorbar(row[x_var], row[y_var], xerr=np.array([[row[x_var]-row[x_var.replace('_50','_16')], row[x_var.replace('_50','_84')]-row[x_var]]]).T, yerr=np.array([[row['err_'+y_var+'_low'], row['err_'+y_var+'_high']]]).T, color=rgba, marker=marker, ls='None', zorder=3, mec=mec, markerfacecolor=markerfacecolor, ms=markersize)
             else:
                 try:
-                    ax.errorbar(row[x_var], row[y_var], yerr=np.array([[row['err_'+y_var+'_low'], row['err_'+y_var+'_high']]]).T, color=rgba, marker=marker, ls='None', zorder=3, mec=mec, ms=markersize)
+                    ax.errorbar(row[x_var], row[y_var], yerr=np.array([[row['err_'+y_var+'_low'], row['err_'+y_var+'_high']]]).T, color=rgba, marker=marker, ls='None', zorder=3, mec=mec, markerfacecolor=markerfacecolor, ms=markersize)
                 except:
                     pass
                 try:
-                    ax.errorbar(row[x_var], row[y_var], yerr=np.array([[row[y_var]-row[y_var.replace('50','16')], row[y_var.replace('50','84')]-row[y_var]]]).T, color=rgba, marker=marker, ls='None', zorder=3, mec=mec, ms=markersize)
+                    ax.errorbar(row[x_var], row[y_var], yerr=np.array([[row[y_var]-row[y_var.replace('50','16')], row[y_var.replace('50','84')]-row[y_var]]]).T, color=rgba, marker=marker, ls='None', zorder=3, mec=mec, markerfacecolor=markerfacecolor, ms=markersize)
                 except:
                     pass
                 try:
-                    ax.errorbar(row[x_var], row[y_var], yerr=row['err_'+y_var], color=rgba, marker=marker, ls='None', zorder=3, mec=mec, ms=markersize)
+                    ax.errorbar(row[x_var], row[y_var], yerr=row['err_'+y_var], color=rgba, marker=marker, ls='None', zorder=3, mec=mec, markerfacecolor=markerfacecolor, ms=markersize)
                 except:
                     pass
         else:
-            ax.plot(row[x_var], row[y_var], color=rgba, marker=marker, ls='None', zorder=3, mec=mec, ms=markersize)
+            ax.plot(row[x_var], row[y_var], color=rgba, marker=marker, ls='None', zorder=3, mec=mec, markerfacecolor=markerfacecolor, ms=markersize)
             
-            pass
         if add_numbers==True:
             ax.text(row[x_var], row[y_var], f"{int(row['groupID'])}", color='black', fontsize=15)
 
@@ -359,6 +380,8 @@ def assign_color(color_var):
         norm = mpl.colors.Normalize(vmin=0.5, vmax=1.5) 
     elif color_var=='balmer_av':
         norm = mpl.colors.Normalize(vmin=0, vmax=3) 
+    elif color_var=='computed_log_sfr_with_limit':
+        norm = mpl.colors.Normalize(vmin=0, vmax=1.5) 
     else:
         norm = mpl.colors.Normalize(vmin=-10, vmax=10) 
     return norm
@@ -370,7 +393,15 @@ def add_leja_sfms(ax, mode='mean'):
     logSFRs = np.array([leja2022_sfms(logmass, redshift, mode) for logmass in logmasses])
     logssfrs = np.log10((10**logSFRs) / (10**logmasses))
     ax.plot(logmasses, logssfrs, color='black', marker='None', ls='--', zorder=1, label=f'Leja SFMS z={redshift}, {mode}')
- 
+    cluster_summary_df = ascii.read(imd.loc_cluster_summary_df).to_pandas()
+    sfrs = [] 
+    for i in range(len(cluster_summary_df)):
+        sfrs.append(leja2022_sfms(cluster_summary_df.iloc[i]['median_log_mass'], redshift, mode))
+    sfms_offset = cluster_summary_df['computed_log_sfr_with_limit']-sfrs
+    cluster_summary_df['sfms_offset_with_limit'] = sfms_offset
+    cluster_summary_df.to_csv(imd.loc_cluster_summary_df, index=False)
+
+
 
 def make_plots_a_vs_b(reduce_plot_count=False, reduce_prospector_plots=False):
     """Plots variables in cluster_summary_df against each other

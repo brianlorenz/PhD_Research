@@ -162,8 +162,27 @@ def label_elines(ax, spec_df, scale_factor):
         if name=='Hbeta': name='H$\\beta$'
         if name=='O3_5008' or name=='O3_4960': name='O[III]'
         if name=='N2_6550' or name=='N2_6585': name='N[II]'
-        print(f'{center+3+offset}, {np.min([ylims[1]-0.1, height+0.2])}')
-        ax.text(center+3+offset, np.min([ylims[1]-0.1, height+0.2]), name, fontsize=single_column_axisfont)
+        # print(f'{center+3+offset}, {np.min([ylims[1]-0.1, height+0.2])}')
+        # ax.text(center+3+offset, np.min([ylims[1]-0.1, height+0.2]), name, fontsize=single_column_axisfont)
+        top = 1.5
+        extra_offset = 0
+        if name=='N[II]':
+            top = 1.35
+        # ('Halpha', 6564.61),
+        # ('Hbeta', 4862.68),
+        # ('O3_5008', 5008.24),
+        # ('O3_4960', 4960.295),
+        # ('N2_6550', 6549.86),
+        # ('N2_6585', 6585.27)
+        if center == 4960.295:
+            extra_offset = -6
+        if center == 6549.86:
+            extra_offset = -6
+        if center == 6564.61:
+            extra_offset = 3
+        if center == 6585.27:
+            extra_offset = 3
+        ax.text(center+2+offset+extra_offset, top, name, fontsize=single_column_axisfont)
 
 
 # ignore_groups = imd.ignore_groups
