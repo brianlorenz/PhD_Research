@@ -5,6 +5,7 @@ import string
 import numpy as np
 import initialize_mosdef_dirs as imd
 
+
 from composite_sed import get_all_composite_seds
 from stack_spectra import stack_all_spectra
 from fit_emission import fit_all_emission, compute_bootstrap_uncertainties
@@ -67,7 +68,7 @@ imd.check_and_make_dir(imd.composite_filter_sedpy_dir)
 # gen_all_mock_composites(n_clusters)
 # plot_all_similarity(n_clusters)
 # remove_dissimilar_gals(n_clusters) ### Run this only once
-find_bad_seds(n_clusters)
+# find_bad_seds(n_clusters)
 # remove_flagged_seds(n_clusters)
 
 # # Begin running all the functions

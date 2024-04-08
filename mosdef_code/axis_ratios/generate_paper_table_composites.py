@@ -36,18 +36,37 @@ def generate_sed_paper_table():
     paper_df['err_metallictiy_low'] = cluster_summary_df['err_O3N2_metallicity_low']
     paper_df['err_metallictiy_high'] = cluster_summary_df['err_O3N2_metallicity_high']
     
-    paper_df['median_AV'] = cluster_summary_df['Prospector_AV_50']
-    paper_df['median_AV_low'] = cluster_summary_df['Prospector_AV_50']-cluster_summary_df['Prospector_AV_16']
-    paper_df['median_AV_high'] = cluster_summary_df['Prospector_AV_84']-cluster_summary_df['Prospector_AV_50']
+    paper_df['Prospector_AV'] = cluster_summary_df['Prospector_AV_50']
+    paper_df['Prospector_AV_low'] = cluster_summary_df['Prospector_AV_50']-cluster_summary_df['Prospector_AV_16']
+    paper_df['Prospector_AV_high'] = cluster_summary_df['Prospector_AV_84']-cluster_summary_df['Prospector_AV_50']
     
     paper_df['balmer_dec'] = cluster_summary_df['balmer_dec']
     paper_df['err_balmer_dec_low'] = cluster_summary_df['err_balmer_dec_low']
     paper_df['err_balmer_dec_high'] = cluster_summary_df['err_balmer_dec_high']
-    
-    f = open(imd.cluster_dir + f'/paper_figures/sed_table.tbl', "w")
+
+    paper_df['U_V'] = cluster_summary_df['median_U_V']
+    paper_df['V_J'] = cluster_summary_df['median_V_J']
+
+    paper_df['Prospector_SFR'] = cluster_summary_df['log_Prospector_ssfr50_multiplied_normalized']
+    paper_df['err_Prospector_SFR_low'] = cluster_summary_df['err_log_Prospector_ssfr50_multiplied_normalized_low']
+    paper_df['err_Prospector_SFR_high'] = cluster_summary_df['err_log_Prospector_ssfr50_multiplied_normalized_high']
+
+
+    paper_df = paper_df.sort_values('paperID')
+
+    f = open(imd.cluster_dir + f'/paper_figures/table_eline.tbl', "w")
     for i in range(len(paper_df)):
         row = paper_df.iloc[i]
-        f.write(f"{row['paperID']} & ${round(row['median_z'],2)}$ & ${round(row['log(StellarMass)'],2)}$ & ${round(row['log(SFR)'],2)}\pm_{{{round(row['err_log(SFR)_low'],2)}}}^{{{round(row['err_log(SFR)_high'],2)}}}$ & ${round(row['metallicity'],2)}\pm_{{{round(row['err_metallictiy_low'],2)}}}^{{{round(row['err_metallictiy_high'],2)}}}$ & ${round(row['median_AV'],2)}\pm_{{{round(row['median_AV_low'],2)}}}^{{{round(row['median_AV_high'],2)}}}$ & ${round(row['balmer_dec'],2)}\pm_{{{round(row['err_balmer_dec_low'],2)}}}^{{{round(row['err_balmer_dec_high'],2)}}}$  \\\ \n")
+        f.write(f"{int(row['paperID'])} & ${round(row['median_z'],2)}$ & ${round(row['log(StellarMass)'],2)}$ & ${round(row['log(SFR)'],2)}\pm_{{{round(row['err_log(SFR)_low'],2)}}}^{{{round(row['err_log(SFR)_high'],2)}}}$ & ${round(row['metallicity'],2)}\pm_{{{round(row['err_metallictiy_low'],2)}}}^{{{round(row['err_metallictiy_high'],2)}}}$ & ${round(row['balmer_dec'],2)}\pm_{{{round(row['err_balmer_dec_low'],2)}}}^{{{round(row['err_balmer_dec_high'],2)}}}$ & ${round(row['U_V'],2)}$ & ${round(row['V_J'],2)}$ \\\ \n")
+        if i==(len(paper_df)-1):
+            f.write('\\hline')
+            # f.write(f"${round(row['log(StellarMass)'],2)}$ & ${round(row['log(SFR)'],2)}$ & ${round(row['AxisRatio'],2)}$ & ${round(row['median_z'],2)}$ & ${round(row['metallicity'],2)}\pm_{{{round(row['err_metallictiy_low'],2)}}}^{{{round(row['err_metallictiy_high'],2)}}}$ & ${round(row['median_AV'],2)}\pm{{{round(row['median_AV_std'],2)}}}$ & ${round(row['median_beta'],2)}\pm_{{{round(row['median_beta_low'],2)}}}^{{{round(row['median_beta_high'],2)}}}$ & ${round(row['balmer_dec'],2)}\pm_{{{round(row['err_balmer_dec_low'],2)}}}^{{{round(row['err_balmer_dec_high'],2)}}}$")
+    f.close()
+
+    f = open(imd.cluster_dir + f'/paper_figures/table_prospector.tbl', "w")
+    for i in range(len(paper_df)):
+        row = paper_df.iloc[i]
+        f.write(f"{int(row['paperID'])} & ${round(row['Prospector_AV'],2)}\pm_{{{round(row['Prospector_AV_low'],2)}}}^{{{round(row['Prospector_AV_high'],2)}}}$ & ${round(row['Prospector_SFR'],2)}\pm_{{{round(row['err_Prospector_SFR_low'],2)}}}^{{{round(row['err_Prospector_SFR_high'],2)}}}$ \\\ \n")
         if i==(len(paper_df)-1):
             f.write('\\hline')
             # f.write(f"${round(row['log(StellarMass)'],2)}$ & ${round(row['log(SFR)'],2)}$ & ${round(row['AxisRatio'],2)}$ & ${round(row['median_z'],2)}$ & ${round(row['metallicity'],2)}\pm_{{{round(row['err_metallictiy_low'],2)}}}^{{{round(row['err_metallictiy_high'],2)}}}$ & ${round(row['median_AV'],2)}\pm{{{round(row['median_AV_std'],2)}}}$ & ${round(row['median_beta'],2)}\pm_{{{round(row['median_beta_low'],2)}}}^{{{round(row['median_beta_high'],2)}}}$ & ${round(row['balmer_dec'],2)}\pm_{{{round(row['err_balmer_dec_low'],2)}}}^{{{round(row['err_balmer_dec_high'],2)}}}$")

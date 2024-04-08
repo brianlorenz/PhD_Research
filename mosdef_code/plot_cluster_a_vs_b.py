@@ -194,7 +194,7 @@ def plot_ratio(x_var_numerator, x_var_denominator, y_var_numerator, y_var_denomi
     fig.savefig(imd.cluster_dir + f'/cluster_stats/{savename}.pdf', bbox_inches='tight')
     plt.close('all')
 
-def plot_a_vs_b_paper(x_var, y_var, x_label, y_label, savename, axis_obj='False', color_var='None', plot_lims='None', lower_limit=False, one_to_one=False, ignore_groups=[], log=False, add_leja=False, yerr=False, prospector_run_name = '', fig='None', use_color_df=True, prospector_xerr=False, factor_of_2=False, upper_limit=False, add_numbers=False):
+def plot_a_vs_b_paper(x_var, y_var, x_label, y_label, savename, axis_obj='False', color_var='None', plot_lims='None', lower_limit=False, one_to_one=False, ignore_groups=[], log=False, add_leja=False, yerr=False, xerr=False, prospector_run_name = '', fig='None', use_color_df=True, prospector_xerr=False, factor_of_2=False, upper_limit=False, add_numbers=False):
     """Plots two columsn of cluster_summary_df against each other
     
     Parameters:
@@ -303,6 +303,8 @@ def plot_a_vs_b_paper(x_var, y_var, x_label, y_label, savename, axis_obj='False'
         if yerr == True:
             if prospector_xerr == True:
                 ax.errorbar(row[x_var], row[y_var], xerr=np.array([[row[x_var]-row[x_var.replace('_50','_16')], row[x_var.replace('_50','_84')]-row[x_var]]]).T, yerr=np.array([[row['err_'+y_var+'_low'], row['err_'+y_var+'_high']]]).T, color=rgba, marker=marker, ls='None', zorder=3, mec=mec, markerfacecolor=markerfacecolor, ms=markersize)
+            elif xerr == True:
+                ax.errorbar(row[x_var], row[y_var], xerr=np.array([[row['err_'+x_var+'_low'], row['err_'+x_var+'_high']]]).T, yerr=np.array([[row['err_'+y_var+'_low'], row['err_'+y_var+'_high']]]).T, color=rgba, marker=marker, ls='None', zorder=3, mec=mec, markerfacecolor=markerfacecolor, ms=markersize)
             else:
                 try:
                     ax.errorbar(row[x_var], row[y_var], yerr=np.array([[row['err_'+y_var+'_low'], row['err_'+y_var+'_high']]]).T, color=rgba, marker=marker, ls='None', zorder=3, mec=mec, markerfacecolor=markerfacecolor, ms=markersize)

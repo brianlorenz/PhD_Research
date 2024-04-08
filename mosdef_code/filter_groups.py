@@ -73,6 +73,6 @@ def find_bad_seds(n_groups):
     print(zobjs[zobjs['flag_sed'] > 0])
     # zobjs.to_csv(imd.cluster_dir+'/zobjs_clustered.csv', index=False)
 
-find_bad_seds(20)
+# find_bad_seds(20)
 # remove_groups_by_similiary(23)
 # generate_skip_file(23)

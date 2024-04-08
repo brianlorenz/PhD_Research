@@ -23,7 +23,7 @@ from prospector_output_props import add_props_to_cluster_summary_df, save_props
 # groupID4 = 18
 
 # All groups
-run_name = 'run_2024_01_25'
+run_name = 'correct_met_prior'
 n_clusters = 20
 
 
@@ -55,7 +55,7 @@ def make_tfig_cfig(run_name):
 # setup_all_prospector_fit_csvs(n_clusters, run_name)
 # fit_all_prospector_emission(n_clusters, run_name)
 # multiply_fit_by_lumdist(n_clusters, run_name)
-# save_props(n_clusters, run_name) # Make sure to update the mass values
+# save_props(n_clusters, run_name) 
 # add_props_to_cluster_summary_df(n_clusters, run_name) # Adds masses and computes sfr/ssfr
 
 

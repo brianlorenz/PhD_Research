@@ -31,14 +31,14 @@ def compute_metals(log_mass, fm_s):
 
 def make_paper_plots(n_clusters, norm_method):
     # Overview figure
-    setup_figs(n_clusters, norm_method, bpt_color=True, paper_overview=True, prospector_spec=False)
+    # setup_figs(n_clusters, norm_method, bpt_color=True, paper_overview=True, prospector_spec=False)
 
     ### Potentially 4 panels? Or maybe different figures
     # Prospector AV vs Mass, and Balmer dec measured vs mass
     # AV vs Balmer decrement - how much extra attenuation?
     # Attenuation curve figure(s) - what controsl it
     # make_AV_panel_fig()
-    # make_av_comparison()
+    make_av_comparison()
 
     # Prospector Dust index fig
     # make_dust_index_fig()
@@ -46,16 +46,16 @@ def make_paper_plots(n_clusters, norm_method):
     # # SFR comparison between prospector and emission lines
     # make_SFR_compare_fig()
 
-    # #sfr/mass/uvj/bpt
+    # # #sfr/mass/uvj/bpt
     # make_sfr_mass_uvj_bpt_4panel(snr_thresh=3)
 
-    # # Dust model figure
+    # # # Dust model figure
     # make_dust_fig()
 
-    # Metals/SFR/both dust figure
+    # # Metals/SFR/both dust figure
     # make_mass_metal_sfr_fig()
 
-    # hb percentage figure
+    # # hb percentage figure
     # make_hb_percentage_fig()
 
     # Dust mass figure? Can we measure this?
@@ -114,8 +114,8 @@ def make_mass_metal_sfr_fig():
     ax_stellarav_sfr = fig.add_subplot(gs[0, 1])
     ax_stellarav_metal = fig.add_subplot(gs[0, 2])
     # ax_metal_sfr = fig.add_subplot(gs[0, 2])
-    plot_a_vs_b_paper('computed_log_sfr_with_limit', 'Prospector_AV_50', sfr_label, prospector_dust2_label, 'None', axis_obj=ax_stellarav_sfr, yerr=True, plot_lims=[0, 2, -0.2, 2], fig=fig, lower_limit=90, use_color_df=True) 
-    plot_a_vs_b_paper('O3N2_metallicity', 'Prospector_AV_50', metallicity_label, prospector_dust2_label, 'None', axis_obj=ax_stellarav_metal, yerr=True, plot_lims=[8, 9, -0.2, 2], fig=fig, lower_limit=270, use_color_df=True)
+    plot_a_vs_b_paper('computed_log_sfr_with_limit', 'Prospector_AV_50', sfr_label, prospector_dust2_label, 'None', axis_obj=ax_stellarav_sfr, yerr=True, plot_lims=[0, 2, -0.2, 2.5], fig=fig, lower_limit=90, use_color_df=True) 
+    plot_a_vs_b_paper('O3N2_metallicity', 'Prospector_AV_50', metallicity_label, prospector_dust2_label, 'None', axis_obj=ax_stellarav_metal, yerr=True, plot_lims=[8, 9, -0.2, 2.5], fig=fig, lower_limit=270, use_color_df=True)
     plot_a_vs_b_paper('computed_log_sfr_with_limit', 'balmer_av_with_limit', sfr_label, balmer_av_label, 'None', axis_obj=ax_av_sfr, yerr=True, plot_lims=[0, 2, -0.2, 5], fig=fig, lower_limit=135, use_color_df=True) 
     plot_a_vs_b_paper('O3N2_metallicity', 'balmer_av_with_limit', metallicity_label, balmer_av_label, 'None', axis_obj=ax_av_metal, yerr=True, plot_lims=[8, 9, -0.2, 5], fig=fig, lower_limit=225, use_color_df=True)
     plot_a_vs_b_paper('median_log_mass', 'Prospector_AV_50', stellar_mass_label, prospector_dust2_label, 'None', axis_obj=ax_av_mass, yerr=True, plot_lims=[9, 11.5, -0.2, 2.5], fig=fig, use_color_df=True, lower_limit=3) 
@@ -264,9 +264,9 @@ def make_av_comparison():
     ax_avdiff_sfr.plot(x_regress, regress_res.intercept + regress_res.slope*x_regress, color='black', ls='--')
     # ax_avdiff_sfr.legend(fontsize=14, loc=2)
 
-    plot_a_vs_b_paper('Prospector_AV_50', 'balmer_av_with_limit', prospector_dust2_label, balmer_av_label, 'None', axis_obj=ax_balmer_av_compare, yerr=True, plot_lims=[-0.2, 2, -0.2, 5], fig=fig, use_color_df=True, prospector_xerr=True, one_to_one=False, factor_of_2=True, lower_limit=180)
+    plot_a_vs_b_paper('Prospector_AV_50', 'balmer_av_with_limit', prospector_dust2_label, balmer_av_label, 'None', axis_obj=ax_balmer_av_compare, yerr=True, plot_lims=[-0.2, 2.5, -0.2, 5], fig=fig, use_color_df=True, prospector_xerr=True, one_to_one=False, factor_of_2=True, lower_limit=180)
     # regress_res = find_best_fit('Prospector_AV_50', 'balmer_av_with_limit', exclude_limit=True)
-    x_regress = np.arange(-0.2, 2.5, 0.1)
+    x_regress = np.arange(-0.2, 3.0, 0.1)
     regress_res, points_16, points_84 = bootstrap_fit('Prospector_AV_50', 'balmer_av_with_limit', x_regress, exclude_limit=True)
     # ax_balmer_mass.plot(x_regress, yints[1] + slopes[1]*x_regress, color='green', ls='-')
     # ax_balmer_mass.plot(x_regress, yints[2] + slopes[2]*x_regress, color='green', ls='-')
@@ -398,7 +398,7 @@ def make_SFR_compare_fig():
     gs = GridSpec(1, 1, left=0.11, right=0.96, bottom=0.12)
     ax_sfr = fig.add_subplot(gs[0, 0])
 
-    plot_a_vs_b_paper('log_Prospector_ssfr50_multiplied_normalized', 'computed_log_sfr_with_limit', 'Prospector Normalized SED SFR', 'log$_{10}$(H$\\mathrm{\\alpha}$ SFR) (M$_\odot$ / yr)', 'None', axis_obj=ax_sfr, yerr=True, lower_limit=180, plot_lims=[-1, 2.5, 0.1, 2.1], fig=fig, one_to_one=True, use_color_df=True, add_numbers=False)
+    plot_a_vs_b_paper('log_Prospector_ssfr50_multiplied_normalized', 'computed_log_sfr_with_limit', 'Prospector Normalized SED SFR', 'log$_{10}$(H$\\mathrm{\\alpha}$ SFR) (M$_\odot$ / yr)', 'None', axis_obj=ax_sfr, xerr=True, yerr=True, lower_limit=180, plot_lims=[-2.8, 2.5, 0.1, 2.1], fig=fig, one_to_one=True, use_color_df=True, add_numbers=False)
     ax_sfr.plot([-100, -100], [-100, -100], color='red', ls='--', label='one-to-one')
     ax_sfr.legend(fontsize=16, loc=2)
     ax_sfr.tick_params(labelsize=full_page_axisfont)

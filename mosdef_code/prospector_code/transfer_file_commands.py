@@ -1,6 +1,6 @@
 import initialize_mosdef_dirs as imd
 
-run_name = 'run_2024_01_25'
+run_name = 'correct_met_prior'
 
 print('')
 print('')
