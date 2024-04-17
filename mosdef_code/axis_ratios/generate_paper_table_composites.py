@@ -51,8 +51,20 @@ def generate_sed_paper_table():
     paper_df['err_Prospector_SFR_low'] = cluster_summary_df['err_log_Prospector_ssfr50_multiplied_normalized_low']
     paper_df['err_Prospector_SFR_high'] = cluster_summary_df['err_log_Prospector_ssfr50_multiplied_normalized_high']
 
+    paper_df['Prospector_met'] = cluster_summary_df['logzsol50']
+    paper_df['err_Prospector_met_low'] = paper_df['Prospector_met'] - (cluster_summary_df['logzsol16'])
+    paper_df['err_Prospector_met_high'] = (cluster_summary_df['logzsol84']) - paper_df['Prospector_met']
+
+    for i in range(len(cluster_summary_df)):
+        if cluster_summary_df.iloc[i]['flag_hb_limit'] == 1:
+            # paper_df['err_Prospector_met_low'].iloc[i] = np.inf
+            paper_df.loc[i, 'err_metallictiy_low'] = np.inf
+            paper_df.loc[i, 'err_balmer_dec_high'] = np.inf
+            paper_df.loc[i, 'err_log(SFR)_high'] = np.inf
+
 
     paper_df = paper_df.sort_values('paperID')
+    
 
     f = open(imd.cluster_dir + f'/paper_figures/table_eline.tbl', "w")
     for i in range(len(paper_df)):
@@ -66,7 +78,7 @@ def generate_sed_paper_table():
     f = open(imd.cluster_dir + f'/paper_figures/table_prospector.tbl', "w")
     for i in range(len(paper_df)):
         row = paper_df.iloc[i]
-        f.write(f"{int(row['paperID'])} & ${round(row['Prospector_AV'],2)}\pm_{{{round(row['Prospector_AV_low'],2)}}}^{{{round(row['Prospector_AV_high'],2)}}}$ & ${round(row['Prospector_SFR'],2)}\pm_{{{round(row['err_Prospector_SFR_low'],2)}}}^{{{round(row['err_Prospector_SFR_high'],2)}}}$ \\\ \n")
+        f.write(f"{int(row['paperID'])} & ${round(row['Prospector_AV'],2)}\pm_{{{round(row['Prospector_AV_low'],2)}}}^{{{round(row['Prospector_AV_high'],2)}}}$ & ${round(row['Prospector_SFR'],2)}\pm_{{{round(row['err_Prospector_SFR_low'],2)}}}^{{{round(row['err_Prospector_SFR_high'],2)}}}$ & ${round(row['Prospector_met'],2)}\pm_{{{round(row['err_Prospector_met_low'],2)}}}^{{{round(row['err_Prospector_met_high'],2)}}}$ \\\ \n")
         if i==(len(paper_df)-1):
             f.write('\\hline')
             # f.write(f"${round(row['log(StellarMass)'],2)}$ & ${round(row['log(SFR)'],2)}$ & ${round(row['AxisRatio'],2)}$ & ${round(row['median_z'],2)}$ & ${round(row['metallicity'],2)}\pm_{{{round(row['err_metallictiy_low'],2)}}}^{{{round(row['err_metallictiy_high'],2)}}}$ & ${round(row['median_AV'],2)}\pm{{{round(row['median_AV_std'],2)}}}$ & ${round(row['median_beta'],2)}\pm_{{{round(row['median_beta_low'],2)}}}^{{{round(row['median_beta_high'],2)}}}$ & ${round(row['balmer_dec'],2)}\pm_{{{round(row['err_balmer_dec_low'],2)}}}^{{{round(row['err_balmer_dec_high'],2)}}}$")

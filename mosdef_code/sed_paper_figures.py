@@ -16,6 +16,8 @@ from scipy.stats import linregress
 from scipy.optimize import curve_fit
 from dust_model import sanders_plane
 from compute_cluster_sfrs import draw_asymettric_error
+from prospector_plot import load_obj
+import pandas as pd
 
 def compute_metals(log_mass, fm_s):
     '''
@@ -31,20 +33,22 @@ def compute_metals(log_mass, fm_s):
 
 def make_paper_plots(n_clusters, norm_method):
     # Overview figure
-    # setup_figs(n_clusters, norm_method, bpt_color=True, paper_overview=True, prospector_spec=False)
+    setup_figs(n_clusters, norm_method, bpt_color=True, paper_overview=True, prospector_spec=False)
 
     ### Potentially 4 panels? Or maybe different figures
     # Prospector AV vs Mass, and Balmer dec measured vs mass
     # AV vs Balmer decrement - how much extra attenuation?
     # Attenuation curve figure(s) - what controsl it
     # make_AV_panel_fig()
-    make_av_comparison()
+    # make_av_comparison()
 
     # Prospector Dust index fig
     # make_dust_index_fig()
 
     # # SFR comparison between prospector and emission lines
     # make_SFR_compare_fig()
+    # make_prospector_compare_met_fig()
+    make_prospector_overview_fig('correct_met_prior')
 
     # # #sfr/mass/uvj/bpt
     # make_sfr_mass_uvj_bpt_4panel(snr_thresh=3)
@@ -65,6 +69,115 @@ prospector_dust2_label = 'Prospector Stellar A$_V$'
 
 def line(x, a, b):
     return a * x + b
+
+def make_prospector_overview_fig(run_name):
+    fontsize = 16
+    fig = plt.figure(figsize=(22, 16))
+    gs = GridSpec(4, 5, left=0.05, right=0.96, wspace=0.15, hspace=0.04, top=0.98, bottom=0.02)
+    cluster_summary_df = imd.read_cluster_summary_df()
+    paperID = 1
+    for row in range(4):
+        for col in range(5):
+            ax = fig.add_subplot(gs[row, col])
+            groupID = cluster_summary_df[cluster_summary_df['paperID'] == paperID]['groupID'].iloc[0]
+            save_str = f'group{groupID}'
+            obs = load_obj(f'{save_str}_obs', run_name)
+            color = get_row_color(groupID)
+
+
+            spec_df = ascii.read(imd.prospector_fit_csvs_dir + f'/{run_name}_csvs' + 
+                                f'/{save_str}_spec.csv').to_pandas()
+            phot_df = ascii.read(imd.prospector_fit_csvs_dir + f'/{run_name}_csvs' +
+                                f'/{save_str}_phot.csv').to_pandas()
+            lines_df = ascii.read(imd.prospector_fit_csvs_dir + f'/{run_name}_csvs' +
+                                f'/{save_str}_lines.csv').to_pandas()
+
+            phot_5000_idx = np.logical_and(phot_df['rest_wavelength']>4500, phot_df['rest_wavelength']<5500)
+            phot_5000 = phot_df[phot_5000_idx].iloc[0]['phot50_flambda']
+            # breakpoint()
+            scale = 1/(phot_5000*5000)
+
+
+            start_spec = phot_df['rest_wavelength'].iloc[0]
+            end_spec = phot_df['rest_wavelength'].iloc[-1]
+            spec_idxs = np.logical_and(spec_df['rest_wavelength'] > start_spec, spec_df['rest_wavelength'] < end_spec)
+            
+            rest_frame_original_phot = obs['f_lambda']*(1+obs['z'])
+            rest_frame_original_phot_errs = obs['err_f_lambda']*(1+obs['z'])
+            errs_low_flambda = phot_df['rest_wavelength']*rest_frame_original_phot - phot_df['rest_wavelength']*rest_frame_original_phot_errs
+            errs_high_flambda = phot_df['rest_wavelength']*rest_frame_original_phot + phot_df['rest_wavelength']*rest_frame_original_phot_errs
+            # Points with errorbars for obs
+            ax.errorbar(phot_df['rest_wavelength'], scale * phot_df['rest_wavelength'] * rest_frame_original_phot, color='black', yerr=phot_df['rest_wavelength'] * rest_frame_original_phot_errs * scale, ls='None', marker='o', label='Composite SED', zorder=1, mec='black', mfc=color, markersize=10)
+            # Just points and shaded region for observations
+            # ax.plot(phot_df['rest_wavelength'], phot_df['rest_wavelength'] * rest_frame_original_phot, color='black', ls='None', marker='o', label='Observations', zorder=1)            
+            # errs_low_flambda = errs_low_flambda.to_list()
+            # errs_high_flambda = errs_high_flambda.to_list()
+            # ax.fill_between(phot_df['rest_wavelength'], errs_low_flambda, errs_high_flambda, facecolor="gray", alpha=0.7)
+
+
+            y_model = np.array(phot_df['rest_wavelength']
+                        * phot_df['phot50_flambda'])
+            y_model_16 = phot_df['rest_wavelength'] * phot_df['phot16_flambda']
+            y_model_84 = phot_df['rest_wavelength'] * phot_df['phot84_flambda']
+            model_errs = np.vstack((y_model - y_model_16, y_model_84 - y_model))
+            # Model points with errorbar, or can set points to none and use just a line
+            # ax.errorbar(np.array(phot_df['rest_wavelength']), y_model,
+            #             ls='None', lw=3, marker='o', yerr=model_errs, color='blue', label='Model')
+            
+            #Model fill between
+            ax.fill_between(phot_df['rest_wavelength'], scale*y_model_16, scale*y_model_84, alpha=0.6, color='grey', label='Model')
+            
+            ax.axvspan(phot_df['rest_wavelength'].iloc[0]-100, 1500, alpha=0.3, color='red')
+            if col == 0:
+                ax.set_ylabel("$\lambda$ F$_\lambda$ (norm)", fontsize = fontsize)
+            if row == 3:
+                ax.set_xlabel("Wavelength ($\AA$)", fontsize=fontsize)
+            if row != 3:
+                ax.tick_params(labelbottom=False)    
+
+            ax.tick_params(labelsize=fontsize)
+
+            xtext = 0.695
+            if paperID < 10: 
+                xtext = 0.735
+            ax.text(xtext, 0.93, f'Group {paperID}', transform=ax.transAxes, fontsize=fontsize)
+
+            ax.set_ylim(0.8 * np.percentile(scale*phot_df['rest_wavelength'] * rest_frame_original_phot, 1),
+                     1.25 * np.percentile(scale*phot_df['rest_wavelength'] * rest_frame_original_phot, 99))
+
+            
+            ax.set_xlim(phot_df['rest_wavelength'].iloc[0] -
+                     30, phot_df['rest_wavelength'].iloc[-1] + 3000)
+            ax.set_xscale('log')
+            # scale_aspect(ax)
+            if paperID == 1:
+                ax.legend(fontsize=12, loc=(0.12, 0.85))
+
+            paperID = paperID + 1
+    fig.savefig(imd.sed_paper_figures_dir + '/prospector_overview.pdf', bbox_inches='tight')
+
+
+
+def make_prospector_compare_met_fig(n_groups=20):
+    fig = plt.figure(figsize=(6.2, 6))
+    gs = GridSpec(1, 1, left=0.11, right=0.96, bottom=0.12)
+    ax_compare = fig.add_subplot(gs[0, 0])
+
+    cluster_summary_df = imd.read_cluster_summary_df()
+    
+    prospector_met = cluster_summary_df['logzsol50'] + 8.69
+    ax_compare.plot(cluster_summary_df['O3N2_metallicity'], prospector_met, marker='o', color='black', ls='None')
+    ax_compare.plot([-10, 10], [-10, 10], marker='None', color='red', ls='--')
+    
+    ax_compare.set_xlabel('Spectrum O3N2 metallicity', fontsize=full_page_axisfont)
+    ax_compare.set_ylabel('Prospector SED metallicity', fontsize=full_page_axisfont)
+    ax_compare.tick_params(labelsize=full_page_axisfont)
+    ax_compare.set_xlim(8.2, 8.9)
+    ax_compare.set_ylim(7.1, 9)
+
+    scale_aspect(ax_compare)
+    fig.savefig(imd.sed_paper_figures_dir + '/prospector_met_compare.pdf', bbox_inches='tight')
+
 
 
 def make_hb_percentage_fig(n_groups=20):
@@ -92,15 +205,16 @@ def make_hb_percentage_fig(n_groups=20):
     
     a_balmer_difference = cluster_summary_df['balmer_av_with_limit'] - median_indiv_a_balmers
     hbsnr = cluster_summary_df['hb_snr']
-    ax_hb.plot(hb_fracs, hbsnr, marker='o', color='black', ls='None')
+    # ax_hb.plot(hb_fracs, hbsnr, marker='o', color='black', ls='None')
+    ax_hb.plot(hbsnr, a_balmer_difference, marker='o', color='black', ls='None')
     # plot_a_vs_b_paper('log_Prospector_ssfr50_multiplied_normalized', 'computed_log_sfr_with_limit', 'Prospector Normalized SED SFR', 'log$_{10}$(H$\\mathrm{\\alpha}$ SFR) (M$_\odot$ / yr)', 'None', axis_obj=ax_sfr, yerr=True, lower_limit=180, plot_lims=[-1, 2.5, 0.1, 2.1], fig=fig, one_to_one=True, use_color_df=True, add_numbers=False)
     # ax_hb.legend(fontsize=16, loc=2)
-    ax_hb.set_xlabel('Hbeta frac', fontsize=full_page_axisfont)
-    ax_hb.set_ylabel('Stack Hbeta SNR', fontsize=full_page_axisfont)
+    ax_hb.set_ylabel('Abalmer diff', fontsize=full_page_axisfont)
+    ax_hb.set_xlabel('Stack Hbeta SNR', fontsize=full_page_axisfont)
     ax_hb.tick_params(labelsize=full_page_axisfont)
 
     scale_aspect(ax_hb)
-    fig.savefig(imd.sed_paper_figures_dir + '/hb_frac_fig.pdf', bbox_inches='tight')
+    fig.savefig(imd.sed_paper_figures_dir + '/hb_frac_fig_snr.pdf', bbox_inches='tight')
 
 
 

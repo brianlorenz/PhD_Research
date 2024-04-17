@@ -19,7 +19,7 @@ import pickle
 
 prospector_run = 'dust_index_test'
 
-fontsize = 16
+fontsize = 24
 rows_per_page = 7
 
 
@@ -53,8 +53,12 @@ def setup_figs(n_clusters, norm_method, color_gals=False, bpt_color=False, paper
     if paper_overview==True:
         n_figures = int(np.ceil(n_clusters / rows_per_page))
         for page_num in range(n_figures):
-            groupID_sets.append(groupIDs[(rows_per_page*page_num) : rows_per_page*(1+page_num)])
+            # groupID_sets.append(groupIDs[(rows_per_page*page_num) : rows_per_page*(1+page_num)])
             save_strs.append(f'_page{page_num}')
+        # Hard-coded for first page to be shorter
+        groupID_sets.append(groupIDs[0 : 6])
+        groupID_sets.append(groupIDs[6 : 13])
+        groupID_sets.append(groupIDs[13 : 20])
     else:
         groupID_sets.append(groupIDs)
         save_strs.append('')
@@ -77,8 +81,8 @@ def make_overview_plot_clusters(groupIDs, import_save_str, n_clusters, norm_meth
     if paper_overview == False:
         fig = plt.figure(figsize=(24, n_rows*4))
     else:
-        fig = plt.figure(figsize=(22, n_rows*4))
-    gs = GridSpec(n_rows, 5, left=0.05, right=0.96, wspace=0.30, hspace=0.22, top=0.98, bottom=0.02)
+        fig = plt.figure(figsize=(24, n_rows*4))
+    gs = GridSpec(n_rows, 5, left=0.02, right=0.98, wspace=0.28, hspace=0.07, top=0.98, bottom=0.02)
 
     
     clusters_summary_df = ascii.read(imd.loc_cluster_summary_df).to_pandas()
@@ -114,23 +118,26 @@ def make_overview_plot_clusters(groupIDs, import_save_str, n_clusters, norm_meth
         ax = fig.add_subplot(gs[plot_row_idx, 0])
         total_sed = ascii.read(imd.total_sed_csvs_dir + f'/{groupID}_total_sed.csv').to_pandas()
         
-        vis_composite_sed(total_sed, composite_sed=0, composite_filters=0, groupID=groupID, std_scatter=0, run_filters=False, axis_obj=ax, grey_points=True, errorbars=False)
+        vis_composite_sed(total_sed, composite_sed=0, composite_filters=0, groupID=groupID, std_scatter=0, run_filters=False, axis_obj=ax, grey_points=True, errorbars=False, scale_5000=True)
         
         if paper_overview==False:
             ax.text(0.85, 0.85, f'{n_gals}', transform=ax.transAxes, fontsize=fontsize)
         if paper_overview==True:
-            ax.text(0.97, 0.91, f'Group {groupID_dict[groupID]}', transform=ax.transAxes, fontsize=fontsize, horizontalalignment='right')
-            ax.text(0.97, 0.83, f'S = {clusters_summary_row["mean_sim_to_composite"].iloc[0]:.2f}', transform=ax.transAxes, fontsize=fontsize, horizontalalignment='right')
-            ax.text(0.97, 0.75, f'N = {n_gals}', transform=ax.transAxes, fontsize=fontsize, horizontalalignment='right')
+            ax.text(0.97, 0.91, f'Group {groupID_dict[groupID]}', transform=ax.transAxes, fontsize=fontsize-2, horizontalalignment='right')
+            ax.text(0.97, 0.83, f'S = {clusters_summary_row["mean_sim_to_composite"].iloc[0]:.2f}', transform=ax.transAxes, fontsize=fontsize-2, horizontalalignment='right')
+            ax.text(0.97, 0.75, f'N = {n_gals}', transform=ax.transAxes, fontsize=fontsize-2, horizontalalignment='right')
 
         if plot_row_idx in add_xaxis_labels:
             ax.set_xlabel('Wavelength', fontsize=fontsize)
         else:
             ax.set_xlabel('')
         if plot_row_idx in add_yaxis_labels:
-            ax.set_ylabel('Normalized F$_\lambda$', fontsize=fontsize)
+            ax.set_ylabel('F$_\lambda$ (norm)', fontsize=fontsize)
         else:
             ax.set_ylabel('')
+
+        if groupID != groupIDs[-1]:
+            ax.tick_params(labelbottom=False)   
         ax.tick_params(labelsize = fontsize)
         set_aspect_1(ax)
 
@@ -169,13 +176,14 @@ def make_overview_plot_clusters(groupIDs, import_save_str, n_clusters, norm_meth
         if plot_row_idx in add_xaxis_labels:
             ax.set_xlabel('Wavelength', fontsize=fontsize, labelpad=30)
         if plot_row_idx in add_yaxis_labels:
-            ax.set_ylabel('Normalized F$_\lambda$', fontsize=fontsize, labelpad=45)
+            ax.set_ylabel('F$_\lambda$ (norm)', fontsize=fontsize, labelpad=45)
+        if groupID != groupIDs[-1]:
+            ax.tick_params(labelbottom=False)   
         # ax.tick_params(labelsize = fontsize)
         ax.axs[0].tick_params(labelsize = fontsize)
         ax.axs[1].tick_params(labelsize = fontsize)
         ax.set_ylim(-0.1, 1.5)
-        
-        
+
         
         # scale_aspect(ax)
 
@@ -247,7 +255,9 @@ def make_overview_plot_clusters(groupIDs, import_save_str, n_clusters, norm_meth
         if plot_row_idx in add_xaxis_labels:
             ax.set_xlabel(stellar_mass_label, fontsize=fontsize)
         if plot_row_idx in add_yaxis_labels:
-            ax.set_ylabel(sfr_label, fontsize=fontsize, labelpad=-5   )
+            ax.set_ylabel(sfr_label, fontsize=fontsize, labelpad=2)
+        if groupID != groupIDs[-1]:
+            ax.tick_params(labelbottom=False)   
         ax.tick_params(labelsize = fontsize)
         ax.set_xlim(mass_lims)
         ax.set_ylim(sfr_lims)
@@ -296,6 +306,8 @@ def make_overview_plot_clusters(groupIDs, import_save_str, n_clusters, norm_meth
             ax.set_xlabel('V-J', fontsize=fontsize)
         if plot_row_idx in add_yaxis_labels:
             ax.set_ylabel('U-V', fontsize=fontsize)
+        if groupID != groupIDs[-1]:
+            ax.tick_params(labelbottom=False)   
         ax.set_xlim(xrange)
         ax.set_ylim(yrange)
         ax.tick_params(labelsize = fontsize)
@@ -338,6 +350,8 @@ def make_overview_plot_clusters(groupIDs, import_save_str, n_clusters, norm_meth
             ax.set_xlabel('log(N[II]/H$\\alpha$)', fontsize=fontsize)
         if plot_row_idx in add_yaxis_labels:
             ax.set_ylabel('log(O[III]/H$\\beta$)', fontsize=fontsize, labelpad=-7)
+        if groupID != groupIDs[-1]:
+            ax.tick_params(labelbottom=False)   
         ax.set_xlim(xrange)
         ax.set_ylim(yrange)
         ax.tick_params(labelsize = fontsize)
