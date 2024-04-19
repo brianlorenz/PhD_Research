@@ -33,7 +33,7 @@ def compute_metals(log_mass, fm_s):
 
 def make_paper_plots(n_clusters, norm_method):
     # Overview figure
-    setup_figs(n_clusters, norm_method, bpt_color=True, paper_overview=True, prospector_spec=False)
+    # setup_figs(n_clusters, norm_method, bpt_color=True, paper_overview=True, prospector_spec=False)
 
     ### Potentially 4 panels? Or maybe different figures
     # Prospector AV vs Mass, and Balmer dec measured vs mass
@@ -48,10 +48,10 @@ def make_paper_plots(n_clusters, norm_method):
     # # SFR comparison between prospector and emission lines
     # make_SFR_compare_fig()
     # make_prospector_compare_met_fig()
-    make_prospector_overview_fig('correct_met_prior')
+    # make_prospector_overview_fig('correct_met_prior')
 
     # # #sfr/mass/uvj/bpt
-    # make_sfr_mass_uvj_bpt_4panel(snr_thresh=3)
+    make_sfr_mass_uvj_bpt_4panel(snr_thresh=3)
 
     # # # Dust model figure
     # make_dust_fig()
@@ -71,9 +71,9 @@ def line(x, a, b):
     return a * x + b
 
 def make_prospector_overview_fig(run_name):
-    fontsize = 16
+    fontsize = 20
     fig = plt.figure(figsize=(22, 16))
-    gs = GridSpec(4, 5, left=0.05, right=0.96, wspace=0.15, hspace=0.04, top=0.98, bottom=0.02)
+    gs = GridSpec(4, 5, left=0.02, right=0.98, wspace=0.21, hspace=0.04, top=0.98, bottom=0.02)
     cluster_summary_df = imd.read_cluster_summary_df()
     paperID = 1
     for row in range(4):
@@ -91,12 +91,16 @@ def make_prospector_overview_fig(run_name):
                                 f'/{save_str}_phot.csv').to_pandas()
             lines_df = ascii.read(imd.prospector_fit_csvs_dir + f'/{run_name}_csvs' +
                                 f'/{save_str}_lines.csv').to_pandas()
-
+            
             phot_5000_idx = np.logical_and(phot_df['rest_wavelength']>4500, phot_df['rest_wavelength']<5500)
             phot_5000 = phot_df[phot_5000_idx].iloc[0]['phot50_flambda']
             # breakpoint()
             scale = 1/(phot_5000*5000)
-
+            for i in range(len(obs['err_f_lambda'])):
+                if i == len(obs['err_f_lambda']) - 1:
+                    continue
+                if obs['err_f_lambda'][i+1] > 10 * obs['err_f_lambda'][i]:
+                    obs['err_f_lambda'][i+1] = obs['err_f_lambda'][i]
 
             start_spec = phot_df['rest_wavelength'].iloc[0]
             end_spec = phot_df['rest_wavelength'].iloc[-1]
@@ -137,10 +141,10 @@ def make_prospector_overview_fig(run_name):
 
             ax.tick_params(labelsize=fontsize)
 
-            xtext = 0.695
+            xtext = 0.638
             if paperID < 10: 
-                xtext = 0.735
-            ax.text(xtext, 0.93, f'Group {paperID}', transform=ax.transAxes, fontsize=fontsize)
+                xtext = xtext + 0.04
+            ax.text(xtext, 0.927, f'Group {paperID}', transform=ax.transAxes, fontsize=fontsize)
 
             ax.set_ylim(0.8 * np.percentile(scale*phot_df['rest_wavelength'] * rest_frame_original_phot, 1),
                      1.25 * np.percentile(scale*phot_df['rest_wavelength'] * rest_frame_original_phot, 99))
@@ -151,7 +155,7 @@ def make_prospector_overview_fig(run_name):
             ax.set_xscale('log')
             # scale_aspect(ax)
             if paperID == 1:
-                ax.legend(fontsize=12, loc=(0.12, 0.85))
+                ax.legend(fontsize=16, loc=(0.28, 0.69))
 
             paperID = paperID + 1
     fig.savefig(imd.sed_paper_figures_dir + '/prospector_overview.pdf', bbox_inches='tight')
@@ -568,10 +572,10 @@ def make_uvj_bpt_fig():
 def make_sfr_mass_uvj_bpt_4panel(n_clusters=20, snr_thresh=2):
     fig = plt.figure(figsize=(12, 12))
     gs = GridSpec(2, 2, left=0.11, right=0.96, bottom=0.12, wspace=0.28, height_ratios=[1,1],width_ratios=[1,1])
-    ax_ssfr = fig.add_subplot(gs[0, 0])
-    ax_metallicity = fig.add_subplot(gs[0, 1])
-    ax_uvj = fig.add_subplot(gs[1, 0])
-    ax_bpt = fig.add_subplot(gs[1, 1])
+    ax_ssfr = fig.add_subplot(gs[0, 1])
+    ax_metallicity = fig.add_subplot(gs[1, 1])
+    ax_uvj = fig.add_subplot(gs[0, 0])
+    ax_bpt = fig.add_subplot(gs[1, 0])
     #SFR/Metallicity
     plot_a_vs_b_paper('median_log_mass', 'computed_log_ssfr_with_limit', stellar_mass_label, ssfr_label, 'None', axis_obj=ax_ssfr, yerr=True, plot_lims=[9, 11.5, -10.8, -7.5], lower_limit=180, fig=fig, use_color_df=True) #, color_var='median_U_V'
     plot_a_vs_b_paper('median_log_mass', 'O3N2_metallicity_upper_limit', stellar_mass_label, metallicity_label, 'None', axis_obj=ax_metallicity, yerr=True, plot_lims=[9, 11.5, 8.15, 9.17], fig=fig, lower_limit=360)

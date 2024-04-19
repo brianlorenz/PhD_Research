@@ -223,6 +223,7 @@ def plot_bpt(savename='None', axis_obj='False', composite_bpt_point=[-47], compo
         filtered_gal_df = get_bpt_coords(filtered_gal_df)
         filtered_gal_df['hb_snr'] = filtered_gal_df['hb_flux']/filtered_gal_df['err_hb_flux']
         filtered_gal_df['nii_6585_snr'] = filtered_gal_df['nii_6585_flux']/filtered_gal_df['err_nii_6585_flux']
+        # filtered_gal_df['ha_snr'] = filtered_gal_df['ha_flux']/filtered_gal_df['err_ha_flux']
         hb_detected = filtered_gal_df['hb_snr']>snr_background
         nii_detected = filtered_gal_df['nii_6585_snr']>snr_background
         both_detected = np.logical_and(hb_detected, nii_detected)
@@ -240,10 +241,18 @@ def plot_bpt(savename='None', axis_obj='False', composite_bpt_point=[-47], compo
             else:
                 rgba = 'black'
             if row['log_NII_Ha']>-98 and row['log_OIII_Hb']>-98:
-                n2has.append(row['log_NII_Ha'])
-                o3hbs.append(row['log_OIII_Hb'])
-                ax.errorbar(row['log_NII_Ha'], row['log_OIII_Hb'], xerr=row[
-                            'log_NII_Ha_err'], yerr=row['log_OIII_Hb_err'], marker='o', color=rgba, ecolor='grey', ls='None', zorder=1)
+                row['hb_snr'] = row['hb_flux']/row['err_hb_flux']
+                row['nii_6585_snr'] = row['nii_6585_flux']/row['err_nii_6585_flux']
+                # filtered_gal_df['ha_snr'] = filtered_gal_df['ha_flux']/filtered_gal_df['err_ha_flux']
+                hb_detected = row['hb_snr']>snr_background
+                nii_detected = row['nii_6585_snr']>snr_background
+                both_detected = np.logical_and(hb_detected, nii_detected)
+                if both_detected == True:
+                    n2has.append(row['log_NII_Ha'])
+                    o3hbs.append(row['log_OIII_Hb'])
+                    print(groupID)
+                    ax.errorbar(row['log_NII_Ha'], row['log_OIII_Hb'], xerr=row[
+                                'log_NII_Ha_err'], yerr=row['log_OIII_Hb_err'], marker='o', color=rgba, ecolor='grey', ls='None', zorder=1)
     if plot_median == True:
         median_n2ha = np.median(n2has)
         median_o3hb = np.median(o3hbs)

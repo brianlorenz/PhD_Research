@@ -45,6 +45,9 @@ def add_props_to_cluster_summary_df(n_clusters, run_name):
     cluster_summary_df['err_log_Prospector_ssfr50_multiplied_normalized_low'] = sfr50_norm - (np.log10((cluster_summary_df['sfr16'] / (10**cluster_summary_df['norm_median_log_mass'])) * (10**cluster_summary_df['lum_weighted_median_log_mass'])))
     cluster_summary_df['err_log_Prospector_ssfr50_multiplied_normalized_high'] = (np.log10((cluster_summary_df['sfr84'] / (10**cluster_summary_df['norm_median_log_mass'])) * (10**cluster_summary_df['lum_weighted_median_log_mass']))) - sfr50_norm
 
+    cluster_summary_df['log_Prospector_ssfr50'] = np.log10(cluster_summary_df['sfr50'] / 10**cluster_summary_df['norm_median_log_mass'])
+    cluster_summary_df['err_log_Prospector_ssfr50_low'] = cluster_summary_df['log_Prospector_ssfr50'] - np.log10(cluster_summary_df['sfr16'] / 10**cluster_summary_df['norm_median_log_mass'])
+    cluster_summary_df['err_log_Prospector_ssfr50_high'] = np.log10(cluster_summary_df['sfr84'] / 10**cluster_summary_df['norm_median_log_mass']) - cluster_summary_df['log_Prospector_ssfr50']
 
     halphas = []
     err_halphas = []

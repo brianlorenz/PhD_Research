@@ -4,10 +4,11 @@ from uncover_read_data import read_supercat
 
 def unconver_read_filters():
     supercat_df = read_supercat()
-    filt_cols = [col for col in supercat_df.columns if 'f_' in col]
-    filt_cols = [col for col in filt_cols if 'alma' not in col]
+    filt_cols = get_filt_cols(supercat_df)
     sedpy_filts = []
+    uncover_filt_dir = {}
     for filt in filt_cols:
+        filtname = filt
         filt = filt.replace('f_', 'jwst_')
         try: 
             sedpy_filt = observate.load_filters([filt])
@@ -18,8 +19,14 @@ def unconver_read_filters():
             except:
                 filt = filt.replace('wfc3_ir_', 'acs_wfc_')
                 sedpy_filt = observate.load_filters([filt])
-        print(f'Read filter {filt}')
+        uncover_filt_dir[filtname+'_blue'] = sedpy_filt[0].blue_edge
+        uncover_filt_dir[filtname+'_red'] = sedpy_filt[0].red_edge
+        uncover_filt_dir[filtname+'_wave_eff'] = sedpy_filt[0].wave_effective
         sedpy_filts.append(sedpy_filt)
-    breakpoint()
+    
+    return uncover_filt_dir
 
-unconver_read_filters()
+def get_filt_cols(df):
+    filt_cols = [col for col in df.columns if 'f_' in col]
+    filt_cols = [col for col in filt_cols if 'alma' not in col]
+    return filt_cols

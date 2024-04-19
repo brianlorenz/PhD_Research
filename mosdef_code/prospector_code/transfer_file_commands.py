@@ -1,6 +1,6 @@
 import initialize_mosdef_dirs as imd
 
-run_name = 'correct_met_prior'
+run_name = 'fixed_halfsolar'
 
 print('')
 print('')

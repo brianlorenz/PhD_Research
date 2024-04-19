@@ -213,7 +213,13 @@ def make_overview_plot_clusters(groupIDs, import_save_str, n_clusters, norm_meth
         ax.plot(clusters_summary_row['median_log_mass'], clusters_summary_row['computed_log_sfr_with_limit'], marker=cluster_marker, color=get_row_color(groupID), mew=paper_marker_edge_width, mec=paper_mec, ls='None', markersize=get_row_size(i), zorder=10000)
         computed_sfr = clusters_summary_row['computed_log_sfr_with_limit']
         if clusters_summary_row['flag_balmer_lower_limit'].iloc[0] == 1:
-            ax.vlines(clusters_summary_row['median_log_mass'], computed_sfr, computed_sfr+100000, color=get_row_color(groupID))
+            # ax.vlines(clusters_summary_row['median_log_mass'], computed_sfr, computed_sfr+100000, color=get_row_color(groupID))
+            arrow_width = 0.01
+            arrow_length = 0.06
+            mass_xrange = 12.1-7.9
+            sfr_xrange = 3-(-0.5)
+            # breakpoint()
+            ax.arrow((clusters_summary_row['median_log_mass'].iloc[0]-mass_lims[0])/mass_xrange, (clusters_summary_row['computed_log_sfr_with_limit'].iloc[0]-sfr_lims[0])/sfr_xrange, 0, arrow_length, color=get_row_color(groupID), width=arrow_width, transform=ax.transAxes)
         
         cmap = mpl.cm.plasma
         norm = mpl.colors.Normalize(vmin=1, vmax=n_gals) 
@@ -237,9 +243,9 @@ def make_overview_plot_clusters(groupIDs, import_save_str, n_clusters, norm_meth
         in_sfr_range = np.logical_and(group_df['log_use_sfr']>sfr_lims[0], group_df['log_use_sfr']<sfr_lims[1])
         in_both_range = np.logical_and(in_mass_range, in_sfr_range)
         n_gals_in_range = len(group_df[in_both_range])
-        if paper_overview==False:
-        
-            ax.text(0.05, 0.85, f'{n_gals_in_range}', transform=ax.transAxes, fontsize=fontsize)
+        ax.text(0.05, 0.87, f'{n_gals_in_range}', transform=ax.transAxes, fontsize=fontsize)
+        # if paper_overview==False:
+        #     ax.text(0.05, 0.85, f'{n_gals_in_range}', transform=ax.transAxes, fontsize=fontsize)
 
         # Plot lines of constant ssfr
         ssfrs = [0.1, 1, 10]
@@ -322,21 +328,34 @@ def make_overview_plot_clusters(groupIDs, import_save_str, n_clusters, norm_meth
         yrange = (-1.2, 1.5)
         
         try:
-            group_df_bpt = plot_bpt(axis_obj=ax, use_other_df=1, use_df=group_df, add_background=True, color_gals=color_gals, add_prospector=prospector_run, groupID=groupID, plot_median=True)
+            group_df_bpt = plot_bpt(axis_obj=ax, use_other_df=1, use_df=group_df, add_background=True, color_gals=color_gals, add_prospector=prospector_run, groupID=groupID, plot_median=True, snr_background=3)
         except:
-            group_df_bpt = plot_bpt(axis_obj=ax, use_other_df=1, use_df=group_df, add_background=True, color_gals=color_gals, plot_median=True)
+            group_df_bpt = plot_bpt(axis_obj=ax, use_other_df=1, use_df=group_df, add_background=True, color_gals=color_gals, plot_median=True, snr_background=3)
         in_x_range = np.logical_and(group_df_bpt['log_NII_Ha']>xrange[0], group_df_bpt['log_NII_Ha']<xrange[1])
         in_y_range = np.logical_and(group_df_bpt['log_OIII_Hb']>yrange[0], group_df_bpt['log_OIII_Hb']<yrange[1])
         in_both_range_bpt = np.logical_and(in_x_range, in_y_range)
-        n_gals_in_range_bpt = len(group_df[in_both_range_bpt])
-        if paper_overview == False:
-            ax.text(0.85, 0.85, f'{n_gals_in_range_bpt}', transform=ax.transAxes, fontsize=fontsize)
+
+        snr_background = 3
+        group_df['hb_snr'] = group_df['hb_flux']/group_df['err_hb_flux']
+        group_df['nii_6585_snr'] = group_df['nii_6585_flux']/group_df['err_nii_6585_flux']
+        # group_df['ha_snr'] = group_df['ha_flux']/group_df['err_ha_flux']
+        hb_detected = group_df['hb_snr']>snr_background
+        nii_detected = group_df['nii_6585_snr']>snr_background
+        both_detected = np.logical_and(hb_detected, nii_detected)
+        n_galsbpt = len(group_df[both_detected])
+
+        # n_gals_in_range_bpt = len(group_df[in_both_range_bpt])
+        ax.text(0.85, 0.87, f'{n_galsbpt}', transform=ax.transAxes, fontsize=fontsize)
+        # if paper_overview == False:
+        #     ax.text(0.85, 0.85, f'{n_gals_in_range_bpt}', transform=ax.transAxes, fontsize=fontsize)
         # ax.plot(group_df['log_mass'], group_df['log_use_sfr'], marker='o', color='black', ls='None')
 
         # Add the measured value of the cluster
         log_N2_Ha_group = clusters_summary_row['log_N2_Ha']
         log_O3_Hb_group = clusters_summary_row['log_O3_Hb']
         
+        
+
         log_N2_Ha_group_errs = [clusters_summary_row['err_log_N2_Ha_low'], clusters_summary_row['err_log_N2_Ha_high']]
         log_O3_Hb_group_errs = [clusters_summary_row['err_log_O3_Hb_low'], clusters_summary_row['err_log_O3_Hb_high']]
         ax.plot(log_N2_Ha_group, log_O3_Hb_group, marker=cluster_marker, color=get_row_color(groupID), markersize=get_row_size(i), mew=paper_marker_edge_width, mec=paper_mec, ls='None', zorder=10000, label='Composite')

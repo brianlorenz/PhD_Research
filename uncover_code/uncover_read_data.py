@@ -21,10 +21,10 @@ def read_supercat():
 def read_raw_spec(id_msa):
     raw_spec_loc = f'/Users/brianlorenz/uncover/Catalogs/spectra/uncover-v2_prism-clear_2561_{id_msa}.spec.fits'
     spec_df = make_pd_table_from_fits(raw_spec_loc)
+    spec_df['flux'] = spec_df['flux']*1e-6 # Convert uJy to Jy
+    spec_df['err'] = spec_df['err']*1e-6
     return spec_df
 
-def read_phot(id_msa):
-    pass
 
 def make_pd_table_from_fits(file_loc):
     with fits.open(file_loc) as hdu:
@@ -32,8 +32,8 @@ def make_pd_table_from_fits(file_loc):
         data_df = Table(data_loc).to_pandas()
         return data_df
 
-
-# get_sed(6645)
+# read_raw_spec(6226)
+# read_supercat()
 # fig, ax = plt.subplots(figsize=(20,20)) 
 # ax.imshow(image, vmin=np.percentile(image, 10), vmax=np.percentile(image, 75))
 # plt.show()
