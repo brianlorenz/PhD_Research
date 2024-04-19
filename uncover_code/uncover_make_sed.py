@@ -39,5 +39,7 @@ def plot_sed(sed_df, spec_df):
     ax.set_ylabel('Flux (Jy)', fontsize=font)
     plt.show()
 
-# main(6226)
-# main(7487)
+main(6291)
+main(6325)
+main(7887)
+main(9457)
