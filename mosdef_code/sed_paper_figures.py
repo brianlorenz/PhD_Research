@@ -51,7 +51,7 @@ def make_paper_plots(n_clusters, norm_method):
     # make_prospector_overview_fig('correct_met_prior')
 
     # # #sfr/mass/uvj/bpt
-    make_sfr_mass_uvj_bpt_4panel(snr_thresh=3)
+    # make_sfr_mass_uvj_bpt_4panel(snr_thresh=3)
 
     # # # Dust model figure
     # make_dust_fig()
@@ -224,19 +224,20 @@ def make_hb_percentage_fig(n_groups=20):
 
 def make_mass_metal_sfr_fig():
     fig = plt.figure(figsize=(18, 12))
+    rfont = 18
     gs = GridSpec(2, 3, left=0.11, right=0.96, bottom=0.12, wspace=0.28, height_ratios=[1,1],width_ratios=[1,1,1])    
-    ax_av_mass = fig.add_subplot(gs[0, 0])
+    ax_stellarav_mass = fig.add_subplot(gs[0, 0])
     ax_balmer_mass = fig.add_subplot(gs[1, 0])
-    ax_av_sfr = fig.add_subplot(gs[1, 1])
-    ax_av_metal = fig.add_subplot(gs[1, 2])
+    ax_balmer_sfr = fig.add_subplot(gs[1, 1])
+    ax_balmer_metal = fig.add_subplot(gs[1, 2])
     ax_stellarav_sfr = fig.add_subplot(gs[0, 1])
     ax_stellarav_metal = fig.add_subplot(gs[0, 2])
     # ax_metal_sfr = fig.add_subplot(gs[0, 2])
     plot_a_vs_b_paper('computed_log_sfr_with_limit', 'Prospector_AV_50', sfr_label, prospector_dust2_label, 'None', axis_obj=ax_stellarav_sfr, yerr=True, plot_lims=[0, 2, -0.2, 2.5], fig=fig, lower_limit=90, use_color_df=True) 
     plot_a_vs_b_paper('O3N2_metallicity', 'Prospector_AV_50', metallicity_label, prospector_dust2_label, 'None', axis_obj=ax_stellarav_metal, yerr=True, plot_lims=[8, 9, -0.2, 2.5], fig=fig, lower_limit=270, use_color_df=True)
-    plot_a_vs_b_paper('computed_log_sfr_with_limit', 'balmer_av_with_limit', sfr_label, balmer_av_label, 'None', axis_obj=ax_av_sfr, yerr=True, plot_lims=[0, 2, -0.2, 5], fig=fig, lower_limit=135, use_color_df=True) 
-    plot_a_vs_b_paper('O3N2_metallicity', 'balmer_av_with_limit', metallicity_label, balmer_av_label, 'None', axis_obj=ax_av_metal, yerr=True, plot_lims=[8, 9, -0.2, 5], fig=fig, lower_limit=225, use_color_df=True)
-    plot_a_vs_b_paper('median_log_mass', 'Prospector_AV_50', stellar_mass_label, prospector_dust2_label, 'None', axis_obj=ax_av_mass, yerr=True, plot_lims=[9, 11.5, -0.2, 2.5], fig=fig, use_color_df=True, lower_limit=3) 
+    plot_a_vs_b_paper('computed_log_sfr_with_limit', 'balmer_av_with_limit', sfr_label, balmer_av_label, 'None', axis_obj=ax_balmer_sfr, yerr=True, plot_lims=[0, 2, -0.2, 5], fig=fig, lower_limit=135, use_color_df=True) 
+    plot_a_vs_b_paper('O3N2_metallicity', 'balmer_av_with_limit', metallicity_label, balmer_av_label, 'None', axis_obj=ax_balmer_metal, yerr=True, plot_lims=[8, 9, -0.2, 5], fig=fig, lower_limit=225, use_color_df=True)
+    plot_a_vs_b_paper('median_log_mass', 'Prospector_AV_50', stellar_mass_label, prospector_dust2_label, 'None', axis_obj=ax_stellarav_mass, yerr=True, plot_lims=[9, 11.5, -0.2, 2.5], fig=fig, use_color_df=True, lower_limit=3) 
     plot_a_vs_b_paper('median_log_mass', 'balmer_av_with_limit', stellar_mass_label, balmer_av_label, 'None', axis_obj=ax_balmer_mass, yerr=True, plot_lims=[9, 11.5, -0.2, 5], fig=fig, use_color_df=True, lower_limit=180) 
     # regress_res = find_best_fit('median_log_mass', 'balmer_av_with_limit', exclude_limit=True)
     x_regress = np.arange(9, 11.8, 0.1)
@@ -246,16 +247,19 @@ def make_mass_metal_sfr_fig():
     # ax_balmer_mass.plot(x_regress, yints[2] + slopes[2]*x_regress, color='green', ls='-')
     ax_balmer_mass.fill_between(x_regress, points_16, points_84, facecolor="gray", alpha=0.3)
     ax_balmer_mass.plot(x_regress, regress_res.intercept + regress_res.slope*x_regress, color='black', ls='--')
-
+    def add_r(ax, regress):
+        ax.text(0.03, 0.93, f"r={round(regress.rvalue, 2):.2f}", fontsize=rfont, transform = ax.transAxes)
+    add_r(ax_balmer_mass, regress_res)
     # print(f'Best fit to nebular av vs mass: slope {regress_res.slope}, yint {regress_res.intercept}')
 
     regress_res = find_best_fit('computed_log_sfr_with_limit', 'balmer_av_with_limit', exclude_limit=True)
     x_regress = np.arange(-0.1, 3, 0.1)
     regress_res, points_16, points_84 = bootstrap_fit('computed_log_sfr_with_limit', 'balmer_av_with_limit', x_regress, exclude_limit=True)
+    add_r(ax_balmer_sfr, regress_res)
     # ax_av_sfr.plot(x_regress, yints[1] + slopes[1]*x_regress, color='green', ls='-')
     # ax_av_sfr.plot(x_regress, yints[2] + slopes[2]*x_regress, color='green', ls='-')
-    ax_av_sfr.fill_between(x_regress, points_16, points_84, facecolor="gray", alpha=0.3)
-    ax_av_sfr.plot(x_regress, regress_res.intercept + regress_res.slope*x_regress, color='black', ls='--')
+    ax_balmer_sfr.fill_between(x_regress, points_16, points_84, facecolor="gray", alpha=0.3)
+    ax_balmer_sfr.plot(x_regress, regress_res.intercept + regress_res.slope*x_regress, color='black', ls='--')
     
     print(f'Best fit to nebular av vs sfr: slope {regress_res.slope}, yint {regress_res.intercept}')
     # Shapley's data
@@ -263,8 +267,21 @@ def make_mass_metal_sfr_fig():
     mosdef_data_decs = np.array([3.337349397590363, 3.4548192771084363, 3.7801204819277103, 4.512048192771086])
     mosdef_data_balmeravs = compute_balmer_av(mosdef_data_decs)
     ax_balmer_mass.plot(mosdef_data_mass, mosdef_data_balmeravs, color='black', marker='s', ms=10, mec='black', ls='--', zorder=1000000, label='z=2.3 MOSDEF (Shapley+ 2022)')
-    ax_balmer_mass.legend(fontsize=14)
+    ax_balmer_mass.legend(loc = (0.03, 0.82), fontsize=14)
     # plot_a_vs_b_paper('computed_log_sfr_with_limit', 'O3N2_metallicity', metallicity_label, sfr_label, 'None', axis_obj=ax_metal_sfr, yerr=True, plot_lims=[0, 2, 8, 9], fig=fig, color_var='balmer_av', lower_limit=225, use_color_df=False)
+
+    # Fit r values for the rest
+    x_regress = np.arange(9, 11.8, 0.1) # Mass axis
+    regress_res, points_16, points_84 = bootstrap_fit('median_log_mass', 'Prospector_AV_50', x_regress, exclude_limit=True, bootstrap=10)
+    add_r(ax_stellarav_mass, regress_res)
+    x_regress = np.arange(-0.1, 3, 0.1)
+    regress_res, points_16, points_84 = bootstrap_fit('computed_log_sfr_with_limit', 'Prospector_AV_50', x_regress, exclude_limit=True, bootstrap=10)
+    add_r(ax_stellarav_sfr, regress_res)
+    x_regress = np.arange(7.9, 9.2, 0.1)
+    regress_res, points_16, points_84 = bootstrap_fit('O3N2_metallicity', 'Prospector_AV_50', x_regress, exclude_limit=True, bootstrap=10)
+    add_r(ax_stellarav_metal, regress_res)
+    regress_res, points_16, points_84 = bootstrap_fit('O3N2_metallicity', 'balmer_av_with_limit', x_regress, exclude_limit=True, bootstrap=10)
+    add_r(ax_balmer_metal, regress_res)
 
     # Add FMR
     fm_s = np.arange(-0.1, 4)
@@ -279,7 +296,7 @@ def make_mass_metal_sfr_fig():
 
 
 
-    for ax in [ax_av_sfr, ax_av_metal, ax_stellarav_metal, ax_stellarav_sfr, ax_av_mass, ax_balmer_mass]:
+    for ax in [ax_balmer_sfr, ax_balmer_metal, ax_stellarav_metal, ax_stellarav_sfr, ax_stellarav_mass, ax_balmer_mass]:
         scale_aspect(ax)
         # ax.legend(fontsize=full_page_axisfont-4)
     fig.savefig(imd.sed_paper_figures_dir + '/dust_mass_sfr_met.pdf', bbox_inches='tight')
@@ -475,14 +492,18 @@ def find_best_fit(x_col, y_col, exclude_limit=True):
     regress_res = linregress(xvals, yvals)
     return regress_res
 
-def bootstrap_fit(x_col, y_col, xpoints, exclude_limit=True, bootstrap=10000):
+def bootstrap_fit(x_col, y_col, xpoints, exclude_limit=True, bootstrap=10):
     cluster_summary_df = ascii.read(imd.loc_cluster_summary_df).to_pandas()
     if exclude_limit == True:
         cluster_summary_df = cluster_summary_df[cluster_summary_df['flag_hb_limit']==0]
     xvals = cluster_summary_df[x_col]
     yvals = cluster_summary_df[y_col]
-    yerr_low = cluster_summary_df['err_' + y_col + '_low']
-    yerr_high = cluster_summary_df['err_' + y_col + '_high']
+    if y_col == 'Prospector_AV_50':
+        yerr_low = cluster_summary_df['Prospector_AV_16']
+        yerr_high = cluster_summary_df['Prospector_AV_84']
+    else:
+        yerr_low = cluster_summary_df['err_' + y_col + '_low']
+        yerr_high = cluster_summary_df['err_' + y_col + '_high']
     boot_slopes = []
     boot_yints = []
     for boot in range(bootstrap):

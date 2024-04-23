@@ -40,6 +40,7 @@ def generate_clusters(n_clusters, stop_to_eval=True, skip_slow_steps=False):
 
     # Cross-correlate the mock seds
     if skip_slow_steps==False:
+        pass
         correlate_all_seds(zobjs)
     affinity_matrix = ascii.read(imd.cluster_dir + '/similarity_matrix.csv').to_pandas().to_numpy()
 
@@ -53,7 +54,7 @@ def generate_clusters(n_clusters, stop_to_eval=True, skip_slow_steps=False):
     # Make the clusters
     if skip_slow_steps==False:
         pass
-    cluster_seds(n_clusters)
+        cluster_seds(n_clusters)
 
     # Make dataframes for each cluster with galaxy properties
     make_cluster_dfs(n_clusters, gal_df)
@@ -99,8 +100,8 @@ def filter_gal_df():
     full_df = read_interp_axis_ratio()
 
     len_before_agn = len(gal_df)
-    #Filter out objects that are flagged as optical AGN in MOSDEF (see readme)
-    gal_df = gal_df[gal_df['agn_flag'] < 4]
+    #Filter out objects that are flagged as AGN in MOSDEF (see readme)
+    gal_df = gal_df[gal_df['agn_flag'] == 0] # Used to be < 4
     len_after_agn = len(gal_df)
     print(f'removed {len_before_agn-len_after_agn} galaxies for AGN flag')
 

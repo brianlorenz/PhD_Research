@@ -327,6 +327,10 @@ def make_overview_plot_clusters(groupIDs, import_save_str, n_clusters, norm_meth
         xrange = (-2, 1)
         yrange = (-1.2, 1.5)
         
+        plot_bpt(axis_obj=ax, skip_gals=True, add_background=True)
+        from bpt_clusters_singledf import add_composite_bpts
+        add_composite_bpts(ax, groupID=groupID)
+
         try:
             group_df_bpt = plot_bpt(axis_obj=ax, use_other_df=1, use_df=group_df, add_background=True, color_gals=color_gals, add_prospector=prospector_run, groupID=groupID, plot_median=True, snr_background=3)
         except:
@@ -351,16 +355,39 @@ def make_overview_plot_clusters(groupIDs, import_save_str, n_clusters, norm_meth
         # ax.plot(group_df['log_mass'], group_df['log_use_sfr'], marker='o', color='black', ls='None')
 
         # Add the measured value of the cluster
-        log_N2_Ha_group = clusters_summary_row['log_N2_Ha']
-        log_O3_Hb_group = clusters_summary_row['log_O3_Hb']
-        
-        
+        # log_N2_Ha_group = clusters_summary_df['log_N2_Ha'].iloc[groupID]
+        # log_O3_Hb_group = clusters_summary_df['log_O3_Hb'].iloc[groupID]
+        # log_N2_Ha_group_errs = [[clusters_summary_df['err_log_N2_Ha_low'].iloc[groupID]], [clusters_summary_df['err_log_N2_Ha_high'].iloc[groupID]]]
+        # log_O3_Hb_group_errs = [[clusters_summary_df['err_log_O3_Hb_low'].iloc[groupID]], [clusters_summary_df['err_log_O3_Hb_high'].iloc[groupID]]]
 
-        log_N2_Ha_group_errs = [clusters_summary_row['err_log_N2_Ha_low'], clusters_summary_row['err_log_N2_Ha_high']]
-        log_O3_Hb_group_errs = [clusters_summary_row['err_log_O3_Hb_low'], clusters_summary_row['err_log_O3_Hb_high']]
-        ax.plot(log_N2_Ha_group, log_O3_Hb_group, marker=cluster_marker, color=get_row_color(groupID), markersize=get_row_size(i), mew=paper_marker_edge_width, mec=paper_mec, ls='None', zorder=10000, label='Composite')
-        ax.hlines(log_O3_Hb_group, log_N2_Ha_group-log_N2_Ha_group_errs[0], log_N2_Ha_group+log_N2_Ha_group_errs[1], color=get_row_color(groupID))
-        ax.vlines(log_N2_Ha_group, log_O3_Hb_group-log_O3_Hb_group_errs[0], log_O3_Hb_group+log_O3_Hb_group_errs[1], color=get_row_color(groupID))
+        # # ax.plot(log_N2_Ha_group, log_O3_Hb_group, marker=cluster_marker, color=get_row_color(groupID), markersize=get_row_size(i), mew=paper_marker_edge_width, mec=paper_mec, ls='None', zorder=10000, label='Composite')
+        # rgba = get_row_color(groupID)
+        # size = get_row_size(groupID)
+        # # size = get_row_size(i)
+
+        # if clusters_summary_df.iloc[groupID]['flag_hb_limit'] == 1:  
+        #     log_O3_Hb_group = clusters_summary_df['log_O3_Hb_lower_limit'].iloc[groupID]
+        #     rotation = 180
+        #     # marker = (3, 0, rotation)
+        #     arrow = u'$\u2191$'
+        #     rotated_marker = mpl.markers.MarkerStyle(marker=arrow)
+        #     rotated_marker._transform = rotated_marker.get_transform().rotate_deg(rotation)
+        #     # markerfacecolor='None'
+        #     ax.set_xlim(-2, 1)
+        #     ax.set_ylim(-1.2, 1.5)
+
+        #     xrange = 1 - (-2)
+        #     yrange = 1.5 - (-1.2)
+        #     arrow_width = 0.005
+        #     arrow_length = 0.04
+
+        #     ax.arrow((log_N2_Ha_group-(-2))/xrange, (log_O3_Hb_group-(-1.2))/yrange, 0, arrow_length, color=rgba, width=arrow_width, transform=ax.transAxes, zorder=1000000)
+        #     ax.plot(log_N2_Ha_group, log_O3_Hb_group, marker='s', color=rgba, markersize=size, mec=paper_mec, mew=paper_marker_edge_width, ls='None', zorder=10000)
+        # else:
+        #     ax.errorbar(log_N2_Ha_group, log_O3_Hb_group, xerr=log_N2_Ha_group_errs, yerr=log_O3_Hb_group_errs, marker='s', color=rgba, markersize=size, mec=paper_mec, mew=paper_marker_edge_width, ls='None', zorder=10000)
+
+        # ax.hlines(log_O3_Hb_group, log_N2_Ha_group-log_N2_Ha_group_errs[0], log_N2_Ha_group+log_N2_Ha_group_errs[1], color=get_row_color(groupID))
+        # ax.vlines(log_N2_Ha_group, log_O3_Hb_group-log_O3_Hb_group_errs[0], log_O3_Hb_group+log_O3_Hb_group_errs[1], color=get_row_color(groupID))
         # ax.errorbar(log_N2_Ha_group, log_O3_Hb_group, xerr=log_N2_Ha_group_errs, yerr=log_O3_Hb_group_errs, marker='x', color='blue', markersize=10, mew=3, ls='None')
         # ax.errorbar(log_N2_Ha_group, log_O3_Hb_group, xerr=log_N2_Ha_group_errs, yerr=log_O3_Hb_group_errs, marker='o', color='blue')
         # Add the point from prospector

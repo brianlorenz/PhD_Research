@@ -257,7 +257,7 @@ def build_model(object_redshift=0.0, fixed_metallicity=None, add_duste=True,
         model_params["dust1_fraction"]["prior"] = priors.TopHat(mini=0.0, maxi=2.0)
     else:
         model_params['dust_index'] = {'N': 1, 'isfree': True, 'init': 0.0}
-        model_params["dust_index"]["prior"] = priors.TopHat(mini=-1.7, maxi=1.7)
+        model_params["dust_index"]["prior"] = priors.TopHat(mini=-1, maxi=0.4)
 
 
     # Add a parameter for the slope of the attenuation curve

@@ -71,9 +71,14 @@ def calc_log_ratio(top_flux, top_err, bot_flux, bot_err):
         ((1 / bot_flux) * top_err)**2 + ((-top_flux / (bot_flux**2)) * bot_err)**2)
     return log_ratio, log_ratio_err
 
-def add_composite_bpts(ax):
+def add_composite_bpts(ax, groupID_toplot=-1):
     clusters_summary_df = ascii.read(imd.loc_cluster_summary_df).to_pandas()
     for i in range(len(clusters_summary_df)):
+        marker = 'o'
+        if groupID_toplot > -1:
+            if i != groupID:
+                continue
+            marker = 's'
         groupID = clusters_summary_df['groupID'].iloc[i]
         log_N2_Ha_group = clusters_summary_df['log_N2_Ha'].iloc[i]
         log_O3_Hb_group = clusters_summary_df['log_O3_Hb'].iloc[i]
@@ -107,7 +112,7 @@ def add_composite_bpts(ax):
             ax.arrow((log_N2_Ha_group-(-2))/xrange, (log_O3_Hb_group-(-1.2))/yrange, 0, arrow_length, color=rgba, width=arrow_width, transform=ax.transAxes, zorder=1000000)
             ax.plot(log_N2_Ha_group, log_O3_Hb_group, marker='s', color=rgba, markersize=size, mec=paper_mec, mew=paper_marker_edge_width, ls='None', zorder=10000)
         else:
-            ax.errorbar(log_N2_Ha_group, log_O3_Hb_group, xerr=log_N2_Ha_group_errs, yerr=log_O3_Hb_group_errs, marker='o', color=rgba, markersize=size, mec=paper_mec, mew=paper_marker_edge_width, ls='None', zorder=10000)
+            ax.errorbar(log_N2_Ha_group, log_O3_Hb_group, xerr=log_N2_Ha_group_errs, yerr=log_O3_Hb_group_errs, marker=marker, color=rgba, markersize=size, mec=paper_mec, mew=paper_marker_edge_width, ls='None', zorder=10000)
 
 def plot_bpt_all_composites(color_code='None'):
     fig, ax = plt.subplots(figsize=(8,7))
@@ -228,6 +233,8 @@ def plot_bpt(savename='None', axis_obj='False', composite_bpt_point=[-47], compo
         nii_detected = filtered_gal_df['nii_6585_snr']>snr_background
         both_detected = np.logical_and(hb_detected, nii_detected)
         ax.plot(filtered_gal_df[both_detected]['log_NII_Ha'], filtered_gal_df[both_detected]['log_OIII_Hb'], marker='o', color=grey_point_color, ls='None', markersize=grey_point_size, zorder=1)
+        # id_agn = filtered_gal_df[both_detected]['agn_flag']!=0
+        # ax.plot(filtered_gal_df[both_detected][id_agn]['log_NII_Ha'], filtered_gal_df[both_detected][id_agn]['log_OIII_Hb'], marker='s', color='green', ls='None', markersize=grey_point_size+4, zorder=1)
     
     cmap = mpl.cm.plasma
     norm = mpl.colors.Normalize(vmin=1, vmax=len(gal_df)) 

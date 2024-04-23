@@ -62,14 +62,12 @@ imd.check_and_make_dir(imd.composite_filter_csvs_dir)
 imd.check_and_make_dir(imd.composite_filter_images_dir)
 imd.check_and_make_dir(imd.composite_filter_sedpy_dir)
 
-# generate_clusters(20, stop_to_eval=False, skip_slow_steps=True)
+# generate_clusters(20, stop_to_eval=True, skip_slow_steps=True)
 
 # get_all_composite_seds(n_clusters, run_filters=False)
 # gen_all_mock_composites(n_clusters)
 # plot_all_similarity(n_clusters)
 # remove_dissimilar_gals(n_clusters) ### Run this only once
-# find_bad_seds(n_clusters)
-# remove_flagged_seds(n_clusters)
 
 # # Begin running all the functions
 # print('Generating composite seds...')
@@ -77,9 +75,6 @@ imd.check_and_make_dir(imd.composite_filter_sedpy_dir)
 # print('Generating composite spectra...')
 # stack_all_spectra(n_clusters, norm_method, bootstrap=bootstrap, ignore_groups=ignore_groups)
 
-
-# # # Check for agn and  - cuts down to 20
-# check_for_all_agn(n_clusters)
 
 # # Re-fit the emission of the composites and now fit the boostrapped ones
 # print('Fitting emission lines...')
@@ -90,7 +85,7 @@ imd.check_and_make_dir(imd.composite_filter_sedpy_dir)
 # # # Add the normalizations to the group dfs
 # add_norm_factors(n_clusters)
 
-make_clusters_summary_df(n_clusters, ignore_groups)
+# make_clusters_summary_df(n_clusters, ignore_groups)
 
 # Need to do a few things to composites (measure uvj, generate mocks sed, etc. before we can plot)
 # print('Generating plots')
@@ -102,7 +97,7 @@ make_clusters_summary_df(n_clusters, ignore_groups)
 # bootstrap = big_bootstrap_num
 # plot_balmer_hist(n_clusters, bootstrap)
 # bootstrap = -1
-# compute_balmer_lower_limits(sig_noise_thresh=2)
+# compute_balmer_lower_limits(sig_noise_thresh=3, hb_sig_noise_thresh=3)
 # compute_cluster_sfrs(luminosity=True, monte_carlo=True)
 # compute_new_sfrs_compositepaper(n_clusters, imf='subsolar')
 # compute_indiv_sfrs(n_clusters, lower_limit=True)
