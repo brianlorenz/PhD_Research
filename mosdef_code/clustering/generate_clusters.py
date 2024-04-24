@@ -42,6 +42,7 @@ def generate_clusters(n_clusters, stop_to_eval=True, skip_slow_steps=False):
     if skip_slow_steps==False:
         pass
         correlate_all_seds(zobjs)
+
     affinity_matrix = ascii.read(imd.cluster_dir + '/similarity_matrix.csv').to_pandas().to_numpy()
 
     # Evaluate how many clusters to make
@@ -101,7 +102,10 @@ def filter_gal_df():
 
     len_before_agn = len(gal_df)
     #Filter out objects that are flagged as AGN in MOSDEF (see readme)
-    gal_df = gal_df[gal_df['agn_flag'] == 0] # Used to be < 4
+    agn_zero = gal_df['agn_flag'] == 0
+    agn_six = gal_df['agn_flag'] == 6
+    agn_good = np.logical_or(agn_zero, agn_six)
+    gal_df = gal_df[agn_good] # Used to be < 4
     len_after_agn = len(gal_df)
     print(f'removed {len_before_agn-len_after_agn} galaxies for AGN flag')
 

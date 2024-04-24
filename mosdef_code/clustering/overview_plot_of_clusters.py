@@ -149,6 +149,7 @@ def make_overview_plot_clusters(groupIDs, import_save_str, n_clusters, norm_meth
         # Set up the broken axis
         plot_lims = ((4850, 5020), (6520, 6605))
         ax = brokenaxes(xlims=plot_lims, subplot_spec=gs[plot_row_idx, 1])
+        ax.set_ylim(-0.1, 1.55)
 
         # Can change the norm_method here
         spec_df = read_composite_spectrum(groupID, norm_method, scaled='False')
@@ -329,7 +330,7 @@ def make_overview_plot_clusters(groupIDs, import_save_str, n_clusters, norm_meth
         
         plot_bpt(axis_obj=ax, skip_gals=True, add_background=True)
         from bpt_clusters_singledf import add_composite_bpts
-        add_composite_bpts(ax, groupID=groupID)
+        add_composite_bpts(ax, groupID_toplot=groupID)
 
         try:
             group_df_bpt = plot_bpt(axis_obj=ax, use_other_df=1, use_df=group_df, add_background=True, color_gals=color_gals, add_prospector=prospector_run, groupID=groupID, plot_median=True, snr_background=3)

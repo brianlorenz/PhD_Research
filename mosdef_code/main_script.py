@@ -62,7 +62,7 @@ imd.check_and_make_dir(imd.composite_filter_csvs_dir)
 imd.check_and_make_dir(imd.composite_filter_images_dir)
 imd.check_and_make_dir(imd.composite_filter_sedpy_dir)
 
-# generate_clusters(20, stop_to_eval=True, skip_slow_steps=True)
+# generate_clusters(20, stop_to_eval=False, skip_slow_steps=True)
 
 # get_all_composite_seds(n_clusters, run_filters=False)
 # gen_all_mock_composites(n_clusters)
@@ -82,18 +82,18 @@ imd.check_and_make_dir(imd.composite_filter_sedpy_dir)
 # bootstrap = -1
 # fit_all_emission(n_clusters, norm_method, ignore_groups, bootstrap=bootstrap)
 
-# # # Add the normalizations to the group dfs
+# # Add the normalizations to the group dfs
 # add_norm_factors(n_clusters)
 
 # make_clusters_summary_df(n_clusters, ignore_groups)
 
-# Need to do a few things to composites (measure uvj, generate mocks sed, etc. before we can plot)
+# # Need to do a few things to composites (measure uvj, generate mocks sed, etc. before we can plot)
 # print('Generating plots')
 # gen_all_mock_composites(n_clusters)
 # observe_all_uvj(n_clusters, individual_gals=False, composite_uvjs=True)
 # print('Done - composite SEDs are ready')
 
-# Compute the ssfr for the groups
+# # Compute the ssfr for the groups
 # bootstrap = big_bootstrap_num
 # plot_balmer_hist(n_clusters, bootstrap)
 # bootstrap = -1

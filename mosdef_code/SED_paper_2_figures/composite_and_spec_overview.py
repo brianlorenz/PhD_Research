@@ -146,10 +146,10 @@ def label_elines(ax, spec_df, scale_factor):
         name = line[0]
         center = line[1]
         # line_range = np.logical_and(spec_df['wavelength']>(center-5), spec_df['wavelength']<(center+5))
-        line_range = np.logical_and(spec_df['wavelength']>(center-1), spec_df['wavelength']<(center+1))
-        height = np.max(spec_df[line_range]['f_lambda']*scale_factor)
-        ylims = ax.get_ylim()[0]
-        height_pct = (height-ylims[0]) / (ylims[1]-ylims[0])
+        # line_range = np.logical_and(spec_df['wavelength']>(center-1), spec_df['wavelength']<(center+1))
+        # height = np.max(spec_df[line_range]['f_lambda']*scale_factor)
+        # ylims = ax.get_ylim()[0]
+        # height_pct = (height-ylims[0]) / (ylims[1]-ylims[0])
         # ax.axvline(center, ymin=-0, ymax=0.78, color='black', ls='--')
         
         if len(name) > 8:
@@ -182,6 +182,7 @@ def label_elines(ax, spec_df, scale_factor):
             extra_offset = 3
         if center == 6585.27:
             extra_offset = 3
+            
         ax.text(center+2+offset+extra_offset, top, name, fontsize=single_column_axisfont)
 
 

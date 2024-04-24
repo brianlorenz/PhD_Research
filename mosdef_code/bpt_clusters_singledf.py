@@ -76,7 +76,7 @@ def add_composite_bpts(ax, groupID_toplot=-1):
     for i in range(len(clusters_summary_df)):
         marker = 'o'
         if groupID_toplot > -1:
-            if i != groupID:
+            if i != groupID_toplot:
                 continue
             marker = 's'
         groupID = clusters_summary_df['groupID'].iloc[i]
