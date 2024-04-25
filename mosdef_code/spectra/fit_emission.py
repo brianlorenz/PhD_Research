@@ -35,7 +35,7 @@ line_list = [
 line_centers_rest = [line_list[i][1] for i in range(len(line_list))]
 
 
-def fit_emission(groupID, norm_method, constrain_O3=False, axis_group=-1, save_name='', scaled='False', run_name='False', bootstrap_num=-1, halpha_scaled=False):
+def fit_emission(groupID, norm_method, constrain_O3=False, axis_group=-1, save_name='', scaled='False', run_name='False', bootstrap_num=-1, halpha_scaled=False, prospector=False):
     """Given a groupID, fit the emission lines in that composite spectrum
 
     Parameters:
@@ -56,7 +56,10 @@ def fit_emission(groupID, norm_method, constrain_O3=False, axis_group=-1, save_n
     if bootstrap_num > -1:
         n_loops = 0
     else:
-        n_loops = 100
+        if prospector == True:
+            n_loops = 5
+        else:
+            n_loops = 100
 
     if axis_group > -1:
         if bootstrap_num > -1:

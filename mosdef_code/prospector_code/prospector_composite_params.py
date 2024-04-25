@@ -270,9 +270,9 @@ def build_model(object_redshift=0.0, fixed_metallicity=None, add_duste=True,
     model_params["mass"]["prior"] = priors.LogUniform(mini=1e8, maxi=1e13)
 
     #FIXED METALLICITY
-    model_params["logzsol"]["init"] = -0.3
-    model_params["logzsol"]["isfree"] = False
-    # model_params["logzsol"]["prior"] = priors.TopHat(mini=-1.4, maxi=0.19)
+    # model_params["logzsol"]["init"] = -0.3
+    # model_params["logzsol"]["isfree"] = False
+    model_params["logzsol"]["prior"] = priors.TopHat(mini=-1.4, maxi=0.19)
 
     
     # model_params["gas_logz"]["prior"] = priors.TopHat(mini=-3.0, maxi=0.0)

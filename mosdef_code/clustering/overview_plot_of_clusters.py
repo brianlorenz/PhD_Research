@@ -328,14 +328,14 @@ def make_overview_plot_clusters(groupIDs, import_save_str, n_clusters, norm_meth
         xrange = (-2, 1)
         yrange = (-1.2, 1.5)
         
-        plot_bpt(axis_obj=ax, skip_gals=True, add_background=True)
+        plot_bpt(axis_obj=ax, skip_gals=True, add_background=True, snr_background=3)
         from bpt_clusters_singledf import add_composite_bpts
         add_composite_bpts(ax, groupID_toplot=groupID)
 
         try:
-            group_df_bpt = plot_bpt(axis_obj=ax, use_other_df=1, use_df=group_df, add_background=True, color_gals=color_gals, add_prospector=prospector_run, groupID=groupID, plot_median=True, snr_background=3)
+            group_df_bpt = plot_bpt(axis_obj=ax, use_other_df=1, use_df=group_df, add_background=False, color_gals=color_gals, add_prospector=prospector_run, groupID=groupID, plot_median=True, snr_background=3)
         except:
-            group_df_bpt = plot_bpt(axis_obj=ax, use_other_df=1, use_df=group_df, add_background=True, color_gals=color_gals, plot_median=True, snr_background=3)
+            group_df_bpt = plot_bpt(axis_obj=ax, use_other_df=1, use_df=group_df, add_background=False, color_gals=color_gals, plot_median=True, snr_background=3)
         in_x_range = np.logical_and(group_df_bpt['log_NII_Ha']>xrange[0], group_df_bpt['log_NII_Ha']<xrange[1])
         in_y_range = np.logical_and(group_df_bpt['log_OIII_Hb']>yrange[0], group_df_bpt['log_OIII_Hb']<yrange[1])
         in_both_range_bpt = np.logical_and(in_x_range, in_y_range)

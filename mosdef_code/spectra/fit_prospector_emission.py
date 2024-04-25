@@ -73,7 +73,7 @@ def fit_all_prospector_emission(n_clusters, run_name, ignore_groups=[]):
         if groupID in ignore_groups:
             continue
         if confirm_h5file_exists(groupID, run_name) == True:
-            fit_emission(groupID, 'cluster_norm', run_name = run_name)
+            fit_emission(groupID, 'cluster_norm', run_name = run_name, prospector=True)
        
     
 def confirm_h5file_exists(groupID, run_name):

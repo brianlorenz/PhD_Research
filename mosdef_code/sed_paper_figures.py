@@ -40,7 +40,7 @@ def make_paper_plots(n_clusters, norm_method):
     # AV vs Balmer decrement - how much extra attenuation?
     # Attenuation curve figure(s) - what controsl it
     # make_AV_panel_fig()
-    # make_av_comparison()
+    make_av_comparison()
 
     # Prospector Dust index fig
     # make_dust_index_fig()
@@ -379,12 +379,14 @@ def make_av_comparison():
     ax_balmer_av_compare = fig.add_subplot(gs[0, 0])
     ax_avdiff_mass = fig.add_subplot(gs[0, 1])
     ax_avdiff_sfr = fig.add_subplot(gs[0, 2])
+    def add_r(ax, regress):
+        ax.text(0.03, 0.93, f"r={round(regress.rvalue, 2):.2f}", fontsize=18, transform = ax.transAxes)
     plot_a_vs_b_paper('median_log_mass', 'AV_difference_with_limit', stellar_mass_label, av_difference_label, 'None', axis_obj=ax_avdiff_mass, yerr=True, fig=fig, use_color_df=True, lower_limit=180, plot_lims=[9, 11.5, -1, 3])
     # plot_a_vs_b_paper('computed_log_ssfr_with_limit', 'AV_difference_with_limit', ssfr_label, av_difference_label, 'None', axis_obj=ax_avdiff_mass, yerr=True, fig=fig, use_color_df=True, lower_limit=180, plot_lims=[-10, -7, -1, 3])
 
     x_regress = np.arange(8, 12, 0.1)
     regress_res, points_16, points_84 = bootstrap_fit('median_log_mass', 'AV_difference_with_limit', x_regress, exclude_limit=True)
-   
+    add_r(ax_avdiff_mass, regress_res)
     ax_avdiff_mass.plot(x_regress, regress_res.intercept + regress_res.slope*x_regress, color='black', ls='--')
     ax_avdiff_mass.fill_between(x_regress, points_16, points_84, facecolor="gray", alpha=0.3)
 
@@ -395,7 +397,7 @@ def make_av_comparison():
     # ax_balmer_mass.plot(x_regress, yints[1] + slopes[1]*x_regress, color='green', ls='-')
     # ax_balmer_mass.plot(x_regress, yints[2] + slopes[2]*x_regress, color='green', ls='-')
     ax_avdiff_sfr.fill_between(x_regress, points_16, points_84, facecolor="gray", alpha=0.3)
-    
+    add_r(ax_avdiff_sfr, regress_res)
     ax_avdiff_sfr.plot(x_regress, regress_res.intercept + regress_res.slope*x_regress, color='black', ls='--')
     # ax_avdiff_sfr.legend(fontsize=14, loc=2)
 
@@ -408,7 +410,7 @@ def make_av_comparison():
     ax_balmer_av_compare.fill_between(x_regress, points_16, points_84, facecolor="gray", alpha=0.3)
     print(f'Best fit to Nebular vs Stellar av: slope {regress_res.slope}, yint {regress_res.intercept}')
     ax_balmer_av_compare.plot(x_regress, regress_res.intercept + regress_res.slope*x_regress, color='black', label='Linear fit', ls='--')
-
+    add_r(ax_balmer_av_compare, regress_res)
     ax_balmer_av_compare.legend(fontsize=14, loc=2)
     print(f'Best fit to Av difference vs SFR: slope {regress_res.slope}, yint {regress_res.intercept}')
 

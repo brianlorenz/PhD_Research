@@ -128,6 +128,7 @@ def filter_gal_df():
     len_after_id_dup= len(gal_df)
     print(f'removed {len_before_id_dup-len_after_id_dup} galaxies for duplicates')
 
+
     coverage_list = [
             ('Halpha', 6564.61),
             ('Hbeta', 4862.68),
@@ -146,6 +147,7 @@ def filter_gal_df():
     print(f'removed {len_before_hahb_coverage-len_after_hahb_coverage} galaxies for halpha or hbeta not covered')
 
     print(f'{len(gal_df)} galaxies remain')
+
 
     print('Save updated filtered gals and removed gals? c to continue')
     breakpoint()

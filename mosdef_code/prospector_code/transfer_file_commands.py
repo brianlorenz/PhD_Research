@@ -1,6 +1,6 @@
 import initialize_mosdef_dirs as imd
 
-run_name = 'fixed_halfsolar'
+run_name = 'new_agn_set'
 
 print('')
 print('')
