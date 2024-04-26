@@ -360,8 +360,8 @@ def plot_a_vs_b_paper(x_var, y_var, x_label, y_label, savename, axis_obj='False'
         # ax.plot([0,1],[0,1], transform=ax.transAxes, ls='--', color='red')
 
     if factor_of_2:
-        ax.plot([-10, 10], [-9, 11], ls='--', color='red', label='Nebular A$_V$ = 1+Stellar A$_V$')
-        # ax.plot([-10, 10], [-20, 20], ls='--', color='orange')
+        # ax.plot([-10, 10], [-9, 11], ls='--', color='red', label='Nebular A$_V$ = 1+Stellar A$_V$')
+        ax.plot([-10, 10], [-20, 20], ls='--', color='orange', label='Nebular A$_V$ = 2*Stellar A$_V$')
 
     
     if axis_obj == 'False':

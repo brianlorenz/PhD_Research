@@ -1,6 +1,6 @@
 import initialize_mosdef_dirs as imd
 
-run_name = 'new_agn_set'
+run_name = 'fixedmet_agn_set'
 
 print('')
 print('')

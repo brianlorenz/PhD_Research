@@ -17,6 +17,7 @@ from scipy.optimize import curve_fit
 from dust_model import sanders_plane
 from compute_cluster_sfrs import draw_asymettric_error
 from prospector_plot import load_obj
+from generate_paper_table_composites import generate_sed_paper_table
 import pandas as pd
 
 def compute_metals(log_mass, fm_s):
@@ -33,31 +34,33 @@ def compute_metals(log_mass, fm_s):
 
 def make_paper_plots(n_clusters, norm_method):
     # Overview figure
+    # generate_sed_paper_table()
     # setup_figs(n_clusters, norm_method, bpt_color=True, paper_overview=True, prospector_spec=False)
+    make_av_comparison()
+    # make_SFR_compare_fig()
+    # make_prospector_overview_fig('fixedmet_agn_set')
+    # make_sfr_mass_uvj_bpt_4panel(snr_thresh=3)
+    # make_mass_metal_sfr_fig()
+    
+
+
+    # # # Dust model figure
+    # make_dust_fig()
 
     ### Potentially 4 panels? Or maybe different figures
     # Prospector AV vs Mass, and Balmer dec measured vs mass
     # AV vs Balmer decrement - how much extra attenuation?
     # Attenuation curve figure(s) - what controsl it
     # make_AV_panel_fig()
-    make_av_comparison()
 
     # Prospector Dust index fig
     # make_dust_index_fig()
 
     # # SFR comparison between prospector and emission lines
-    # make_SFR_compare_fig()
     # make_prospector_compare_met_fig()
-    # make_prospector_overview_fig('correct_met_prior')
 
-    # # #sfr/mass/uvj/bpt
-    # make_sfr_mass_uvj_bpt_4panel(snr_thresh=3)
-
-    # # # Dust model figure
-    # make_dust_fig()
-
+    
     # # Metals/SFR/both dust figure
-    # make_mass_metal_sfr_fig()
 
     # # hb percentage figure
     # make_hb_percentage_fig()
@@ -379,8 +382,8 @@ def make_av_comparison():
     ax_balmer_av_compare = fig.add_subplot(gs[0, 0])
     ax_avdiff_mass = fig.add_subplot(gs[0, 1])
     ax_avdiff_sfr = fig.add_subplot(gs[0, 2])
-    def add_r(ax, regress):
-        ax.text(0.03, 0.93, f"r={round(regress.rvalue, 2):.2f}", fontsize=18, transform = ax.transAxes)
+    def add_r(ax, regress, offset=0):
+        ax.text(0.03, 0.93+offset, f"r={round(regress.rvalue, 2):.2f}", fontsize=18, transform = ax.transAxes)
     plot_a_vs_b_paper('median_log_mass', 'AV_difference_with_limit', stellar_mass_label, av_difference_label, 'None', axis_obj=ax_avdiff_mass, yerr=True, fig=fig, use_color_df=True, lower_limit=180, plot_lims=[9, 11.5, -1, 3])
     # plot_a_vs_b_paper('computed_log_ssfr_with_limit', 'AV_difference_with_limit', ssfr_label, av_difference_label, 'None', axis_obj=ax_avdiff_mass, yerr=True, fig=fig, use_color_df=True, lower_limit=180, plot_lims=[-10, -7, -1, 3])
 
@@ -401,7 +404,7 @@ def make_av_comparison():
     ax_avdiff_sfr.plot(x_regress, regress_res.intercept + regress_res.slope*x_regress, color='black', ls='--')
     # ax_avdiff_sfr.legend(fontsize=14, loc=2)
 
-    plot_a_vs_b_paper('Prospector_AV_50', 'balmer_av_with_limit', prospector_dust2_label, balmer_av_label, 'None', axis_obj=ax_balmer_av_compare, yerr=True, plot_lims=[-0.2, 2.5, -0.2, 5], fig=fig, use_color_df=True, prospector_xerr=True, one_to_one=False, factor_of_2=True, lower_limit=180)
+    plot_a_vs_b_paper('Prospector_AV_50', 'balmer_av_with_limit', prospector_dust2_label, balmer_av_label, 'None', axis_obj=ax_balmer_av_compare, yerr=True, plot_lims=[-0.2, 2.5, -0.2, 5], fig=fig, use_color_df=True, prospector_xerr=True, one_to_one=False, factor_of_2=False, lower_limit=180)
     # regress_res = find_best_fit('Prospector_AV_50', 'balmer_av_with_limit', exclude_limit=True)
     x_regress = np.arange(-0.2, 3.0, 0.1)
     regress_res, points_16, points_84 = bootstrap_fit('Prospector_AV_50', 'balmer_av_with_limit', x_regress, exclude_limit=True)
@@ -410,7 +413,7 @@ def make_av_comparison():
     ax_balmer_av_compare.fill_between(x_regress, points_16, points_84, facecolor="gray", alpha=0.3)
     print(f'Best fit to Nebular vs Stellar av: slope {regress_res.slope}, yint {regress_res.intercept}')
     ax_balmer_av_compare.plot(x_regress, regress_res.intercept + regress_res.slope*x_regress, color='black', label='Linear fit', ls='--')
-    add_r(ax_balmer_av_compare, regress_res)
+    add_r(ax_balmer_av_compare, regress_res, offset=-0.18)
     ax_balmer_av_compare.legend(fontsize=14, loc=2)
     print(f'Best fit to Av difference vs SFR: slope {regress_res.slope}, yint {regress_res.intercept}')
 
@@ -494,7 +497,7 @@ def find_best_fit(x_col, y_col, exclude_limit=True):
     regress_res = linregress(xvals, yvals)
     return regress_res
 
-def bootstrap_fit(x_col, y_col, xpoints, exclude_limit=True, bootstrap=10):
+def bootstrap_fit(x_col, y_col, xpoints, exclude_limit=True, bootstrap=100):
     cluster_summary_df = ascii.read(imd.loc_cluster_summary_df).to_pandas()
     if exclude_limit == True:
         cluster_summary_df = cluster_summary_df[cluster_summary_df['flag_hb_limit']==0]
@@ -539,7 +542,7 @@ def make_SFR_compare_fig():
     gs = GridSpec(1, 1, left=0.11, right=0.96, bottom=0.12)
     ax_sfr = fig.add_subplot(gs[0, 0])
 
-    plot_a_vs_b_paper('log_Prospector_ssfr50_multiplied_normalized', 'computed_log_sfr_with_limit', 'Prospector Normalized SED SFR', 'log$_{10}$(H$\\mathrm{\\alpha}$ SFR) (M$_\odot$ / yr)', 'None', axis_obj=ax_sfr, xerr=True, yerr=True, lower_limit=180, plot_lims=[-2.8, 2.5, 0.1, 2.1], fig=fig, one_to_one=True, use_color_df=True, add_numbers=False)
+    plot_a_vs_b_paper('log_Prospector_ssfr50_multiplied_normalized', 'computed_log_sfr_with_limit', 'Prospector Normalized SED SFR', 'log$_{10}$(H$\\mathrm{\\alpha}$ SFR) (M$_\odot$ / yr)', 'None', axis_obj=ax_sfr, xerr=True, yerr=True, lower_limit=180, plot_lims=[-1.1, 2.1, 0.1, 2.1], fig=fig, one_to_one=True, use_color_df=True, add_numbers=False)
     ax_sfr.plot([-100, -100], [-100, -100], color='red', ls='--', label='one-to-one')
     ax_sfr.legend(fontsize=16, loc=2)
     ax_sfr.tick_params(labelsize=full_page_axisfont)
