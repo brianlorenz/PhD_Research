@@ -23,6 +23,10 @@ def read_raw_spec(id_msa):
     spec_df = make_pd_table_from_fits(raw_spec_loc)
     spec_df['flux'] = spec_df['flux']*1e-6 # Convert uJy to Jy
     spec_df['err'] = spec_df['err']*1e-6
+
+    c = 299792458 # m/s
+    spec_df['wave_aa'] = spec_df['wave']*10000
+    spec_df['flux_erg_aa'] = spec_df['flux'] * (1e-23*1e10*c / (spec_df['wave_aa']**2))
     return spec_df
 
 

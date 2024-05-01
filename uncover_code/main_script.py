@@ -1,12 +1,16 @@
 from uncover_sed_filters import unconver_read_filters, get_filt_cols
 from uncover_read_data import read_supercat, read_spec_cat
+from compare_sed_spec_flux import compare_sed_flux, compare_all_sed_flux
 
 target_lines = 6563, 12820
 
 def main():
     zqual_df = find_good_spec()
     zqual_df_covered = select_spectra(zqual_df)
-
+    id_msa_list = zqual_df_covered['id_msa'].to_list()
+    id_msa_list = id_msa_list[0:50]
+    compare_all_sed_flux(id_msa_list)
+   
 def find_good_spec():
     """ Reads in spectra catalog and makes sure quality is good"""
     zqual_df = read_spec_cat()
@@ -16,7 +20,7 @@ def find_good_spec():
 
 def select_spectra(zqual_df):
     """Checking that both target lines are covered int he photometry"""
-    uncover_filt_dir = unconver_read_filters()
+    uncover_filt_dir, filters = unconver_read_filters()
     supercat_df = read_supercat()
     filt_cols = get_filt_cols(supercat_df)
     covered_idxs = []

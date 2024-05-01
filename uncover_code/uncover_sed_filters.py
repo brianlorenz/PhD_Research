@@ -22,9 +22,9 @@ def unconver_read_filters():
         uncover_filt_dir[filtname+'_blue'] = sedpy_filt[0].blue_edge
         uncover_filt_dir[filtname+'_red'] = sedpy_filt[0].red_edge
         uncover_filt_dir[filtname+'_wave_eff'] = sedpy_filt[0].wave_effective
-        sedpy_filts.append(sedpy_filt)
+        sedpy_filts.append(sedpy_filt[0])
     
-    return uncover_filt_dir
+    return uncover_filt_dir, sedpy_filts
 
 def get_filt_cols(df):
     filt_cols = [col for col in df.columns if 'f_' in col]

@@ -11,7 +11,7 @@ def main(id_msa):
 def get_sed(id_msa):
     supercat_df = read_supercat()
     row = supercat_df[supercat_df['id_msa'] == id_msa]
-    filt_dir = unconver_read_filters()
+    filt_dir, filters = unconver_read_filters()
     filt_cols = get_filt_cols(row)   
     fluxes = []
     e_fluxes = []
@@ -39,7 +39,7 @@ def plot_sed(sed_df, spec_df):
     ax.set_ylabel('Flux (Jy)', fontsize=font)
     plt.show()
 
-main(6291)
-main(6325)
-main(7887)
-main(9457)
+# main(6291)
+# main(6325)
+# main(7887)
+# main(9457)
