@@ -38,8 +38,8 @@ def read_raw_spec(id_msa):
     spec_df['err_rest_flux_erg_aa'] = spec_df['err'] * (1e-23*1e10*c / (spec_df['wave_aa']**2)) * (1+redshift)
 
 
-    if os.path.exists('/Users/brianlorenz/uncover/Figures/spec_sed_compare/compare_ratio.csv'):
-        spec_df = correct_spec_to_sed(id_msa, spec_df)
+    # if os.path.exists('/Users/brianlorenz/uncover/Figures/spec_sed_compare/compare_ratio.csv'):
+    #     spec_df = correct_spec_to_sed(id_msa, spec_df)
     return spec_df
 
 def correct_spec_to_sed(id_msa, spec_df):
@@ -56,8 +56,6 @@ def make_pd_table_from_fits(file_loc):
         data_df = Table(data_loc).to_pandas()
         return data_df
 
-
-# read_supercat()
 # fig, ax = plt.subplots(figsize=(20,20)) 
 # ax.imshow(image, vmin=np.percentile(image, 10), vmax=np.percentile(image, 75))
 # plt.show()

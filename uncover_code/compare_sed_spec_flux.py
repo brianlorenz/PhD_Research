@@ -47,6 +47,7 @@ def compare_all_sed_flux(id_msa_list):
     blue_ratios = []
     red_ratios = []
     for id_msa in id_msa_list:
+        print(f'Finding scaling factor for {id_msa}')
         full_ratio, blue_ratio, red_ratio = compare_sed_flux(id_msa, make_plot=True)
         full_ratios.append(full_ratio)
         blue_ratios.append(blue_ratio)

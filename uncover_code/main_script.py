@@ -2,16 +2,25 @@ from uncover_sed_filters import unconver_read_filters, get_filt_cols
 from uncover_read_data import read_supercat, read_spec_cat
 from compare_sed_spec_flux import compare_sed_flux, compare_all_sed_flux
 from fit_emission_uncover import fit_all_emission_uncover
+from astropy.io import ascii
 
 target_lines = 6563, 12820
 
-def main():
+def main(redo_fit=False):
     zqual_df = find_good_spec()
     zqual_df_covered = select_spectra(zqual_df)
     id_msa_list = zqual_df_covered['id_msa'].to_list()
-    id_msa_list = id_msa_list[0:20]
-    # compare_all_sed_flux(id_msa_list)
-    fit_all_emission_uncover(id_msa_list)
+    
+    #Ensure that all ids are in the catalog:
+    supercat = read_supercat()
+    id_msa_list = [id_msa for id_msa in id_msa_list if len(supercat[supercat['id_msa'] == id_msa]) == 1]
+    
+    if redo_fit == True:
+        compare_all_sed_flux(id_msa_list) 
+        fit_all_emission_uncover(id_msa_list)
+    detected_list = select_detected_lines(id_msa_list)
+    print(detected_list)
+    
    
 def find_good_spec():
     """ Reads in spectra catalog and makes sure quality is good"""
@@ -36,6 +45,21 @@ def select_spectra(zqual_df):
     zqual_df_covered = zqual_df.iloc[covered_idxs]
     zqual_df_covered = zqual_df_covered.reset_index()
     return zqual_df_covered
+
+def select_detected_lines(id_msa_list, thresh = 5):
+    """Selects the ids that have detected emission lines above SNR of thresh
+    
+    Parameters:
+    thresh (float): SNR required to count as a dtection
+    """
+    detected_list = []
+    for id_msa in id_msa_list:
+        emission_df = ascii.read(f'/Users/brianlorenz/uncover/Data/emission_fitting/{id_msa}_emission_fits.csv').to_pandas()
+        ha_snr = emission_df[emission_df['line_name']=='Halpha']['signal_noise_ratio'].iloc[0]
+        pab_snr = emission_df[emission_df['line_name']=='PaBeta']['signal_noise_ratio'].iloc[0]
+        if ha_snr > thresh and pab_snr > thresh:
+            detected_list.append(id_msa)
+    return detected_list
 
 def line_in_range(z, target_line, filt_cols, uncover_filt_dir):
     z_line = target_line * (1+z)
