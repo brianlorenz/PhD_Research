@@ -3,6 +3,7 @@ from uncover_read_data import read_supercat, read_spec_cat
 from compare_sed_spec_flux import compare_sed_flux, compare_all_sed_flux
 from fit_emission_uncover import fit_all_emission_uncover
 from astropy.io import ascii
+from make_color_images import make_all_3color
 
 target_lines = 6563, 12820
 
@@ -19,6 +20,9 @@ def main(redo_fit=False):
         compare_all_sed_flux(id_msa_list) 
         fit_all_emission_uncover(id_msa_list)
     detected_list = select_detected_lines(id_msa_list)
+    zqual_df_detected = zqual_df_covered[zqual_df_covered['id_msa'].isin(detected_list)]
+    zqual_df_detected.to_csv('/Users/brianlorenz/uncover/zqual_detected.csv', index=False)
+    make_all_3color(detected_list)
     print(detected_list)
     
    
@@ -35,15 +39,21 @@ def select_spectra(zqual_df):
     supercat_df = read_supercat()
     filt_cols = get_filt_cols(supercat_df)
     covered_idxs = []
+    line0_filts = []
+    line1_filts = []
     for i in range(len(zqual_df)):
         redshift = zqual_df['z_spec'].iloc[i]
-        line1_cover = line_in_range(redshift, target_lines[0], filt_cols, uncover_filt_dir)
-        line2_cover = line_in_range(redshift, target_lines[1], filt_cols, uncover_filt_dir)
+        line1_cover, line0_filt_name = line_in_range(redshift, target_lines[0], filt_cols, uncover_filt_dir)
+        line2_cover, line1_filt_name = line_in_range(redshift, target_lines[1], filt_cols, uncover_filt_dir)
         both_corered = line1_cover and line2_cover
         if both_corered == True:
             covered_idxs.append(i)
+            line0_filts.append(line0_filt_name)
+            line1_filts.append(line1_filt_name)
     zqual_df_covered = zqual_df.iloc[covered_idxs]
     zqual_df_covered = zqual_df_covered.reset_index()
+    zqual_df_covered['line0_filt'] = line0_filts
+    zqual_df_covered['line1_filt'] = line1_filts
     return zqual_df_covered
 
 def select_detected_lines(id_msa_list, thresh = 5):
@@ -64,9 +74,11 @@ def select_detected_lines(id_msa_list, thresh = 5):
 def line_in_range(z, target_line, filt_cols, uncover_filt_dir):
     z_line = target_line * (1+z)
     covered = False
+    filt_name = ''
     for filt in filt_cols:
         if z_line>uncover_filt_dir[filt+'_blue'] and z_line<uncover_filt_dir[filt+'_red']:
             covered = True
-    return covered
+            filt_name = filt
+    return covered, filt_name
 
 main()

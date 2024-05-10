@@ -30,3 +30,6 @@ def get_filt_cols(df):
     filt_cols = [col for col in df.columns if 'f_' in col]
     filt_cols = [col for col in filt_cols if 'alma' not in col]
     return filt_cols
+
+# uncover_filt_dir, sedpy_filts = unconver_read_filters()
+# breakpoint()
