@@ -381,7 +381,9 @@ def assign_color(color_var):
     elif color_var=='median_U_V':
         norm = mpl.colors.Normalize(vmin=0.5, vmax=1.5) 
     elif color_var=='balmer_av':
-        norm = mpl.colors.Normalize(vmin=0, vmax=3) 
+        norm = mpl.colors.Normalize(vmin=0, vmax=2.5) 
+    elif color_var=='Prospector_AV_50':
+        norm = mpl.colors.Normalize(vmin=0, vmax=1.0) 
     elif color_var=='computed_log_sfr_with_limit':
         norm = mpl.colors.Normalize(vmin=0, vmax=1.5) 
     else:
@@ -418,6 +420,9 @@ def make_plots_a_vs_b(reduce_plot_count=False, reduce_prospector_plots=False):
     except:
         ignore_groups = []
     lower_limit = True
+
+    plot_cluster_summaries('median_log_mass', 'computed_log_sfr', 'sfr_mass_balmercolor', color_var='balmer_av', ignore_groups=ignore_groups, lower_limit=lower_limit, yerr=True, plot_lims=[9, 11, 0, 2.5])
+    plot_cluster_summaries('median_log_mass', 'computed_log_sfr', 'sfr_mass_stellarcolor', color_var='Prospector_AV_50', ignore_groups=ignore_groups, lower_limit=lower_limit, yerr=True, plot_lims=[9, 11, 0, 2.5])
 
     if reduce_plot_count == False:
         # # SFR comparison plots
@@ -516,6 +521,8 @@ def make_plots_a_vs_b(reduce_plot_count=False, reduce_prospector_plots=False):
 
     # Other
     plot_cluster_summaries('computed_log_sfr_with_limit', 'AV_diff', 'sfr_vs_balmer_diff', color_var='median_log_mass', ignore_groups=ignore_groups, lower_limit=False, yerr=False, plot_lims=[-0.7, 2.1, -1.5, 2.5])
+
+    
 
 
 

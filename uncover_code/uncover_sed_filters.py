@@ -26,9 +26,11 @@ def unconver_read_filters():
     
     return uncover_filt_dir, sedpy_filts
 
-def get_filt_cols(df):
+def get_filt_cols(df, skip_wide_bands=False):
     filt_cols = [col for col in df.columns if 'f_' in col]
     filt_cols = [col for col in filt_cols if 'alma' not in col]
+    if skip_wide_bands ==  True:
+        filt_cols = [col for col in filt_cols if 'w' not in col]
     return filt_cols
 
 # uncover_filt_dir, sedpy_filts = unconver_read_filters()

@@ -3,9 +3,10 @@ from uncover_read_data import read_supercat, read_spec_cat
 from compare_sed_spec_flux import compare_sed_flux, compare_all_sed_flux
 from fit_emission_uncover import fit_all_emission_uncover
 from astropy.io import ascii
-from make_color_images import make_all_3color
+from make_dust_maps import make_all_3color, make_all_dustmap
 
 target_lines = 6563, 12820
+47875
 
 def main(redo_fit=False):
     zqual_df = find_good_spec()
@@ -23,6 +24,7 @@ def main(redo_fit=False):
     zqual_df_detected = zqual_df_covered[zqual_df_covered['id_msa'].isin(detected_list)]
     zqual_df_detected.to_csv('/Users/brianlorenz/uncover/zqual_detected.csv', index=False)
     make_all_3color(detected_list)
+    make_all_dustmap(detected_list)
     print(detected_list)
     
    
@@ -37,7 +39,7 @@ def select_spectra(zqual_df):
     """Checking that both target lines are covered int he photometry"""
     uncover_filt_dir, filters = unconver_read_filters()
     supercat_df = read_supercat()
-    filt_cols = get_filt_cols(supercat_df)
+    filt_cols = get_filt_cols(supercat_df, skip_wide_bands=True)
     covered_idxs = []
     line0_filts = []
     line1_filts = []
