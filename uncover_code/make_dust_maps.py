@@ -69,6 +69,8 @@ def make_dustmap(id_msa):
         ha_map_scaled = halpha_map/ha_factor
         pab_map_scaled = pabeta_map/pab_factor
         dustmap = pab_map_scaled / ha_map_scaled
+        # dustmap = pab_map_scaled - 6* ha_map_scaled
+        # breakpoint()
         return dustmap
          
         
@@ -93,7 +95,8 @@ def make_dustmap(id_msa):
     ax_ha_linemap.imshow(ha_linemap/ha_factor, vmin=vmin, vmax=vmax, cmap=cmap)
     ax_pab_linemap.imshow(pab_linemap/pab_factor, vmin=vmin, vmax=vmax, cmap=cmap)
 
-    ax_dustmap.imshow(dustmap, vmin=np.percentile(dustmap,10), vmax=np.percentile(dustmap,99), cmap=cmap)
+    ax_dustmap.imshow(dustmap, vmin=0, vmax=10, cmap=cmap)
+    plt.show()
 
     text_height = 1.02
     text_start_left = 0.15
@@ -263,7 +266,7 @@ def find_filters_around_line(id_msa, line_number):
     
     return filt_red, filt_green, filt_blue
 
-make_dustmap(25147)
+make_dustmap(47875)
 
 
 # make_3color(6291)

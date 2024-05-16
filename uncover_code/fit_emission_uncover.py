@@ -44,23 +44,27 @@ def fit_emission_uncover(spectrum, save_name, bootstrap_num=-1):
 
     line_names = [line_list[i][0] for i in range(len(line_list))]
 
-    scale_factor = 10**17
+    scale_factor = 10**19
 
     # Build the initial guesses
     guess = []
     bounds_low = []
     bounds_high = []
     amp_guess = 1  # flux units
-    velocity_guess = 200  # km/s
+    velocity_guess = 2000  # km/s
     z_offset_guess = 0  # Angstrom
     # continuum_offset_guess = 10**-20  # flux untis,
     continuum_offset_guess = 0.5  # Scale to multiply by FAST continuum,
     # should eventually divide out the shape of continuum
     # First, we guess the z_offset
     guess.append(z_offset_guess)
-    bounds_low.append(-10)
-    bounds_high.append(10)
-    # Then, for each line, we guess an amplitude
+    bounds_low.append(-2) # angstrom
+    bounds_high.append(2)
+    # Then, for each line, we guess a veolcity and amplitude
+    for i in range(len(line_list)):
+        guess.append(velocity_guess)
+        bounds_low.append(0.01)
+        bounds_high.append(100000)
     for i in range(len(line_list)):
         # if 'O3_5008' in line_names and 'O3_4960' in line_names:
         #     idx_5008 = line_names.index('O3_5008')
@@ -68,12 +72,9 @@ def fit_emission_uncover(spectrum, save_name, bootstrap_num=-1):
         #     if i == idx_5008:
         #         guess.append(1)
         #         continue
-        guess.append(velocity_guess)
-        bounds_low.append(10)
-        bounds_high.append(1000)
         guess.append(amp_guess)
-        bounds_low.append(0)
-        bounds_high.append(100)
+        bounds_low.append(0.001)
+        bounds_high.append(100000)
     bounds = (np.array(bounds_low), np.array(bounds_high))
 
     
@@ -90,7 +91,6 @@ def fit_emission_uncover(spectrum, save_name, bootstrap_num=-1):
     wavelength = wavelength[full_cut]
     continuum = fit_continuum(wavelength, flux)
     popt, arr_popt, y_data_cont_sub = monte_carlo_fit(multi_gaussian, wavelength, scale_factor * continuum, scale_factor * flux, scale_factor * err_flux, np.array(guess), bounds, n_loops)
-    breakpoint()
     err_popt = np.std(arr_popt, axis=0)
     
     
@@ -110,15 +110,15 @@ def fit_emission_uncover(spectrum, save_name, bootstrap_num=-1):
     z_offset = [popt[0] for i in range(len(line_list))]
     print(err_popt)
     err_z_offset = [err_popt[0] for i in range(len(line_list))]
-    velocity = [popt[1] for i in range(len(line_list))]
-    err_velocity = [err_popt[1] for i in range(len(line_list))]
-    sigs = [velocity_to_sig(line_list[i][1], popt[1])
+    velocities = [popt[1+i] for i in range(len(line_list))]
+    err_velocities = [err_popt[1+i] for i in range(len(line_list))]
+    sigs = [velocity_to_sig(line_list[i][1], popt[1+i])
             for i in range(len(line_list))]
-    err_sigs = [velocity_to_sig(line_list[i][1], popt[1] + err_popt[1]) - sigs[i]
+    err_sigs = [velocity_to_sig(line_list[i][1], popt[1+i] + err_popt[1+i]) - sigs[i]
                 for i in range(len(line_list))]
 
-    amps = popt[2:] / scale_factor
-    err_amps = err_popt[2:] / scale_factor
+    amps = popt[3:] / scale_factor
+    err_amps = err_popt[3:] / scale_factor
     flux_tuples = [get_flux(amps[i], sigs[i], amp_err=err_amps[i], sig_err=err_sigs[
                             i]) for i in range(len(line_list))]
     fluxes = [i[0] for i in flux_tuples]
@@ -130,11 +130,9 @@ def fit_emission_uncover(spectrum, save_name, bootstrap_num=-1):
 
     
     def compute_percentile_errs_on_line(line_idx, measured_line_flux):
-        line_amps = [arr_popt[i][2 + line_idx]/scale_factor for i in range(len(arr_popt))]
-        line_sigs = [velocity_to_sig(line_list[line_idx][1], arr_popt[i][
-                               1])for i in range(len(arr_popt))]
-        line_fluxes = [get_flux(line_amps[i], line_sigs[i])[0]
-                     for i in range(len(arr_popt))]
+        line_amps = [arr_popt[i][1 + len(line_list) + line_idx]/scale_factor for i in range(len(arr_popt))]
+        line_sigs = [velocity_to_sig(line_list[line_idx][1], arr_popt[i][1+line_idx])for i in range(len(arr_popt))]
+        line_fluxes = [get_flux(line_amps[i], line_sigs[i])[0] for i in range(len(arr_popt))]
         err_line_fluxes_low_high = np.percentile(line_fluxes, [16, 84])
         err_line_fluxes_low_high = np.abs(measured_line_flux-err_line_fluxes_low_high)
         
@@ -164,8 +162,8 @@ def fit_emission_uncover(spectrum, save_name, bootstrap_num=-1):
         velocity_monte_carlo = [arr_popt[i][1] for i in range(len(arr_popt))]
         err_velocity_low_high = np.percentile(velocity_monte_carlo, [16,84])
         
-        err_velocity_low = velocity - err_velocity_low_high[0]
-        err_velocity_high = err_velocity_low_high[1] - velocity
+        err_velocity_low = -99*np.ones(len(ha_pab_ratio))
+        err_velocity_high = -99*np.ones(len(ha_pab_ratio))
         err_velocity = np.mean([err_velocity_low, err_velocity_high], axis=0)
 
         # Ha to be in line_index order
@@ -185,11 +183,11 @@ def fit_emission_uncover(spectrum, save_name, bootstrap_num=-1):
     err_ha_pab_ratio_high = np.percentile(all_ha_pab_ratios, 84) - ha_pab_ratio
 
     fit_df = pd.DataFrame(zip(line_names, line_centers_rest,
-                              z_offset, err_z_offset, velocity, err_velocity, 
+                              z_offset, err_z_offset, velocities, err_velocity, 
                               err_velocity_low, err_velocity_high, amps, err_amps, 
                               sigs, err_sigs, fluxes, err_fluxes, err_fluxes_low, err_fluxes_high, ha_pab_ratio, err_ha_pab_ratio_low, err_ha_pab_ratio_high), 
                               columns=['line_name', 'line_center_rest', 'z_offset', 'err_z_offset', 
-                                       'fixed_velocity', 
+                                       'velocity', 
                                        'err_fixed_velocity', 'err_fixed_velocity_low', 'err_fixed_velocity_high', 
                                        'amplitude', 'err_amplitude', 'sigma', 'err_sigma', 'flux', 'err_flux', 'err_flux_low', 'err_flux_high', 'ha_pab_ratio', 'err_ha_pab_ratio_low', 'err_ha_pab_ratio_high'])
     fit_df['signal_noise_ratio'] = fit_df['flux']/fit_df['err_flux']
@@ -255,7 +253,8 @@ def plot_emission_fit(emission_fit_dir, save_name, total_spec_df):
     # Set up the parameters from the fitting
     pars = []
     pars.append(fit_df['z_offset'].iloc[0])
-    pars.append(fit_df['fixed_velocity'].iloc[0])
+    for i in range(len(fit_df)):
+        pars.append(fit_df.iloc[i]['velocity'])
     for i in range(len(fit_df)):
         pars.append(fit_df.iloc[i]['amplitude'])
 
@@ -287,8 +286,8 @@ def plot_emission_fit(emission_fit_dir, save_name, total_spec_df):
     
 
  
-    Ha_plot_range = (6450, 6650)  # Angstrom
-    Hb_plot_range = (12600, 13000)
+    Ha_plot_range = (6250, 6850)  # Angstrom
+    Hb_plot_range = (12500, 13100)
     # Hb_plot_range = (4995, 5015)
 
     def set_plot_ranges(ax, axis, plot_range, box_color):
@@ -454,11 +453,8 @@ def multi_gaussian(wavelength, *pars, fit=True):
 
     velocities = [pars[1+i] for i in range(len(line_list))]
     amps = [pars[1+i+len(line_list)] for i in range(len(line_list))]
-
-    breakpoint()
     
     line_names = [line_list[i][0] for i in range(len(line_list))]
-
 
     gaussians = [gaussian_func(wavelength, line_list[i][1] + z_offset, amps[i], velocity_to_sig(line_list[i][1], velocities[i])) for i in range(len(line_list))]
     

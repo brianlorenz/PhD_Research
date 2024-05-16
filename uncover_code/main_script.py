@@ -8,7 +8,7 @@ from make_dust_maps import make_all_3color, make_all_dustmap
 target_lines = 6563, 12820
 47875
 
-def main(redo_fit=False):
+def main(redo_fit=True):
     zqual_df = find_good_spec()
     zqual_df_covered = select_spectra(zqual_df)
     id_msa_list = zqual_df_covered['id_msa'].to_list()
