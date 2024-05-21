@@ -7,6 +7,8 @@ import pandas as pd
 from sedpy import observate
 import os
 from astropy.io import ascii
+from astropy.wcs import WCS
+
 
 
 def read_spec_cat():
@@ -19,6 +21,12 @@ def read_supercat():
     supercat_df = make_pd_table_from_fits(supercat_loc)
     return supercat_df
 
+def read_segmap():
+    segmap_loc = '/Users/brianlorenz/uncover/Catalogs/UNCOVER_v5.2.0_SEGMAP.fits'
+    with fits.open(segmap_loc) as hdu:
+        segmap = hdu[0].data
+        segmap_wcs = WCS(hdu[0].header)
+    return segmap, segmap_wcs
 
 def read_raw_spec(id_msa):
     spec_cat = read_spec_cat()
@@ -56,6 +64,7 @@ def make_pd_table_from_fits(file_loc):
         data_df = Table(data_loc).to_pandas()
         return data_df
 
+read_segmap()
 # fig, ax = plt.subplots(figsize=(20,20)) 
 # ax.imshow(image, vmin=np.percentile(image, 10), vmax=np.percentile(image, 75))
 # plt.show()

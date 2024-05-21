@@ -220,17 +220,21 @@ def plot_bpt(savename='None', axis_obj='False', composite_bpt_point=[-47], compo
     ylineemp = 0.61 / (xlineemp - 0.05) + 1.3  # Kauffman (2003)
     ax.plot(xline, yline, color='dimgrey', lw=2,
             ls='--', label='Kewley+ (2001)')
-    ax.plot(xlineemp, ylineemp, color='dimgrey',
-            lw=2, ls='-', label='Kauffmann+ (2003)')
+    # ax.plot(xlineemp, ylineemp, color='dimgrey',
+    #         lw=2, ls='-', label='Kauffmann+ (2003)')
     
-    xline = np.arange(-3.0, 0.469, 0.001)
-    a = 0.917
-    b = -0.491
-    c = -6.090
-    d = 0
-    yline = a + b*xline + c*(xline**2) + d*(xline**3)  # Kewley (2013)
-    ax.plot(xline, yline, color='purple', lw=2,
-            ls='--', label='Kewley+ (2013)')
+    xline = np.arange(-2.0, 1, 0.001)
+    # a = 0.917
+    # b = -0.491
+    # c = -6.090
+    # d = 0
+    # yline = a + b*xline + c*(xline**2) + d*(xline**3)  # Kewley (2013)
+    # z = 3
+    # breakpoint()
+    # yline = 1.1 + 0.03*z + (0.61 / (xline + 0.08 - 0.1833*z))
+   
+    # ax.plot(xline, yline, color='purple', lw=2,
+    #         ls='--', label='Kewley+ (2013)')
 
     if add_background==True:
         filtered_gal_df = ascii.read(imd.loc_filtered_gal_df).to_pandas()

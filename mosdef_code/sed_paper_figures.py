@@ -39,7 +39,7 @@ def make_paper_plots(n_clusters, norm_method):
     # make_av_comparison()
     # make_SFR_compare_fig()
     # make_prospector_overview_fig('fixedmet_agn_set')
-    make_sfr_mass_uvj_bpt_4panel(snr_thresh=3)
+    # make_sfr_mass_uvj_bpt_4panel(snr_thresh=3)
     # make_mass_metal_sfr_fig()
     
 
@@ -63,7 +63,7 @@ def make_paper_plots(n_clusters, norm_method):
     # # Metals/SFR/both dust figure
 
     # # hb percentage figure
-    # make_hb_percentage_fig()
+    make_hb_percentage_fig()
 
     # Dust mass figure? Can we measure this?
     pass
@@ -104,6 +104,7 @@ def make_prospector_overview_fig(run_name):
                     continue
                 if obs['err_f_lambda'][i+1] > 10 * obs['err_f_lambda'][i]:
                     obs['err_f_lambda'][i+1] = obs['err_f_lambda'][i]
+            phot_idxs = phot_df['rest_wavelength'] > 1500
 
             start_spec = phot_df['rest_wavelength'].iloc[0]
             end_spec = phot_df['rest_wavelength'].iloc[-1]
@@ -122,17 +123,17 @@ def make_prospector_overview_fig(run_name):
             # ax.fill_between(phot_df['rest_wavelength'], errs_low_flambda, errs_high_flambda, facecolor="gray", alpha=0.7)
 
 
-            y_model = np.array(phot_df['rest_wavelength']
-                        * phot_df['phot50_flambda'])
-            y_model_16 = phot_df['rest_wavelength'] * phot_df['phot16_flambda']
-            y_model_84 = phot_df['rest_wavelength'] * phot_df['phot84_flambda']
+            y_model = np.array(phot_df['rest_wavelength'][phot_idxs]
+                        * phot_df['phot50_flambda'][phot_idxs])
+            y_model_16 = phot_df['rest_wavelength'][phot_idxs] * phot_df['phot16_flambda'][phot_idxs]
+            y_model_84 = phot_df['rest_wavelength'][phot_idxs] * phot_df['phot84_flambda'][phot_idxs]
             model_errs = np.vstack((y_model - y_model_16, y_model_84 - y_model))
             # Model points with errorbar, or can set points to none and use just a line
             # ax.errorbar(np.array(phot_df['rest_wavelength']), y_model,
             #             ls='None', lw=3, marker='o', yerr=model_errs, color='blue', label='Model')
             
             #Model fill between
-            ax.fill_between(phot_df['rest_wavelength'], scale*y_model_16, scale*y_model_84, alpha=0.6, color='grey', label='Model')
+            ax.fill_between(phot_df['rest_wavelength'][phot_idxs], scale*y_model_16, scale*y_model_84, alpha=0.6, color='grey', label='Model')
             
             ax.axvspan(phot_df['rest_wavelength'].iloc[0]-100, 1500, alpha=0.3, color='red')
             if col == 0:
@@ -153,8 +154,7 @@ def make_prospector_overview_fig(run_name):
                      1.25 * np.percentile(scale*phot_df['rest_wavelength'] * rest_frame_original_phot, 99))
 
             
-            ax.set_xlim(phot_df['rest_wavelength'].iloc[0] -
-                     30, phot_df['rest_wavelength'].iloc[-1] + 3000)
+            ax.set_xlim(phot_df['rest_wavelength'].iloc[0]-30, phot_df['rest_wavelength'].iloc[-1] + 3000)
             ax.set_xscale('log')
             # scale_aspect(ax)
             if paperID == 1:
@@ -194,10 +194,23 @@ def make_hb_percentage_fig(n_groups=20):
 
     cluster_summary_df = imd.read_cluster_summary_df()
     hb_fracs = []
+    ha_good = []
+    ha_good_hb_bad = []
+    missing_hbs = []
+    n_tot = []
     median_indiv_a_balmers = []
     for groupID in range(n_groups):
         group_df = ascii.read(imd.cluster_indiv_dfs_dir + f'/{groupID}_cluster_df.csv').to_pandas()
-        frac_hb = len(group_df[group_df['hb_detflag_sfr'] == 0]) / len(group_df)
+        n_hb_good = len(group_df[group_df['hb_detflag_sfr'] == 0])
+        ha_good_df = group_df[group_df['ha_detflag_sfr'] == 0]
+        n_ha_good = len(ha_good_df)
+        ha_good.append(n_ha_good)
+        n_missing_hb = len(group_df[group_df['hb_detflag_sfr'] != 0])
+        n_ha_good_hb_bad = len(ha_good_df[ha_good_df['hb_detflag_sfr'] != 0])
+        ha_good_hb_bad.append(n_ha_good_hb_bad)
+        missing_hbs.append(n_missing_hb)
+        n_tot.append(len(group_df))
+        frac_hb = n_hb_good / len(group_df)
         hb_fracs.append(frac_hb)
         def compute_balmer_av(balmer_dec):
             balmer_av = 4.05*1.97*np.log10(balmer_dec/2.86)
@@ -209,7 +222,8 @@ def make_hb_percentage_fig(n_groups=20):
         median_abalmer = np.median(abalmers)
         print(f'{groupID}        {median_abalmer}')
         median_indiv_a_balmers.append(median_abalmer)
-    
+        
+    breakpoint()
     a_balmer_difference = cluster_summary_df['balmer_av_with_limit'] - median_indiv_a_balmers
     hbsnr = cluster_summary_df['hb_snr']
     # ax_hb.plot(hb_fracs, hbsnr, marker='o', color='black', ls='None')
@@ -548,6 +562,15 @@ def make_SFR_compare_fig():
     ax_sfr.legend(fontsize=16, loc=2)
     ax_sfr.tick_params(labelsize=full_page_axisfont)
 
+    from matplotlib.cm import ScalarMappable
+    import matplotlib as mpl
+    cmap = mpl.cm.coolwarm
+    norm = mpl.colors.Normalize(vmin=9.4, vmax=11.05) 
+    sm =  ScalarMappable(norm=norm, cmap=cmap)
+    cbar = fig.colorbar(sm, ax=ax_sfr)
+    cbar.set_label(stellar_mass_label, fontsize=16)
+    cbar.ax.tick_params(labelsize=16)
+
     scale_aspect(ax_sfr)
     fig.savefig(imd.sed_paper_figures_dir + '/sfr_compare_normalized.pdf', bbox_inches='tight')
 
@@ -645,11 +668,14 @@ def make_sfr_mass_uvj_bpt_4panel(n_clusters=20, snr_thresh=2):
     ax_bpt.set_xlabel('log(N[II] 6583 / H$\\alpha$)', fontsize=full_page_axisfont)
     ax_bpt.set_ylabel('log(O[III] 5007 / H$\\beta$)', fontsize=full_page_axisfont)
 
+    ax_bpt.legend(fontsize=14)
+
     ax_uvj.tick_params(labelsize=full_page_axisfont)
     ax_bpt.tick_params(labelsize=full_page_axisfont)
 
     scale_aspect(ax_uvj)
     scale_aspect(ax_bpt)
+    
     fig.savefig(imd.sed_paper_figures_dir + '/mass_sfr_uvj_bpt.pdf')
 
 def make_dust_fig():

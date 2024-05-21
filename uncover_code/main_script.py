@@ -6,7 +6,6 @@ from astropy.io import ascii
 from make_dust_maps import make_all_3color, make_all_dustmap
 
 target_lines = 6563, 12820
-47875
 
 def main(redo_fit=True):
     zqual_df = find_good_spec()
@@ -83,4 +82,4 @@ def line_in_range(z, target_line, filt_cols, uncover_filt_dir):
             filt_name = filt
     return covered, filt_name
 
-main()
+main(redo_fit=False)
