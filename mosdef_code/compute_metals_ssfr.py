@@ -90,6 +90,8 @@ def add_sanders_metallicity(ax):
     masses = np.arange(8,12,0.01)
     O3N2s = -0.94 * masses + 10.72
     O3N2_metallicities, errs_O3N2_metallicities = compute_O3N2_metallicity(O3N2s, -99*np.ones(len(O3N2s)))
+    # ax.plot(masses, O3N2s, ls='--', color='black', label='Sanders+ 2018')
+    # O3N2_metallicities = 0.295 * masses + 5.3 
     ax.plot(masses, O3N2_metallicities, ls='--', color='black', label='Sanders+ 2018')
 
 

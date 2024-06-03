@@ -120,7 +120,48 @@ def make_mosdef_all_cats_2():
 
 
     fields, av_dfs = setup_get_AV() # Prepares to search for AV value
-
+    def make_linecorr_plot():
+        import matplotlib.pyplot as plt
+        # breakpoint()
+        fig, axarr = plt.subplots(2,2,figsize=(16,6))
+        ax_ha = axarr[0,0]
+        ax_hb = axarr[0,1]
+        ax_ha_cor = axarr[1,0]
+        ax_hb_cor = axarr[1,1]
+        ax_list = [ax_ha, ax_hb, ax_ha_cor, ax_hb_cor]
+        flux_good = np.logical_and(linemeas_df['HB4863_FLUX']>-90, sfrs_df['HB4863_PREFERREDFLUX']>-90)
+        flux_good_ha = np.logical_and(linemeas_df['HA6565_FLUX']>-90, sfrs_df['HA6565_PREFERREDFLUX']>-90)
+        flux_good_cor_ha = np.logical_and(sfrs_df['HA6565_ABS_FLUX']>-90, sfrs_df['HB4863_PREFERREDFLUX']>-90)
+        flux_good_cor_hb = np.logical_and(sfrs_df['HB4863_ABS_FLUX']>-90, sfrs_df['HA6565_PREFERREDFLUX']>-90)
+        ax_ha.plot(linemeas_df[flux_good_ha]['HA6565_FLUX'], sfrs_df[flux_good_ha]['HA6565_PREFERREDFLUX'], marker='o', ls='None', color='black', ms=3)
+        ax_hb.plot(linemeas_df[flux_good]['HB4863_FLUX'], sfrs_df[flux_good]['HB4863_PREFERREDFLUX'], marker='o', ls='None', color='black', ms=3)
+        ax_ha_cor.plot(sfrs_df[flux_good_cor_ha]['HA6565_PREFERREDFLUX'], sfrs_df[flux_good_cor_ha]['HA6565_PREFERREDFLUX']+sfrs_df[flux_good_cor_ha]['HA6565_ABS_FLUX'], marker='o', ls='None', color='black', ms=3)
+        ax_hb_cor.plot(sfrs_df[flux_good_cor_hb]['HB4863_PREFERREDFLUX'], sfrs_df[flux_good_cor_hb]['HB4863_PREFERREDFLUX']+sfrs_df[flux_good_cor_hb]['HB4863_ABS_FLUX'], marker='o', ls='None', color='black', ms=3)
+        for ax in ax_list:
+            xlims = ax.get_xlim()
+            ylims = ax.get_ylim()
+            lims = [
+                np.min([ax.get_xlim(), ax.get_ylim()]),  # min of both axes
+                np.max([ax.get_xlim(), ax.get_ylim()]),  # max of both axes
+            ]
+            # now plot both limits against eachother
+            ax.plot(lims, lims, ls='--', color='red', zorder=0)
+            ax.set_aspect('equal')
+            ax.set_xlim(lims)
+            ax.set_ylim(lims)
+        ax_ha.set_xlabel('original flux')
+        ax_ha.set_ylabel('preferred flux')
+        ax_hb.set_xlabel('original flux')
+        ax_hb.set_ylabel('preferred flux')
+        ax_ha_cor.set_xlabel('preferred flux')
+        ax_ha_cor.set_ylabel('preferred flux + abs correction')
+        ax_hb_cor.set_xlabel('preferred flux')
+        ax_hb_cor.set_ylabel('preferred flux + abs correction')
+        ax_ha.set_title('halpha', fontsize=16)
+        ax_hb.set_title('hbeta', fontsize=16)
+        plt.show()
+    make_linecorr_plot()
+    breakpoint()
 
     #Loop through the catalog and find the ha and hb value for each galaxy
     for i in range(len(all_cats_df)):
@@ -152,10 +193,10 @@ def make_mosdef_all_cats_2():
         masscorr_slice = np.logical_and(mass_corr_df['ID']==cat_id, mass_corr_df['FIELD_STR']==field)
         uvj_slice = np.logical_and(uvj_df['v4id']==v4id, uvj_df['field']==field)
 
-        hb_values.append(linemeas_df[linemeas_slice].iloc[0]['HB4863_FLUX'])
-        hb_errs.append(linemeas_df[linemeas_slice].iloc[0]['HB4863_FLUX_ERR'])
-        ha_values.append(linemeas_df[linemeas_slice].iloc[0]['HA6565_FLUX'])
-        ha_errs.append(linemeas_df[linemeas_slice].iloc[0]['HA6565_FLUX_ERR'])
+        hb_values.append(sfrs_df[sfrs_slice].iloc[0]['HB4863_PREFERREDFLUX'] + sfrs_df[sfrs_slice].iloc[0]['HB4863_ABS_FLUX'])
+        hb_errs.append(sfrs_df[sfrs_slice].iloc[0]['HB4863_PREFERREDFLUX_ERR'])
+        ha_values.append(sfrs_df[sfrs_slice].iloc[0]['HA6565_PREFERREDFLUX'] + sfrs_df[sfrs_slice].iloc[0]['HA6565_ABS_FLUX'])
+        ha_errs.append(sfrs_df[sfrs_slice].iloc[0]['HA6565_PREFERREDFLUX_ERR'])
         nii_6585_values.append(linemeas_df[linemeas_slice].iloc[0]['NII6585_FLUX'])
         nii_6585_errs.append(linemeas_df[linemeas_slice].iloc[0]['NII6585_FLUX_ERR'])
         oiii_5008_values.append(linemeas_df[linemeas_slice].iloc[0]['OIII5008_FLUX'])
@@ -229,7 +270,6 @@ def make_mosdef_all_cats_2():
         v_js.append(uvj_df[uvj_slice]['V_J'].iloc[0])
 
     
-
 
 
     to_merge_df = pd.DataFrame(zip(fields, v4ids, agn_flags, serendip_flags, masses, err_l_masses, err_h_masses, sfrs, err_sfrs, sfrs_corrs, ha_det_sfrs, hb_det_sfrs, sed_sfrs, res, err_res, zs, z_quals, avs, betas, hb_values, hb_errs, ha_values, ha_errs, nii_6585_values, nii_6585_errs, oiii_5008_values, oiii_5008_errs, nii_ha_values, nii_ha_errs, logoh_pps, logoh_pps_ulims, logoh_pps_llims, n2_lim_flag, eqwidth_has, err_eqwidth_has, eqwidth_hbs, err_eqwidth_hbs, mips_fluxes, err_mips_fluxes, mips_corr24s, mips_exp24s, u_vs, v_js, masses_uncorr, err_l_masses_uncorr, err_h_masses_uncorr), columns=['field', 'v4id', 'agn_flag', 'serendip_flag', 'log_mass', 'err_log_mass_d', 'err_log_mass_u', 'sfr', 'err_sfr', 'sfr_corr', 'ha_detflag_sfr', 'hb_detflag_sfr', 'sed_sfr', 'half_light', 'err_half_light', 'z', 'z_qual_flag', 'AV', 'beta', 'hb_flux', 'err_hb_flux', 'ha_flux', 'err_ha_flux', 'nii_6585_flux', 'err_nii_6585_flux', 'oiii_5008_flux', 'err_oiii_5008_flux', 'nii_ha', 'err_nii_ha', 'logoh_pp_n2', 'u68_logoh_pp_n2', 'l68_logoh_pp_n2', 'n2flag_metals', 'eq_width_ha', 'err_eq_width_ha', 'eq_width_hb', 'err_eq_width_hb', 'mips_flux', 'err_mips_flux', 'mips_corr24', 'mips_exp24', 'U_V', 'V_J', 'LMASS_uncorr', 'err_LMASS_uncorr_l', 'err_LMASS_uncorr_h'])

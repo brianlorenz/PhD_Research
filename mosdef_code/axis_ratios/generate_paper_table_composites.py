@@ -51,9 +51,9 @@ def generate_sed_paper_table():
     # paper_df['Prospector_SFR'] = cluster_summary_df['log_Prospector_ssfr50_multiplied_normalized']
     # paper_df['err_Prospector_SFR_low'] = cluster_summary_df['err_log_Prospector_ssfr50_multiplied_normalized_low']
     # paper_df['err_Prospector_SFR_high'] = cluster_summary_df['err_log_Prospector_ssfr50_multiplied_normalized_high']
-    paper_df['Prospector_sSFR'] = cluster_summary_df['log_Prospector_ssfr50']
-    paper_df['err_Prospector_sSFR_low'] = cluster_summary_df['err_log_Prospector_ssfr50_low']
-    paper_df['err_Prospector_sSFR_high'] = cluster_summary_df['err_log_Prospector_ssfr50_high']
+    paper_df['Prospector_sSFR'] = cluster_summary_df['log_prospector_ssfr_prosmass_50']
+    paper_df['err_Prospector_sSFR_low'] = paper_df['Prospector_sSFR'] - cluster_summary_df['log_prospector_ssfr_prosmass_16']
+    paper_df['err_Prospector_sSFR_high'] = cluster_summary_df['log_prospector_ssfr_prosmass_84'] - paper_df['Prospector_sSFR']
 
 
     paper_df['Prospector_met'] = cluster_summary_df['logzsol50']

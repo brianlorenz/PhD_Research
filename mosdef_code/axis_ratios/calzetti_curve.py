@@ -17,6 +17,14 @@ def calzetti_curve(wavelength):
     k_lambda[idx] = 2.659 * (-2.156 + 1.509 / wavelength_microns[idx] - 0.198 / wavelength_microns[idx]**2 + 0.011 / wavelength_microns[idx]**3) + 4.05
     return k_lambda
 
+def calzetti_law(wavelength_um):
+    if wavelength_um >= 0.6300 and wavelength_um <= 2.2000:
+        k_lambda = 2.659 * (-1.857 + 1.040 / wavelength_um) + 4.05
+    if wavelength_um >= 0.1200  and wavelength_um < 0.6300:
+        k_lambda = 2.659 * (-2.156 + 1.509 / wavelength_um - 0.198 / wavelength_um**2 + 0.011 / wavelength_um**3) + 4.05
+    return k_lambda
+
+breakpoint()
 # Plot the Calzetti dust attenuation curve
 fig, ax = plt.subplots(figsize=(6,3))
 ax.plot(wavelength, calzetti_curve(wavelength), color='red')

@@ -44,6 +44,10 @@ def add_props_to_cluster_summary_df(n_clusters, run_name):
     cluster_summary_df['log_Prospector_ssfr50_multiplied_normalized'] = sfr50_norm
     cluster_summary_df['err_log_Prospector_ssfr50_multiplied_normalized_low'] = sfr50_norm - (np.log10((cluster_summary_df['sfr16'] / (10**cluster_summary_df['norm_median_log_mass'])) * (10**cluster_summary_df['lum_weighted_median_log_mass'])))
     cluster_summary_df['err_log_Prospector_ssfr50_multiplied_normalized_high'] = (np.log10((cluster_summary_df['sfr84'] / (10**cluster_summary_df['norm_median_log_mass'])) * (10**cluster_summary_df['lum_weighted_median_log_mass']))) - sfr50_norm
+    sfr50_norm_target = np.log10((cluster_summary_df['sfr50'] / (10**cluster_summary_df['target_galaxy_median_log_mass'])) * (10**cluster_summary_df['lum_weighted_median_log_mass']))
+    cluster_summary_df['log_Prospector_ssfr50_multiplied_normalized_targetmass'] = sfr50_norm_target
+    cluster_summary_df['err_log_Prospector_ssfr50_multiplied_normalized_targetmass_low'] = sfr50_norm_target - (np.log10((cluster_summary_df['sfr16'] / (10**cluster_summary_df['target_galaxy_median_log_mass'])) * (10**cluster_summary_df['lum_weighted_median_log_mass'])))
+    cluster_summary_df['err_log_Prospector_ssfr50_multiplied_normalized_targetmass_high'] = (np.log10((cluster_summary_df['sfr84'] / (10**cluster_summary_df['target_galaxy_median_log_mass'])) * (10**cluster_summary_df['lum_weighted_median_log_mass']))) - sfr50_norm_target
 
     cluster_summary_df['log_Prospector_ssfr50'] = np.log10(cluster_summary_df['sfr50'] / 10**cluster_summary_df['norm_median_log_mass'])
     cluster_summary_df['err_log_Prospector_ssfr50_low'] = cluster_summary_df['log_Prospector_ssfr50'] - np.log10(cluster_summary_df['sfr16'] / 10**cluster_summary_df['norm_median_log_mass'])
@@ -110,6 +114,11 @@ def add_props_to_cluster_summary_df(n_clusters, run_name):
     cluster_summary_df['prospector_O3N2_metallicity'] = O3N2_metallicitys
     cluster_summary_df['err_prospector_O3N2_metallicity_low'] = err_O3N2_metallicity_lows
     cluster_summary_df['err_prospector_O3N2_metallicity_high'] = err_O3N2_metallicity_highs
+
+    cluster_summary_df['log_prospector_ssfr_prosmass_50'] = np.log10(cluster_summary_df['sfr50'] / cluster_summary_df['surviving_mass50'])
+    cluster_summary_df['log_prospector_ssfr_prosmass_16'] = np.log10(cluster_summary_df['sfr16'] / cluster_summary_df['surviving_mass50'])
+    cluster_summary_df['log_prospector_ssfr_prosmass_84'] = np.log10(cluster_summary_df['sfr84'] / cluster_summary_df['surviving_mass50'])
+    cluster_summary_df['log_prospector_sfr_prosmass_50'] = np.log10(10**cluster_summary_df['log_prospector_ssfr_prosmass_50'] * 10**cluster_summary_df['lum_weighted_median_log_mass'])
     cluster_summary_df.to_csv(imd.loc_cluster_summary_df, index=False)
     compute_cluster_sfrs(prospector=True)    
 

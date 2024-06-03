@@ -23,7 +23,7 @@ def main(redo_fit=True):
     zqual_df_detected = zqual_df_covered[zqual_df_covered['id_msa'].isin(detected_list)]
     zqual_df_detected.to_csv('/Users/brianlorenz/uncover/zqual_detected.csv', index=False)
     make_all_3color(detected_list)
-    make_all_dustmap(detected_list)
+    make_all_dustmap()
     print(detected_list)
     
    

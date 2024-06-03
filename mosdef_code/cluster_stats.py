@@ -150,10 +150,20 @@ def remove_dissimilar_gals(n_clusters):
     filtered_gal_df = ascii.read(imd.loc_filtered_gal_df).to_pandas()
     removed_gal_df = ascii.read(imd.loc_removed_gal_df).to_pandas()
     zobjs = ascii.read(imd.cluster_dir + '/zobjs_clustered.csv', data_start=1).to_pandas()
+    group_len = []
     for groupID in range(n_clusters):
         similarities_df = ascii.read(imd.cluster_similarity_composite_dir + f'/{groupID}_similarity_composite.csv').to_pandas()
         group_df = ascii.read(imd.cluster_indiv_dfs_dir + f'/{groupID}_cluster_df.csv').to_pandas()
-        
+        images_list = os.listdir(f'/Users/brianlorenz/mosdef/Clustering/{groupID}/')
+        group_len.append(len(group_df))
+        for i in range(len(group_df)):
+            field = group_df.loc[i]['field']
+            v4id = group_df.loc[i]['v4id']
+            gal_df_row = np.logical_and(filtered_gal_df['field']==field, filtered_gal_df['v4id']==v4id)
+            
+            if len(filtered_gal_df[gal_df_row]) == 0:
+                breakpoint()
+
 
         for i in range(len(similarities_df)):
             if similarities_df.loc[i]['deletion_flag'] == 1:
@@ -184,7 +194,7 @@ def remove_dissimilar_gals(n_clusters):
 
         group_df.to_csv(imd.cluster_indiv_dfs_dir + f'/{groupID}_cluster_df.csv', index=False)
         similarities_df.to_csv(imd.cluster_similarity_composite_dir + f'/{groupID}_similarity_composite.csv', index=False)
-    
+
     zobjs.to_csv(imd.cluster_dir + '/zobjs_clustered.csv', index=False)
     filtered_gal_df.to_csv(imd.loc_filtered_gal_df, index=False)
     removed_gal_df.to_csv(imd.loc_removed_gal_df, index=False)

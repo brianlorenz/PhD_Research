@@ -19,12 +19,16 @@ import matplotlib as mpl
 from plot_vals import scale_aspect
 from scipy import ndimage
 from scipy.signal import convolve2d
+from matplotlib.colors import Normalize, LogNorm
+from compute_av import ha_factor, pab_factor, compute_ha_pab_av, compute_ha_pab_av_from_dustmap
 
 
 
 colors = ['red', 'green', 'blue']
 
-def make_all_dustmap(id_msa_list):
+def make_all_dustmap():
+    zqual_df_detected = ascii.read('/Users/brianlorenz/uncover/zqual_detected.csv').to_pandas()
+    id_msa_list = zqual_df_detected['id_msa']
     for id_msa in id_msa_list:
         make_dustmap(id_msa)
 
@@ -54,13 +58,11 @@ def make_dustmap(id_msa):
     dilated_segmap_idxs = convolve2d(segmap_idxs.astype(int), kernel.astype(int), mode='same').astype(bool)
 
 
-    # theoretical scalings (to Hb, from naveen's paper)
-    ha_factor = 2.79
-    pab_factor = 0.155
+    
     cmap='inferno'
 
     # fig, axarr = plt.subplots(2, 4, figsize=(16, 8))
-    fig = plt.figure(figsize=(20, 8))
+    fig = plt.figure(figsize=(16, 8))
     gs = GridSpec(2, 5, left=0.05, right=0.99, bottom=0.1, top=0.90, wspace=0.01, hspace=0.3)
     ax_ha_sed = fig.add_subplot(gs[0, 0])
     ax_ha_image = fig.add_subplot(gs[0, 1])
@@ -85,37 +87,54 @@ def make_dustmap(id_msa):
         ha_map_scaled = halpha_map/ha_factor
         pab_map_scaled = pabeta_map/pab_factor
         dustmap = pab_map_scaled / ha_map_scaled
+        # av_dustmap = compute_ha_pab_av_from_dustmap(dustmap)
         # dustmap = pab_map_scaled - 6* ha_map_scaled
         # breakpoint()
         return dustmap
-         
+    
         
     ha_cont, ha_linemap, ha_image = get_cont_and_map(ha_images, ha_cont_pct)
     pab_cont, pab_linemap, pab_image = get_cont_and_map(pab_images, pab_cont_pct)
     dustmap = get_dustmap(ha_linemap, pab_linemap)
-    ha_linemap[~segmap_idxs]=0
-    pab_linemap[~segmap_idxs]=0
     dustmap[~segmap_idxs]=0
     
     ax_segmap.imshow(segmap_idxs)
-    lower_pct = 5
-    upper_pct = 97
 
-    ax_ha_image.imshow(ha_image, vmin=np.percentile(ha_image,lower_pct), vmax=np.percentile(ha_image,upper_pct),)
-    ax_pab_image.imshow(pab_image, vmin=np.percentile(pab_image,lower_pct), vmax=np.percentile(pab_image,upper_pct),)
-   
+    ax_ha_image.imshow(ha_image)
+    ax_pab_image.imshow(pab_image)
+    
+    
 
-    ax_ha_cont.imshow(ha_cont, vmin=np.percentile(ha_cont,lower_pct), vmax=np.percentile(ha_cont,upper_pct), cmap=cmap)
-    ax_pab_cont.imshow(pab_cont, vmin=np.percentile(pab_cont,lower_pct), vmax=np.percentile(pab_cont,upper_pct), cmap=cmap)
+    ha_cont[ha_cont<0] = 0.00001
+    pab_cont[pab_cont<0] = 0.00001
+    ha_linemap[ha_linemap<0] = 0.00001
+    pab_linemap[pab_linemap<0] = 0.00001
+    dustmap[dustmap<0.00001] = 0.00001
+
+    def get_norm(image_map, lower_pct=15, upper_pct=99):
+        imagemap_gt0 = image_map[image_map>0.0001]
+        norm = LogNorm(vmin=np.percentile(imagemap_gt0,lower_pct), vmax=np.percentile(imagemap_gt0,upper_pct))
+        return norm
+    dustmap_lower_pct = 5
+    dustmap_upper_pct = 95
+    ha_cont_norm = get_norm(ha_cont)
+    pab_cont_norm = get_norm(pab_cont)
+    ha_linemap_norm = get_norm(ha_linemap)
+    pab_linemap_norm = get_norm(pab_linemap)
+    dustmap_norm = get_norm(dustmap, lower_pct=dustmap_lower_pct, upper_pct=dustmap_upper_pct)
+    # breakpoint()
+
+    ax_ha_cont.imshow(ha_cont,  cmap=cmap, norm=ha_cont_norm)
+    ax_pab_cont.imshow(pab_cont, cmap=cmap, norm=pab_cont_norm)
 
     # vmin = np.percentile(pab_linemap/pab_factor,lower_pct)
     # vmax = np.percentile(pab_linemap/pab_factor,upper_pct)
 
 
-    ax_ha_linemap.imshow(ha_linemap/ha_factor, vmin=np.percentile(ha_linemap/ha_factor,lower_pct), vmax=np.percentile(ha_linemap/ha_factor,upper_pct), cmap=cmap)
-    ax_pab_linemap.imshow(pab_linemap/pab_factor, vmin=np.percentile(pab_linemap/pab_factor,lower_pct), vmax=np.percentile(pab_linemap/pab_factor,upper_pct), cmap=cmap)
+    ax_ha_linemap.imshow(ha_linemap, cmap=cmap, norm=ha_linemap_norm)
+    ax_pab_linemap.imshow(pab_linemap,cmap=cmap, norm=pab_linemap_norm)
 
-    ax_dustmap.imshow(dustmap, vmin=np.percentile(dustmap,lower_pct), vmax=np.percentile(dustmap,upper_pct), cmap=cmap)
+    ax_dustmap.imshow(dustmap, cmap=cmap, norm=dustmap_norm)
 
     text_height = 1.02
     text_start_left = 0.15
@@ -253,6 +272,7 @@ def load_image(filt):
         wcs = WCS(hdu[0].header)
         photflam = hdu[0].header['PHOTFLAM']
         photplam = hdu[0].header['PHOTPLAM']
+        
     return image, wcs
 
 def get_cutout(obj_skycoord, filt, size = (100, 100)):
@@ -298,6 +318,7 @@ def find_filters_around_line(id_msa, line_number):
     
     return filt_red, filt_green, filt_blue
 
+# make_all_dustmap()
 make_dustmap(47875)
 # make_dustmap(22755)
 

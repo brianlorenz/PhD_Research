@@ -40,6 +40,7 @@ def make_paper_plots(n_clusters, norm_method):
     # make_SFR_compare_fig()
     # make_prospector_overview_fig('fixedmet_agn_set')
     # make_sfr_mass_uvj_bpt_4panel(snr_thresh=3)
+    # make_avneb_sfr_mass_fig()
     # make_mass_metal_sfr_fig()
     
 
@@ -63,7 +64,7 @@ def make_paper_plots(n_clusters, norm_method):
     # # Metals/SFR/both dust figure
 
     # # hb percentage figure
-    make_hb_percentage_fig()
+    # make_hb_percentage_fig()
 
     # Dust mass figure? Can we measure this?
     pass
@@ -223,7 +224,6 @@ def make_hb_percentage_fig(n_groups=20):
         print(f'{groupID}        {median_abalmer}')
         median_indiv_a_balmers.append(median_abalmer)
         
-    breakpoint()
     a_balmer_difference = cluster_summary_df['balmer_av_with_limit'] - median_indiv_a_balmers
     hbsnr = cluster_summary_df['hb_snr']
     # ax_hb.plot(hb_fracs, hbsnr, marker='o', color='black', ls='None')
@@ -283,7 +283,7 @@ def make_mass_metal_sfr_fig():
     mosdef_data_mass = np.array([9.252764612954188, 9.73301737756714, 10.0173775671406, 10.437598736176936]) #Shapley 2022
     mosdef_data_decs = np.array([3.337349397590363, 3.4548192771084363, 3.7801204819277103, 4.512048192771086])
     mosdef_data_balmeravs = compute_balmer_av(mosdef_data_decs)
-    ax_balmer_mass.plot(mosdef_data_mass, mosdef_data_balmeravs, color='black', marker='s', ms=10, mec='black', ls='--', zorder=1000000, label='z=2.3 MOSDEF (Shapley+ 2022)')
+    ax_balmer_mass.plot(mosdef_data_mass, mosdef_data_balmeravs, color='black', marker='s', ms=10, mec='black', ls='dotted', zorder=1000000, label='z=2.3 MOSDEF (Shapley+ 2022)')
     ax_balmer_mass.legend(loc = (0.03, 0.82), fontsize=14)
     # plot_a_vs_b_paper('computed_log_sfr_with_limit', 'O3N2_metallicity', metallicity_label, sfr_label, 'None', axis_obj=ax_metal_sfr, yerr=True, plot_lims=[0, 2, 8, 9], fig=fig, color_var='balmer_av', lower_limit=225, use_color_df=False)
 
@@ -549,6 +549,25 @@ def bootstrap_fit(x_col, y_col, xpoints, exclude_limit=True, bootstrap=200):
     
 
 
+def make_avneb_sfr_mass_fig():
+    fig = plt.figure(figsize=(6.2, 6))
+    gs = GridSpec(1, 1, left=0.11, right=0.96, bottom=0.12)
+    ax_mass_sfr = fig.add_subplot(gs[0, 0])
+
+    plot_a_vs_b_paper('median_log_mass', 'computed_log_sfr_with_limit', stellar_mass_label, sfr_label, 'None', axis_obj=ax_mass_sfr, xerr=False, yerr=True, lower_limit=180, plot_lims=[9, 11.5, 0.25, 2.0], fig=fig, one_to_one=False, use_color_df=False, add_numbers=False, color_var='balmer_av', set_gray=True)
+    ax_mass_sfr.tick_params(labelsize=full_page_axisfont)
+
+    # from matplotlib.cm import ScalarMappable
+    # import matplotlib as mpl
+    # cmap = mpl.cm.plasma
+    # norm = mpl.colors.Normalize(vmin=9.4, vmax=11.05) 
+    # sm =  ScalarMappable(norm=norm, cmap=cmap)
+    # cbar = fig.colorbar(sm, ax=ax_mass_sfr)
+    # cbar.set_label(stellar_mass_label, fontsize=16)
+    # cbar.ax.tick_params(labelsize=16)
+
+    scale_aspect(ax_mass_sfr)
+    fig.savefig(imd.sed_paper_figures_dir + '/sfr_mass_avneb.pdf', bbox_inches='tight')
 
 
 
@@ -557,7 +576,7 @@ def make_SFR_compare_fig():
     gs = GridSpec(1, 1, left=0.11, right=0.96, bottom=0.12)
     ax_sfr = fig.add_subplot(gs[0, 0])
 
-    plot_a_vs_b_paper('log_Prospector_ssfr50_multiplied_normalized', 'computed_log_sfr_with_limit', 'Prospector Normalized SED SFR', 'log$_{10}$(H$\\mathrm{\\alpha}$ SFR) (M$_\odot$ / yr)', 'None', axis_obj=ax_sfr, xerr=True, yerr=True, lower_limit=180, plot_lims=[-1.1, 2.1, 0.1, 2.1], fig=fig, one_to_one=True, use_color_df=True, add_numbers=False)
+    plot_a_vs_b_paper('log_prospector_sfr_prosmass_50', 'computed_log_sfr_with_limit', 'Prospector Normalized SED SFR', 'log$_{10}$(H$\\mathrm{\\alpha}$ SFR) (M$_\odot$ / yr)', 'None', axis_obj=ax_sfr, xerr=False, yerr=True, lower_limit=180, plot_lims=[-1.1, 2.1, 0.1, 2.1], fig=fig, one_to_one=True, use_color_df=True, add_numbers=False)
     ax_sfr.plot([-100, -100], [-100, -100], color='red', ls='--', label='one-to-one')
     ax_sfr.legend(fontsize=16, loc=2)
     ax_sfr.tick_params(labelsize=full_page_axisfont)
@@ -620,8 +639,8 @@ def make_uvj_bpt_fig():
     plt.close('all')
     
 def make_sfr_mass_uvj_bpt_4panel(n_clusters=20, snr_thresh=2):
-    fig = plt.figure(figsize=(12, 12))
-    gs = GridSpec(2, 2, left=0.11, right=0.96, bottom=0.12, wspace=0.28, height_ratios=[1,1],width_ratios=[1,1])
+    fig = plt.figure(figsize=(13.5, 12))
+    gs = GridSpec(2, 2, left=0.08, right=0.92, bottom=0.12, wspace=0.28, height_ratios=[1,1],width_ratios=[1,1])
     ax_ssfr = fig.add_subplot(gs[0, 1])
     ax_metallicity = fig.add_subplot(gs[1, 1])
     ax_uvj = fig.add_subplot(gs[0, 0])
@@ -629,6 +648,7 @@ def make_sfr_mass_uvj_bpt_4panel(n_clusters=20, snr_thresh=2):
     #SFR/Metallicity
     plot_a_vs_b_paper('median_log_mass', 'computed_log_ssfr_with_limit', stellar_mass_label, ssfr_label, 'None', axis_obj=ax_ssfr, yerr=True, plot_lims=[9, 11.5, -10.8, -7.5], lower_limit=180, fig=fig, use_color_df=True) #, color_var='median_U_V'
     plot_a_vs_b_paper('median_log_mass', 'O3N2_metallicity_upper_limit', stellar_mass_label, metallicity_label, 'None', axis_obj=ax_metallicity, yerr=True, plot_lims=[9, 11.5, 8.15, 9.17], fig=fig, lower_limit=360)
+    # plot_a_vs_b_paper('median_log_mass', 'O3N2_metallicity_upper_limit', stellar_mass_label, metallicity_label, 'None', axis_obj=ax_metallicity, yerr=True, plot_lims=[8.5, 11.5, 3, -0.5], fig=fig, lower_limit=360)
     for groupID in range(n_clusters):
         group_df = ascii.read(imd.cluster_indiv_dfs_dir + f'/{groupID}_cluster_df.csv').to_pandas()
         group_df['hb_SNR'] = group_df['hb_flux'] / group_df['err_hb_flux']
@@ -641,9 +661,11 @@ def make_sfr_mass_uvj_bpt_4panel(n_clusters=20, snr_thresh=2):
         #Compute metallicity
         group_df['N2Ha'] = group_df['nii_6585_flux'] / group_df['ha_flux']
         group_df['O3Hb'] = group_df['oiii_5008_flux'] / group_df['hb_flux']
+        group_df['log_O3N2'] = np.log10(group_df['O3Hb'] / group_df['N2Ha']) 
         group_df['O3N2_metallicity'] = 8.97-0.39*np.log10(group_df['O3Hb'] / group_df['N2Ha']) 
         
         ax_metallicity.plot(group_df[both_detected]['log_mass'], group_df[both_detected]['O3N2_metallicity'], color=grey_point_color, markersize=grey_point_size, marker='o', ls='None')
+        # ax_metallicity.plot(group_df[both_detected]['log_mass'], group_df[both_detected]['log_O3N2'], color=grey_point_color, markersize=grey_point_size, marker='o', ls='None')
         # ok_balmer_rows = np.logical_and(group_df['ha_detflag_sfr']==0, group_df['hb_detflag_sfr']==0)
         # ax_ssfr.plot(group_df[ok_balmer_rows]['log_mass'], group_df[ok_balmer_rows]['log_recomputed_ssfr'], color='black', markersize=grey_point_size, marker='o', ls='None')
 
@@ -675,6 +697,13 @@ def make_sfr_mass_uvj_bpt_4panel(n_clusters=20, snr_thresh=2):
 
     scale_aspect(ax_uvj)
     scale_aspect(ax_bpt)
+
+    import matplotlib as mpl
+    cmap = mpl.cm.coolwarm
+    norm = mpl.colors.Normalize(vmin=9.4, vmax=11.05) 
+    cbar = fig.colorbar(mpl.cm.ScalarMappable(norm=norm, cmap=cmap),fraction=0.046, pad=0.04, ax=[ax_bpt,ax_metallicity,ax_ssfr,ax_uvj])
+    cbar.set_label(stellar_mass_label, fontsize=full_page_axisfont)
+    cbar.ax.tick_params(labelsize=full_page_axisfont)
     
     fig.savefig(imd.sed_paper_figures_dir + '/mass_sfr_uvj_bpt.pdf')
 

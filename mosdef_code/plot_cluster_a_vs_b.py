@@ -63,6 +63,9 @@ def plot_cluster_summaries(x_var, y_var, savename, color_var='None', plot_lims='
                 continue
             ax.axhline(0, ls='--', color='black')
         
+        if color_var=='AV_diff':
+            row['AV_diff'] = row['balmer_av'] - row['Prospector_AV_50']
+        
         if color_var != 'None':
             cmap = mpl.cm.inferno
             norm = assign_color(color_var)
@@ -90,7 +93,8 @@ def plot_cluster_summaries(x_var, y_var, savename, color_var='None', plot_lims='
         else:
             ax.plot(row[x_var], row[y_var], color=rgba, marker=marker, ls='None', zorder=3, mec='black')
             
-        ax.text(row[x_var], row[y_var], f"{int(row['groupID'])}", color='black')
+        # ax.text(row[x_var], row[y_var], f"{int(row['groupID'])}", color='black')
+        ax.text(row[x_var], row[y_var], f"{int(row['paperID'])}", color='black')
 
     if add_leja:
         add_leja_sfms(ax)
@@ -194,7 +198,7 @@ def plot_ratio(x_var_numerator, x_var_denominator, y_var_numerator, y_var_denomi
     fig.savefig(imd.cluster_dir + f'/cluster_stats/{savename}.pdf', bbox_inches='tight')
     plt.close('all')
 
-def plot_a_vs_b_paper(x_var, y_var, x_label, y_label, savename, axis_obj='False', color_var='None', plot_lims='None', lower_limit=False, one_to_one=False, ignore_groups=[], log=False, add_leja=False, yerr=False, xerr=False, prospector_run_name = '', fig='None', use_color_df=True, prospector_xerr=False, factor_of_2=False, upper_limit=False, add_numbers=False):
+def plot_a_vs_b_paper(x_var, y_var, x_label, y_label, savename, axis_obj='False', color_var='None', plot_lims='None', lower_limit=False, one_to_one=False, ignore_groups=[], log=False, add_leja=False, yerr=False, xerr=False, prospector_run_name = '', fig='None', use_color_df=True, prospector_xerr=False, factor_of_2=False, upper_limit=False, add_numbers=False, set_gray=False):
     """Plots two columsn of cluster_summary_df against each other
     
     Parameters:
@@ -236,6 +240,8 @@ def plot_a_vs_b_paper(x_var, y_var, x_label, y_label, savename, axis_obj='False'
 
         if color_var != 'None':
             cmap = mpl.cm.inferno
+            # cmap = mpl.cm.RuBu
+            cmap = mpl.cm.get_cmap('OrRd')
             norm = assign_color(color_var)
             rgba = cmap(norm(row[color_var]))
         else:
@@ -273,6 +279,9 @@ def plot_a_vs_b_paper(x_var, y_var, x_label, y_label, savename, axis_obj='False'
                 yerr = False
                 marker='s'
                 # markerfacecolor='None'
+                if set_gray:
+                    rgba = 'grey'
+                    markerfacecolor = 'grey'
                 xrange = plot_lims[1] - plot_lims[0]
                 yrange = plot_lims[3] - plot_lims[2]
                 arrow_width = 0.005
@@ -285,7 +294,7 @@ def plot_a_vs_b_paper(x_var, y_var, x_label, y_label, savename, axis_obj='False'
                     ax.arrow((row[x_var]-plot_lims[0])/xrange, (row[y_var]-plot_lims[2])/yrange, -arrow_length, 0, color=rgba, width=arrow_width, transform=ax.transAxes)
                 if lower_limit >= 315:
                     ax.arrow((row[x_var]-plot_lims[0])/xrange, (row[y_var]-plot_lims[2])/yrange, 0, -arrow_length, color=rgba, width=arrow_width, transform=ax.transAxes)
-                    
+                
             else:
                 marker='o'
                 yerr = True
@@ -324,6 +333,11 @@ def plot_a_vs_b_paper(x_var, y_var, x_label, y_label, savename, axis_obj='False'
         if add_numbers==True:
             ax.text(row[x_var], row[y_var], f"{int(row['groupID'])}", color='black', fontsize=15)
 
+        # if y_var == 'computed_log_ssfr_with_limit' and row['flag_hb_limit']==1:
+        #     # breakpoint()
+        #     ax.plot(row[x_var], np.log10(row['Prospector_ssfr50_normmedian_mass']), color=rgba, marker=marker, ls='None', zorder=1000, mec=mec, markerfacecolor=markerfacecolor, ms=markersize)
+        #     ax.plot([row[x_var], row[x_var]], [row['computed_log_ssfr_with_limit'], np.log10(row['Prospector_ssfr50_normmedian_mass'])], color=rgba, marker='None', ls='-', zorder=3)
+
     if add_leja:
         redshift = 2
         mode = 'ridge'
@@ -342,6 +356,8 @@ def plot_a_vs_b_paper(x_var, y_var, x_label, y_label, savename, axis_obj='False'
         ax.set_yscale('log')
     if color_var != 'None':
         cbar = fig.colorbar(mpl.cm.ScalarMappable(norm=norm, cmap=cmap), ax=ax, fraction=0.046, pad=0.04)
+        if color_var=='balmer_av':
+            color_var='A$_\mathrm{V,neb}$'
         cbar.set_label(color_var, fontsize=full_page_axisfont)
         cbar.ax.tick_params(labelsize=full_page_axisfont)
     ax.tick_params(labelsize=full_page_axisfont)
@@ -381,11 +397,13 @@ def assign_color(color_var):
     elif color_var=='median_U_V':
         norm = mpl.colors.Normalize(vmin=0.5, vmax=1.5) 
     elif color_var=='balmer_av':
-        norm = mpl.colors.Normalize(vmin=0, vmax=2.5) 
+        norm = mpl.colors.Normalize(vmin=0, vmax=3.5) 
     elif color_var=='Prospector_AV_50':
         norm = mpl.colors.Normalize(vmin=0, vmax=1.0) 
     elif color_var=='computed_log_sfr_with_limit':
         norm = mpl.colors.Normalize(vmin=0, vmax=1.5) 
+    elif color_var=='AV_diff':
+        norm = mpl.colors.Normalize(vmin=0, vmax=2.5) 
     else:
         norm = mpl.colors.Normalize(vmin=-10, vmax=10) 
     return norm
@@ -423,6 +441,7 @@ def make_plots_a_vs_b(reduce_plot_count=False, reduce_prospector_plots=False):
 
     plot_cluster_summaries('median_log_mass', 'computed_log_sfr', 'sfr_mass_balmercolor', color_var='balmer_av', ignore_groups=ignore_groups, lower_limit=lower_limit, yerr=True, plot_lims=[9, 11, 0, 2.5])
     plot_cluster_summaries('median_log_mass', 'computed_log_sfr', 'sfr_mass_stellarcolor', color_var='Prospector_AV_50', ignore_groups=ignore_groups, lower_limit=lower_limit, yerr=True, plot_lims=[9, 11, 0, 2.5])
+    plot_cluster_summaries('median_log_mass', 'computed_log_sfr', 'sfr_mass_avdiff', color_var='AV_diff', ignore_groups=ignore_groups, lower_limit=lower_limit, yerr=True, plot_lims=[9, 11, 0, 2.5])
     plot_cluster_summaries('sfms_offset_with_limit', 'AV_diff', 'sfms_offset_avdiff', color_var='median_log_mass', ignore_groups=ignore_groups, lower_limit=False, yerr=False, plot_lims=[-1, 1, -0.5, 2.5])
 
 

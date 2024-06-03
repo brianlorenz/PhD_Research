@@ -9,7 +9,7 @@ import os
 if os.path.exists(imd.loc_cluster_summary_df): 
     cluster_summary_df = imd.read_cluster_summary_df()
 
-def make_hist(save_dir, groupID, xvar, xlabel, removed_gal_number, bins):
+def make_hist(save_dir, groupID, xvar, xlabel, removed_gal_number, bins, paperID):
     fig, ax = plt.subplots(figsize=(8,8))
     ax.hist(xvar, color='black', bins=bins)
     ax.axvline(np.median(xvar), ls='--', color='red', label='Median')
@@ -20,6 +20,7 @@ def make_hist(save_dir, groupID, xvar, xlabel, removed_gal_number, bins):
     ax.set_xlabel(f'Halpha {xlabel}', fontsize=14)
     ax.set_ylabel('Count', fontsize=14)
     ax.text(0.7, 0.95, f'No detection: {removed_gal_number}', transform=ax.transAxes, fontsize=14)
+    ax.text(0.1, 0.95, f'Paper ID: {paperID}', transform=ax.transAxes, fontsize=14)
     ax.set_title(f'Group {groupID}', fontsize=18)
     imd.check_and_make_dir(save_dir + f'/{xlabel}')
     fig.savefig(save_dir + f'/{xlabel}/{groupID}_{xlabel}.pdf')
@@ -40,9 +41,12 @@ def plot_group_hists(n_clusters):
     group_av_tuples = []
     group_mass_tuples = []
     groupIDs = []
+
+    cluster_summary_df = imd.read_cluster_summary_df()
     
 
     for groupID in range(n_clusters):
+        paperID = cluster_summary_df[cluster_summary_df['groupID']==groupID]['paperID'].iloc[0]
         group_df = ascii.read(imd.cluster_indiv_dfs_dir + f'/{groupID}_cluster_df.csv').to_pandas()
         halpha_fluxes = group_df['ha_flux'][group_df['ha_flux'] > -98]
         removed_gal_number = len(group_df) - len(halpha_fluxes)
@@ -70,14 +74,16 @@ def plot_group_hists(n_clusters):
         mass_bins = np.arange(9, 11, 0.1)
         balmer_bins = np.arange(0, 10, 0.2)
         axis_bins = np.arange(0, 1, 0.05)
+        redshift_bins = np.arange(1.3, 2.7, 0.05)
         # Histograms
-        make_hist(save_dir, groupID, halpha_fluxes, 'Flux', removed_gal_number, flux_bins)
-        make_hist(save_dir, groupID, halpha_luminosities, 'Luminosity', removed_gal_number, lum_bins)
-        make_hist(save_dir, groupID, pseudo_ssfr, 'HaLum_Mass', removed_gal_number, lum_bins/1e11)
-        make_hist(save_dir, groupID, log_masses, 'log_mass', 0, mass_bins)
-        make_hist(save_dir, groupID, balmer_decs, 'Balmer_Dec', removed_gal_number_balmer, balmer_bins)
-        make_hist(save_dir, groupID, group_df['use_ratio'], 'Axis_ratio', 0, axis_bins)
-        
+        make_hist(save_dir, groupID, halpha_fluxes, 'Flux', removed_gal_number, flux_bins, paperID)
+        make_hist(save_dir, groupID, halpha_luminosities, 'Luminosity', removed_gal_number, lum_bins, paperID)
+        make_hist(save_dir, groupID, pseudo_ssfr, 'HaLum_Mass', removed_gal_number, lum_bins/1e11, paperID)
+        make_hist(save_dir, groupID, log_masses, 'log_mass', 0, mass_bins, paperID)
+        make_hist(save_dir, groupID, balmer_decs, 'Balmer_Dec', removed_gal_number_balmer, balmer_bins, paperID)
+        make_hist(save_dir, groupID, group_df['use_ratio'], 'Axis_ratio', 0, axis_bins, paperID)
+        make_hist(save_dir, groupID, group_df['Z_MOSFIRE'], 'Redshift', 0, redshift_bins, paperID)
+
         
         # Balmer dec vs Mass in each group
         fig, ax = plt.subplots(figsize=(8,8))

@@ -11,6 +11,7 @@ from astropy.io import ascii
 import matplotlib as mpl
 from axis_ratio_funcs import read_filtered_ar_df, read_interp_axis_ratio
 from plot_vals import *
+from scipy.optimize import curve_fit
 
 def get_bpt_coords(gal_df):
     """Gets the row(s) corresponding to one object
@@ -214,12 +215,26 @@ def plot_bpt(savename='None', axis_obj='False', composite_bpt_point=[-47], compo
         ax = axis_obj
 
     # Bpt diagram lines
-    xline = np.arange(-3.0, 0.469, 0.001)
+    xline = np.arange(-3.0, 0.3, 0.001)
     yline = 0.61 / (xline - 0.47) + 1.19  # Kewley (2001)
     xlineemp = np.arange(-3.0, 0.049, 0.001)
     ylineemp = 0.61 / (xlineemp - 0.05) + 1.3  # Kauffman (2003)
-    ax.plot(xline, yline, color='dimgrey', lw=2,
-            ls='--', label='Kewley+ (2001)')
+    def bpt_shape(x_vals, a, b, c):
+        yvals = a / (x_vals - b) + c
+        return yvals
+    
+
+    bpt_dat = ascii.read(imd.mosdef_dir+'/bpt_plot_points.csv').to_pandas()
+    popt, pcov = curve_fit(bpt_shape, bpt_dat['x'], bpt_dat['y'])
+    # breakpoint()
+    # ax.plot(bpt_dat['x'], bpt_dat['y'], color='purple', lw=2,
+    #         ls='--', label='Kewley+ (2013)')
+    ax.plot(xline, bpt_shape(xline, popt[0], popt[1], popt[2]), color='dimgrey', lw=2,
+            ls='--', label='Kewley+ (2013)') # Scraped the data and fit from online
+    # breakpoint()
+
+    # ax.plot(xline, yline, color='dimgrey', lw=2,
+    #         ls='--', label='Kewley+ (2001)')
     # ax.plot(xlineemp, ylineemp, color='dimgrey',
     #         lw=2, ls='-', label='Kauffmann+ (2003)')
     
@@ -237,17 +252,20 @@ def plot_bpt(savename='None', axis_obj='False', composite_bpt_point=[-47], compo
     #         ls='--', label='Kewley+ (2013)')
 
     if add_background==True:
-        filtered_gal_df = ascii.read(imd.loc_filtered_gal_df).to_pandas()
-        filtered_gal_df = get_bpt_coords(filtered_gal_df)
-        filtered_gal_df['hb_snr'] = filtered_gal_df['hb_flux']/filtered_gal_df['err_hb_flux']
-        filtered_gal_df['nii_6585_snr'] = filtered_gal_df['nii_6585_flux']/filtered_gal_df['err_nii_6585_flux']
-        # filtered_gal_df['ha_snr'] = filtered_gal_df['ha_flux']/filtered_gal_df['err_ha_flux']
-        hb_detected = filtered_gal_df['hb_snr']>snr_background
-        nii_detected = filtered_gal_df['nii_6585_snr']>snr_background
-        both_detected = np.logical_and(hb_detected, nii_detected)
-        ax.plot(filtered_gal_df[both_detected]['log_NII_Ha'], filtered_gal_df[both_detected]['log_OIII_Hb'], marker='o', color=grey_point_color, ls='None', markersize=grey_point_size, zorder=1)
-        # id_agn = filtered_gal_df[both_detected]['agn_flag']!=0
-        # ax.plot(filtered_gal_df[both_detected][id_agn]['log_NII_Ha'], filtered_gal_df[both_detected][id_agn]['log_OIII_Hb'], marker='s', color='green', ls='None', markersize=grey_point_size+4, zorder=1)
+        for j in range(20):
+            group_df = ascii.read(imd.cluster_indiv_dfs_dir + f'/{j}_cluster_df.csv').to_pandas()
+
+            # filtered_gal_df = ascii.read(imd.loc_filtered_gal_df).to_pandas()
+            group_df = get_bpt_coords(group_df)
+            group_df['hb_snr'] = group_df['hb_flux']/group_df['err_hb_flux']
+            group_df['nii_6585_snr'] = group_df['nii_6585_flux']/group_df['err_nii_6585_flux']
+            # filtered_gal_df['ha_snr'] = filtered_gal_df['ha_flux']/filtered_gal_df['err_ha_flux']
+            hb_detected = group_df['hb_snr']>snr_background
+            nii_detected = group_df['nii_6585_snr']>snr_background
+            both_detected = np.logical_and(hb_detected, nii_detected)
+            ax.plot(group_df[both_detected]['log_NII_Ha'], group_df[both_detected]['log_OIII_Hb'], marker='o', color=grey_point_color, ls='None', markersize=grey_point_size, zorder=1)
+            # id_agn = filtered_gal_df[both_detected]['agn_flag']!=0
+            # ax.plot(filtered_gal_df[both_detected][id_agn]['log_NII_Ha'], filtered_gal_df[both_detected][id_agn]['log_OIII_Hb'], marker='s', color='green', ls='None', markersize=grey_point_size+4, zorder=1)
     
     cmap = mpl.cm.plasma
     norm = mpl.colors.Normalize(vmin=1, vmax=len(gal_df)) 

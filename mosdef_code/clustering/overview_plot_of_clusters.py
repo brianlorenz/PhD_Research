@@ -243,8 +243,11 @@ def make_overview_plot_clusters(groupIDs, import_save_str, n_clusters, norm_meth
         in_mass_range = np.logical_and(group_df['log_mass']>mass_lims[0], group_df['log_mass']<mass_lims[1])
         in_sfr_range = np.logical_and(group_df['log_use_sfr']>sfr_lims[0], group_df['log_use_sfr']<sfr_lims[1])
         in_both_range = np.logical_and(in_mass_range, in_sfr_range)
+        has_hbeta_too = np.logical_and(in_both_range, group_df['hb_detflag_sfr']==0)
         n_gals_in_range = len(group_df[in_both_range])
-        ax.text(0.05, 0.87, f'{n_gals_in_range}', transform=ax.transAxes, fontsize=fontsize)
+        n_gals_hbeta = len(group_df[has_hbeta_too])
+        ax.text(0.03, 0.90, f'{n_gals_in_range} H$\\alpha$', transform=ax.transAxes, fontsize=fontsize)
+        ax.text(0.03, 0.80, f'{n_gals_hbeta} H$\\beta$', transform=ax.transAxes, fontsize=fontsize)
         # if paper_overview==False:
         #     ax.text(0.05, 0.85, f'{n_gals_in_range}', transform=ax.transAxes, fontsize=fontsize)
 
@@ -350,7 +353,7 @@ def make_overview_plot_clusters(groupIDs, import_save_str, n_clusters, norm_meth
         n_galsbpt = len(group_df[both_detected])
 
         # n_gals_in_range_bpt = len(group_df[in_both_range_bpt])
-        ax.text(0.85, 0.87, f'{n_galsbpt}', transform=ax.transAxes, fontsize=fontsize)
+        ax.text(0.85, 0.90, f'{n_galsbpt}', transform=ax.transAxes, fontsize=fontsize)
         # if paper_overview == False:
         #     ax.text(0.85, 0.85, f'{n_gals_in_range_bpt}', transform=ax.transAxes, fontsize=fontsize)
         # ax.plot(group_df['log_mass'], group_df['log_use_sfr'], marker='o', color='black', ls='None')

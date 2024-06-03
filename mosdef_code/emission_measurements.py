@@ -7,6 +7,7 @@ from mosdef_obj_data_funcs import read_sed, read_mock_sed, get_mosdef_obj, read_
 import initialize_mosdef_dirs as imd
 
 
+
 def setup_emission_df():
     """Converts the linemeas_latest.fits file into a pandas dataframe as a csvf for ease of use
 
