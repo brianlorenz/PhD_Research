@@ -14,14 +14,18 @@ def main(redo_fit=True):
     
     #Ensure that all ids are in the catalog:
     supercat = read_supercat()
+    breakpoint()
     id_msa_list = [id_msa for id_msa in id_msa_list if len(supercat[supercat['id_msa'] == id_msa]) == 1]
-    
     if redo_fit == True:
         compare_all_sed_flux(id_msa_list) 
+        # breakpoint()
         fit_all_emission_uncover(id_msa_list)
+    
     detected_list = select_detected_lines(id_msa_list)
     zqual_df_detected = zqual_df_covered[zqual_df_covered['id_msa'].isin(detected_list)]
     zqual_df_detected.to_csv('/Users/brianlorenz/uncover/zqual_detected.csv', index=False)
+    # breakpoint()
+
     make_all_3color(detected_list)
     make_all_dustmap()
     print(detected_list)
@@ -35,7 +39,7 @@ def find_good_spec():
     return zqual_df
 
 def select_spectra(zqual_df):
-    """Checking that both target lines are covered int he photometry"""
+    """Checking that both target lines are covered in the photometry"""
     uncover_filt_dir, filters = unconver_read_filters()
     supercat_df = read_supercat()
     filt_cols = get_filt_cols(supercat_df, skip_wide_bands=True)

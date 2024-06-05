@@ -74,7 +74,7 @@ def fit_emission_uncover(spectrum, save_name, bootstrap_num=-1):
         #         continue
         guess.append(amp_guess)
         bounds_low.append(0.001)
-        bounds_high.append(100000)
+        bounds_high.append(10000000)
     bounds = (np.array(bounds_low), np.array(bounds_high))
 
     
@@ -593,13 +593,12 @@ def get_fit_range(wavelength):
 
 def fit_all_emission_uncover(id_msa_list):
     for id_msa in id_msa_list:
-        if id_msa <= 39408:
-            continue
         spec_df = read_raw_spec(id_msa)
         fit_emission_uncover(spec_df, id_msa)
 
-# id_msa = 14573
+# id_msa = 60053
 # spec_df = read_raw_spec(id_msa)
 # fit_emission_uncover(spec_df, id_msa)
 
     
+# fit_all_emission_uncover(id_msa_list)

@@ -1,5 +1,6 @@
 import numpy as np
 from fit_emission_uncover import line_list
+from uncover_read_data import read_SPS_cat
 
 # theoretical scalings (to Hb, from naveen's paper)
 ha_factor = 2.79
