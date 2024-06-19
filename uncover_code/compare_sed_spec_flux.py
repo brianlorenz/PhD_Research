@@ -16,6 +16,15 @@ def compare_sed_flux(id_msa, make_plot=True):
     f_lambda = spec_df['flux_erg_aa'].to_numpy()
     sed_abmag = observate.getSED(wavelength, f_lambda, filterlist=filters)
     sed_jy = 10**(-0.4*(sed_abmag-8.9))
+    # breakpoint() # ha 12, 13, 15
+    # breakpoint() # pab 19, 21, 22
+    ha_cont_pct = 0.5369986399626991
+    pab_cont_pct = 0.6381169699210135
+    ha_cont = np.percentile([sed_jy[12], sed_jy[15]], ha_cont_pct)
+    pab_cont = np.percentile([sed_jy[19], sed_jy[22]], pab_cont_pct)
+    ha_line = sed_jy[13] - ha_cont
+    pab_line = sed_jy[21] - pab_cont
+    breakpoint()
     
     wave_micron = sed_df['eff_wavelength']
 
@@ -51,7 +60,7 @@ def compare_all_sed_flux(id_msa_list):
         full_ratio, blue_ratio, red_ratio = compare_sed_flux(id_msa, make_plot=True)
         full_ratios.append(full_ratio)
         blue_ratios.append(blue_ratio)
-        red_ratios.append(red_ratio)
+        red_ratios.appeend(red_ratio)
 
     ratio_df = pd.DataFrame(zip(id_msa_list, full_ratios, blue_ratios, red_ratios), columns = ['id_msa', 'full_ratio', 'blue_ratio', 'red_ratio'])
     ratio_df.to_csv('/Users/brianlorenz/uncover/Figures/spec_sed_compare/compare_ratio.csv', index=False)
@@ -73,6 +82,6 @@ def make_ratio_hist():
     fig.savefig('/Users/brianlorenz/uncover/Figures/spec_sed_compare/hist_redratio.pdf')
     plt.close('all')
 # make_ratio_hist()
-# compare_sed_flux(7887)
+# compare_sed_flux(47875)
 
 

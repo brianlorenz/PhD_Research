@@ -1,0 +1,74 @@
+from compute_av import read_catalog_av, compute_ha_pab_av
+from uncover_read_data import read_spec_cat
+from astropy.io import ascii
+import numpy as np
+import matplotlib.pyplot as plt
+
+def diagnostic_av_emissionfit_vs_av_prospector():
+    zqual_df = read_spec_cat()
+
+    zqual_df_cont_covered = ascii.read('/Users/brianlorenz/uncover/zqual_df_cont_covered.csv').to_pandas()
+    lineratio_df = ascii.read('/Users/brianlorenz/uncover/Figures/diagnostic_lineratio/lineratio_df.csv').to_pandas()
+    lineratio_df['integrated_spec_av'] = compute_ha_pab_av(1/lineratio_df['integrated_spec_lineratio'])
+    lineratio_df['sed_av'] = compute_ha_pab_av(1/lineratio_df['sed_lineratio'])
+    id_msa_list = zqual_df_cont_covered['id_msa']
+    
+    fig, ax = plt.subplots(figsize=(6,6))
+
+    err_av_50s_lows = []
+    av_50s = []
+    err_av_50s_highs = []
+    for id_msa in id_msa_list:
+        emission_df = ascii.read(f'/Users/brianlorenz/uncover/Data/emission_fitting/{id_msa}_emission_fits.csv').to_pandas()
+        ha_pab_ratio = emission_df['ha_pab_ratio'].iloc[0]
+        err_ha_pab_ratio_low = emission_df['err_ha_pab_ratio_low'].iloc[0]
+        err_ha_pab_ratio_high = emission_df['err_ha_pab_ratio_high'].iloc[0]
+
+        av_emission_fit = compute_ha_pab_av(1/ha_pab_ratio)
+        av_emission_fit_high = compute_ha_pab_av(1/(ha_pab_ratio-err_ha_pab_ratio_low))
+        av_emission_fit_low = compute_ha_pab_av(1/(ha_pab_ratio+err_ha_pab_ratio_high))
+        err_av_emission_fit_low = av_emission_fit - av_emission_fit_low
+        err_av_emission_fit_high = av_emission_fit_high - av_emission_fit
+
+        av_16, av_50, av_84 = read_catalog_av(id_msa, zqual_df)
+        err_av_50_low = av_50-av_16
+        err_av_50_high = av_84-av_50
+        av_50s.append(av_50)
+        err_av_50s_lows.append(err_av_50_low)
+        err_av_50s_highs.append(err_av_50_high)
+
+        ax.errorbar(av_emission_fit, av_50, xerr=np.array([[err_av_emission_fit_low, err_av_emission_fit_high]]).T, yerr=np.array([[err_av_50_low, err_av_50_high]]).T, marker='o', ls='None', color='black')
+    # one-to-one
+    ax.plot([-100, 100], [-100, 100], ls='--', color='red', marker='None')
+
+    ax.set_xlim(-1, 2.5)
+    ax.set_ylim(-1, 2.5)
+    ax.set_xlabel('Emission Fit AV')
+    ax.set_ylabel('Prospector AV')
+    # plt.show()
+    fig.savefig('/Users/brianlorenz/uncover/Figures/diagnostic_lineratio/prospect_vs_fit.pdf')
+    plt.close('all')
+
+
+    # Integrated spectra vs prospector
+    fig, ax = plt.subplots(figsize=(6,6))
+    ax.plot(lineratio_df['integrated_spec_av'], av_50s, marker='o', ls='None', color='black')
+    ax.plot([-100, 100], [-100, 100], ls='--', color='red', marker='None')
+    ax.set_xlim(-2, 11)
+    ax.set_ylim(-1, 2.5)
+    ax.set_xlabel('Integrated Spectrum AV')
+    ax.set_ylabel('Prospector AV')
+    fig.savefig('/Users/brianlorenz/uncover/Figures/diagnostic_lineratio/prospect_vs_intspec.pdf')
+
+    # SED vs prospector
+    fig, ax = plt.subplots(figsize=(6,6))
+    ax.plot(lineratio_df['sed_av'], av_50s, marker='o', ls='None', color='black')
+    ax.plot([-100, 100], [-100, 100], ls='--', color='red', marker='None')
+    ax.set_xlim(-5, 20)
+    ax.set_ylim(-1, 2.5)
+    ax.set_xlabel('SED AV')
+    ax.set_ylabel('Prospector AV')
+    fig.savefig('/Users/brianlorenz/uncover/Figures/diagnostic_lineratio/prospect_vs_sed.pdf')
+
+
+diagnostic_av_emissionfit_vs_av_prospector()

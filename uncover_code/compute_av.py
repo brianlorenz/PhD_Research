@@ -1,6 +1,7 @@
 import numpy as np
 from fit_emission_uncover import line_list
 from uncover_read_data import read_SPS_cat
+from dust_equations_prospector import dust2_to_AV
 
 # theoretical scalings (to Hb, from naveen's paper)
 ha_factor = 2.79
@@ -41,3 +42,18 @@ def compute_balmer_av(balmer_dec):
     A_V_value = R_V_value*k_factor*np.log10(balmer_dec/intrinsic_ratio)
     return A_V_value
 
+def read_catalog_av(id_msa, zqual_df):
+    sps_df = read_SPS_cat()
+    id_dr2 = zqual_df[zqual_df['id_msa']==id_msa]['id_DR2'].iloc[0]
+    sps_row = sps_df[sps_df['id']==id_dr2]
+    dust_16 = sps_row['dust2_16'].iloc[0]
+    dust_50 = sps_row['dust2_50'].iloc[0]
+    dust_84 = sps_row['dust2_84'].iloc[0]
+    av_16 = dust2_to_AV(dust_16)
+    av_50 = dust2_to_AV(dust_50)
+    av_84 = dust2_to_AV(dust_84)
+    print(f'A_V 50 for id_msa {id_msa}: {av_50}')
+    return av_16, av_50, av_84
+
+
+# print(compute_ha_pab_av(1/15))

@@ -5,6 +5,7 @@ from astropy import units as u
 from astropy.nddata import Cutout2D
 from uncover_read_data import read_supercat, read_raw_spec, read_spec_cat, read_segmap, read_SPS_cat
 from uncover_make_sed import get_sed
+from uncover_sed_filters import unconver_read_filters
 from fit_emission_uncover import line_list
 from sedpy import observate
 import matplotlib.pyplot as plt
@@ -13,6 +14,7 @@ from astropy.visualization import make_lupton_rgb
 from uncover_sed_filters import get_filt_cols
 from glob import glob
 import sys
+import pandas as pd
 from fit_emission_uncover import line_list
 import numpy as np
 import matplotlib as mpl
@@ -21,7 +23,7 @@ from scipy import ndimage
 from scipy.signal import convolve2d
 from matplotlib.colors import Normalize, LogNorm
 from matplotlib.ticker import LogLocator, LogFormatterSciNotation
-from compute_av import ha_factor, pab_factor, compute_ha_pab_av, compute_ha_pab_av_from_dustmap
+from compute_av import ha_factor, pab_factor, compute_ha_pab_av, compute_ha_pab_av_from_dustmap, read_catalog_av
 from plot_log_linear_rgb import make_log_rgb
 from dust_equations_prospector import dust2_to_AV
 
@@ -29,10 +31,18 @@ from dust_equations_prospector import dust2_to_AV
 colors = ['red', 'green', 'blue']
 
 def make_all_dustmap():
-    zqual_df_detected = ascii.read('/Users/brianlorenz/uncover/zqual_detected.csv').to_pandas()
-    id_msa_list = zqual_df_detected['id_msa']
+    zqual_df_cont_covered = ascii.read('/Users/brianlorenz/uncover/zqual_df_cont_covered.csv').to_pandas()
+    id_msa_list = zqual_df_cont_covered['id_msa']
+    spec_ratios = []
+    sed_ratios = []
+    emission_ratios = []
     for id_msa in id_msa_list:
-        make_dustmap(id_msa)
+        sed_lineratio, line_ratio_from_spec, line_ratio_from_emission = make_dustmap(id_msa)
+        sed_ratios.append(sed_lineratio)
+        spec_ratios.append(line_ratio_from_spec)
+        emission_ratios.append(line_ratio_from_emission)
+    lineratio_df = pd.DataFrame(zip(id_msa_list, sed_ratios, spec_ratios, emission_ratios), columns=['id_msa', 'sed_lineratio', 'integrated_spec_lineratio', 'emission_fit_lineratio'])
+    lineratio_df.to_csv('/Users/brianlorenz/uncover/Figures/diagnostic_lineratio/lineratio_df.csv', index=False)
 
 def make_all_3color(id_msa_list):
     for id_msa in id_msa_list:
@@ -43,7 +53,12 @@ def make_dustmap(id_msa):
     # Read in the images
     ha_filters, ha_images, wht_ha_images, obj_segmap = make_3color(id_msa, line_index=0, plot=False)
     pab_filters, pab_images, wht_pab_images, obj_segmap = make_3color(id_msa, line_index=1, plot=False)
-    
+    ha_sedpy_name = ha_filters[1].replace('f', 'jwst_f')
+    ha_sedpy_filt = observate.load_filters([ha_sedpy_name])[0]
+    pab_sedpy_name = pab_filters[1].replace('f', 'jwst_f')
+    pab_sedpy_filt = observate.load_filters([pab_sedpy_name])[0]
+
+
     # Compute SNR pixel-by-pixel
     def compute_snr_map(images, wht_images):
         snr_maps = [images[i].data / (1/np.sqrt(wht_images[i].data)) for i in range(len(images))]
@@ -59,6 +74,11 @@ def make_dustmap(id_msa):
     zqual_df = read_spec_cat()
     redshift = zqual_df[zqual_df['id_msa']==id_msa]['z_spec'].iloc[0]
 
+    line_ratio_from_spec = check_line_ratio_spectra(ha_filters, pab_filters, spec_df, sed_df, id_msa)
+    print(f'Line ratio from integrated spectrum: {line_ratio_from_spec}')
+    fit_df = ascii.read(f'/Users/brianlorenz/uncover/Data/emission_fitting/{id_msa}_emission_fits.csv').to_pandas()
+    line_ratio_from_emission = fit_df["ha_pab_ratio"].iloc[0]
+
     # Segmap matching
     supercat_df = read_supercat()
     id_dr3 = supercat_df[supercat_df['id_msa']==id_msa]['id'].iloc[0]
@@ -70,12 +90,7 @@ def make_dustmap(id_msa):
     dilated_segmap_idxs = convolve2d(segmap_idxs.astype(int), kernel.astype(int), mode='same').astype(bool)
 
     # Read the AV from the catalog
-    sps_df = read_SPS_cat()
-    id_dr2 = zqual_df[zqual_df['id_msa']==id_msa]['id_DR2'].iloc[0]
-    sps_row = sps_df[sps_df['id']==id_dr2]
-    dust_50 = sps_row['dust2_50'].iloc[0]
-    av_50 = dust2_to_AV(dust_50)
-    print(f'A_V 50 for id_msa {id_msa}: {av_50}')
+    av_16, av_50, av_84 = read_catalog_av(id_msa, zqual_df)
 
     
     cmap='inferno'
@@ -117,8 +132,10 @@ def make_dustmap(id_msa):
         return dustmap
     
     # Make SED plot, return percentile of line between the other two filters
-    ha_cont_pct = plot_sed_around_line(ax_ha_sed, ha_filters, sed_df, spec_df, redshift, 0)
-    pab_cont_pct = plot_sed_around_line(ax_pab_sed, pab_filters, sed_df, spec_df, redshift, 1)
+    ha_cont_pct, ha_sed_value = plot_sed_around_line(ax_ha_sed, ha_filters, sed_df, spec_df, redshift, 0)
+    pab_cont_pct, pab_sed_value = plot_sed_around_line(ax_pab_sed, pab_filters, sed_df, spec_df, redshift, 1)
+    sed_lineratio = ha_sed_value / pab_sed_value
+    # breakpoint()
     # Make linemaps
     ha_cont, ha_linemap, ha_image, ha_linemap_snr = get_cont_and_map(ha_images, wht_ha_images, ha_cont_pct)
     pab_cont, pab_linemap, pab_image, pab_linemap_snr = get_cont_and_map(pab_images, wht_pab_images, pab_cont_pct)
@@ -242,7 +259,9 @@ def make_dustmap(id_msa):
 
     ax_ha_sed.text(0.50, 1.15, f'z = {round(redshift,2)}', color='black', fontsize=18, transform=ax_ha_sed.transAxes)
     ax_ha_sed.text(-0.05, 1.15, f'id = {id_msa}', color='black', fontsize=18, transform=ax_ha_sed.transAxes)
-    
+    ax_ha_image.text(-0.05, 1.15, f'Line ratio from integrated spectrum: {round(line_ratio_from_spec, 2)}', fontsize=14, transform=ax_ha_image.transAxes)
+    ax_ha_linemap.text(-0.05, 1.15, f'Line ratio from emission_fit: {round(line_ratio_from_emission, 2)}', fontsize=14, transform=ax_ha_linemap.transAxes)
+    ax_pab_image.text(-0.05, -0.15, f'Line ratio from sed: {round(sed_lineratio, 2)}', fontsize=14, transform=ax_pab_image.transAxes)
     # Save
     for ax in ax_list:
         scale_aspect(ax)
@@ -250,8 +269,11 @@ def make_dustmap(id_msa):
     # plt.show()
     fig.savefig(save_folder + f'/{id_msa}_dustmap.pdf')
 
+    return sed_lineratio, line_ratio_from_spec, line_ratio_from_emission
+
 def plot_sed_around_line(ax, filters, sed_df, spec_df, redshift, line_index):
     line_wave_obs = (line_list[line_index][1] * (1+redshift))/1e4
+    ax.axvline(line_wave_obs, ls='--', color='green')
     # Plot the 3 SED points
     for i in range(len(filters)):
         sed_row = sed_df[sed_df['filter'] == filters[i]]
@@ -262,6 +284,7 @@ def plot_sed_around_line(ax, filters, sed_df, spec_df, redshift, line_index):
             red_flux = sed_row['flux'].iloc[0]
         if i == 1:
             green_wave = sed_row['eff_wavelength'].iloc[0]
+            green_flux = sed_row['flux'].iloc[0]
         if i == 2:
             blue_wave = sed_row['eff_wavelength'].iloc[0]
             blue_flux = sed_row['flux'].iloc[0]
@@ -276,8 +299,10 @@ def plot_sed_around_line(ax, filters, sed_df, spec_df, redshift, line_index):
     total_wave_diff = blue_wave - red_wave
     line_wave_diff = green_wave - red_wave
     cont_percentile = line_wave_diff/total_wave_diff
+    cont_value = np.percentile([red_flux, blue_flux], cont_percentile*100)
+    line_value = green_flux - cont_value
     ax.plot([red_wave, blue_wave], [red_flux, blue_flux], marker='None', ls='--', color=connect_color)
-    ax.plot(green_wave, np.percentile([red_flux, blue_flux], cont_percentile*100), marker='o', ls='None', color=connect_color)
+    ax.plot(green_wave, cont_value, marker='o', ls='None', color=connect_color)
 
     # Plot the spectrum
     ax.plot(spec_df['wave'], spec_df['scaled_flux'], ls='-', marker='None', color='black', lw=1, label='Scaled Spectrum')
@@ -288,14 +313,14 @@ def plot_sed_around_line(ax, filters, sed_df, spec_df, redshift, line_index):
     ax.tick_params(labelsize=14)
     ax.legend(fontsize=10)
     ax.set_xlim(0.8*line_wave_obs, 1.2*line_wave_obs)
-    return cont_percentile
+    return cont_percentile, line_value
 
 def make_3color(id_msa, line_index = 0, plot = False): 
     obj_skycoord = get_coords(id_msa)
 
     line_name = line_list[line_index][0]
 
-    filt_red, filt_green, filt_blue = find_filters_around_line(id_msa, line_index)
+    filt_red, filt_green, filt_blue, all_filts = find_filters_around_line(id_msa, line_index)
     filters = [filt_red, filt_green, filt_blue]
 
     
@@ -371,6 +396,72 @@ def get_cutout_segmap(obj_skycoord, size = (100, 100)):
     segmap_cutout = Cutout2D(segmap, obj_skycoord, size, wcs=segmap_wcs)
     return segmap_cutout
 
+def check_line_ratio_spectra(ha_filters, pab_filters, spec_df, sed_df, id_msa):
+    """Measure the line ratio just from integrating spectrum over the trasnmission curve"""
+    wavelength = spec_df['wave_aa'].to_numpy()
+    f_lambda = spec_df['flux_erg_aa'].to_numpy()
+    filt_dict, filters = unconver_read_filters()
+    filter_names = [sedpy_filt.name for sedpy_filt in filters]
+    integrated_sed_abmag = observate.getSED(wavelength, f_lambda, filterlist=filters)
+    integrated_sed_jy = 10**(-0.4*(integrated_sed_abmag-8.9))
+    ha_idxs = []
+    pab_idxs = []
+    for ha_filt in ha_filters:
+        ha_filt = ha_filt[2:]
+        for index, item in enumerate(filter_names):
+            if ha_filt in item:
+                ha_idxs.append(index)
+    for pab_filt in pab_filters:
+        pab_filt = pab_filt[2:]
+        for index, item in enumerate(filter_names):
+            if pab_filt in item:
+                pab_idxs.append(index)
+    # breakpoint() # ha 12, 13, 15
+    # breakpoint() # pab 19, 21, 22
+    def fint_pct(filts):
+        # breakpoint()
+        red_row = sed_df[sed_df['filter'] == filts[0]]
+        green_row = sed_df[sed_df['filter'] == filts[1]]
+        blue_row = sed_df[sed_df['filter'] == filts[2]]
+        total_wave_diff = blue_row['eff_wavelength'].iloc[0] - red_row['eff_wavelength'].iloc[0]
+        line_wave_diff = green_row['eff_wavelength'].iloc[0] - red_row['eff_wavelength'].iloc[0]
+        cont_percentile = line_wave_diff/total_wave_diff
+        return cont_percentile, red_row, green_row, blue_row
+    ha_cont_pct, ha_red_row, ha_green_row, ha_blue_row = fint_pct(ha_filters)
+    pab_cont_pct, pab_red_row, pab_green_row, pab_blue_row = fint_pct(pab_filters)
+    ha_redflux = integrated_sed_jy[ha_idxs[0]]
+    ha_greenflux = integrated_sed_jy[ha_idxs[1]]
+    ha_blueflux = integrated_sed_jy[ha_idxs[2]]
+    pab_redflux = integrated_sed_jy[pab_idxs[0]]
+    pab_greenflux = integrated_sed_jy[pab_idxs[1]]
+    pab_blueflux = integrated_sed_jy[pab_idxs[2]]
+    ha_cont = np.percentile([ha_redflux, ha_blueflux], ha_cont_pct*100)
+    pab_cont = np.percentile([pab_redflux, pab_blueflux], pab_cont_pct*100)
+    
+    ha_line = ha_greenflux - ha_cont
+    pab_line = pab_greenflux - pab_cont
+    line_ratio_from_spec = ha_line/pab_line
+    fig, axarr = plt.subplots(2, 1, figsize=(6,8))
+    ax_ha = axarr[0]
+    ax_pab = axarr[1]
+    
+    ax_ha.plot(ha_red_row['eff_wavelength'], ha_redflux, color='red', ls='None', marker='o')
+    ax_ha.plot(ha_green_row['eff_wavelength'], ha_greenflux, color='green', ls='None', marker='o')
+    ax_ha.plot(ha_blue_row['eff_wavelength'], ha_blueflux, color='blue', ls='None', marker='o')
+    ax_ha.plot(ha_green_row['eff_wavelength'], ha_cont, color='purple', ls='None', marker='o')
+    ax_pab.plot(pab_red_row['eff_wavelength'], pab_redflux, color='red', ls='None', marker='o')
+    ax_pab.plot(pab_green_row['eff_wavelength'], pab_greenflux, color='green', ls='None', marker='o')
+    ax_pab.plot(pab_blue_row['eff_wavelength'], pab_blueflux, color='blue', ls='None', marker='o')
+    ax_pab.plot(pab_green_row['eff_wavelength'], pab_cont, color='purple', ls='None', marker='o')
+    for ax in axarr:
+        ax.plot(spec_df['wave'], spec_df['flux'], ls='-', color='black', marker='None')
+    ax_ha.set_xlim([ha_blue_row['eff_wavelength'].iloc[0]-0.1, ha_red_row['eff_wavelength'].iloc[0]+0.1])
+    ax_pab.set_xlim([pab_blue_row['eff_wavelength'].iloc[0]-0.1, pab_red_row['eff_wavelength'].iloc[0]+0.1])
+    ax_ha.text(0.1, 0.9, f'line ratio from int spec: {line_ratio_from_spec}', transform=ax_ha.transAxes)
+    fig.savefig(f'/Users/brianlorenz/uncover/Figures/diagnostic_lineratio/{id_msa}_lineratio.pdf')
+    plt.close('all')
+    return line_ratio_from_spec
+
 def find_filters_around_line(id_msa, line_number):
     """
     
@@ -386,25 +477,28 @@ def find_filters_around_line(id_msa, line_number):
     zqual_row = zqual_detected_df[zqual_detected_df['id_msa'] == id_msa]
     detected_filt = zqual_row[f'line{line_number}_filt'].iloc[0]
     detected_index = [i for i in range(len(filt_names)) if filt_names[i] == detected_filt][0]
+    all_filts = True
     if detected_index == 0:
         print(f'For {id_msa}, line {line_number} is detected in {detected_filt}, the bluest filter')
         filt_red = filt_names[detected_index+1].split('_')[1]
         filt_green = filt_names[detected_index].split('_')[1]
         filt_blue = filt_names[detected_index].split('_')[1]
-        return filt_red, filt_green, filt_blue
+        all_filts = False
+        return filt_red, filt_green, filt_blue, all_filts
     if detected_index == len(filt_names)-1:
         print(f'For {id_msa}, line {line_number} is detected in {detected_filt}, the reddest filter')
         filt_red = filt_names[detected_index].split('_')[1]
         filt_green = filt_names[detected_index].split('_')[1]
         filt_blue = filt_names[detected_index-1].split('_')[1]
-        return filt_red, filt_green, filt_blue
+        all_filts = False
+        return filt_red, filt_green, filt_blue, all_filts
     filt_red = filt_names[detected_index+1].split('_')[1]
     filt_green = filt_names[detected_index].split('_')[1]
     filt_blue = filt_names[detected_index-1].split('_')[1]
     
-    return filt_red, filt_green, filt_blue
+    return filt_red, filt_green, filt_blue, all_filts
 
-make_all_dustmap()
+# make_all_dustmap()
 # make_dustmap(47875)
 # make_dustmap(25147)
 

@@ -4,7 +4,7 @@ from compare_sed_spec_flux import compare_sed_flux, compare_all_sed_flux
 from fit_emission_uncover import fit_all_emission_uncover
 from astropy.io import ascii
 from make_dust_maps import make_all_3color, make_all_dustmap
-
+from make_dust_maps import find_filters_around_line
 target_lines = 6563, 12820
 
 def main(redo_fit=True):
@@ -14,7 +14,6 @@ def main(redo_fit=True):
     
     #Ensure that all ids are in the catalog:
     supercat = read_supercat()
-    breakpoint()
     id_msa_list = [id_msa for id_msa in id_msa_list if len(supercat[supercat['id_msa'] == id_msa]) == 1]
     if redo_fit == True:
         compare_all_sed_flux(id_msa_list) 
@@ -26,6 +25,17 @@ def main(redo_fit=True):
     zqual_df_detected.to_csv('/Users/brianlorenz/uncover/zqual_detected.csv', index=False)
     # breakpoint()
 
+    # Check if there are filters on both sides for continuum:
+    cont_covered = []
+    for id_msa in detected_list:
+        _,_,_, all_good0 = find_filters_around_line(id_msa, 0)
+        _,_,_, all_good1 = find_filters_around_line(id_msa, 1)
+        if all_good0 == True and all_good1 == True:
+            cont_covered.append(id_msa)
+   
+    zqual_df_cont_covered = zqual_df_detected[zqual_df_detected['id_msa'].isin(cont_covered)]
+    zqual_df_cont_covered.to_csv('/Users/brianlorenz/uncover/zqual_df_cont_covered.csv', index=False)
+    
     make_all_3color(detected_list)
     make_all_dustmap()
     print(detected_list)
@@ -61,7 +71,7 @@ def select_spectra(zqual_df):
     zqual_df_covered['line1_filt'] = line1_filts
     return zqual_df_covered
 
-def select_detected_lines(id_msa_list, thresh = 5):
+def select_detected_lines(id_msa_list, thresh = 2):
     """Selects the ids that have detected emission lines above SNR of thresh
     
     Parameters:
