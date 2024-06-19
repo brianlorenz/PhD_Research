@@ -4,7 +4,8 @@ import initialize_mosdef_dirs as imd
 import numpy as np
 
 def compute_balmer_av(balmer_dec):
-            balmer_av = 4.05*1.97*np.log10(balmer_dec/2.86)
+            R_V = 3.1
+            balmer_av = R_V*1.97*np.log10(balmer_dec/2.86)
             return balmer_av
 
 def plot_balmer_stellar_avs(save_name):

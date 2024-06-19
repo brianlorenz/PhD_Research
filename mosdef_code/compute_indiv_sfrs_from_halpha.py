@@ -3,6 +3,7 @@ from cosmology_calcs import flux_to_luminosity
 from compute_new_sfrs import correct_lum_for_dust, ha_lum_to_sfr
 import numpy as np
 from astropy.io import ascii
+from compute_cluster_sfrs import compute_balmer_ahalpha_from_AV
 
 # CURRENTLY IGNORES NANS WHEN COMPUTING - SOME OF THE GALAXIES DON'T HAVE HA DETECTIONS
 def compute_indiv_sfrs(n_clusters, lower_limit=True):
@@ -31,7 +32,7 @@ def compute_indiv_sfrs(n_clusters, lower_limit=True):
         AV = cluster_summary_df.iloc[groupID]['AV']
 
         #Convert the Balmer AV to A_Halpha using https://iopscience.iop.org/article/10.1088/0004-637X/763/2/145/pdf
-        balmer_ahalpha = 3.33*(balmer_av / 4.05)
+        balmer_ahalpha = compute_balmer_ahalpha_from_AV(balmer_avs, law='Cardelli')
 
 
         # Convert ha to luminsoty

@@ -3,8 +3,12 @@ from uncover_read_data import read_spec_cat
 from astropy.io import ascii
 import numpy as np
 import matplotlib.pyplot as plt
+import matplotlib as mpl
+from matplotlib.cm import ScalarMappable
+from sedpy import observate
+from make_dust_maps import make_3color
 
-def diagnostic_av_emissionfit_vs_av_prospector():
+def diagnostic_av_emissionfit_vs_av_prospector(color_var = 'None'):
     zqual_df = read_spec_cat()
 
     zqual_df_cont_covered = ascii.read('/Users/brianlorenz/uncover/zqual_df_cont_covered.csv').to_pandas()
@@ -12,14 +16,51 @@ def diagnostic_av_emissionfit_vs_av_prospector():
     lineratio_df['integrated_spec_av'] = compute_ha_pab_av(1/lineratio_df['integrated_spec_lineratio'])
     lineratio_df['sed_av'] = compute_ha_pab_av(1/lineratio_df['sed_lineratio'])
     id_msa_list = zqual_df_cont_covered['id_msa']
-    
+    redshifts = zqual_df_cont_covered['z_spec'].to_numpy()
     fig, ax = plt.subplots(figsize=(6,6))
+
+    ha_line_avg_transmissions = []
+    pab_line_avg_transmissions = []
+
+    # Color coding
+    cmap = mpl.cm.inferno
+    if color_var == 'redshift':
+        norm = mpl.colors.Normalize(vmin=1.3, vmax=2.4) 
+        color_array = redshifts
+    if color_var == 'halpha_trasmission':
+        norm = mpl.colors.Normalize(vmin=0.2, vmax=1) 
+        color_array = ha_line_avg_transmissions
+    if color_var == 'pabeta_trasmission':
+        norm = mpl.colors.Normalize(vmin=0.2, vmax=1) 
+        color_array = pab_line_avg_transmissions
+    
 
     err_av_50s_lows = []
     av_50s = []
     err_av_50s_highs = []
-    for id_msa in id_msa_list:
+
+    for i in range(len(id_msa_list)):
+        id_msa = id_msa_list[i]
         emission_df = ascii.read(f'/Users/brianlorenz/uncover/Data/emission_fitting/{id_msa}_emission_fits.csv').to_pandas()
+        
+        ha_filters, ha_images, wht_ha_images, obj_segmap = make_3color(id_msa, line_index=0, plot=False)
+        pab_filters, pab_images, wht_pab_images, obj_segmap = make_3color(id_msa, line_index=1, plot=False)
+        ha_sedpy_name = ha_filters[1].replace('f', 'jwst_f')
+        ha_sedpy_filt = observate.load_filters([ha_sedpy_name])[0]
+        pab_sedpy_name = pab_filters[1].replace('f', 'jwst_f')
+        pab_sedpy_filt = observate.load_filters([pab_sedpy_name])[0]
+        def get_transmission(line_idx, sedpy_filt):
+            line_range_low = (1+redshifts[i])*(emission_df.iloc[line_idx]['line_center_rest']-2*emission_df.iloc[0]['sigma'])
+            line_range_high = (1+redshifts[i])*(emission_df.iloc[line_idx]['line_center_rest']+2*emission_df.iloc[0]['sigma'])
+            filter_wave_idxs = np.logical_and(sedpy_filt.wavelength>line_range_low, sedpy_filt.wavelength<line_range_high)
+            line_transmissions = sedpy_filt.transmission[filter_wave_idxs]
+            avg_line_transmission = np.mean(line_transmissions) / np.max(sedpy_filt.transmission)
+            return avg_line_transmission
+        ha_avg_line_transmission = get_transmission(0, ha_sedpy_filt)
+        pab_avg_line_transmission = get_transmission(1, pab_sedpy_filt)
+        ha_line_avg_transmissions.append(ha_avg_line_transmission)
+        pab_line_avg_transmissions.append(pab_avg_line_transmission)
+
         ha_pab_ratio = emission_df['ha_pab_ratio'].iloc[0]
         err_ha_pab_ratio_low = emission_df['err_ha_pab_ratio_low'].iloc[0]
         err_ha_pab_ratio_high = emission_df['err_ha_pab_ratio_high'].iloc[0]
@@ -37,7 +78,9 @@ def diagnostic_av_emissionfit_vs_av_prospector():
         err_av_50s_lows.append(err_av_50_low)
         err_av_50s_highs.append(err_av_50_high)
 
-        ax.errorbar(av_emission_fit, av_50, xerr=np.array([[err_av_emission_fit_low, err_av_emission_fit_high]]).T, yerr=np.array([[err_av_50_low, err_av_50_high]]).T, marker='o', ls='None', color='black')
+        rgba = cmap(norm(color_array[i]))
+
+        ax.errorbar(av_emission_fit, av_50, xerr=np.array([[err_av_emission_fit_low, err_av_emission_fit_high]]).T, yerr=np.array([[err_av_50_low, err_av_50_high]]).T, marker='o', ls='None', color=rgba)
     # one-to-one
     ax.plot([-100, 100], [-100, 100], ls='--', color='red', marker='None')
 
@@ -45,30 +88,48 @@ def diagnostic_av_emissionfit_vs_av_prospector():
     ax.set_ylim(-1, 2.5)
     ax.set_xlabel('Emission Fit AV')
     ax.set_ylabel('Prospector AV')
+    sm =  ScalarMappable(norm=norm, cmap=cmap)
+    cbar = fig.colorbar(sm, ax=ax)
+    cbar.set_label(color_var, fontsize=16)
+    cbar.ax.tick_params(labelsize=16)
     # plt.show()
-    fig.savefig('/Users/brianlorenz/uncover/Figures/diagnostic_lineratio/prospect_vs_fit.pdf')
+    fig.savefig(f'/Users/brianlorenz/uncover/Figures/diagnostic_lineratio/prospect_vs_fit_{color_var}.pdf')
     plt.close('all')
 
 
     # Integrated spectra vs prospector
     fig, ax = plt.subplots(figsize=(6,6))
-    ax.plot(lineratio_df['integrated_spec_av'], av_50s, marker='o', ls='None', color='black')
+    for i in range(len(lineratio_df)):
+        rgba = cmap(norm(color_array[i]))
+        ax.plot(lineratio_df['integrated_spec_av'].iloc[i], av_50s[i], marker='o', ls='None', color=rgba)
     ax.plot([-100, 100], [-100, 100], ls='--', color='red', marker='None')
     ax.set_xlim(-2, 11)
     ax.set_ylim(-1, 2.5)
     ax.set_xlabel('Integrated Spectrum AV')
     ax.set_ylabel('Prospector AV')
-    fig.savefig('/Users/brianlorenz/uncover/Figures/diagnostic_lineratio/prospect_vs_intspec.pdf')
+    sm =  ScalarMappable(norm=norm, cmap=cmap)
+    cbar = fig.colorbar(sm, ax=ax)
+    cbar.set_label(color_var, fontsize=16)
+    cbar.ax.tick_params(labelsize=16)
+    fig.savefig(f'/Users/brianlorenz/uncover/Figures/diagnostic_lineratio/prospect_vs_intspec_{color_var}.pdf')
 
     # SED vs prospector
     fig, ax = plt.subplots(figsize=(6,6))
-    ax.plot(lineratio_df['sed_av'], av_50s, marker='o', ls='None', color='black')
+    for i in range(len(lineratio_df)):
+        rgba = cmap(norm(color_array[i]))
+        ax.plot(lineratio_df['sed_av'].iloc[i], av_50s[i], marker='o', ls='None', color=rgba)
     ax.plot([-100, 100], [-100, 100], ls='--', color='red', marker='None')
-    ax.set_xlim(-5, 20)
+    ax.set_xlim(-2, 10)
     ax.set_ylim(-1, 2.5)
     ax.set_xlabel('SED AV')
     ax.set_ylabel('Prospector AV')
-    fig.savefig('/Users/brianlorenz/uncover/Figures/diagnostic_lineratio/prospect_vs_sed.pdf')
+    sm =  ScalarMappable(norm=norm, cmap=cmap)
+    cbar = fig.colorbar(sm, ax=ax)
+    cbar.set_label(color_var, fontsize=16)
+    cbar.ax.tick_params(labelsize=16)
+    fig.savefig(f'/Users/brianlorenz/uncover/Figures/diagnostic_lineratio/prospect_vs_sed_{color_var}.pdf')
 
 
-diagnostic_av_emissionfit_vs_av_prospector()
+# diagnostic_av_emissionfit_vs_av_prospector(color_var='redshift')
+# diagnostic_av_emissionfit_vs_av_prospector(color_var='halpha_trasmission')
+# diagnostic_av_emissionfit_vs_av_prospector(color_var='pabeta_trasmission')

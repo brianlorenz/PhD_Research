@@ -85,7 +85,7 @@ imd.check_and_make_dir(imd.composite_filter_sedpy_dir)
 # # Add the normalizations to the group dfs
 # add_norm_factors(n_clusters)
 
-# make_clusters_summary_df(n_clusters, ignore_groups)
+make_clusters_summary_df(n_clusters, ignore_groups)
 
 # # Need to do a few things to composites (measure uvj, generate mocks sed, etc. before we can plot)
 # print('Generating plots')
@@ -97,10 +97,10 @@ imd.check_and_make_dir(imd.composite_filter_sedpy_dir)
 # bootstrap = big_bootstrap_num
 # plot_balmer_hist(n_clusters, bootstrap)
 # bootstrap = -1
-# compute_balmer_lower_limits(sig_noise_thresh=3, hb_sig_noise_thresh=3)
-# compute_cluster_sfrs(luminosity=True, monte_carlo=True)
-# compute_new_sfrs_compositepaper(n_clusters, imf='subsolar')
-# compute_indiv_sfrs(n_clusters, lower_limit=True)
+compute_balmer_lower_limits(sig_noise_thresh=3, hb_sig_noise_thresh=3)
+compute_cluster_sfrs(luminosity=True, monte_carlo=True)
+compute_new_sfrs_compositepaper(n_clusters, imf='subsolar')
+compute_indiv_sfrs(n_clusters, lower_limit=True)
 
 # # Have to run this twice, since ignore_groups won't be loaded properly the first time
 # generate_newer_cluster_plots(n_clusters, norm_method)

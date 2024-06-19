@@ -35,7 +35,7 @@ def compute_metals(log_mass, fm_s):
 def make_paper_plots(n_clusters, norm_method):
     # Overview figure
     # generate_sed_paper_table()
-    # setup_figs(n_clusters, norm_method, bpt_color=True, paper_overview=True, prospector_spec=False)
+    setup_figs(n_clusters, norm_method, bpt_color=True, paper_overview=True, prospector_spec=False)
     # make_av_comparison()
     # make_SFR_compare_fig()
     # make_prospector_overview_fig('fixedmet_agn_set')
@@ -214,7 +214,8 @@ def make_hb_percentage_fig(n_groups=20):
         frac_hb = n_hb_good / len(group_df)
         hb_fracs.append(frac_hb)
         def compute_balmer_av(balmer_dec):
-            balmer_av = 4.05*1.97*np.log10(balmer_dec/2.86)
+            R_V = 3.1
+            balmer_av = R_V*1.97*np.log10(balmer_dec/2.86)
             return balmer_av
         hb_goods = group_df[group_df['hb_detflag_sfr'] == 0]
         ha_goods = hb_goods[hb_goods['ha_detflag_sfr'] == 0]
@@ -649,6 +650,7 @@ def make_sfr_mass_uvj_bpt_4panel(n_clusters=20, snr_thresh=2):
     plot_a_vs_b_paper('median_log_mass', 'computed_log_ssfr_with_limit', stellar_mass_label, ssfr_label, 'None', axis_obj=ax_ssfr, yerr=True, plot_lims=[9, 11.5, -10.8, -7.5], lower_limit=180, fig=fig, use_color_df=True) #, color_var='median_U_V'
     plot_a_vs_b_paper('median_log_mass', 'O3N2_metallicity_upper_limit', stellar_mass_label, metallicity_label, 'None', axis_obj=ax_metallicity, yerr=True, plot_lims=[9, 11.5, 8.15, 9.17], fig=fig, lower_limit=360)
     # plot_a_vs_b_paper('median_log_mass', 'O3N2_metallicity_upper_limit', stellar_mass_label, metallicity_label, 'None', axis_obj=ax_metallicity, yerr=True, plot_lims=[8.5, 11.5, 3, -0.5], fig=fig, lower_limit=360)
+    zreds = []
     for groupID in range(n_clusters):
         group_df = ascii.read(imd.cluster_indiv_dfs_dir + f'/{groupID}_cluster_df.csv').to_pandas()
         group_df['hb_SNR'] = group_df['hb_flux'] / group_df['err_hb_flux']
@@ -662,7 +664,9 @@ def make_sfr_mass_uvj_bpt_4panel(n_clusters=20, snr_thresh=2):
         group_df['N2Ha'] = group_df['nii_6585_flux'] / group_df['ha_flux']
         group_df['O3Hb'] = group_df['oiii_5008_flux'] / group_df['hb_flux']
         group_df['log_O3N2'] = np.log10(group_df['O3Hb'] / group_df['N2Ha']) 
-        group_df['O3N2_metallicity'] = 8.97-0.39*np.log10(group_df['O3Hb'] / group_df['N2Ha']) 
+        group_df['O3N2_metallicity'] = 8.97-0.39*np.log10(group_df['O3Hb'] / group_df['N2Ha'])
+        for ijk in range(len(group_df[both_detected])):
+            zreds.append(group_df[both_detected]['Z_MOSFIRE'].iloc[0]) 
         
         ax_metallicity.plot(group_df[both_detected]['log_mass'], group_df[both_detected]['O3N2_metallicity'], color=grey_point_color, markersize=grey_point_size, marker='o', ls='None')
         # ax_metallicity.plot(group_df[both_detected]['log_mass'], group_df[both_detected]['log_O3N2'], color=grey_point_color, markersize=grey_point_size, marker='o', ls='None')
