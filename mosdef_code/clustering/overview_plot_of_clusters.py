@@ -104,6 +104,7 @@ def make_overview_plot_clusters(groupIDs, import_save_str, n_clusters, norm_meth
         group_df = ascii.read(imd.cluster_indiv_dfs_dir + f'/{groupID}_cluster_df.csv').to_pandas()
         group_df['log_use_sfr'] = np.log10(group_df['use_sfr'])
         n_gals = len(group_df)
+        group_markersize = get_row_size(i)
 
         clusters_summary_row = clusters_summary_df[clusters_summary_df['groupID']==groupID]
 
@@ -211,7 +212,8 @@ def make_overview_plot_clusters(groupIDs, import_save_str, n_clusters, norm_meth
 
         ax.plot(filtered_gal_df['log_mass'], filtered_gal_df['log_use_sfr'], marker='o', color=grey_point_color, ls='None', markersize=grey_point_size)
         # ax.plot(clusters_summary_row['median_log_mass'], clusters_summary_row['median_log_sfr'], marker='x', color='red', ls='None', markersize=10, mew=3, zorder=10000)
-        ax.plot(clusters_summary_row['median_log_mass'], clusters_summary_row['computed_log_sfr_with_limit'], marker=cluster_marker, color=get_row_color(groupID), mew=paper_marker_edge_width, mec=paper_mec, ls='None', markersize=get_row_size(i), zorder=10000)
+        # breakpoint()
+        ax.plot(clusters_summary_row['median_log_mass'], clusters_summary_row['computed_log_sfr_with_limit'], marker=cluster_marker, color=get_row_color(groupID), mew=paper_marker_edge_width, mec=paper_mec, ls='None', markersize=group_markersize, zorder=10000)
         computed_sfr = clusters_summary_row['computed_log_sfr_with_limit']
         if clusters_summary_row['flag_balmer_lower_limit'].iloc[0] == 1:
             # ax.vlines(clusters_summary_row['median_log_mass'], computed_sfr, computed_sfr+100000, color=get_row_color(groupID))
@@ -219,7 +221,6 @@ def make_overview_plot_clusters(groupIDs, import_save_str, n_clusters, norm_meth
             arrow_length = 0.06
             mass_xrange = 12.1-7.9
             sfr_xrange = 3-(-0.5)
-            # breakpoint()
             ax.arrow((clusters_summary_row['median_log_mass'].iloc[0]-mass_lims[0])/mass_xrange, (clusters_summary_row['computed_log_sfr_with_limit'].iloc[0]-sfr_lims[0])/sfr_xrange, 0, arrow_length, color=get_row_color(groupID), width=arrow_width, transform=ax.transAxes)
         
         cmap = mpl.cm.plasma
@@ -246,8 +247,8 @@ def make_overview_plot_clusters(groupIDs, import_save_str, n_clusters, norm_meth
         has_hbeta_too = np.logical_and(in_both_range, group_df['hb_detflag_sfr']==0)
         n_gals_in_range = len(group_df[in_both_range])
         n_gals_hbeta = len(group_df[has_hbeta_too])
-        ax.text(0.03, 0.90, f'{n_gals_in_range} H$\\alpha$', transform=ax.transAxes, fontsize=fontsize)
-        ax.text(0.03, 0.80, f'{n_gals_hbeta} H$\\beta$', transform=ax.transAxes, fontsize=fontsize)
+        ax.text(0.03, 0.90, 'N$_{H\\alpha}$='+f'{n_gals_in_range} ', transform=ax.transAxes, fontsize=fontsize)
+        ax.text(0.03, 0.80, 'N$_{H\\beta}$='+f'{n_gals_hbeta}', transform=ax.transAxes, fontsize=fontsize)
         # if paper_overview==False:
         #     ax.text(0.05, 0.85, f'{n_gals_in_range}', transform=ax.transAxes, fontsize=fontsize)
 
@@ -301,8 +302,9 @@ def make_overview_plot_clusters(groupIDs, import_save_str, n_clusters, norm_meth
         # Add the measurement from the composite uvj
         composite_uvj_df = ascii.read(imd.composite_uvj_dir + '/composite_uvjs.csv').to_pandas()
         uvj_composite = composite_uvj_df[composite_uvj_df['groupID'] == groupID]
+        # breakpoint()
         ax.plot(uvj_composite['V_J'], uvj_composite['U_V'],
-            ls='', marker=cluster_marker, markersize=paper_marker_size, color=get_row_color(groupID), mew=paper_marker_edge_width, mec=paper_mec, label='Composite SED')
+            ls='', marker=cluster_marker, markersize=group_markersize, color=get_row_color(groupID), mew=paper_marker_edge_width, mec=paper_mec, label='Composite SED')
 
         in_x_range = np.logical_and(group_df['V_J']>xrange[0], group_df['V_J']<xrange[1])
         in_y_range = np.logical_and(group_df['U_V']>yrange[0], group_df['U_V']<yrange[1])
@@ -353,7 +355,7 @@ def make_overview_plot_clusters(groupIDs, import_save_str, n_clusters, norm_meth
         n_galsbpt = len(group_df[both_detected])
 
         # n_gals_in_range_bpt = len(group_df[in_both_range_bpt])
-        ax.text(0.85, 0.90, f'{n_galsbpt}', transform=ax.transAxes, fontsize=fontsize)
+        ax.text(0.595, 0.90, 'N$_\\mathrm{BPT}$='+f'{n_galsbpt}', transform=ax.transAxes, fontsize=fontsize)
         # if paper_overview == False:
         #     ax.text(0.85, 0.85, f'{n_gals_in_range_bpt}', transform=ax.transAxes, fontsize=fontsize)
         # ax.plot(group_df['log_mass'], group_df['log_use_sfr'], marker='o', color='black', ls='None')

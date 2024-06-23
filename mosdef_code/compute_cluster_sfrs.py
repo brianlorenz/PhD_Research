@@ -294,5 +294,6 @@ def cardelli_law(wavelength_ang):
         b_x = 1.41338*y + 2.28305*y**2 + 1.07233*y**3 - 5.38434*y**4 - 0.62251*y**5 + 5.30260*y**6 - 2.09002*y**7
     A_lambda_divide_AV = (a_x+b_x)
     return A_lambda_divide_AV
-# cardelli_law(6500)
+# k_car = cardelli_law(6565)
+# breakpoint()
 # compute_cluster_sfrs(luminosity=True, bootstrap=1000)

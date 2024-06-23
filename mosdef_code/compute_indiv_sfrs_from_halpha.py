@@ -32,7 +32,7 @@ def compute_indiv_sfrs(n_clusters, lower_limit=True):
         AV = cluster_summary_df.iloc[groupID]['AV']
 
         #Convert the Balmer AV to A_Halpha using https://iopscience.iop.org/article/10.1088/0004-637X/763/2/145/pdf
-        balmer_ahalpha = compute_balmer_ahalpha_from_AV(balmer_avs, law='Cardelli')
+        balmer_ahalpha = compute_balmer_ahalpha_from_AV(balmer_av, law='Cardelli')
 
 
         # Convert ha to luminsoty

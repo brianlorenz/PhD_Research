@@ -6,7 +6,8 @@ def convert_attenuation_to_dec(A_Balmer):
     A_Balmer(float): Balmer attenuation
     
     """
-    balmer_dec = 2.86*(10**(A_Balmer/(4.05*1.97)))
+    R_V = 3.1
+    balmer_dec = 2.86*(10**(A_Balmer/(R_V*2.32)))
     return balmer_dec
 
-print(convert_attenuation_to_dec(10))
+# print(convert_attenuation_to_dec(10))

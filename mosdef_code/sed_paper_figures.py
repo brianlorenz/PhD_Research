@@ -35,11 +35,11 @@ def compute_metals(log_mass, fm_s):
 def make_paper_plots(n_clusters, norm_method):
     # Overview figure
     # generate_sed_paper_table()
-    setup_figs(n_clusters, norm_method, bpt_color=True, paper_overview=True, prospector_spec=False)
+    # setup_figs(n_clusters, norm_method, bpt_color=True, paper_overview=True, prospector_spec=False)
     # make_av_comparison()
     # make_SFR_compare_fig()
     # make_prospector_overview_fig('fixedmet_agn_set')
-    # make_sfr_mass_uvj_bpt_4panel(snr_thresh=3)
+    make_sfr_mass_uvj_bpt_4panel(snr_thresh=3)
     # make_avneb_sfr_mass_fig()
     # make_mass_metal_sfr_fig()
     
@@ -215,7 +215,7 @@ def make_hb_percentage_fig(n_groups=20):
         hb_fracs.append(frac_hb)
         def compute_balmer_av(balmer_dec):
             R_V = 3.1
-            balmer_av = R_V*1.97*np.log10(balmer_dec/2.86)
+            balmer_av = R_V*2.32*np.log10(balmer_dec/2.86)
             return balmer_av
         hb_goods = group_df[group_df['hb_detflag_sfr'] == 0]
         ha_goods = hb_goods[hb_goods['ha_detflag_sfr'] == 0]
@@ -285,7 +285,13 @@ def make_mass_metal_sfr_fig():
     mosdef_data_decs = np.array([3.337349397590363, 3.4548192771084363, 3.7801204819277103, 4.512048192771086])
     mosdef_data_balmeravs = compute_balmer_av(mosdef_data_decs)
     ax_balmer_mass.plot(mosdef_data_mass, mosdef_data_balmeravs, color='black', marker='s', ms=10, mec='black', ls='dotted', zorder=1000000, label='z=2.3 MOSDEF (Shapley+ 2022)')
-    ax_balmer_mass.legend(loc = (0.03, 0.82), fontsize=14)
+    
+    runco_data_mass = np.array([9.04029773256327, 9.341541353064535	, 9.507356359477967, 9.660911296972452, 9.76852663271054, 9.882224549023732, 10.039519064690833, 10.177858006949581, 10.35957669226384, 10.679835800016289]) #Runco 2022
+    runco_data_decs = np.array([3.282805987024606, 3.6142358130258136, 2.633209874253258, 4.096971898622865, 4.597955149928179, 4.213816474455239, 4.5059129818220125, 4.514513937180409, 5.778564129951793, 5.644147137838686])
+    runco_data_balmeravs = compute_balmer_av(runco_data_decs)
+    ax_balmer_mass.plot(runco_data_mass, runco_data_balmeravs, color='darkgreen', marker='d', ms=10, mec='black', ls='None', zorder=1000000, label='MOSDEF Stacks (Runco+ 2022)')
+
+    ax_balmer_mass.legend(loc = (0.03, 0.74), fontsize=14)
     # plot_a_vs_b_paper('computed_log_sfr_with_limit', 'O3N2_metallicity', metallicity_label, sfr_label, 'None', axis_obj=ax_metal_sfr, yerr=True, plot_lims=[0, 2, 8, 9], fig=fig, color_var='balmer_av', lower_limit=225, use_color_df=False)
 
     # Fit r values for the rest

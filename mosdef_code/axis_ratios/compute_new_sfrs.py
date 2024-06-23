@@ -141,6 +141,7 @@ def ha_lum_to_sfr(intrinsic_halpha_lums, imf='Chabrier'):
         sfr = 5.5 * 10**(-42) * intrinsic_halpha_lums
     if imf == 'subsolar':
         sfr = 4.266 * 10**(-42) * intrinsic_halpha_lums # Shapley 2023 https://iopscience.iop.org/article/10.3847/1538-4357/acea5a/pdf
+        # sfr = 2.138 * 10**(-42) * intrinsic_halpha_lums # Shapley 2023, think this one is correct
     return sfr
 
 

@@ -104,8 +104,8 @@ def plot_sample_split(n_groups, save_name, ratio_bins, starting_points, mass_wid
         balmer_av = compute_balmer_av(balmer_dec)
         R_V = 3.1
         # Recalculate where the errors would be if the points were at the top/bottom of their ranges
-        err_balmer_av_low = balmer_av - R_V*1.97*np.log10((balmer_dec-balmer_err_low)/2.86)
-        err_balmer_av_high = R_V*1.97*np.log10((balmer_dec+balmer_err_high)/2.86) - balmer_av
+        err_balmer_av_low = balmer_av - R_V*2.32*np.log10((balmer_dec-balmer_err_low)/2.86)
+        err_balmer_av_high = R_V*2.32*np.log10((balmer_dec+balmer_err_high)/2.86) - balmer_av
         balmer_avs.append(balmer_av)
         err_balmer_av_lows.append(err_balmer_av_low)
         err_balmer_av_highs.append(err_balmer_av_high)

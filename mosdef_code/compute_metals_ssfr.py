@@ -88,16 +88,19 @@ def compute_metals(n_clusters, ignore_groups):
 def add_sanders_metallicity(ax):
     # Relation for O3N2 Computed metallicities form Sanders
     masses = np.arange(8,12,0.01)
+    
+    #From Topping 2021
+    O3N2s = -0.88 * masses + 9.91
+    O3N2_metallicities, errs_O3N2_metallicities = compute_O3N2_metallicity(O3N2s, -99*np.ones(len(O3N2s)))
+    ax.plot(masses, O3N2_metallicities, ls='dotted', color='black', label='MOSDEF z=1.5')
+    
     O3N2s = -0.94 * masses + 10.72
     O3N2_metallicities, errs_O3N2_metallicities = compute_O3N2_metallicity(O3N2s, -99*np.ones(len(O3N2s)))
     # ax.plot(masses, O3N2s, ls='--', color='black', label='Sanders+ 2018')
     # O3N2_metallicities = 0.295 * masses + 5.3 
-    ax.plot(masses, O3N2_metallicities, ls='--', color='black', label='Sanders+ 2018')
+    ax.plot(masses, O3N2_metallicities, ls='--', color='black', label='MOSDEF z=2.3')
 
-    #From Topping 2021
-    O3N2s = -0.88 * masses + 9.91
-    O3N2_metallicities, errs_O3N2_metallicities = compute_O3N2_metallicity(O3N2s, -99*np.ones(len(O3N2s)))
-    ax.plot(masses, O3N2_metallicities, ls='--', color='purple', label='Topping+ 2021')
+   
 
 
 # ignore_groups = [19]

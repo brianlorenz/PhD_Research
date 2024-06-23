@@ -13,6 +13,7 @@ from mosdef_obj_data_funcs import get_mosdef_obj
 import numpy as np
 import matplotlib.pyplot as plt
 import time
+import sys
 
 def generate_clusters(n_clusters, stop_to_eval=True, skip_slow_steps=False):
     """Main method that will generate all the clusters from scratch
@@ -49,7 +50,10 @@ def generate_clusters(n_clusters, stop_to_eval=True, skip_slow_steps=False):
     if stop_to_eval==True:
         eigenvals, eignvectors = np.linalg.eig(affinity_matrix)
         x_axis = np.arange(1, len(eigenvals)+1, 1)
+        dx = 1
+        derivative = np.gradient(eigenvals, dx)
         plt.plot(x_axis, eigenvals, ls='-', marker='o', color='black')
+        plt.plot(x_axis, derivative, ls='-', marker='o', color='orange')
         plt.show()
     
     # Make the clusters
@@ -170,4 +174,4 @@ def read_removed_gal_df():
 # plot_eigenvalues()
 # gal_df = read_filtered_gal_df()
 # print(len(gal_df))
-# generate_clusters(20, stop_to_eval=False, skip_slow_steps=True)
+# generate_clusters(20, stop_to_eval=True, skip_slow_steps=True)

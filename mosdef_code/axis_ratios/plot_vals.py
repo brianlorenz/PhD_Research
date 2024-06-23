@@ -5,8 +5,8 @@ from astropy.io import ascii
 
 stellar_mass_label = 'log$_{10}$(M$_*$ / M$_\odot$)'
 av_extra_label = 'A$_V$ HII - A$_V$ star'
-sfr_label = 'log$_{10}$(SFR) (M$_\odot$ / yr)'
-ssfr_label = 'log$_{10}$(sSFR) (yr$^{-1}$)'
+sfr_label = 'log$_{10}$(SFR$_{\\mathrm{H}\\alpha}$) (M$_\odot$ / yr)'
+ssfr_label = 'log$_{10}$(sSFR$_{\\mathrm{H}\\alpha}$) (yr$^{-1}$)'
 balmer_label = 'Balmer decrement (H$_\\alpha$ / H$_\\beta$)'
 a_balmer_label = 'A$_\mathrm{Balmer}$'
 balmer_av_label = 'Nebular A$_V$'
