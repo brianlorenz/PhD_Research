@@ -229,14 +229,14 @@ def plot_bpt(savename='None', axis_obj='False', composite_bpt_point=[-47], compo
     # breakpoint()
     # ax.plot(bpt_dat['x'], bpt_dat['y'], color='purple', lw=2,
     #         ls='--', label='Kewley+ (2013)')
-    ax.plot(xline, bpt_shape(xline, popt[0], popt[1], popt[2]), color='dimgrey', lw=2,
-            ls='--', label='Kewley+ (2013)') # Scraped the data and fit from online
+    ax.plot(xline, bpt_shape(xline, popt[0], popt[1], popt[2]), color='dimgrey', lw=2, ls='--', label='Kewley+ (2013)') # Scraped the data and fit from online
     
+    xline_shapley = np.arange(-3.0, 0.1, 0.001)
     a_shapley = 0.67
     b_shapley = 0.20
     c_shapley = 1.12
-    ax.plot(xline, bpt_shape(xline, a_shapley, b_shapley, c_shapley), color='dimgrey', lw=2,
-            ls='..', label='Shapley+ (2015)') # Shapley 2015
+    ax.plot(xline_shapley, bpt_shape(xline_shapley, a_shapley, b_shapley, c_shapley), color='dimgrey', lw=2,
+            ls='dotted', label='Shapley+ (2015)') # Shapley 2015
 
     # breakpoint()
 

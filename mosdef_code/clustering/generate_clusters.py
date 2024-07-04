@@ -10,10 +10,12 @@ from clustering import cluster_seds
 from astropy.io import ascii
 from spectra_funcs import check_quick_coverage
 from mosdef_obj_data_funcs import get_mosdef_obj
+from bpt_clusters_singledf import calc_log_ratio
 import numpy as np
 import matplotlib.pyplot as plt
 import time
 import sys
+from scipy.optimize import curve_fit
 
 def generate_clusters(n_clusters, stop_to_eval=True, skip_slow_steps=False):
     """Main method that will generate all the clusters from scratch
@@ -104,6 +106,12 @@ def filter_gal_df():
 
     full_df = read_interp_axis_ratio()
 
+    gal_df['log_oiii_hb'], _ = calc_log_ratio(gal_df['oiii_5008_flux'], gal_df['err_oiii_5008_flux'], gal_df['hb_flux'], gal_df['err_hb_flux'])
+    gal_df['log_nii_ha'] = np.log10(gal_df['nii_ha'])
+    gal_df['hb_snr'] = gal_df['hb_flux']/gal_df['err_hb_flux']
+    gal_df['nii_6585_snr'] = gal_df['nii_6585_flux']/gal_df['err_nii_6585_flux']
+    
+    
     len_before_agn = len(gal_df)
     #Filter out objects that are flagged as AGN in MOSDEF (see readme)
     agn_zero = gal_df['agn_flag'] == 0
@@ -126,13 +134,12 @@ def filter_gal_df():
     print(f'removed {len_before_serendip-len_after_serendip} galaxies for serendips')
 
     len_before_id_dup = len(gal_df)
+
     #Filter out serendipds
     good_vals = gal_df['v4id'].drop_duplicates().index
     gal_df = gal_df.filter(items = good_vals, axis=0)
     len_after_id_dup= len(gal_df)
     print(f'removed {len_before_id_dup-len_after_id_dup} galaxies for duplicates')
-
-
     coverage_list = [
             ('Halpha', 6564.61),
             ('Hbeta', 4862.68),
@@ -145,6 +152,7 @@ def filter_gal_df():
         lines_covereds.append(lines_covered)
     gal_df['ha_hb_covered'] = lines_covereds
     len_before_hahb_coverage = len(gal_df)
+
     #Filter out serendipds
     gal_df = gal_df[gal_df['ha_hb_covered'] == 1]
     len_after_hahb_coverage = len(gal_df)
@@ -152,6 +160,21 @@ def filter_gal_df():
 
     print(f'{len(gal_df)} galaxies remain')
 
+
+    bpt_dat = ascii.read(imd.mosdef_dir+'/bpt_plot_points.csv').to_pandas()
+    def bpt_shape(x_vals, a, b, c):
+        yvals = a / (x_vals - b) + c
+        return yvals
+    popt, pcov = curve_fit(bpt_shape, bpt_dat['x'], bpt_dat['y'])
+    hb_detected = gal_df['hb_snr']>3
+    nii_detected = gal_df['nii_6585_snr']>3
+    both_detected = np.logical_and(hb_detected, nii_detected)
+    above_kewley = gal_df[both_detected]['log_oiii_hb'] > bpt_shape(gal_df[both_detected]['log_nii_ha'], popt[0], popt[1], popt[2])
+
+    kewley_drop_idxs = gal_df[both_detected][above_kewley].index
+    gal_df = gal_df.drop(kewley_drop_idxs)
+    len_after_kewley_remove = len(gal_df)
+    print(f'removed {len_after_hahb_coverage-len_after_kewley_remove} galaxies for above Kewley line')
 
     print('Save updated filtered gals and removed gals? c to continue')
     breakpoint()
@@ -174,4 +197,4 @@ def read_removed_gal_df():
 # plot_eigenvalues()
 # gal_df = read_filtered_gal_df()
 # print(len(gal_df))
-# generate_clusters(20, stop_to_eval=True, skip_slow_steps=True)
+# generate_clusters(20, stop_to_eval=False, skip_slow_steps=True)

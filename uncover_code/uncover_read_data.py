@@ -9,7 +9,7 @@ import os
 from astropy.io import ascii
 from astropy.wcs import WCS
 
-
+c = 299792458 # m/s
 
 def read_spec_cat():
     spec_cat_loc = '/Users/brianlorenz/uncover/Catalogs/UNCOVER_v0.6_zspec_zqual_catalog.fits'
@@ -33,6 +33,11 @@ def read_segmap():
         segmap_wcs = WCS(hdu[0].header)
     return segmap, segmap_wcs
 
+def read_prism_lsf():
+    lsf_loc = '/Users/brianlorenz/uncover/Catalogs/jwst_nirspec_prism_disp.fits'
+    lsf_df = make_pd_table_from_fits(lsf_loc)
+    return lsf_df
+
 def read_raw_spec(id_msa):
     spec_cat = read_spec_cat()
     redshift = spec_cat[spec_cat['id_msa']==id_msa]['z_spec'].iloc[0]
@@ -41,7 +46,7 @@ def read_raw_spec(id_msa):
     spec_df['flux'] = spec_df['flux']*1e-6 # Convert uJy to Jy
     spec_df['err'] = spec_df['err']*1e-6
 
-    c = 299792458 # m/s
+    
     spec_df['wave_aa'] = spec_df['wave']*10000
     spec_df['rest_wave_aa'] = spec_df['wave_aa']/(1+redshift)
     
@@ -61,7 +66,10 @@ def correct_spec_to_sed(id_msa, spec_df):
     spec_df['scaled_flux'] = spec_df['flux']*scale_factor
     return spec_df
 
-
+def read_integrated_spec(id_msa):
+    integrated_spec_df = ascii.read(f'/Users/brianlorenz/uncover/Data/integrated_specs/{id_msa}_integrated_spec.csv').to_pandas()
+    integrated_spec_df['flux_erg_aa'] = integrated_spec_df['integrated_spec_flux_jy'] * (1e-23*1e10*c / (integrated_spec_df['wave_aa']**2))
+    return integrated_spec_df
 
 def make_pd_table_from_fits(file_loc):
     with fits.open(file_loc) as hdu:
@@ -69,9 +77,12 @@ def make_pd_table_from_fits(file_loc):
         data_df = Table(data_loc).to_pandas()
         return data_df
 
+# read_prism_lsf()
 # read_segmap()
 # fig, ax = plt.subplots(figsize=(20,20)) 
 # ax.imshow(image, vmin=np.percentile(image, 10), vmax=np.percentile(image, 75))
 # plt.show()
 # sps_df = read_SPS_cat()
+# breakpoint()
+# int_spec_df = read_integrated_spec(47875)
 # breakpoint()

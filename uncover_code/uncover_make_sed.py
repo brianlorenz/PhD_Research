@@ -17,17 +17,24 @@ def get_sed(id_msa):
     e_fluxes = []
     eff_waves = []
     filt_names = []
+    eff_widths = []
+    rect_widths = []
     for col in filt_cols:
         filt_names.append(col)
         flux = row[col].iloc[0]
         eff_wave = filt_dir[col+'_wave_eff']
         ecol = col.replace('f_', 'e_')
         e_flux = row[ecol].iloc[0]
+        eff_width = filt_dir[col+'_width_eff']
+        rect_width = filt_dir[col+'_width_rect']
 
         fluxes.append(flux*1e-8) # Jy, originally 10 nJy
         e_fluxes.append(e_flux*1e-8) # Jy
-        eff_waves.append(eff_wave/10000) # mincrons
-    sed_df = pd.DataFrame(zip(filt_names, eff_waves, fluxes, e_fluxes), columns=['filter', 'eff_wavelength', 'flux', 'err_flux'])
+        eff_waves.append(eff_wave/10000) # microns
+        eff_widths.append(eff_width) # microns
+        rect_widths.append(rect_width) # microns
+    sed_df = pd.DataFrame(zip(filt_names, eff_waves, fluxes, e_fluxes, eff_widths, rect_widths), columns=['filter', 'eff_wavelength', 'flux', 'err_flux', 'eff_width', 'rectangular_width'])
+    # breakpoint()
     return sed_df
 
 def plot_sed(sed_df, spec_df):

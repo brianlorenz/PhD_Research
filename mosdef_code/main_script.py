@@ -62,7 +62,7 @@ imd.check_and_make_dir(imd.composite_filter_csvs_dir)
 imd.check_and_make_dir(imd.composite_filter_images_dir)
 imd.check_and_make_dir(imd.composite_filter_sedpy_dir)
 
-# generate_clusters(20, stop_to_eval=False, skip_slow_steps=True)
+# # generate_clusters(20, stop_to_eval=False, skip_slow_steps=True)
 
 # get_all_composite_seds(n_clusters, run_filters=False)
 # gen_all_mock_composites(n_clusters)
@@ -110,7 +110,7 @@ imd.check_and_make_dir(imd.composite_filter_sedpy_dir)
 # breakpoint()
 
 
-# Prepare for prospector:
+# # Prepare for prospector:
 # print('Preparing data for Prospector')
 # find_median_redshifts(n_clusters)
 # convert_all_folders_to_sedpy(n_clusters, ignore_groups=ignore_groups)

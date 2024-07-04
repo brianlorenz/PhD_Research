@@ -22,6 +22,8 @@ def unconver_read_filters():
         uncover_filt_dir[filtname+'_blue'] = sedpy_filt[0].blue_edge
         uncover_filt_dir[filtname+'_red'] = sedpy_filt[0].red_edge
         uncover_filt_dir[filtname+'_wave_eff'] = sedpy_filt[0].wave_effective
+        uncover_filt_dir[filtname+'_width_eff'] = sedpy_filt[0].effective_width
+        uncover_filt_dir[filtname+'_width_rect'] = sedpy_filt[0].rectangular_width
         sedpy_filts.append(sedpy_filt[0])
     
     return uncover_filt_dir, sedpy_filts

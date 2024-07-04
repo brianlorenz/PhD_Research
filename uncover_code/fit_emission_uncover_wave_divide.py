@@ -53,7 +53,7 @@ def fit_emission_uncover(spectrum, save_name, bootstrap_num=-1):
     bounds_low = []
     bounds_high = []
     amp_guess = 1  # flux units
-    velocity_guess = 100  # km/s
+    velocity_guess = 2000  # km/s
     z_offset_guess = 0  # Angstrom
     # continuum_offset_guess = 10**-20  # flux untis,
     continuum_offset_guess = 0.5  # Scale to multiply by FAST continuum,
@@ -243,11 +243,9 @@ def plot_emission_fit(emission_fit_dir, save_name, total_spec_df):
     ax_Hb.spines['right'].set_color(Hb_zoom_box_color)
     ax_Hb.spines['left'].set_color(Hb_zoom_box_color)
 
+  
     spectrum = total_spec_df['flux_erg_aa']
     wavelength = total_spec_df['rest_wave_aa']
-    cut_idxs = wavelength>5500
-    spectrum = spectrum[cut_idxs]
-    wavelength = wavelength[cut_idxs]
     continuum_df = ascii.read(emission_fit_dir+f'{save_name}_cont_sub.csv').to_pandas()
     continuum = continuum_df['continuum_sub_ydata']
     cont_wavelength = continuum_df['wavelength']
@@ -295,8 +293,8 @@ def plot_emission_fit(emission_fit_dir, save_name, total_spec_df):
     # Hb_plot_range = (4995, 5015)
 
     def set_plot_ranges(ax, axis, plot_range, box_color):
-        lim_min = 0.9 * np.min(continuum[np.logical_and(cont_wavelength > plot_range[0], cont_wavelength < plot_range[1])])
-        lim_max = 1.05 * np.max(continuum[np.logical_and(cont_wavelength > plot_range[0], cont_wavelength < plot_range[1])])
+        lim_min = 0.9 * np.min(continuum[np.logical_and(cont_wavelength > plot_range[0], wavelength < plot_range[1])])
+        lim_max = 1.05 * np.max(continuum[np.logical_and(cont_wavelength > plot_range[0], wavelength < plot_range[1])])
         axis.set_ylim(lim_min, lim_max)
         axis.set_xlim(plot_range)
         rect = patches.Rectangle((plot_range[0], lim_min), (plot_range[1] - plot_range[0]), (lim_max - lim_min), linewidth=1.5, edgecolor=box_color, facecolor='None')
@@ -439,7 +437,25 @@ def get_amp(flux, sig):
     amp = flux / (sig * np.sqrt(2 * np.pi))
     return amp
 
+# Split the wavelength into its Halpha nad Hbeta parts
+    wavelength_hb = wavelength_cut[wavelength_cut < 5500]
+    wavelength_ha = wavelength_cut[wavelength_cut > 5500]
 
+    line_names = [line_list[i][0] for i in range(len(line_list))]
+
+    hb_idxs = [i for i, line in enumerate(line_list) if line[0] in [
+        'Hbeta', 'O3_5008', 'O3_4960']]
+    ha_idxs = [i for i, line in enumerate(line_list) if line[0] not in [
+        'Hbeta', 'O3_5008', 'O3_4960']]
+    #start_2 = time.time()
+    gaussians_hb = [gaussian_func(wavelength_hb, line_list[i][
+                                  1] + z_offset, pars[i + 2], velocity_to_sig(line_list[i][1], velocity)) for i in hb_idxs]
+    gaussians_ha = [gaussian_func(wavelength_ha, line_list[i][
+                                  1] + z_offset, pars[i + 2], velocity_to_sig(line_list[i][1], velocity)) for i in ha_idxs]
+
+    hb_y_vals = np.sum(gaussians_hb, axis=0)
+    ha_y_vals = np.sum(gaussians_ha, axis=0)
+    combined_gauss = np.concatenate([hb_y_vals, ha_y_vals])
 def multi_gaussian(wavelength, *pars, fit=True):
     """Fits all Gaussians simulatneously at fixed redshift
 
@@ -460,28 +476,23 @@ def multi_gaussian(wavelength, *pars, fit=True):
     
     line_names = [line_list[i][0] for i in range(len(line_list))]
 
-    # Read in the lsf
-    lsf = read_prism_lsf()
-    # interpolate the lsf to match the wavelengths of the data
-    lsf['wave_aa'] = lsf['WAVELENGTH'] * 10000
-    interp_lsf = interp1d(lsf['wave_aa'], lsf['R'], kind='linear')
-    print(wavelength)
-    lsf_r_wave_matched = interp_lsf(wavelength)
-    c = 299792 #km/s
-    lsf_sigma_v_kms = c/(lsf_r_wave_matched*2.355)
+    # Split the wavelength into its Halpha nad Pabeta parts
+    wavelength_ha = wavelength[wavelength < 10000]
+    wavelength_pab = wavelength[wavelength > 10000]
 
-    lsf_smeared_gaussians = [gaussian_func(wavelength, line_list[i][1] + z_offset, 1, velocity_to_sig(line_list[i][1], lsf_sigma_v_kms)) for i in range(len(line_list))]
-    lsf_smeared_gaussians = np.sum(lsf_smeared_gaussians, axis=0)
-    # breakpoint()
 
-    # Do I need to separate the wavelngth sections? Seems to be useing the whole range for both?
-    gaussians = [gaussian_func(wavelength, line_list[i][1] + z_offset, amps[i], velocity_to_sig(line_list[i][1], velocities[i])) for i in range(len(line_list))]
+    #start_2 = time.time()
+    gaussians_ha = gaussian_func(wavelength_ha, line_list[0][1] + z_offset, amps[0], velocity_to_sig(line_list[0][1], velocities[0]))
+    gaussians_pab = gaussian_func(wavelength_pab, line_list[1][1] + z_offset, amps[1], velocity_to_sig(line_list[1][1], velocities[1]))
+
     
-    gaussians = np.sum(gaussians, axis=0)
+    combined_gauss = np.concatenate([gaussians_ha, gaussians_pab])
+    y_vals = combined_gauss
 
-    y_vals = np.convolve(gaussians, lsf_smeared_gaussians, mode='same')
-
-    # y_vals = convolve(lsf_wave_matched, gaussians)
+    # # Do I need to separate the wavelngth sections? Seems to be useing the whole range for both?
+    # gaussians = [gaussian_func(wavelength, line_list[i][1] + z_offset, amps[i], velocity_to_sig(line_list[i][1], velocities[i])) for i in range(len(line_list))]
+    
+    # y_vals = np.sum(gaussians, axis=0)
 
     return y_vals
 
@@ -619,9 +630,10 @@ def fit_all_emission_uncover(id_msa_list):
         spec_df = read_raw_spec(id_msa)
         fit_emission_uncover(spec_df, id_msa)
 
-id_msa = 47875
-spec_df = read_raw_spec(id_msa)
-fit_emission_uncover(spec_df, id_msa)
+# id_msa = 47875
+# spec_df = read_raw_spec(id_msa)
+# fit_emission_uncover(spec_df, id_msa)
 
-    
+# zqual_df_cont_covered = ascii.read('/Users/brianlorenz/uncover/zqual_df_cont_covered.csv').to_pandas()
+# id_msa_list = zqual_df_cont_covered['id_msa']
 # fit_all_emission_uncover(id_msa_list)
