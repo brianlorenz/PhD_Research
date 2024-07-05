@@ -18,25 +18,27 @@ non_par_sfh = False
 
 
 # Directory locations on savio
-savio_prospect_out_dir = '/global/scratch/users/brianlorenz/prospector_h5s'
-prospector_plot_dir = '/global/scratch/users/brianlorenz/prospector_plots'
-composite_sed_csvs_dir = '/global/scratch/users/brianlorenz/composite_sed_csvs'
-composite_filter_sedpy_dir = '/global/scratch/users/brianlorenz/sedpy_par_files'
-median_zs_file = '/global/scratch/users/brianlorenz/median_zs.csv'
-mosdef_elines_file = '/global/scratch/users/brianlorenz/mosdef_elines.txt'
+# savio_prospect_out_dir = '/global/scratch/users/brianlorenz/prospector_h5s'
+# prospector_plot_dir = '/global/scratch/users/brianlorenz/prospector_plots'
+# composite_sed_csvs_dir = '/global/scratch/users/brianlorenz/composite_sed_csvs'
+# composite_filter_sedpy_dir = '/global/scratch/users/brianlorenz/sedpy_par_files'
+# median_zs_file = '/global/scratch/users/brianlorenz/median_zs.csv'
+# mosdef_elines_file = '/global/scratch/users/brianlorenz/mosdef_elines.txt'
 
 # For saving
-prospector_csvs_dir = '/global/scratch/users/brianlorenz/prospector_csvs'
-prospector_plots_dir = '/global/scratch/users/brianlorenz/prospector_plots'
+# prospector_csvs_dir = '/global/scratch/users/brianlorenz/prospector_csvs'
+# prospector_plots_dir = '/global/scratch/users/brianlorenz/prospector_plots'
 
 # Directory locations on home
-# import initialize_mosdef_dirs as imd
-# savio_prospect_out_dir = imd.prospector_h5_dir
-# composite_sed_csvs_dir = imd.composite_sed_csvs_dir
-# composite_filter_sedpy_dir = imd.composite_filter_sedpy_dir
-# median_zs_file = imd.composite_seds_dir + '/median_zs.csv'
-# prospector_plot_dir = imd.prospector_plot_dir
-# mosdef_elines_file = imd.loc_mosdef_elines
+import initialize_mosdef_dirs as imd
+savio_prospect_out_dir = imd.prospector_h5_dir
+composite_sed_csvs_dir = imd.composite_sed_csvs_dir
+composite_filter_sedpy_dir = imd.composite_filter_sedpy_dir
+median_zs_file = imd.composite_seds_dir + '/median_zs.csv'
+prospector_plot_dir = imd.prospector_plot_dir
+mosdef_elines_file = imd.loc_mosdef_elines
+prospector_csvs_dir = '/Users/brianlorenz/mosdef/Clustering/prospector_outputs/prospector_csvs'
+prospector_plots_dir = '/Users/brianlorenz/mosdef/Clustering/prospector_outputs/prospector_plots'
 
 
 def main_process(groupID, run_name, non_par_sfh):
@@ -194,7 +196,7 @@ def compute_quantiles(res, obs, mod, sps, all_spec, all_phot, all_mfrac, all_lin
     lines16_erg, lines50_erg, lines84_erg = take_one_quantile_photspec(all_line_fluxes_erg, weights, idx_high_weights)
 
     ### EDIT SAVE NAME HERE
-    save_str = f'/group{groupID}'
+    save_str = f'group{groupID}'
 
     if cont == False:
         surviving_masses = all_mfrac*all_total_masses
@@ -301,6 +303,7 @@ def quantile(data, percents, weights=None):
     y = np.interp(percents, p, d)
     return y
 
+# ipython -c "run process_completed_run.py 0 'removed_kewley_agn'"
 
 # Run with sys.argv when called 
 groupID = sys.argv[1]

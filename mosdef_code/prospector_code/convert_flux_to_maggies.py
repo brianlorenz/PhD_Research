@@ -9,11 +9,11 @@ from numpy.lib.function_base import median
 from scipy import interpolate
 
 # Savio
-median_zs_file = '/global/scratch/users/brianlorenz/median_zs.csv'
+# median_zs_file = '/global/scratch/users/brianlorenz/median_zs.csv'
 
 # Local
-# import initialize_mosdef_dirs as imd 
-# median_zs_file = imd.composite_seds_dir + '/median_zs.csv'
+import initialize_mosdef_dirs as imd 
+median_zs_file = imd.composite_seds_dir + '/median_zs.csv'
 
 def redshift_f_lambda(data_df, groupID):
     """Since this script is also run on prospector, we only import imd here
