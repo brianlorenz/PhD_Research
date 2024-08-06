@@ -44,7 +44,7 @@ Specify the directories in initialize_mosdef_dirsl;k
 # Set the total number of clusters
 n_clusters = 20
 # Set the name of the prospector run
-run_name = 'fixedmet_agn_set'
+run_name = 'removed_kewley_agn'
 norm_method = 'luminosity'
 # Set which group numbers to ignore since their data is not good
 ignore_groups = []

@@ -311,7 +311,9 @@ def plot_a_vs_b_paper(x_var, y_var, x_label, y_label, savename, axis_obj='False'
         
         if yerr == True:
             if prospector_xerr == True:
-                ax.errorbar(row[x_var], row[y_var], xerr=np.array([[row[x_var]-row[x_var.replace('_50','_16')], row[x_var.replace('_50','_84')]-row[x_var]]]).T, yerr=np.array([[row['err_'+y_var+'_low'], row['err_'+y_var+'_high']]]).T, color=rgba, marker=marker, ls='None', zorder=3, mec=mec, markerfacecolor=markerfacecolor, ms=markersize)
+                print('plotting here')
+                prospector_xerr_values = np.array([[row[x_var]-row[x_var.replace('_50','_16')], row[x_var.replace('_50','_84')]-row[x_var]]]).T
+                ax.errorbar(row[x_var], row[y_var], xerr=prospector_xerr_values, yerr=np.array([[row['err_'+y_var+'_low'], row['err_'+y_var+'_high']]]).T, color=rgba, marker=marker, ls='None', zorder=3, mec=mec, markerfacecolor=markerfacecolor, ms=markersize)
             elif xerr == True:
                 ax.errorbar(row[x_var], row[y_var], xerr=np.array([[row['err_'+x_var+'_low'], row['err_'+x_var+'_high']]]).T, yerr=np.array([[row['err_'+y_var+'_low'], row['err_'+y_var+'_high']]]).T, color=rgba, marker=marker, ls='None', zorder=3, mec=mec, markerfacecolor=markerfacecolor, ms=markersize)
             else:

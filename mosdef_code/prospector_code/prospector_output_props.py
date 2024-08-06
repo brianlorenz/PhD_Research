@@ -118,7 +118,9 @@ def add_props_to_cluster_summary_df(n_clusters, run_name):
     cluster_summary_df['log_prospector_ssfr_prosmass_50'] = np.log10(cluster_summary_df['sfr50'] / cluster_summary_df['surviving_mass50'])
     cluster_summary_df['log_prospector_ssfr_prosmass_16'] = np.log10(cluster_summary_df['sfr16'] / cluster_summary_df['surviving_mass50'])
     cluster_summary_df['log_prospector_ssfr_prosmass_84'] = np.log10(cluster_summary_df['sfr84'] / cluster_summary_df['surviving_mass50'])
-    cluster_summary_df['log_prospector_sfr_prosmass_50'] = np.log10(10**cluster_summary_df['log_prospector_ssfr_prosmass_50'] * 10**cluster_summary_df['lum_weighted_median_log_mass'])
+    cluster_summary_df['log_prospector_sfr_prosmass_50'] = np.log10(10**cluster_summary_df['log_prospector_ssfr_prosmass_50'] * 10**cluster_summary_df['median_log_mass'])
+    cluster_summary_df['log_prospector_sfr_prosmass_16'] = np.log10(10**cluster_summary_df['log_prospector_ssfr_prosmass_16'] * 10**cluster_summary_df['median_log_mass'])
+    cluster_summary_df['log_prospector_sfr_prosmass_84'] = np.log10(10**cluster_summary_df['log_prospector_ssfr_prosmass_84'] * 10**cluster_summary_df['median_log_mass'])
     cluster_summary_df.to_csv(imd.loc_cluster_summary_df, index=False)
     compute_cluster_sfrs(prospector=True)    
 

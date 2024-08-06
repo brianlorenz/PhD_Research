@@ -619,9 +619,9 @@ def fit_all_emission_uncover(id_msa_list):
         spec_df = read_raw_spec(id_msa)
         fit_emission_uncover(spec_df, id_msa)
 
-id_msa = 47875
-spec_df = read_raw_spec(id_msa)
-fit_emission_uncover(spec_df, id_msa)
+# id_msa = 47875
+# spec_df = read_raw_spec(id_msa)
+# fit_emission_uncover(spec_df, id_msa)
 
     
 # fit_all_emission_uncover(id_msa_list)

@@ -28,6 +28,14 @@ def compute_ha_pab_av(pab_ha_ratio):
     A_V_value = R_V_value*k_factor*np.log10(pab_ha_ratio/intrinsic_ratio)
     return A_V_value
 
+def compute_ratio_from_av(A_V_value):
+    """ PaB / Ha is the ratio you need, should be slightly greater than 1/20"""
+    R_V_value = 4.05
+    intrinsic_ratio = pab_factor / ha_factor
+    k_factor = 2.5/(calzetti_law(ha_wave) - calzetti_law(pab_wave))
+    pab_ha_ratio = 10**(A_V_value / (R_V_value*k_factor)) * intrinsic_ratio
+    return pab_ha_ratio
+
 def compute_ha_pab_av_from_dustmap(dustmap_ratio):
     """ PaB / Ha is the ratio you need, should be slightly greater than 1/20. Already have pab ratio there, so don'tneed intrinsice"""
     R_V_value = 4.05

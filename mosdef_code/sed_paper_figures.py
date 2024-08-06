@@ -37,8 +37,8 @@ def make_paper_plots(n_clusters, norm_method):
     # generate_sed_paper_table()
     # setup_figs(n_clusters, norm_method, bpt_color=True, paper_overview=True, prospector_spec=False)
     # make_av_comparison()
-    # make_SFR_compare_fig()
-    # make_prospector_overview_fig('fixedmet_agn_set')
+    make_SFR_compare_fig()
+    # make_prospector_overview_fig('removed_kewley_agn')
     # make_sfr_mass_uvj_bpt_4panel(snr_thresh=3)
     # make_avneb_sfr_mass_fig()
     # make_mass_metal_sfr_fig()
@@ -136,7 +136,7 @@ def make_prospector_overview_fig(run_name):
             #Model fill between
             ax.fill_between(phot_df['rest_wavelength'][phot_idxs], scale*y_model_16, scale*y_model_84, alpha=0.6, color='grey', label='Model')
             
-            ax.axvspan(phot_df['rest_wavelength'].iloc[0]-100, 1500, alpha=0.3, color='red')
+            ax.axvspan(900, 1500, alpha=0.3, color='red')
             if col == 0:
                 ax.set_ylabel("$\lambda$ F$_\lambda$ (norm)", fontsize = fontsize)
             if row == 3:
@@ -151,11 +151,11 @@ def make_prospector_overview_fig(run_name):
                 xtext = xtext + 0.04
             ax.text(xtext, 0.927, f'Group {paperID}', transform=ax.transAxes, fontsize=fontsize)
 
-            ax.set_ylim(0.8 * np.percentile(scale*phot_df['rest_wavelength'] * rest_frame_original_phot, 1),
+            ax.set_ylim(0.7 * np.percentile(scale*phot_df['rest_wavelength'] * rest_frame_original_phot, 1),
                      1.25 * np.percentile(scale*phot_df['rest_wavelength'] * rest_frame_original_phot, 99))
 
             
-            ax.set_xlim(phot_df['rest_wavelength'].iloc[0]-30, phot_df['rest_wavelength'].iloc[-1] + 3000)
+            ax.set_xlim(1000, 35000)
             ax.set_xscale('log')
             # scale_aspect(ax)
             if paperID == 1:
@@ -289,7 +289,7 @@ def make_mass_metal_sfr_fig():
     runco_data_mass = np.array([9.04029773256327, 9.341541353064535	, 9.507356359477967, 9.660911296972452, 9.76852663271054, 9.882224549023732, 10.039519064690833, 10.177858006949581, 10.35957669226384, 10.679835800016289]) #Runco 2022
     runco_data_decs = np.array([3.282805987024606, 3.6142358130258136, 2.633209874253258, 4.096971898622865, 4.597955149928179, 4.213816474455239, 4.5059129818220125, 4.514513937180409, 5.778564129951793, 5.644147137838686])
     runco_data_balmeravs = compute_balmer_av(runco_data_decs)
-    ax_balmer_mass.plot(runco_data_mass, runco_data_balmeravs, color='grey', marker='d', ms=8, mec='black', ls='None', zorder=1000000, label='MOSDEF Stacks (Runco+ 2022)')
+    ax_balmer_mass.plot(runco_data_mass, runco_data_balmeravs, color='#f2f2f2', marker='d', ms=8, mec='black', ls='None', zorder=1000000, label='MOSDEF Stacks (Runco+ 2022)')
 
     ax_balmer_mass.legend(loc = (0.03, 0.74), fontsize=14)
     # plot_a_vs_b_paper('computed_log_sfr_with_limit', 'O3N2_metallicity', metallicity_label, sfr_label, 'None', axis_obj=ax_metal_sfr, yerr=True, plot_lims=[0, 2, 8, 9], fig=fig, color_var='balmer_av', lower_limit=225, use_color_df=False)
@@ -583,7 +583,7 @@ def make_SFR_compare_fig():
     gs = GridSpec(1, 1, left=0.11, right=0.96, bottom=0.12)
     ax_sfr = fig.add_subplot(gs[0, 0])
 
-    plot_a_vs_b_paper('log_prospector_sfr_prosmass_50', 'computed_log_sfr_with_limit', 'Prospector Normalized SED SFR', 'log$_{10}$(H$\\mathrm{\\alpha}$ SFR) (M$_\odot$ / yr)', 'None', axis_obj=ax_sfr, xerr=False, yerr=True, lower_limit=180, plot_lims=[-1.1, 2.1, 0.1, 2.1], fig=fig, one_to_one=True, use_color_df=True, add_numbers=False)
+    plot_a_vs_b_paper('log_prospector_sfr_prosmass_50', 'computed_log_sfr_with_limit', 'Prospector Normalized SED SFR', 'log$_{10}$(H$\\mathrm{\\alpha}$ SFR) (M$_\odot$ / yr)', 'None', axis_obj=ax_sfr, prospector_xerr=True, yerr=True, lower_limit=180, plot_lims=[-1.1, 2.1, 0.1, 2.1], fig=fig, one_to_one=True, use_color_df=True, add_numbers=False)
     ax_sfr.plot([-100, -100], [-100, -100], color='red', ls='--', label='one-to-one')
     ax_sfr.legend(fontsize=16, loc=2)
     ax_sfr.tick_params(labelsize=full_page_axisfont)
