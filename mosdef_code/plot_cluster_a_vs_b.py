@@ -219,13 +219,18 @@ def plot_a_vs_b_paper(x_var, y_var, x_label, y_label, savename, axis_obj='False'
     else:
         ax = axis_obj
 
+    if y_var == 'balmer_av_with_limit':
+        pass
+        # y_var = 'balmer_av_with_limit_2'
+        # cluster_summary_df['balmer_av_with_limit_2'] = 2* cluster_summary_df['balmer_av_with_limit']
+
     for i in range(len(cluster_summary_df)):
         if i in ignore_groups:
             continue
         row = cluster_summary_df.iloc[i]
         markersize = get_row_size(i)
 
-        if x_var == 'ssfr50' or x_var == 'Prospector_ssfr50_target_mass' or  x_var == 'Prospector_ssfr50_normmedian_mass':
+        if x_var == 'ssfr50' or x_var == 'Prospector_ssfr50_target_mass' or  x_var == 'Prospector_ssfr50_normmedian_mass' or x_var=='sfr50':
             row[x_var] = np.log10(row[x_var])
         if x_var == 'sfr_surface':
             row[x_var] = np.log10((10**row['computed_log_sfr_with_limit'])/ (2*np.pi * row['median_re']**2))

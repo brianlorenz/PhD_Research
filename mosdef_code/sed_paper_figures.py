@@ -37,11 +37,11 @@ def make_paper_plots(n_clusters, norm_method):
     # generate_sed_paper_table()
     # setup_figs(n_clusters, norm_method, bpt_color=True, paper_overview=True, prospector_spec=False)
     # make_av_comparison()
-    make_SFR_compare_fig()
+    # make_SFR_compare_fig()
     # make_prospector_overview_fig('removed_kewley_agn')
     # make_sfr_mass_uvj_bpt_4panel(snr_thresh=3)
     # make_avneb_sfr_mass_fig()
-    # make_mass_metal_sfr_fig()
+    make_mass_metal_sfr_fig()
     
 
 
@@ -251,9 +251,14 @@ def make_mass_metal_sfr_fig():
     ax_stellarav_sfr = fig.add_subplot(gs[0, 1])
     ax_stellarav_metal = fig.add_subplot(gs[0, 2])
     # ax_metal_sfr = fig.add_subplot(gs[0, 2])
-    plot_a_vs_b_paper('computed_log_sfr_with_limit', 'Prospector_AV_50', sfr_label, prospector_dust2_label, 'None', axis_obj=ax_stellarav_sfr, yerr=True, plot_lims=[0, 2, -0.2, 2.5], fig=fig, lower_limit=90, use_color_df=True) 
+
+    # sfr_name = 'log_prospector_sfr_prosmass_50'
+    # sfr_axislabel = 'Prospector SED SFR'
+    sfr_name = 'computed_log_sfr_with_limit'
+    sfr_axislabel = sfr_label
+    plot_a_vs_b_paper(sfr_name, 'Prospector_AV_50', sfr_axislabel, prospector_dust2_label, 'None', axis_obj=ax_stellarav_sfr, yerr=True, plot_lims=[0, 2, -0.2, 2.5], fig=fig, lower_limit=90, use_color_df=True) 
     plot_a_vs_b_paper('O3N2_metallicity', 'Prospector_AV_50', metallicity_label, prospector_dust2_label, 'None', axis_obj=ax_stellarav_metal, yerr=True, plot_lims=[8, 9, -0.2, 2.5], fig=fig, lower_limit=270, use_color_df=True)
-    plot_a_vs_b_paper('computed_log_sfr_with_limit', 'balmer_av_with_limit', sfr_label, balmer_av_label, 'None', axis_obj=ax_balmer_sfr, yerr=True, plot_lims=[0, 2, -0.2, 5], fig=fig, lower_limit=135, use_color_df=True) 
+    plot_a_vs_b_paper(sfr_name, 'balmer_av_with_limit', sfr_axislabel, balmer_av_label, 'None', axis_obj=ax_balmer_sfr, yerr=True, plot_lims=[0, 2, -0.2, 5], fig=fig, lower_limit=135, use_color_df=True) 
     plot_a_vs_b_paper('O3N2_metallicity', 'balmer_av_with_limit', metallicity_label, balmer_av_label, 'None', axis_obj=ax_balmer_metal, yerr=True, plot_lims=[8, 9, -0.2, 5], fig=fig, lower_limit=225, use_color_df=True)
     plot_a_vs_b_paper('median_log_mass', 'Prospector_AV_50', stellar_mass_label, prospector_dust2_label, 'None', axis_obj=ax_stellarav_mass, yerr=True, plot_lims=[9, 11.5, -0.2, 2.5], fig=fig, use_color_df=True, lower_limit=3) 
     plot_a_vs_b_paper('median_log_mass', 'balmer_av_with_limit', stellar_mass_label, balmer_av_label, 'None', axis_obj=ax_balmer_mass, yerr=True, plot_lims=[9, 11.5, -0.2, 5], fig=fig, use_color_df=True, lower_limit=180) 
@@ -270,15 +275,17 @@ def make_mass_metal_sfr_fig():
     add_r(ax_balmer_mass, regress_res)
     print(f'Best fit to nebular av vs mass: slope {regress_res.slope}, yint {regress_res.intercept}')
 
-    regress_res = find_best_fit('computed_log_sfr_with_limit', 'balmer_av_with_limit', exclude_limit=True)
+    regress_res = find_best_fit(sfr_name, 'balmer_av_with_limit', exclude_limit=True)
     x_regress = np.arange(-0.1, 3, 0.1)
-    regress_res, points_16, points_84 = bootstrap_fit('computed_log_sfr_with_limit', 'balmer_av_with_limit', x_regress, exclude_limit=True)
+    regress_res, points_16, points_84 = bootstrap_fit(sfr_name, 'balmer_av_with_limit', x_regress, exclude_limit=True)
     add_r(ax_balmer_sfr, regress_res)
     # ax_av_sfr.plot(x_regress, yints[1] + slopes[1]*x_regress, color='green', ls='-')
     # ax_av_sfr.plot(x_regress, yints[2] + slopes[2]*x_regress, color='green', ls='-')
     ax_balmer_sfr.fill_between(x_regress, points_16, points_84, facecolor="gray", alpha=0.3)
     ax_balmer_sfr.plot(x_regress, regress_res.intercept + regress_res.slope*x_regress, color='black', ls='--')
+    ax_balmer_sfr.plot(x_regress, -1.5412874528181968 + 2.400111662288877*x_regress, color='black', ls='--')
     
+
     print(f'Best fit to nebular av vs sfr: slope {regress_res.slope}, yint {regress_res.intercept}')
     # Shapley's data
     mosdef_data_mass = np.array([9.252764612954188, 9.73301737756714, 10.0173775671406, 10.437598736176936]) #Shapley 2022
@@ -299,7 +306,7 @@ def make_mass_metal_sfr_fig():
     regress_res, points_16, points_84 = bootstrap_fit('median_log_mass', 'Prospector_AV_50', x_regress, exclude_limit=True, bootstrap=10)
     add_r(ax_stellarav_mass, regress_res)
     x_regress = np.arange(-0.1, 3, 0.1)
-    regress_res, points_16, points_84 = bootstrap_fit('computed_log_sfr_with_limit', 'Prospector_AV_50', x_regress, exclude_limit=True, bootstrap=10)
+    regress_res, points_16, points_84 = bootstrap_fit(sfr_name, 'Prospector_AV_50', x_regress, exclude_limit=True, bootstrap=10)
     add_r(ax_stellarav_sfr, regress_res)
     x_regress = np.arange(7.9, 9.2, 0.1)
     regress_res, points_16, points_84 = bootstrap_fit('O3N2_metallicity', 'Prospector_AV_50', x_regress, exclude_limit=True, bootstrap=10)

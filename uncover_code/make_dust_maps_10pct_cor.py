@@ -31,7 +31,7 @@ from filter_integrals import integrate_filter, get_transmission_at_line, get_lin
 
 colors = ['red', 'green', 'blue']
 
-def make_all_dustmap():
+def make_all_dustmap(cor_name):
     zqual_df_cont_covered = ascii.read('/Users/brianlorenz/uncover/zqual_df_cont_covered.csv').to_pandas()
     id_msa_list = zqual_df_cont_covered['id_msa']
     spec_ratios = []
@@ -73,7 +73,7 @@ def make_all_dustmap():
         err_pab_sed_value_compare_lows.append(sed_intspec_compare_values[6])
         err_pab_sed_value_compare_highs.append(sed_intspec_compare_values[7])
     lineratio_df = pd.DataFrame(zip(id_msa_list, sed_ratios, err_sed_ratios_low, err_sed_ratios_high, spec_ratios, emission_ratios, err_emission_ratios_low, err_emission_ratios_high, sed_lineratio_scaleds, int_spec_ha_compares, int_spec_pab_compares, ha_sed_value_compares, pab_sed_value_compares, err_ha_sed_value_compare_lows, err_ha_sed_value_compare_highs, err_pab_sed_value_compare_lows, err_pab_sed_value_compare_highs), columns=['id_msa', 'sed_lineratio', 'sed_lineratio_16', 'sed_lineratio_84', 'integrated_spec_lineratio', 'emission_fit_lineratio', 'err_emission_fit_lineratio_low', 'err_emission_fit_lineratio_high', 'sed_lineratio_widthscaled', 'int_spec_ha_compare', 'int_spec_pab_compare', 'sed_ha_compare', 'sed_pab_compare', 'sed_ha_compare_16', 'sed_ha_compare_84', 'sed_pab_compare_16', 'sed_pab_compare_84'])
-    lineratio_df.to_csv('/Users/brianlorenz/uncover/Figures/diagnostic_lineratio/lineratio_df.csv', index=False)
+    lineratio_df.to_csv(f'/Users/brianlorenz/uncover/Figures/diagnostic_lineratio/lineratio_df{cor_name}.csv', index=False)
     zqual_df_cont_covered['ha_trasm_flag'] = ha_trasm_flags
     zqual_df_cont_covered['pab_trasm_flag'] = pab_trasm_flags
     zqual_df_cont_covered.to_csv('/Users/brianlorenz/uncover/zqual_df_cont_covered.csv', index=False)
@@ -397,7 +397,12 @@ def plot_sed_around_line(ax, filters, sed_df, spec_df, redshift, line_index, tra
         
         if i == 0:
             red_wave = sed_row['eff_wavelength'].iloc[0]
-            red_flux = sed_row['flux'].iloc[0]
+            red_wave_aa = red_wave * 10000
+            red_wave_rest_aa = red_wave_aa / (1+redshift)
+            if red_wave_rest_aa > 13900:
+                red_flux = 1.05*sed_row['flux'].iloc[0]
+            else:
+                red_flux = sed_row['flux'].iloc[0]
             err_red_flux = sed_row['err_flux'].iloc[0]
             red_flux_scaled = red_flux/sed_row['eff_width'].iloc[0]
         if i == 1:
@@ -673,7 +678,7 @@ def compute_cont_pct(blue_wave, green_wave, red_wave, blue_flux, red_flux):
         cont_percentile = 1-cont_percentile
     return cont_percentile
 
-# make_all_dustmap()
+# make_all_dustmap('5pct_gt13900')
 # make_dustmap(18471)
 # make_dustmap(47875)
 # make_dustmap(38163)
