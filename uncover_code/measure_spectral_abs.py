@@ -58,3 +58,4 @@ def measure_feature(id_msa):
     plt.savefig(f'/Users/brianlorenz/uncover/Figures/diagnostic_lineratio/pab_red_cor{id_msa}.pdf')
 
 # measure_feature(25147)
+measure_feature(47875)

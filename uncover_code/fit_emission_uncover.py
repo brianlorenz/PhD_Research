@@ -13,6 +13,7 @@ import time
 from uncover_read_data import read_raw_spec, read_prism_lsf
 from astropy.convolution import convolve
 from scipy.interpolate import interp1d
+from test_kernel import gaussian_lsf_kernel
 
 emission_fit_dir = '/Users/brianlorenz/uncover/Data/emission_fitting/'
 
@@ -62,11 +63,10 @@ def fit_emission_uncover(spectrum, save_name, bootstrap_num=-1):
     guess.append(z_offset_guess)
     bounds_low.append(-2) # angstrom
     bounds_high.append(2)
-    # Then, for each line, we guess a veolcity and amplitude
-    for i in range(len(line_list)):
-        guess.append(velocity_guess)
-        bounds_low.append(0.01)
-        bounds_high.append(100000)
+    # Then, for each line, we guess an amplitude
+    guess.append(velocity_guess)
+    bounds_low.append(0.01)
+    bounds_high.append(100000)
     for i in range(len(line_list)):
         # if 'O3_5008' in line_names and 'O3_4960' in line_names:
         #     idx_5008 = line_names.index('O3_5008')
@@ -112,15 +112,15 @@ def fit_emission_uncover(spectrum, save_name, bootstrap_num=-1):
     z_offset = [popt[0] for i in range(len(line_list))]
     print(err_popt)
     err_z_offset = [err_popt[0] for i in range(len(line_list))]
-    velocities = [popt[1+i] for i in range(len(line_list))]
-    err_velocities = [err_popt[1+i] for i in range(len(line_list))]
-    sigs = [velocity_to_sig(line_list[i][1], popt[1+i])
+    velocity = [popt[1] for i in range(len(line_list))]
+    err_velocity = [err_popt[1] for i in range(len(line_list))]
+    sigs = [velocity_to_sig(line_list[i][1], popt[1])
             for i in range(len(line_list))]
-    err_sigs = [velocity_to_sig(line_list[i][1], popt[1+i] + err_popt[1+i]) - sigs[i]
+    err_sigs = [velocity_to_sig(line_list[i][1], popt[1] + err_popt[1]) - sigs[i]
                 for i in range(len(line_list))]
 
-    amps = popt[3:] / scale_factor
-    err_amps = err_popt[3:] / scale_factor
+    amps = popt[2:] / scale_factor
+    err_amps = err_popt[2:] / scale_factor
     flux_tuples = [get_flux(amps[i], sigs[i], amp_err=err_amps[i], sig_err=err_sigs[
                             i]) for i in range(len(line_list))]
     fluxes = [i[0] for i in flux_tuples]
@@ -132,8 +132,8 @@ def fit_emission_uncover(spectrum, save_name, bootstrap_num=-1):
 
     
     def compute_percentile_errs_on_line(line_idx, measured_line_flux):
-        line_amps = [arr_popt[i][1 + len(line_list) + line_idx]/scale_factor for i in range(len(arr_popt))]
-        line_sigs = [velocity_to_sig(line_list[line_idx][1], arr_popt[i][1+line_idx])for i in range(len(arr_popt))]
+        line_amps = [arr_popt[i][len(line_list) + line_idx]/scale_factor for i in range(len(arr_popt))]
+        line_sigs = [velocity_to_sig(line_list[line_idx][1], arr_popt[i][1])for i in range(len(arr_popt))]
         line_fluxes = [get_flux(line_amps[i], line_sigs[i])[0] for i in range(len(arr_popt))]
         err_line_fluxes_low_high = np.percentile(line_fluxes, [16, 84])
         err_line_fluxes_low_high = np.abs(measured_line_flux-err_line_fluxes_low_high)
@@ -185,7 +185,7 @@ def fit_emission_uncover(spectrum, save_name, bootstrap_num=-1):
     err_ha_pab_ratio_high = np.percentile(all_ha_pab_ratios, 84) - ha_pab_ratio
 
     fit_df = pd.DataFrame(zip(line_names, line_centers_rest,
-                              z_offset, err_z_offset, velocities, err_velocity, 
+                              z_offset, err_z_offset, velocity, err_velocity, 
                               err_velocity_low, err_velocity_high, amps, err_amps, 
                               sigs, err_sigs, fluxes, err_fluxes, err_fluxes_low, err_fluxes_high, ha_pab_ratio, err_ha_pab_ratio_low, err_ha_pab_ratio_high), 
                               columns=['line_name', 'line_center_rest', 'z_offset', 'err_z_offset', 
@@ -227,8 +227,8 @@ def plot_emission_fit(emission_fit_dir, save_name, total_spec_df):
 
     fig = plt.figure(figsize=(8, 8))
     ax = fig.add_axes([0.09, 0.08, 0.88, 0.42])
-    ax_Ha = fig.add_axes([0.55, 0.55, 0.40, 0.40])
-    ax_Hb = fig.add_axes([0.09, 0.55, 0.40, 0.40])
+    ax_Ha = fig.add_axes([0.09, 0.55, 0.40, 0.40])
+    ax_Hb = fig.add_axes([0.55, 0.55, 0.40, 0.40])
     axes_arr = [ax, ax_Ha, ax_Hb]
 
     Ha_zoom_box_color = 'blue'
@@ -257,8 +257,7 @@ def plot_emission_fit(emission_fit_dir, save_name, total_spec_df):
     # Set up the parameters from the fitting
     pars = []
     pars.append(fit_df['z_offset'].iloc[0])
-    for i in range(len(fit_df)):
-        pars.append(fit_df.iloc[i]['velocity'])
+    pars.append(fit_df['velocity'].iloc[0])
     for i in range(len(fit_df)):
         pars.append(fit_df.iloc[i]['amplitude'])
 
@@ -403,7 +402,8 @@ def velocity_to_sig(line_center, velocity):
     Returns:
     sig (float): Standard deviation of the gaussian (angstrom)
     '''
-    sig = line_center * (velocity / (3 * 10**5))
+    c = 299792 #km/s
+    sig = line_center * (velocity / c)
     return sig
 
 
@@ -455,8 +455,8 @@ def multi_gaussian(wavelength, *pars, fit=True):
         pars = pars[0]
     z_offset = pars[0]
 
-    velocities = [pars[1+i] for i in range(len(line_list))]
-    amps = [pars[1+i+len(line_list)] for i in range(len(line_list))]
+    velocity = pars[1]
+    amps = [pars[i+len(line_list)] for i in range(len(line_list))]
     
     line_names = [line_list[i][0] for i in range(len(line_list))]
 
@@ -467,21 +467,19 @@ def multi_gaussian(wavelength, *pars, fit=True):
     interp_lsf = interp1d(lsf['wave_aa'], lsf['R'], kind='linear')
     print(wavelength)
     lsf_r_wave_matched = interp_lsf(wavelength)
+    lsf_FWHMs = [line_list[i][1] / interp_lsf(line_list[i][1]) for i in range(len(line_list))]
+    # sigma = wavelength / (R * 2.355)
+    lsf_sigs = [lsf_FWHMs[i] / 2.355 for i in range(len(line_list))]
     c = 299792 #km/s
-    lsf_sigma_v_kms = c/(lsf_r_wave_matched*2.355)
+    lsf_sigma_v_kms = [c/(interp_lsf(line_list[i][1])*2.355) for i in range(len(line_list))]
+    gaussian_vels = [np.sqrt(velocity**2 + lsf_sigma_v_kms[i]**2) for i in range(len(line_list))]
+    # lsf_smeared_gaussians = [gaussian_func(wavelength, line_list[i][1] + z_offset, 1, lsf_sigs[i]) for i in range(len(line_list))]
+    # lsf_smeared_gaussians = np.sum(lsf_smeared_gaussians, axis=0)
+    # # gaussian_kernels = gaussian_lsf_kernel
 
-    lsf_smeared_gaussians = [gaussian_func(wavelength, line_list[i][1] + z_offset, 1, velocity_to_sig(line_list[i][1], lsf_sigma_v_kms)) for i in range(len(line_list))]
-    lsf_smeared_gaussians = np.sum(lsf_smeared_gaussians, axis=0)
-    # breakpoint()
-
-    # Do I need to separate the wavelngth sections? Seems to be useing the whole range for both?
-    gaussians = [gaussian_func(wavelength, line_list[i][1] + z_offset, amps[i], velocity_to_sig(line_list[i][1], velocities[i])) for i in range(len(line_list))]
+    gaussians = [gaussian_func(wavelength, line_list[i][1] + z_offset, amps[i], velocity_to_sig(line_list[i][1], gaussian_vels[i])) for i in range(len(line_list))]
     
-    gaussians = np.sum(gaussians, axis=0)
-
-    y_vals = np.convolve(gaussians, lsf_smeared_gaussians, mode='same')
-
-    # y_vals = convolve(lsf_wave_matched, gaussians)
+    y_vals = np.sum(gaussians, axis=0)
 
     return y_vals
 
@@ -619,9 +617,9 @@ def fit_all_emission_uncover(id_msa_list):
         spec_df = read_raw_spec(id_msa)
         fit_emission_uncover(spec_df, id_msa)
 
-id_msa = 47875
-spec_df = read_raw_spec(id_msa)
-fit_emission_uncover(spec_df, id_msa)
+# id_msa = 47875
+# spec_df = read_raw_spec(id_msa)
+# fit_emission_uncover(spec_df, id_msa)
 
     
 # fit_all_emission_uncover(id_msa_list)

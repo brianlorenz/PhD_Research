@@ -2,11 +2,17 @@ from uncover_read_data import read_supercat, read_raw_spec
 from uncover_sed_filters import unconver_read_filters, get_filt_cols
 import pandas as pd
 import matplotlib.pyplot as plt
+from astropy.io import ascii
 
 def main(id_msa):
     sed_df = get_sed(id_msa)
     spec_df = read_raw_spec(id_msa)
     plot_sed(sed_df, spec_df)
+
+def read_sed(id_msa):
+    sed_loc = f'/Users/brianlorenz/uncover/Data/seds/{id_msa}_sed.csv'
+    sed_df = ascii.read(sed_loc).to_pandas()
+    return sed_df
 
 def get_sed(id_msa):
     supercat_df = read_supercat()

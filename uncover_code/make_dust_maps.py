@@ -5,7 +5,7 @@ from astropy import units as u
 from astropy.nddata import Cutout2D
 from astropy.convolution import Gaussian2DKernel, convolve
 from uncover_read_data import read_supercat, read_raw_spec, read_spec_cat, read_segmap, read_SPS_cat
-from uncover_make_sed import get_sed
+from uncover_make_sed import read_sed
 from uncover_sed_filters import unconver_read_filters
 from fit_emission_uncover import line_list
 from sedpy import observate
@@ -114,7 +114,7 @@ def make_dustmap(id_msa):
     ha_filters = ['f_'+filt for filt in ha_filters]
     pab_filters = ['f_'+filt for filt in pab_filters]
     spec_df = read_raw_spec(id_msa)
-    sed_df = get_sed(id_msa)
+    sed_df = read_sed(id_msa)
     zqual_df = read_spec_cat()
     redshift = zqual_df[zqual_df['id_msa']==id_msa]['z_spec'].iloc[0]
 
@@ -153,6 +153,9 @@ def make_dustmap(id_msa):
                      [True, True, True],
                      [False, True, False]])
     # dilated_segmap_idxs = ndimage.binary_dilation(segmap_idxs, kernel)
+    eroded_segmap_idxs = ndimage.binary_erosion(segmap_idxs, kernel)
+    for i in range(10):
+        eroded_segmap_idxs = ndimage.binary_erosion(eroded_segmap_idxs, kernel)
     dilated_segmap_idxs = convolve2d(segmap_idxs.astype(int), kernel.astype(int), mode='same').astype(bool)
 
     # Read the AV from the catalog
@@ -251,11 +254,12 @@ def make_dustmap(id_msa):
     ha_snr_thresh, ha_snr_idxs = get_snr_cut(ha_linemap_snr)
     pab_snr_thresh, pab_snr_idxs = get_snr_cut(pab_linemap_snr)
     snr_idx = np.logical_or(ha_snr_idxs, pab_snr_idxs)
-    snr_idx = ha_snr_maps[1] > np.percentile(ha_snr_maps[1], 70)
+    snr_idx = ha_snr_maps[1] > np.percentile(ha_snr_maps[1], 75)
     
-    ha_snr_idx = ha_snr_maps[1] > 2
+    ha_snr_idx = ha_snr_maps[1] > 1.5
     pab_snr_idx = pab_snr_maps[1] > 2
     snr_idx = np.logical_and(ha_snr_idx, pab_snr_idx)
+
 
 
     ha_linemap_snr[snr_idx] = 1
@@ -323,6 +327,7 @@ def make_dustmap(id_msa):
     ax_ha_image.imshow(ha_image)
     ax_pab_image.imshow(pab_image)
 
+
     ax_ha_cont.imshow(ha_cont_logscaled, cmap=cmap, norm=ha_cont_norm)
     ax_pab_cont.imshow(pab_cont_logscaled, cmap=cmap, norm=pab_cont_norm)
 
@@ -335,7 +340,7 @@ def make_dustmap(id_msa):
     smoothed_dustmap = convolve(dustmap_logscaled, kernel)
 
     # Showdustmap, masked points in gray
-    ax_dustmap.imshow(smoothed_dustmap, cmap=cmap, norm=dustmap_norm)
+    ax_dustmap.imshow(dustmap_logscaled, cmap=cmap, norm=dustmap_norm)
     masked_dustmap = np.ma.masked_where(ha_linemap_snr+1 > 1.5, ha_linemap_snr+1)
     from matplotlib import colors
     cmap_gray = colors.ListedColormap(['gray'])
@@ -365,6 +370,8 @@ def make_dustmap(id_msa):
     # Set tick invisile
     for ax in [ax_ha_image, ax_ha_cont, ax_ha_linemap, ax_pab_image, ax_pab_cont, ax_pab_linemap, ax_dustmap, ax_segmap]:
         ax.set_xticks([]); ax.set_yticks([])
+        # ax.contour(eroded_segmap_idxs, levels=[0.5], colors='white')
+
 
     ax_ha_sed.text(0.50, 1.15, f'z = {round(redshift,2)}', color='black', fontsize=18, transform=ax_ha_sed.transAxes)
     ax_ha_sed.text(-0.05, 1.15, f'id = {id_msa}', color='black', fontsize=18, transform=ax_ha_sed.transAxes)
@@ -388,33 +395,42 @@ def make_dustmap(id_msa):
     return sed_lineratio, err_sed_lineratios, line_ratio_from_spec, emission_lineratios, sed_lineratio_scaled, ha_trasm_flag, pab_trasm_flag, sed_intspec_compare_values
 
 def plot_sed_around_line(ax, filters, sed_df, spec_df, redshift, line_index, transmissions, bootstrap=1000):
+    # Controls for various elements on the plot
+    plt_verbose_text = 0
+    plt_purple_merged_point = 1
+    plt_sed_points = 1
+    plt_filter_curves = 1
+    plt_spectrum = 1
+
     line_wave_obs = (line_list[line_index][1] * (1+redshift))/1e4
     ax.axvline(line_wave_obs, ls='--', color='green')
     # Plot the 3 SED points
     for i in range(len(filters)):
         sed_row = sed_df[sed_df['filter'] == filters[i]]
-        ax.errorbar(sed_row['eff_wavelength'], sed_row['flux'], yerr = sed_row['err_flux'], color=colors[i], marker='o')
+        if plt_sed_points:
+            ax.errorbar(sed_row['eff_wavelength'], sed_row['spec_scaled_flux'], yerr = sed_row['err_flux'], color=colors[i], marker='o')
         
         if i == 0:
             red_wave = sed_row['eff_wavelength'].iloc[0]
-            red_flux = sed_row['flux'].iloc[0]
-            err_red_flux = sed_row['err_flux'].iloc[0]
+            red_flux = sed_row['spec_scaled_flux'].iloc[0]
+            err_red_flux = sed_row['err_spec_scaled_flux'].iloc[0]
             red_flux_scaled = red_flux/sed_row['eff_width'].iloc[0]
         if i == 1:
             green_wave = sed_row['eff_wavelength'].iloc[0]
-            green_flux = sed_row['flux'].iloc[0]
-            err_green_flux = sed_row['err_flux'].iloc[0]
+            green_flux = sed_row['spec_scaled_flux'].iloc[0]
+            err_green_flux = sed_row['err_spec_scaled_flux'].iloc[0]
             green_flux_scaled = green_flux/sed_row['eff_width'].iloc[0]
         if i == 2:
             blue_wave = sed_row['eff_wavelength'].iloc[0]
-            blue_flux = sed_row['flux'].iloc[0]
-            err_blue_flux = sed_row['err_flux'].iloc[0]
+            blue_flux = sed_row['spec_scaled_flux'].iloc[0]
+            err_blue_flux = sed_row['err_spec_scaled_flux'].iloc[0]
             blue_flux_scaled = blue_flux/sed_row['eff_width'].iloc[0]
 
         # Read and plot each filter curve
         sedpy_name = filters[i].replace('f_', 'jwst_')
         sedpy_filt = observate.load_filters([sedpy_name])[0]
-        ax.plot(sedpy_filt.wavelength/1e4, sedpy_filt.transmission/5e5, ls='-', marker='None', color=colors[i], lw=1)
+        if plt_filter_curves:
+            ax.plot(sedpy_filt.wavelength/1e4, sedpy_filt.transmission/5e5, ls='-', marker='None', color=colors[i], lw=1)
     
    
     # Compute the percentile to use when combining the continuum
@@ -431,6 +447,15 @@ def plot_sed_around_line(ax, filters, sed_df, spec_df, redshift, line_index, tra
     if bootstrap > 0:
         for i in range(bootstrap):
             # Remake fluxes:
+            if err_red_flux < 0:
+                print('NEGATIVE ERROR- NEED TO FIX')
+                err_red_flux = np.abs(err_red_flux)
+            if err_green_flux < 0:
+                print('NEGATIVE ERROR- NEED TO FIX')
+                err_green_flux = np.abs(err_green_flux)
+            if err_blue_flux < 0:
+                print('NEGATIVE ERROR- NEED TO FIX')
+                err_blue_flux = np.abs(err_blue_flux)
             boot_red_flux = np.random.normal(loc=red_flux, scale=err_red_flux, size=1)
             boot_green_flux = np.random.normal(loc=green_flux, scale=err_green_flux, size=1)
             boot_blue_flux = np.random.normal(loc=blue_flux, scale=err_blue_flux, size=1)
@@ -438,24 +463,27 @@ def plot_sed_around_line(ax, filters, sed_df, spec_df, redshift, line_index, tra
             boot_lines.append(boot_line)
     boot_lines = np.array(boot_lines)
 
-    ax.plot([red_wave, blue_wave], [red_flux, blue_flux], marker='None', ls='--', color=connect_color)
-    ax.plot(green_wave, cont_value, marker='o', ls='None', color=connect_color)
+    if plt_purple_merged_point:
+        ax.plot([red_wave, blue_wave], [red_flux, blue_flux], marker='None', ls='--', color=connect_color)
+        ax.plot(green_wave, cont_value, marker='o', ls='None', color=connect_color)
 
     # Compute the percentile to use when combining the continuum
     cont_value_scaled = np.percentile([red_flux_scaled, blue_flux_scaled], cont_percentile*100)
     line_value_scaled = green_flux_scaled - cont_value_scaled
 
     # Plot the spectrum
-    ax.plot(spec_df['wave'], spec_df['scaled_flux'], ls='-', marker='None', color='black', lw=1, label='Scaled Spectrum')
+    if plt_spectrum:
+        ax.plot(spec_df['wave'], spec_df['flux'], ls='-', marker='None', color='black', lw=1, label='Scaled Spectrum')
     
     # Add transmission info
     red_transmission = transmissions[0]
     line_transmission = transmissions[1]
     blue_transmission = transmissions[2]
-    ax.text(0.02, 0.93, f'Avg trasm', color='black', fontsize=9, transform=ax.transAxes)
-    ax.text(0.02, 0.86, f'{round(blue_transmission, 2)}', color='blue', fontsize=9, transform=ax.transAxes)
-    ax.text(0.02, 0.79, f'{round(line_transmission, 2)}', color='green', fontsize=9, transform=ax.transAxes)
-    ax.text(0.02, 0.72, f'{round(red_transmission, 2)}', color='red', fontsize=9, transform=ax.transAxes)
+    if plt_verbose_text:
+        ax.text(0.02, 0.93, f'Avg trasm', color='black', fontsize=9, transform=ax.transAxes)
+        ax.text(0.02, 0.86, f'{round(blue_transmission, 2)}', color='blue', fontsize=9, transform=ax.transAxes)
+        ax.text(0.02, 0.79, f'{round(line_transmission, 2)}', color='green', fontsize=9, transform=ax.transAxes)
+        ax.text(0.02, 0.72, f'{round(red_transmission, 2)}', color='red', fontsize=9, transform=ax.transAxes)
     
     # Flag objects with either low line transmission or high continuum contamination
     trasm_flag = 0
@@ -470,7 +498,8 @@ def plot_sed_around_line(ax, filters, sed_df, spec_df, redshift, line_index, tra
     ax.set_xlabel('Wavelength (um)', fontsize=14)
     ax.set_ylabel('Flux (Jy)', fontsize=14)
     ax.tick_params(labelsize=14)
-    ax.legend(fontsize=10)
+    if plt_verbose_text:
+        ax.legend(fontsize=10)
     ax.set_xlim(0.8*line_wave_obs, 1.2*line_wave_obs)
     return cont_percentile, line_value, line_value_scaled, trasm_flag, boot_lines
 
@@ -674,9 +703,11 @@ def compute_cont_pct(blue_wave, green_wave, red_wave, blue_flux, red_flux):
     return cont_percentile
 
 # make_all_dustmap()
-# make_dustmap(18471)
+# make_dustmap(39744)
 # make_dustmap(47875)
-# make_dustmap(38163)
+make_dustmap(38163)
+# make_dustmap(34114)
+
 
 
 # make_dustmap(25147)

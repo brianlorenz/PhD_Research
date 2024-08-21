@@ -8,7 +8,11 @@ import matplotlib as mpl
 from make_dust_maps import make_3color
 from sedpy import observate
 
-add_str = '5pct_gt13900'
+add_str = ''
+colorbar = True
+cbar_min = 1.3
+cbar_max = 2.4
+cbar_label = 'redshift'
 
 def generate_filtered_lineratio_df():
     # Read in the data
@@ -59,15 +63,12 @@ def make_av_compare_figure(regenerate = False):
     filtered_lineratio_df = ascii.read(f'/Users/brianlorenz/uncover/Figures/diagnostic_lineratio/filtered_lineratio_df{add_str}.csv').to_pandas()
     zqual_df_cont_covered = ascii.read('/Users/brianlorenz/uncover/zqual_df_cont_covered.csv').to_pandas()
 
-
     # Setup plots
     fig, axarr = plt.subplots(1, 2, figsize=(12,6))
     ax_prospector = axarr[0]
     ax_sed = axarr[1]
 
     y_var = 'av_50'
-
-
 
     for i in range(len(filtered_lineratio_df)):
 
@@ -87,19 +88,25 @@ def make_av_compare_figure(regenerate = False):
         print(pab_red_wave_rest)
 
         cmap = mpl.cm.inferno
-        norm = mpl.colors.Normalize(vmin=13200, vmax=14200) 
-        rgba = cmap(norm(pab_red_wave_rest))
-        rgba = 'black'
+        norm = mpl.colors.Normalize(vmin=cbar_min, vmax=cbar_max) 
+        rgba = cmap(norm(z_spec))
+        if colorbar == False:
+            rgba = 'black'
 
         prospector_av_err=np.array([[row[y_var]-row[y_var.replace('50','16')], row[y_var.replace('50','84')]-row[y_var]]]).T
         emission_av_err=np.array([[row['emission_fit_av']-row['emission_fit_av_low'], row['emission_fit_av_high']-row['emission_fit_av']]]).T
 
-        ax_prospector.errorbar(row['emission_fit_av'], row['av_50'], xerr=emission_av_err, yerr=prospector_av_err, ls='None', marker='o', color=rgba)
+        ax_prospector.errorbar(row['emission_fit_av'], row['av_50'], xerr=emission_av_err, yerr=prospector_av_err, ls='None', marker='o', color=rgba, mec='black')
 
         sed_av_err=np.array([[row['sed_av']-row['sed_av_16'], row['sed_av_84']-row['sed_av']]]).T
-        ax_sed.errorbar(row['emission_fit_av'], row['sed_av'], xerr=emission_av_err, yerr=sed_av_err, ls='None', marker='o', color=rgba)
+        ax_sed.errorbar(row['emission_fit_av'], row['sed_av'], xerr=emission_av_err, yerr=sed_av_err, ls='None', marker='o', color=rgba, mec='black')
         ax_sed.text(row['emission_fit_av'], row['sed_av'], f'{id_msa}')
 
+    if colorbar == True:
+        sm =  mpl.cm.ScalarMappable(norm=norm, cmap=cmap)
+        cbar = fig.colorbar(sm, ax=ax_sed)
+        cbar.set_label(cbar_label, fontsize=16)
+        cbar.ax.tick_params(labelsize=16)
 
     for ax in axarr:
         ax.set_xlabel('Emission Fit A$_V$')
@@ -119,7 +126,7 @@ def make_av_compare_figure(regenerate = False):
     return
 
 def intspec_sed_compare():
-    fig, axarr = plt.subplots(1, 3, figsize=(15,6))
+    fig, axarr = plt.subplots(1, 3, figsize=(18,6))
     ax_ha = axarr[0]
     ax_pab = axarr[1]
     ax_lineratio = axarr[2]
@@ -140,18 +147,29 @@ def intspec_sed_compare():
         z_spec = zqual_row['z_spec'].iloc[0]
         pab_red_wave_rest = pab_red_wave_obs / (1+z_spec)
         print(pab_red_wave_rest)
+        fit_df = ascii.read(f'/Users/brianlorenz/uncover/Data/emission_fitting/{id_msa}_emission_fits.csv').to_pandas()
+        ha_sigma = fit_df['sigma'].iloc[0]
+        pab_sigma = fit_df['sigma'].iloc[1]
 
         cmap = mpl.cm.inferno
-        norm = mpl.colors.Normalize(vmin=13200, vmax=14200) 
-        rgba = cmap(norm(pab_red_wave_rest))
-        rgba = 'black'
+        norm = mpl.colors.Normalize(vmin=cbar_min, vmax=cbar_max) 
+        rgba = cmap(norm(z_spec))
+        
+        if colorbar == False:
+            rgba = 'black'
 
         sed_av_err=np.array([[row['sed_av']-row['sed_av_16'], row['sed_av_84']-row['sed_av']]]).T
         ha_sed_err = np.array([[row['sed_ha_compare']-row['sed_ha_compare_16'], row['sed_ha_compare_84']-row['sed_ha_compare']]]).T
         pab_sed_err = np.array([[row['sed_pab_compare']-row['sed_pab_compare_16'], row['sed_pab_compare_84']-row['sed_pab_compare']]]).T
-        ax_ha.errorbar(row['int_spec_ha_compare'], row['sed_ha_compare'], yerr=ha_sed_err, ls='None', marker='o', color=rgba)
-        ax_pab.errorbar(row['int_spec_pab_compare'], row['sed_pab_compare'], yerr=pab_sed_err, ls='None', marker='o', color=rgba)
-        ax_lineratio.errorbar(row['integrated_spec_lineratio'], row['sed_lineratio'], yerr=sed_av_err, ls='None', marker='o', color=rgba)
+        ax_ha.errorbar(row['int_spec_ha_compare'], row['sed_ha_compare'], yerr=ha_sed_err, ls='None', marker='o', color=rgba, mec='black')
+        ax_pab.errorbar(row['int_spec_pab_compare'], row['sed_pab_compare'], yerr=pab_sed_err, ls='None', marker='o', color=rgba, mec='black')
+        ax_lineratio.errorbar(row['integrated_spec_lineratio'], row['sed_lineratio'], yerr=sed_av_err, ls='None', marker='o', color=rgba, mec='black')
+
+    if colorbar == True:
+        sm =  mpl.cm.ScalarMappable(norm=norm, cmap=cmap)
+        cbar = fig.colorbar(sm, ax=ax_lineratio)
+        cbar.set_label(cbar_label, fontsize=16)
+        cbar.ax.tick_params(labelsize=16)
 
     ax_ha.set_title('Halpha')
     ax_pab.set_title('PaBeta')
@@ -186,6 +204,6 @@ def intspec_sed_compare():
     fig.savefig(f'/Users/brianlorenz/uncover/Figures/paper_figures/intspec_sed_compare{add_str}.pdf')
 
 
-generate_filtered_lineratio_df()
+# generate_filtered_lineratio_df()
 make_av_compare_figure(regenerate=False)
 intspec_sed_compare()

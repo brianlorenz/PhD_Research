@@ -6,6 +6,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 from astropy.io import ascii
+from scipy.optimize import curve_fit
 
 def compare_sed_flux(id_msa, make_plot=True):
     spec_df = read_raw_spec(id_msa)
@@ -18,14 +19,28 @@ def compare_sed_flux(id_msa, make_plot=True):
     sed_jy = 10**(-0.4*(sed_abmag-8.9))
     # breakpoint() # ha 12, 13, 15
     # breakpoint() # pab 19, 21, 22
-    ha_cont_pct = 0.5369986399626991
-    pab_cont_pct = 0.6381169699210135
-    ha_cont = np.percentile([sed_jy[12], sed_jy[15]], ha_cont_pct)
-    pab_cont = np.percentile([sed_jy[19], sed_jy[22]], pab_cont_pct)
-    ha_line = sed_jy[13] - ha_cont
-    pab_line = sed_jy[21] - pab_cont
-    breakpoint()
+    # ha_cont_pct = 0.5369986399626991
+    # pab_cont_pct = 0.6381169699210135
+    # ha_cont = np.percentile([sed_jy[12], sed_jy[15]], ha_cont_pct)
+    # pab_cont = np.percentile([sed_jy[19], sed_jy[22]], pab_cont_pct)
+    # ha_line = sed_jy[13] - ha_cont
+    # pab_line = sed_jy[21] - pab_cont
+    # breakpoint()
+
+    sed_df['int_spec_flux'] = sed_jy
+    nan_indices = sed_df[sed_df.isna().any(axis=1)].index
+    sed_df_nonan = sed_df.drop(nan_indices)
+
+
+    # Fit a 5th order polynomial to the difference in fluxes to scale the sed to the spectrum
+    def poly5(x, a5, a4, a3, a2, a1, a0):
+        return a5 * x**5 + a4 * x**4 + a3 * x**3 + a2 * x**2 + a1 * x + a0
     
+    guess = [0, 0, 0, 0, 2, 0]
+    
+    popt, pcov = curve_fit(poly5, sed_df_nonan['flux'], sed_df_nonan['int_spec_flux'], p0=guess)
+    sed_df['spec_scaled_flux'] = poly5(sed_df['flux'], popt[0], popt[1], popt[2], popt[3], popt[4], popt[5])
+    sed_df['err_spec_scaled_flux'] = poly5(sed_df['err_flux'], popt[0], popt[1], popt[2], popt[3], popt[4], popt[5])
     wave_micron = sed_df['eff_wavelength']
 
     flux_ratio = sed_df['flux']/sed_jy
@@ -33,7 +48,7 @@ def compare_sed_flux(id_msa, make_plot=True):
     blue_ratio = np.nanmedian(flux_ratio[0:8])
     red_ratio = np.nanmedian(flux_ratio[-8:])
 
-
+    sed_df.to_csv(f'/Users/brianlorenz/uncover/Data/seds/{id_msa}_sed.csv', index=False)
     if make_plot == True:
         fig, ax = plt.subplots(figsize=(6,6))
         ax.plot(spec_df['wave'], spec_df['flux'], color='blue', marker='None', ls='--', label='Spectrum')
@@ -60,7 +75,7 @@ def compare_all_sed_flux(id_msa_list):
         full_ratio, blue_ratio, red_ratio = compare_sed_flux(id_msa, make_plot=True)
         full_ratios.append(full_ratio)
         blue_ratios.append(blue_ratio)
-        red_ratios.appeend(red_ratio)
+        red_ratios.append(red_ratio)
 
     ratio_df = pd.DataFrame(zip(id_msa_list, full_ratios, blue_ratios, red_ratios), columns = ['id_msa', 'full_ratio', 'blue_ratio', 'red_ratio'])
     ratio_df.to_csv('/Users/brianlorenz/uncover/Figures/spec_sed_compare/compare_ratio.csv', index=False)
@@ -83,5 +98,9 @@ def make_ratio_hist():
     plt.close('all')
 # make_ratio_hist()
 # compare_sed_flux(47875)
+
+# zqual_detected_df = ascii.read('/Users/brianlorenz/uncover/zqual_detected.csv').to_pandas()
+# id_msa_list = zqual_detected_df['id_msa'].to_list()
+# compare_all_sed_flux(id_msa_list)
 
 
