@@ -244,7 +244,7 @@ def plot_emission_fit(emission_fit_dir, save_name, total_spec_df):
     ax_Hb.spines['left'].set_color(Hb_zoom_box_color)
 
   
-    spectrum = total_spec_df['flux_erg_aa']
+    # spectrum = total_spec_df['rest_flux_erg_aa']
     wavelength = total_spec_df['rest_wave_aa']
     continuum_df = ascii.read(emission_fit_dir+f'{save_name}_cont_sub.csv').to_pandas()
     continuum = continuum_df['continuum_sub_ydata']
@@ -269,9 +269,9 @@ def plot_emission_fit(emission_fit_dir, save_name, total_spec_df):
     for axis in axes_arr:
         # axis.plot(wavelength, spectrum, color='black', lw=1, label='Spectrum')
         axis.plot(cont_wavelength, continuum, color='black', lw=1, label='Continuum-Sub')
-        axis.plot(wavelength[hb_range], gauss_fit[hb_range], color='orange',
+        axis.plot(gauss_fit_df[hb_range]['rest_wavelength'], gauss_fit_df[hb_range]['gaussian_fit'], color='orange',
                   lw=1, label='Gaussian Fit')
-        axis.plot(wavelength[~hb_range], gauss_fit[~hb_range], color='orange',
+        axis.plot(gauss_fit_df[~hb_range]['rest_wavelength'], gauss_fit_df[~hb_range]['gaussian_fit'], color='orange',
                   lw=1)
         
         if axis != ax:
@@ -281,7 +281,7 @@ def plot_emission_fit(emission_fit_dir, save_name, total_spec_df):
                 line_wave = line_list[i][1] + fit_df['z_offset'].iloc[0]
                 line_idxs = np.logical_and(
                     wavelength > line_wave - 10, wavelength < line_wave + 10)
-                axis.text(line_wave - 10, np.max(spectrum[line_idxs]) * 1.02, line_name, fontsize=10)
+                # axis.text(line_wave - 10, np.max(spectrum[line_idxs]) * 1.02, line_name, fontsize=10)
                 axis.plot([line_wave, line_wave], [-100, 100],
                           ls='--', alpha=0.5, color='mediumseagreen')
 
@@ -307,8 +307,9 @@ def plot_emission_fit(emission_fit_dir, save_name, total_spec_df):
     ax_Hb.text(0.05, 0.93, f"PaB: {round(10**17*fit_df.iloc[1]['flux'], 4)}", transform=ax_Hb.transAxes)
     ax_Hb.text(0.05, 0.83, f"Ratio: {round(fit_df.iloc[1]['ha_pab_ratio'], 4)}", transform=ax_Hb.transAxes)
 
-    # ax.set_ylim(-1 * 10**-20, 1.01 * np.max(spectrum))
-    ax.set_ylim(np.percentile(continuum, [1, 99]))
+    ax.set_ylim(-1 * 10**-20, 2e-19)
+    # ax.set_ylim(np.percentile(continuum, [1, 99]))
+    
 
     ax.legend(loc=1, fontsize=axisfont - 3)
 
@@ -630,10 +631,16 @@ def fit_all_emission_uncover(id_msa_list):
         spec_df = read_raw_spec(id_msa)
         fit_emission_uncover(spec_df, id_msa)
 
-# (Currently using)
+# # (Currently using)
 # id_msa = 47875
 # spec_df = read_raw_spec(id_msa)
 # fit_emission_uncover(spec_df, id_msa)
+
+# # Fitting the mock spectra
+# mock_name = 'mock_ratio_15_temp_3000'
+# spec_df = ascii.read(f'/Users/brianlorenz/uncover/Data/mock_spectra/{mock_name}.csv').to_pandas()
+# fit_emission_uncover(spec_df, mock_name)
+
 
 # zqual_df_cont_covered = ascii.read('/Users/brianlorenz/uncover/zqual_df_cont_covered.csv').to_pandas()
 # id_msa_list = zqual_df_cont_covered['id_msa']

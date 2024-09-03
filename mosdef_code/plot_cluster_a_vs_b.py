@@ -7,6 +7,8 @@ from astropy.io import ascii
 import os
 import pandas as pd
 import sys
+from matplotlib.patches import Ellipse
+
 
 
 if os.path.exists(imd.loc_cluster_summary_df): 
@@ -198,7 +200,7 @@ def plot_ratio(x_var_numerator, x_var_denominator, y_var_numerator, y_var_denomi
     fig.savefig(imd.cluster_dir + f'/cluster_stats/{savename}.pdf', bbox_inches='tight')
     plt.close('all')
 
-def plot_a_vs_b_paper(x_var, y_var, x_label, y_label, savename, axis_obj='False', color_var='None', plot_lims='None', lower_limit=False, one_to_one=False, ignore_groups=[], log=False, add_leja=False, yerr=False, xerr=False, prospector_run_name = '', fig='None', use_color_df=True, prospector_xerr=False, factor_of_2=False, upper_limit=False, add_numbers=False, set_gray=False):
+def plot_a_vs_b_paper(x_var, y_var, x_label, y_label, savename, axis_obj='False', color_var='None', plot_lims='None', lower_limit=False, one_to_one=False, ignore_groups=[], log=False, add_leja=False, yerr=False, xerr=False, prospector_run_name = '', fig='None', use_color_df=True, prospector_xerr=False, factor_of_2=False, upper_limit=False, add_numbers=False, set_gray=False, contour_ellipse_errs=False):
     """Plots two columsn of cluster_summary_df against each other
     
     Parameters:
@@ -213,6 +215,10 @@ def plot_a_vs_b_paper(x_var, y_var, x_label, y_label, savename, axis_obj='False'
     yerr (boolean): Set to true to plot errorbars on the yaxis
     prospector_run_name (str): Set to the prospector run name if using
     """
+    if yerr == False:
+        overall_yerr = False
+    else:
+        overall_yerr = True
 
     if axis_obj == 'False':
         fig, ax = plt.subplots(figsize=(8, 8))
@@ -314,13 +320,21 @@ def plot_a_vs_b_paper(x_var, y_var, x_label, y_label, savename, axis_obj='False'
             marker='o'
         
         
-        if yerr == True:
+        if yerr == True and overall_yerr==True:
             if prospector_xerr == True:
                 print('plotting here')
                 prospector_xerr_values = np.array([[row[x_var]-row[x_var.replace('_50','_16')], row[x_var.replace('_50','_84')]-row[x_var]]]).T
                 ax.errorbar(row[x_var], row[y_var], xerr=prospector_xerr_values, yerr=np.array([[row['err_'+y_var+'_low'], row['err_'+y_var+'_high']]]).T, color=rgba, marker=marker, ls='None', zorder=3, mec=mec, markerfacecolor=markerfacecolor, ms=markersize)
             elif xerr == True:
-                ax.errorbar(row[x_var], row[y_var], xerr=np.array([[row['err_'+x_var+'_low'], row['err_'+x_var+'_high']]]).T, yerr=np.array([[row['err_'+y_var+'_low'], row['err_'+y_var+'_high']]]).T, color=rgba, marker=marker, ls='None', zorder=3, mec=mec, markerfacecolor=markerfacecolor, ms=markersize)
+                if 'Prospector' in y_var:
+                    yerr_low = row[y_var]-row[y_var.replace('_50','_16')]
+                    yerr_high = row[y_var]-row[y_var.replace('_50','_16')]
+                else:
+                    yerr_low = row['err_'+y_var+'_low']
+                    yerr_high = row['err_'+y_var+'_high']
+                    
+
+                ax.errorbar(row[x_var], row[y_var], xerr=np.array([[row['err_'+x_var+'_low'], row['err_'+x_var+'_high']]]).T, yerr=np.array([[yerr_low, yerr_high]]).T, color=rgba, marker=marker, ls='None', zorder=3, mec=mec, markerfacecolor=markerfacecolor, ms=markersize)
             else:
                 try:
                     ax.errorbar(row[x_var], row[y_var], yerr=np.array([[row['err_'+y_var+'_low'], row['err_'+y_var+'_high']]]).T, color=rgba, marker=marker, ls='None', zorder=3, mec=mec, markerfacecolor=markerfacecolor, ms=markersize)
@@ -340,11 +354,65 @@ def plot_a_vs_b_paper(x_var, y_var, x_label, y_label, savename, axis_obj='False'
         if add_numbers==True:
             ax.text(row[x_var], row[y_var], f"{int(row['groupID'])}", color='black', fontsize=15)
 
+        if contour_ellipse_errs == True:
+            if row['flag_balmer_lower_limit']==1:
+                continue
+            sfr_err_df = ascii.read(imd.cluster_dir + f'/sfr_errs/{i}_sfr_errs.csv').to_pandas()
+            x = np.array(np.log10(sfr_err_df['sfr']))
+            if y_var == 'AV_difference_with_limit':
+                new_stellar_avs = []
+                for i in range(len(sfr_err_df)):
+                    # breakpoint()
+                    center = row['Prospector_AV_50']
+                    low_err = row['Prospector_AV_50'] - row['Prospector_AV_16']
+                    high_err = row['Prospector_AV_84'] - row['Prospector_AV_50']
+                    half = np.random.random()
+                    if half < 0.5:
+                        new_stellar_av = np.random.normal(loc=center, scale=low_err)
+                        if new_stellar_av > center:
+                            new_stellar_av = center - (new_stellar_av - center)
+                    else:
+                        new_stellar_av = np.random.normal(loc=center, scale=high_err)
+                        if new_stellar_av < center:
+                            new_stellar_av = center + (center - new_stellar_av)
+                    new_stellar_avs.append(new_stellar_av)
+                sfr_err_df['monte_stellar_av'] = new_stellar_avs
+                sfr_err_df['av_difference'] = sfr_err_df['balmer_av'] - sfr_err_df['monte_stellar_av']
+                y = np.array(sfr_err_df['av_difference'])
+            else:
+                y = np.array(sfr_err_df['balmer_av'])
+            
+            # Combine x and y into a single array for easier computation
+            data = np.vstack([x, y]).T
+
+            # Calculate the mean and covariance matrix
+            mean = np.mean(data, axis=0)
+            cov = np.cov(data.T)
+
+            # Eigenvalues and eigenvectors
+            eigenvalues, eigenvectors = np.linalg.eigh(cov)
+
+            # Sort the eigenvalues and eigenvectors
+            sorted_indices = np.argsort(eigenvalues)[::-1]
+            eigenvalues = eigenvalues[sorted_indices]
+            eigenvectors = eigenvectors[:, sorted_indices]
+
+            # Get the angle of the ellipse
+            angle = np.arctan2(*eigenvectors[:, 0][::-1])
+
+            # Get the width and height of the ellipse
+            width, height = 2 * np.sqrt(eigenvalues)
+
+            # Create the ellipse
+            ellipse = Ellipse(xy=mean, width=width, height=height, angle=np.degrees(angle),
+                            edgecolor=rgba, facecolor='none', linestyle='-')
+            ax.add_patch(ellipse)
         # if y_var == 'computed_log_ssfr_with_limit' and row['flag_hb_limit']==1:
         #     # breakpoint()
         #     ax.plot(row[x_var], np.log10(row['Prospector_ssfr50_normmedian_mass']), color=rgba, marker=marker, ls='None', zorder=1000, mec=mec, markerfacecolor=markerfacecolor, ms=markersize)
         #     ax.plot([row[x_var], row[x_var]], [row['computed_log_ssfr_with_limit'], np.log10(row['Prospector_ssfr50_normmedian_mass'])], color=rgba, marker='None', ls='-', zorder=3)
 
+    
     if add_leja:
         redshift = 2
         mode = 'ridge'

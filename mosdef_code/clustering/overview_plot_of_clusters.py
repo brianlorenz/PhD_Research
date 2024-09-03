@@ -427,3 +427,4 @@ def make_overview_plot_clusters(groupIDs, import_save_str, n_clusters, norm_meth
 
 # setup_figs(20, norm_method='luminosity', paper_overview=False)
 # make_overview_plot_clusters(20, bpt_color=True, paper_overview=True, prospector_spec=False)
+talk_plots(20)

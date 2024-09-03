@@ -5,6 +5,7 @@ from balmer_avs import compute_balmer_av
 import numpy as np
 from astropy.io import ascii
 import random
+import pandas as pd
 
 def compute_cluster_sfrs(lower_limit=True, luminosity=False, prospector=False, monte_carlo = True, bootstrap=-1):
     """
@@ -215,6 +216,9 @@ def get_montecarlo_errs(log_median_masses, log_halpha_sfrs, log_halpha_ssfrs, me
         err_log_sfr_highs.append(err_log_sfr_high)
         err_log_ssfr_lows.append(err_log_ssfr_low)
         err_log_ssfr_highs.append(err_log_ssfr_high)
+        neb_sfr_err_df = pd.DataFrame(zip(all_sfrs, new_balmer_avs), columns = ['sfr', 'balmer_av'])
+        imd.check_and_make_dir(imd.cluster_dir + '/sfr_errs/')
+        neb_sfr_err_df.to_csv(imd.cluster_dir + f'/sfr_errs/{groupID}_sfr_errs.csv', index=False)
         
     return err_log_sfr_lows, err_log_sfr_highs, err_log_ssfr_lows, err_log_ssfr_highs
 
@@ -253,7 +257,9 @@ def get_sfr_errs(bootstrap, halpha_lums, err_halpha_lums, balmer_ahalphas, err_b
         err_sfr_highs.append(err_sfr_high)
         err_ssfr_lows.append(err_ssfr_low)
         err_ssfr_highs.append(err_ssfr_high)
-        
+        neb_sfr_err_df = pd.DataFrame(zip(all_sfrs, new_balmer_avs), columns = ['sfr', 'balmer_av'])
+        imd.check_and_make_dir(imd.cluster_dir + '/sfr_errs/')
+        neb_sfr_err_df.to_csv(imd.cluster_dir + f'/sfr_errs/{groupID}_sfr_errs.csv', index=False)
     return err_sfr_lows, err_sfr_highs, err_ssfr_lows, err_ssfr_highs
 
 def draw_asymettric_error(center, low_err, high_err):

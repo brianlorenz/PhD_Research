@@ -35,12 +35,13 @@ def compare_sed_flux(id_msa, make_plot=True):
     # Fit a 5th order polynomial to the difference in fluxes to scale the sed to the spectrum
     def poly5(x, a5, a4, a3, a2, a1, a0):
         return a5 * x**5 + a4 * x**4 + a3 * x**3 + a2 * x**2 + a1 * x + a0
-    
     guess = [0, 0, 0, 0, 2, 0]
-    
     popt, pcov = curve_fit(poly5, sed_df_nonan['flux'], sed_df_nonan['int_spec_flux'], p0=guess)
     sed_df['spec_scaled_flux'] = poly5(sed_df['flux'], popt[0], popt[1], popt[2], popt[3], popt[4], popt[5])
     sed_df['err_spec_scaled_flux'] = poly5(sed_df['err_flux'], popt[0], popt[1], popt[2], popt[3], popt[4], popt[5])
+    # p5 = np.poly1d(np.polyfit(sed_df_nonan['int_spec_flux'], sed_df_nonan['flux'], 5))
+    # sed_df['spec_scaled_flux'] = p5(sed_df['flux'])
+    # sed_df['err_spec_scaled_flux'] = p5(sed_df['err_flux'])
     wave_micron = sed_df['eff_wavelength']
 
     flux_ratio = sed_df['flux']/sed_jy

@@ -41,7 +41,7 @@ def make_paper_plots(n_clusters, norm_method):
     # make_prospector_overview_fig('removed_kewley_agn')
     # make_sfr_mass_uvj_bpt_4panel(snr_thresh=3)
     # make_avneb_sfr_mass_fig()
-    make_mass_metal_sfr_fig()
+    # make_mass_metal_sfr_fig()
     
 
 
@@ -256,10 +256,10 @@ def make_mass_metal_sfr_fig():
     # sfr_axislabel = 'Prospector SED SFR'
     sfr_name = 'computed_log_sfr_with_limit'
     sfr_axislabel = sfr_label
-    plot_a_vs_b_paper(sfr_name, 'Prospector_AV_50', sfr_axislabel, prospector_dust2_label, 'None', axis_obj=ax_stellarav_sfr, yerr=True, plot_lims=[0, 2, -0.2, 2.5], fig=fig, lower_limit=90, use_color_df=True) 
-    plot_a_vs_b_paper('O3N2_metallicity', 'Prospector_AV_50', metallicity_label, prospector_dust2_label, 'None', axis_obj=ax_stellarav_metal, yerr=True, plot_lims=[8, 9, -0.2, 2.5], fig=fig, lower_limit=270, use_color_df=True)
-    plot_a_vs_b_paper(sfr_name, 'balmer_av_with_limit', sfr_axislabel, balmer_av_label, 'None', axis_obj=ax_balmer_sfr, yerr=True, plot_lims=[0, 2, -0.2, 5], fig=fig, lower_limit=135, use_color_df=True) 
-    plot_a_vs_b_paper('O3N2_metallicity', 'balmer_av_with_limit', metallicity_label, balmer_av_label, 'None', axis_obj=ax_balmer_metal, yerr=True, plot_lims=[8, 9, -0.2, 5], fig=fig, lower_limit=225, use_color_df=True)
+    plot_a_vs_b_paper(sfr_name, 'Prospector_AV_50', sfr_axislabel, prospector_dust2_label, 'None', axis_obj=ax_stellarav_sfr, yerr=True, plot_lims=[0, 2, -0.2, 2.5], fig=fig, lower_limit=90, use_color_df=True, xerr=True) 
+    plot_a_vs_b_paper('O3N2_metallicity', 'Prospector_AV_50', metallicity_label, prospector_dust2_label, 'None', axis_obj=ax_stellarav_metal, yerr=True, plot_lims=[8, 9, -0.2, 2.5], fig=fig, lower_limit=270, use_color_df=True, xerr=True)
+    plot_a_vs_b_paper(sfr_name, 'balmer_av_with_limit', sfr_axislabel, balmer_av_label, 'None', axis_obj=ax_balmer_sfr, yerr=False, plot_lims=[0, 2, -0.2, 5], fig=fig, lower_limit=135, use_color_df=True, xerr=False, contour_ellipse_errs=True) 
+    plot_a_vs_b_paper('O3N2_metallicity', 'balmer_av_with_limit', metallicity_label, balmer_av_label, 'None', axis_obj=ax_balmer_metal, yerr=True, plot_lims=[8, 9, -0.2, 5], fig=fig, lower_limit=225, use_color_df=True, xerr=True)
     plot_a_vs_b_paper('median_log_mass', 'Prospector_AV_50', stellar_mass_label, prospector_dust2_label, 'None', axis_obj=ax_stellarav_mass, yerr=True, plot_lims=[9, 11.5, -0.2, 2.5], fig=fig, use_color_df=True, lower_limit=3) 
     plot_a_vs_b_paper('median_log_mass', 'balmer_av_with_limit', stellar_mass_label, balmer_av_label, 'None', axis_obj=ax_balmer_mass, yerr=True, plot_lims=[9, 11.5, -0.2, 5], fig=fig, use_color_df=True, lower_limit=180) 
     # regress_res = find_best_fit('median_log_mass', 'balmer_av_with_limit', exclude_limit=True)
@@ -283,7 +283,7 @@ def make_mass_metal_sfr_fig():
     # ax_av_sfr.plot(x_regress, yints[2] + slopes[2]*x_regress, color='green', ls='-')
     ax_balmer_sfr.fill_between(x_regress, points_16, points_84, facecolor="gray", alpha=0.3)
     ax_balmer_sfr.plot(x_regress, regress_res.intercept + regress_res.slope*x_regress, color='black', ls='--')
-    ax_balmer_sfr.plot(x_regress, -1.5412874528181968 + 2.400111662288877*x_regress, color='black', ls='--')
+    # ax_balmer_sfr.plot(x_regress, -1.5412874528181968 + 2.400111662288877*x_regress, color='black', ls='--')
     
 
     print(f'Best fit to nebular av vs sfr: slope {regress_res.slope}, yint {regress_res.intercept}')
@@ -422,7 +422,7 @@ def make_av_comparison():
     ax_avdiff_mass.fill_between(x_regress, points_16, points_84, facecolor="gray", alpha=0.3)
 
     # ax_avdiff_mass.legend(fontsize=14, loc=2)
-    plot_a_vs_b_paper('computed_log_sfr_with_limit', 'AV_difference_with_limit', sfr_label, av_difference_label, 'None', axis_obj=ax_avdiff_sfr, yerr=True, fig=fig, use_color_df=True, lower_limit=135, plot_lims=[0, 2, -1, 3])
+    plot_a_vs_b_paper('computed_log_sfr_with_limit', 'AV_difference_with_limit', sfr_label, av_difference_label, 'None', axis_obj=ax_avdiff_sfr, yerr=False, fig=fig, use_color_df=True, lower_limit=135, plot_lims=[0, 2, -1, 3], xerr=False, contour_ellipse_errs=True)
     x_regress = np.arange(-1, 3, 0.1)
     regress_res, points_16, points_84 = bootstrap_fit('computed_log_sfr_with_limit', 'AV_difference_with_limit', x_regress, exclude_limit=True)
     # ax_balmer_mass.plot(x_regress, yints[1] + slopes[1]*x_regress, color='green', ls='-')
@@ -606,6 +606,7 @@ def make_SFR_compare_fig():
 
     scale_aspect(ax_sfr)
     fig.savefig(imd.sed_paper_figures_dir + '/sfr_compare_normalized.pdf', bbox_inches='tight')
+
 
 def make_ssfr_mass_metallicity_fig():
     fig = plt.figure(figsize=(12, 6))
