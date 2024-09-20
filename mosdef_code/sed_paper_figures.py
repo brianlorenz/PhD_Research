@@ -40,7 +40,7 @@ def make_paper_plots(n_clusters, norm_method):
     # make_SFR_compare_fig()
     # make_prospector_overview_fig('removed_kewley_agn')
     # make_sfr_mass_uvj_bpt_4panel(snr_thresh=3)
-    # make_avneb_sfr_mass_fig()
+    make_avneb_sfr_mass_fig()
     # make_mass_metal_sfr_fig()
     
 

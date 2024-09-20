@@ -7,6 +7,8 @@ import numpy as np
 import pandas as pd
 from astropy.io import ascii
 from scipy.optimize import curve_fit
+from uncover_prospector_seds import read_prospector, get_prospect_df_loc
+
 
 def compare_sed_flux(id_msa, make_plot=True):
     spec_df = read_raw_spec(id_msa)
@@ -42,6 +44,13 @@ def compare_sed_flux(id_msa, make_plot=True):
     # p5 = np.poly1d(np.polyfit(sed_df_nonan['int_spec_flux'], sed_df_nonan['flux'], 5))
     # sed_df['spec_scaled_flux'] = p5(sed_df['flux'])
     # sed_df['err_spec_scaled_flux'] = p5(sed_df['err_flux'])
+    prospector_spec_df, prospector_sed_df = read_prospector(id_msa)
+    prospector_spec_df['spec_scaled_flux'] = poly5(prospector_spec_df['flux_jy'], popt[0], popt[1], popt[2], popt[3], popt[4], popt[5])
+    prospector_sed_df['spec_scaled_flux'] = poly5(prospector_sed_df['flux_jy'], popt[0], popt[1], popt[2], popt[3], popt[4], popt[5])
+    loc_prospector_spec_df, loc_prospector_sed_df = get_prospect_df_loc(id_msa)
+    prospector_spec_df.to_csv(loc_prospector_spec_df, index=False)
+    prospector_sed_df.to_csv(loc_prospector_sed_df, index=False)
+
     wave_micron = sed_df['eff_wavelength']
 
     flux_ratio = sed_df['flux']/sed_jy

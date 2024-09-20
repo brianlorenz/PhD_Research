@@ -479,6 +479,8 @@ def assign_color(color_var):
         norm = mpl.colors.Normalize(vmin=0, vmax=1.5) 
     elif color_var=='AV_diff':
         norm = mpl.colors.Normalize(vmin=0, vmax=2.5) 
+    elif color_var=='AV_difference_with_limit':
+        norm = mpl.colors.Normalize(vmin=0, vmax=2.5) 
     else:
         norm = mpl.colors.Normalize(vmin=-10, vmax=10) 
     return norm

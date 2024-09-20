@@ -50,6 +50,7 @@ def read_raw_spec(id_msa):
     spec_df['wave_aa'] = spec_df['wave']*10000
     spec_df['rest_wave_aa'] = spec_df['wave_aa']/(1+redshift)
     
+    c = 299792458 # m/s
     spec_df['flux_erg_aa'] = spec_df['flux'] * (1e-23*1e10*c / (spec_df['wave_aa']**2))
     
     spec_df['rest_flux_erg_aa'] = spec_df['flux_erg_aa'] * (1+redshift)
