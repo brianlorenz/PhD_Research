@@ -14,11 +14,10 @@ from uncover_read_data import read_raw_spec, read_prism_lsf
 from astropy.convolution import convolve
 from scipy.interpolate import interp1d
 
-emission_fit_dir = '/Users/brianlorenz/uncover/Data/emission_fitting/'
+emission_fit_dir = '/Users/brianlorenz/uncover/Data/emission_fitting/helium'
 
 line_list = [
     ('Halpha', 6564.6),
-    ('PaBeta', 12821.7),
     ('Helium', 12560.034)
 ]
 lines_dict = {
@@ -54,7 +53,7 @@ def fit_emission_uncover(spectrum, save_name, bootstrap_num=-1):
     bounds_low = []
     bounds_high = []
     amp_guess = 1  # flux units
-    velocity_guess = 2000  # km/s
+    velocity_guess = 1000  # km/s
     z_offset_guess = 0  # Angstrom
     # continuum_offset_guess = 10**-20  # flux untis,
     continuum_offset_guess = 0.5  # Scale to multiply by FAST continuum,
@@ -67,7 +66,10 @@ def fit_emission_uncover(spectrum, save_name, bootstrap_num=-1):
     for i in range(len(line_list)):
         guess.append(velocity_guess)
         bounds_low.append(0.01)
-        bounds_high.append(100000)
+        if i==0:
+            bounds_high.append(10000)
+        if i==1:
+            bounds_high.append(1500)
     for i in range(len(line_list)):
         # if 'O3_5008' in line_names and 'O3_4960' in line_names:
         #     idx_5008 = line_names.index('O3_5008')
@@ -105,7 +107,7 @@ def fit_emission_uncover(spectrum, save_name, bootstrap_num=-1):
     # Save the continuum-subtracted ydata
     imd.check_and_make_dir(emission_fit_dir)
     cont_sub_df = pd.DataFrame(zip(wavelength, y_data_cont_sub / scale_factor), columns=['wavelength','continuum_sub_ydata'])
-    cont_sub_df.to_csv(f'{emission_fit_dir}{save_name}_cont_sub.csv', index=False)
+    cont_sub_df.to_csv(f'{emission_fit_dir}{save_name}_cont_sub_helium.csv', index=False)
 
     # Now, parse the results into a dataframe
     line_names = [line_list[i][0] for i in range(len(line_list))]
@@ -128,7 +130,7 @@ def fit_emission_uncover(spectrum, save_name, bootstrap_num=-1):
     err_fluxes = [i[1] for i in flux_tuples]
     ha_idx = [idx for idx, name in enumerate(
         line_names) if name == 'Halpha'][0]
-    pab_idx = [idx for idx, name in enumerate(line_names) if name == 'PaBeta'][0]
+    pab_idx = [idx for idx, name in enumerate(line_names) if name == 'Helium'][0]
     ha_pab_ratio = [fluxes[ha_idx] / fluxes[pab_idx] for i in range(len(line_list))]
 
     
@@ -177,7 +179,7 @@ def fit_emission_uncover(spectrum, save_name, bootstrap_num=-1):
          
         monte_carlo_df = pd.DataFrame(zip(velocity_monte_carlo, all_ha_fluxes, all_pab_fluxes, all_ha_pab_ratios), columns = ['velocity', 'ha_flux', 'pab_flux', 'ha_pab_ratio'])
         imd.check_and_make_dir(emission_fit_dir)
-        monte_carlo_df.to_csv(emission_fit_dir + f'{save_name}_monte_carlo.csv', index=False)
+        monte_carlo_df.to_csv(emission_fit_dir + f'{save_name}_monte_carlo_helium.csv', index=False)
 
 
    
@@ -197,7 +199,7 @@ def fit_emission_uncover(spectrum, save_name, bootstrap_num=-1):
 
 
     imd.check_and_make_dir(emission_fit_dir)
-    fit_df.to_csv(emission_fit_dir + f'/{save_name}_emission_fits.csv', index=False)
+    fit_df.to_csv(emission_fit_dir + f'/{save_name}_emission_fits_helium.csv', index=False)
     plot_emission_fit(emission_fit_dir, save_name, spectrum)
     return
 
@@ -224,7 +226,7 @@ def plot_emission_fit(emission_fit_dir, save_name, total_spec_df):
     legendfont = 14
     textfont = 16
 
-    fit_df = ascii.read(emission_fit_dir + f'/{save_name}_emission_fits.csv').to_pandas()
+    fit_df = ascii.read(emission_fit_dir + f'/{save_name}_emission_fits_helium.csv').to_pandas()
 
     fig = plt.figure(figsize=(8, 8))
     ax = fig.add_axes([0.09, 0.08, 0.88, 0.42])
@@ -247,7 +249,7 @@ def plot_emission_fit(emission_fit_dir, save_name, total_spec_df):
   
     # spectrum = total_spec_df['rest_flux_erg_aa']
     wavelength = total_spec_df['rest_wave_aa']
-    continuum_df = ascii.read(emission_fit_dir+f'{save_name}_cont_sub.csv').to_pandas()
+    continuum_df = ascii.read(emission_fit_dir+f'{save_name}_cont_sub_helium.csv').to_pandas()
     continuum = continuum_df['continuum_sub_ydata']
     cont_wavelength = continuum_df['wavelength']
 
@@ -263,7 +265,7 @@ def plot_emission_fit(emission_fit_dir, save_name, total_spec_df):
 
     gauss_fit = multi_gaussian(wavelength, pars, fit=False)
     gauss_fit_df = pd.DataFrame(zip(wavelength, gauss_fit), columns=['rest_wavelength', 'gaussian_fit'])
-    gauss_fit_df.to_csv(emission_fit_dir + f'{save_name}_gaussian_fit.csv', index=False)
+    gauss_fit_df.to_csv(emission_fit_dir + f'{save_name}_gaussian_fit_helium.csv', index=False)
     hb_range = wavelength > 12000
 
     # Plots the spectrum and fit on all axes
@@ -318,7 +320,7 @@ def plot_emission_fit(emission_fit_dir, save_name, total_spec_df):
     ax.set_ylabel('F$_\lambda$', fontsize=axisfont)
     ax.tick_params(labelsize=ticksize, size=ticks)
 
-    fig.savefig(emission_fit_dir + 'plots' +
+    fig.savefig(emission_fit_dir + '/plots' +
                 f'/{save_name}_emission_fit.pdf')
     plt.close()
     return
@@ -598,7 +600,7 @@ def clip_elines(flux, wavelength):
     return mask
 
 def mask_lines(mask, wavelength, line_list):
-    line_width = 200 #angstrom
+    line_width = 400 #angstrom
     for i in range(len(line_list)):  
         line_wave = line_list[i][1]
         low_bound = line_wave - line_width
@@ -619,7 +621,7 @@ def get_fit_range(wavelength):
     cut_ha = np.logical_and(
         wavelength > 6000, wavelength < 7200)
     cut_pab = np.logical_and(
-        wavelength > 12300, wavelength < 13700)
+        wavelength > 11800, wavelength < 13700)
     full_cut = np.logical_or(cut_pab, cut_ha)
     return full_cut
 
@@ -629,11 +631,14 @@ def get_fit_range(wavelength):
 
 def fit_all_emission_uncover(id_msa_list):
     for id_msa in id_msa_list:
+        print(id_msa)
+        if id_msa < 25148:
+            continue
         spec_df = read_raw_spec(id_msa)
         fit_emission_uncover(spec_df, id_msa)
 
 # # (Currently using)
-# id_msa = 47875
+# id_msa = 38163
 # spec_df = read_raw_spec(id_msa)
 # fit_emission_uncover(spec_df, id_msa)
 

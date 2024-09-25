@@ -203,7 +203,96 @@ def intspec_sed_compare():
 
     fig.savefig(f'/Users/brianlorenz/uncover/Figures/paper_figures/intspec_sed_compare{add_str}.pdf')
 
+def emission_sed_compare():
+    fig, axarr = plt.subplots(1, 3, figsize=(18,6))
+    ax_ha = axarr[0]
+    ax_pab = axarr[1]
+    ax_lineratio = axarr[2]
+
+    lineratio_df = ascii.read(f'/Users/brianlorenz/uncover/Figures/diagnostic_lineratio/filtered_lineratio_df{add_str}.csv').to_pandas()
+    zqual_df_cont_covered = ascii.read('/Users/brianlorenz/uncover/zqual_df_cont_covered.csv').to_pandas()
+
+    for i in range(len(lineratio_df)):
+        row = lineratio_df.iloc[i]
+        id_msa = int(row['id_msa'])
+
+        zqual_row = zqual_df_cont_covered[zqual_df_cont_covered['id_msa'] == id_msa]
+
+        pab_filters, pab_images, wht_pab_images, obj_segmap = make_3color(id_msa, line_index=1, plot=False)
+        pab_red_sedpy_name = pab_filters[0].replace('f', 'jwst_f')
+        pab_red_sedpy_filt = observate.load_filters([pab_red_sedpy_name])[0]
+        pab_red_wave_obs = pab_red_sedpy_filt.wave_effective
+        z_spec = zqual_row['z_spec'].iloc[0]
+        pab_red_wave_rest = pab_red_wave_obs / (1+z_spec)
+        print(pab_red_wave_rest)
+        fit_df = ascii.read(f'/Users/brianlorenz/uncover/Data/emission_fitting/{id_msa}_emission_fits.csv').to_pandas()
+        ha_sigma = fit_df['sigma'].iloc[0]
+        pab_sigma = fit_df['sigma'].iloc[1]
+        ha_flux = fit_df['flux'].iloc[0]
+        ha_wave = fit_df['line_center_rest'].iloc[0]
+        pab_flux = fit_df['flux'].iloc[1]
+        pab_wave = fit_df['line_center_rest'].iloc[1]
+        c = 299792458 # m/s
+        ha_flux_jy = ha_flux / (1e-23*1e10*c / ((ha_wave)**2))
+        pab_flux_jy = pab_flux / (1e-23*1e10*c / ((pab_wave)**2))
+        spec_scale_factor = row['spec_scale_factor']
+        ha_flux_jy = ha_flux_jy * spec_scale_factor
+        pab_flux_jy = pab_flux_jy * spec_scale_factor
+
+        cmap = mpl.cm.inferno
+        norm = mpl.colors.Normalize(vmin=cbar_min, vmax=cbar_max) 
+        rgba = cmap(norm(z_spec))
+        
+        if colorbar == False:
+            rgba = 'black'
+
+        sed_av_err=np.array([[row['sed_av']-row['sed_av_16'], row['sed_av_84']-row['sed_av']]]).T
+        ha_sed_err = np.array([[row['sed_ha_compare']-row['sed_ha_compare_16'], row['sed_ha_compare_84']-row['sed_ha_compare']]]).T
+        pab_sed_err = np.array([[row['sed_pab_compare']-row['sed_pab_compare_16'], row['sed_pab_compare_84']-row['sed_pab_compare']]]).T
+        ax_ha.errorbar(ha_flux_jy, row['sed_ha_compare'], yerr=ha_sed_err, ls='None', marker='o', color=rgba, mec='black')
+        ax_pab.errorbar(pab_flux_jy, row['sed_pab_compare'], yerr=pab_sed_err, ls='None', marker='o', color=rgba, mec='black')
+        ax_lineratio.errorbar(row['emission_fit_lineratio'], row['sed_lineratio'], yerr=sed_av_err, ls='None', marker='o', color=rgba, mec='black')
+
+    if colorbar == True:
+        sm =  mpl.cm.ScalarMappable(norm=norm, cmap=cmap)
+        cbar = fig.colorbar(sm, ax=ax_lineratio)
+        cbar.set_label(cbar_label, fontsize=16)
+        cbar.ax.tick_params(labelsize=16)
+
+    ax_ha.set_title('Halpha')
+    ax_pab.set_title('PaBeta')
+    ax_lineratio.set_title('Line Ratio')
+    for ax in [ax_ha, ax_pab]:
+        ax.set_xlabel('Emission Fit Flux')
+        ax.set_ylabel('SED Flux')
+        ax.set_xscale('log')
+        ax.set_yscale('log')
+    for ax in axarr:
+        ax.tick_params(labelsize=12)
+        xlims = ax.get_xlim()
+        ylims = ax.get_ylim()
+        ax.plot([-100, 100], [-100, 100], ls='--', color='red', marker='None')
+        ax.set_xlim(xlims)
+        ax.set_ylim(ylims)
+
+    ax_lineratio.set_xlabel('Emission Fit Line Ratio')
+    ax_lineratio.set_ylabel('SED Line Ratio')
+
+    # ax_lineratio.set_xlim(0.8*np.min(lineratio_df['integrated_spec_lineratio']), 1.2*np.max(lineratio_df['integrated_spec_lineratio']))
+    # ax_lineratio.set_ylim(0.8*np.min(lineratio_df['sed_lineratio']), 1.2*np.max(lineratio_df['sed_lineratio']))
+
+    # ax_ha.set_xlim(0.8*np.min(lineratio_df['int_spec_ha_compare']), 1.2*np.max(lineratio_df['int_spec_ha_compare']))
+    # ax_pab.set_xlim(0.8*np.min(lineratio_df['int_spec_pab_compare']), 1.2*np.max(lineratio_df['int_spec_pab_compare']))
+    # ax_ha.set_ylim(0.8*np.min(lineratio_df['sed_ha_compare']), 1.2*np.max(lineratio_df['sed_ha_compare']))
+    # ax_pab.set_ylim(0.8*np.min(lineratio_df['sed_pab_compare']), 1.2*np.max(lineratio_df['sed_pab_compare']))
+
+    
+
+
+    fig.savefig(f'/Users/brianlorenz/uncover/Figures/paper_figures/emission_fit_compare{add_str}.pdf')
+
 
 # generate_filtered_lineratio_df()
-make_av_compare_figure(regenerate=False)
-intspec_sed_compare()
+# make_av_compare_figure(regenerate=False)
+# intspec_sed_compare()
+emission_sed_compare()

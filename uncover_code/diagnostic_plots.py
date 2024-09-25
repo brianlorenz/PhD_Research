@@ -9,6 +9,8 @@ from sedpy import observate
 from make_dust_maps import make_3color
 from uncover_read_data import read_raw_spec
 from uncover_make_sed import get_sed
+from compute_av import ha_factor, pab_factor, compute_ratio_from_av, compute_ha_pab_av, compute_ha_pab_av_from_dustmap, read_catalog_av
+
 
 def diagnostic_av_emissionfit_vs_av_prospector(color_var = 'None'):
     zqual_df = read_spec_cat()
@@ -227,7 +229,101 @@ def diagnostic_spec_flux_vs_phot_flux():
 
     fig.savefig(f'/Users/brianlorenz/uncover/Figures/diagnostic_lineratio/phot_vs_spec_all.pdf')
 
+def diagnostic_measured_value_vs_truth(truth_var, plot_var, color_var='None'):
+    """Scatter plot of one of our measurement methods vs one of our truth methods
+
+    truth_var (str): either 'prospector' or 'emission_fit'
+    
+    """
+    add_str = ''
+    filtered_lineratio_df = ascii.read(f'/Users/brianlorenz/uncover/Figures/diagnostic_lineratio/filtered_lineratio_df{add_str}.csv').to_pandas()
+    filtered_lineratio_df['prospector_lineratio_50'] = 1/compute_ratio_from_av(filtered_lineratio_df['av_50'])
+    filtered_lineratio_df['prospector_lineratio_84'] = 1/compute_ratio_from_av(filtered_lineratio_df['av_16'])
+    filtered_lineratio_df['prospector_lineratio_16'] = 1/compute_ratio_from_av(filtered_lineratio_df['av_84'])
+
+    zqual_df_cont_covered = ascii.read('/Users/brianlorenz/uncover/zqual_df_cont_covered.csv').to_pandas()
+    # breakpoint()
+
+    fig, ax = plt.subplots(figsize=(6,6))
+
+    # Color coding
+    cmap = mpl.cm.inferno
+    
+
+    for i in range(len(filtered_lineratio_df)):
+        
+
+        row = filtered_lineratio_df.iloc[i]
+        id_msa = int(row['id_msa'])
+
+        emission_df = ascii.read(f'/Users/brianlorenz/uncover/Data/emission_fitting/{id_msa}_emission_fits.csv').to_pandas()
+
+        # breakpoint()
+        zqual_row = zqual_df_cont_covered[zqual_df_cont_covered['id_msa'] == id_msa]
+
+        if color_var == 'z_spec':
+            norm = mpl.colors.Normalize(vmin=1.3, vmax=2.4) 
+            rgba = cmap(norm(zqual_row[color_var].iloc[0]))
+        elif color_var == 'ha_flux':
+            norm = mpl.colors.Normalize(vmin=1e-18, vmax=1e-16) 
+            rgba = cmap(norm(emission_df['flux'].iloc[0]))
+        elif color_var == 'pab_flux':
+            norm = mpl.colors.Normalize(vmin=3e-19, vmax=5e-18) 
+            rgba = cmap(norm(emission_df['flux'].iloc[1]))
+        elif color_var == 'ha_sigma':
+            norm = mpl.colors.Normalize(vmin=35, vmax=65) 
+            rgba = cmap(norm(emission_df['sigma'].iloc[0]))
+        elif color_var == 'pab_sigma':
+            norm = mpl.colors.Normalize(vmin=15, vmax=40) 
+            rgba = cmap(norm(emission_df['sigma'].iloc[1]))
+        elif color_var == 'ha_snr':
+            norm = mpl.colors.Normalize(vmin=10, vmax=60) 
+            rgba = cmap(norm(emission_df['signal_noise_ratio'].iloc[0]))
+        elif color_var == 'pab_snr':
+            norm = mpl.colors.Normalize(vmin=1, vmax=20) 
+            rgba = cmap(norm(emission_df['signal_noise_ratio'].iloc[1]))
+        elif color_var == 'texp_tot':
+            norm = mpl.colors.Normalize(vmin=2, vmax=12) 
+            rgba = cmap(norm(zqual_row[color_var].iloc[0]))
+        else:
+            rgba = 'black'
+
+        if truth_var == 'prospector':
+            y_var = 'prospector_lineratio_50'
+            y_err=np.array([[row[y_var]-row[y_var.replace('50','16')], row[y_var.replace('50','84')]-row[y_var]]]).T
+        if truth_var == 'emission_fit':
+            y_var = 'emission_fit_lineratio'
+            y_err=np.array([[row['err_emission_fit_lineratio_low'], row['err_emission_fit_lineratio_high']]]).T
+
+        # Factor of 2.5 or so
+        ax.errorbar(row[plot_var], row[y_var], yerr=y_err, color=rgba, ls='None', marker='o')
+    
+    # one-to-one
+    ax.plot([-100, 100], [-100, 100], ls='--', color='red', marker='None')
+
+    ax.set_xlim(0, 30)
+    ax.set_ylim(0, 30)
+    ax.set_xlabel(plot_var)
+    ax.set_ylabel(truth_var)
+    if color_var != 'None':
+        sm =  ScalarMappable(norm=norm, cmap=cmap)
+        cbar = fig.colorbar(sm, ax=ax)
+        cbar.set_label(color_var, fontsize=16)
+        cbar.ax.tick_params(labelsize=16)
+    fig.savefig(f'/Users/brianlorenz/uncover/Figures/measurement_vs_fit/{truth_var}_{plot_var}_{color_var}.pdf')
+    plt.close('all')
+    return
+
 # diagnostic_spec_flux_vs_phot_flux()
-diagnostic_av_emissionfit_vs_av_prospector(color_var='redshift')
+# diagnostic_av_emissionfit_vs_av_prospector(color_var='redshift')
 # diagnostic_av_emissionfit_vs_av_prospector(color_var='halpha_trasmission')
 # diagnostic_av_emissionfit_vs_av_prospector(color_var='pabeta_trasmission')
+truth_vars = ['emission_fit', 'prospector']
+plot_vars = ['line_ratio_prospector_fit', 'sed_lineratio']
+color_vars = ['z_spec', 'ha_flux', 'pab_flux', 'ha_sigma', 'pab_sigma', 'texp_tot', 'ha_snr', 'pab_snr']
+for truth_var in truth_vars:
+    for plot_var in plot_vars:
+        for color_var in color_vars:
+            diagnostic_measured_value_vs_truth(truth_var=truth_var, plot_var=plot_var, color_var=color_var)
+
+# diagnostic_measured_value_vs_truth(truth_var='emission_fit', plot_var='line_ratio_prospector_fit', color_var='z_spec')
