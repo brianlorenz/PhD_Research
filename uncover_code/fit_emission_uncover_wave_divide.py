@@ -18,8 +18,7 @@ emission_fit_dir = '/Users/brianlorenz/uncover/Data/emission_fitting/'
 
 line_list = [
     ('Halpha', 6564.6),
-    ('PaBeta', 12821.7),
-    ('Helium', 12560.034)
+    ('PaBeta', 12821.7)
 ]
 lines_dict = {
     line_list[0][0]: line_list[0][1],
@@ -638,7 +637,7 @@ def fit_all_emission_uncover(id_msa_list):
 # fit_emission_uncover(spec_df, id_msa)
 
 # # Fitting the mock spectra
-# mock_name = 'mock_ratio_15_temp_3000'
+# mock_name = 'mock_ratio_15_flat'
 # spec_df = ascii.read(f'/Users/brianlorenz/uncover/Data/mock_spectra/{mock_name}.csv').to_pandas()
 # fit_emission_uncover(spec_df, mock_name)
 

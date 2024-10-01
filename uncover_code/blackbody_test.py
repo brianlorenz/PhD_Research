@@ -23,6 +23,8 @@ def generate_mock_lines(ha_pab_ratio, flux_multiplier = 1, blackbody_temp = 4000
         add_ons = f'_flux_{flux_multiplier}'
     if blackbody_temp != 4000:
         add_ons2 = f'_temp_{blackbody_temp}'
+    if blackbody_temp == 0:
+        add_ons2 = f'_flat'
     ha_pab_ratio_name = f'{ha_pab_ratio}{add_ons}{add_ons2}'
 
     c = 299792458 # m/s
@@ -43,8 +45,12 @@ def generate_mock_lines(ha_pab_ratio, flux_multiplier = 1, blackbody_temp = 4000
     pab_flux_jy = ha_flux / (1e-23*1e10*c / ((pab_wave)**2))
     print(f'pab_flux jy = {pab_flux_jy}')
  
-
-    wavelength, flux = generate_blackbody(T = blackbody_temp)
+    if blackbody_temp == 0:
+        wav = np.arange(4000, 20000, 0.5) * u.AA
+        wavelength = wav.value
+        flux = np.ones(len(wavelength)) * 1.5e-6
+    else:
+        wavelength, flux = generate_blackbody(T = blackbody_temp)
     c = 299792458 # m/s
     flux_erg_aa = flux * (1e-23*1e10*c / (wavelength**2))
     
@@ -88,7 +94,8 @@ def gaussian_func(wavelength, peak_wavelength, amp, sig):
     """
     return amp * np.exp(-(wavelength - peak_wavelength)**2 / (2 * sig**2))
 
-def integrate_spec(mock_name, id_msa):
+def integrate_spec(mock_name, id_msa, use_filt='None'):
+
     ha_filters, ha_images, wht_ha_images, obj_segmap = make_3color(id_msa, line_index=0, plot=False)
     pab_filters, pab_images, wht_pab_images, obj_segmap = make_3color(id_msa, line_index=1, plot=False)
     ha_sedpy_name = ha_filters[1].replace('f', 'jwst_f')
@@ -116,9 +123,22 @@ def integrate_spec(mock_name, id_msa):
     f_jy = spec_df['rest_flux_jy'].to_numpy() * (1+redshift)
     filt_dict, filters = unconver_read_filters()
     filter_names = [sedpy_filt.name for sedpy_filt in filters]
+    if use_filt == 'boxcar' or use_filt == 'slanted':
+        names = [f'ha_red_{use_filt}', f'ha_green_{use_filt}', f'ha_blue_{use_filt}', f'pab_red_{use_filt}', f'pab_green_{use_filt}', f'pab_blue_{use_filt}']
+        filters = [read_sedpy_filt(name) for name in names]
+        effective_waves_aa = [filt.wave_effective for filt in filters]
+        ha_sedpy_filt = filters[1]
+        pab_sedpy_filt = filters[4]
+        ha_red_sedpy_filt = filters[0]
+        pab_red_sedpy_filt = filters[3]
+        ha_blue_sedpy_filt = filters[2]
+        pab_blue_sedpy_filt = filters[5]
+    else:
+        effective_waves_aa = sed_df['eff_wavelength']*10000
+        
     integrated_sed_abmag = observate.getSED(wavelength, f_lambda, filterlist=filters)
     integrated_sed_jy = 10**(-0.4*(integrated_sed_abmag-8.9))
-    effective_waves_aa = sed_df['eff_wavelength']*10000
+    
 
     # Alternative fit with polynomial
     line_waves = [6565*(1+redshift), 12821.7*(1+redshift)]
@@ -130,7 +150,6 @@ def integrate_spec(mock_name, id_msa):
     ha_p5_erg = np.poly1d(np.polyfit(wavelength[full_masks[0]], f_lambda[full_masks[0]], 5))
     pab_p5_erg = np.poly1d(np.polyfit(wavelength[full_masks[1]], f_lambda[full_masks[1]], 5))
 
-    # breakpoint()
      # sed_df['err_spec_scaled_flux'] = poly5(sed_df['err_flux'], popt[0], popt[1], popt[2], popt[3], popt[4], popt[5])
     
     ha_idxs = []
@@ -145,8 +164,12 @@ def integrate_spec(mock_name, id_msa):
         for index, item in enumerate(filter_names):
             if pab_filt in item:
                 pab_idxs.append(index)
+    wave_key = 'eff_wavelength'
     
-
+    if use_filt != 'None':
+        ha_idxs = [0, 1, 2]
+        pab_idxs = [3, 4, 5] # Filters ordered as ha_cont, ha_line, ha_cont, pab_cont, pab_line, pab_cont
+        wave_key = 'wave_aa'
     idx_flags = np.zeros(len(integrated_sed_jy))
     idx_flags[ha_idxs[0]] = 1
     idx_flags[ha_idxs[1]] = 2
@@ -154,33 +177,38 @@ def integrate_spec(mock_name, id_msa):
     idx_flags[pab_idxs[0]] = 3
     idx_flags[pab_idxs[1]] = 4
     idx_flags[pab_idxs[2]] = 3
+
     integrated_spec_df = pd.DataFrame(zip(effective_waves_aa, integrated_sed_jy, idx_flags), columns=['wave_aa', 'integrated_spec_flux_jy', 'use_filter_flag'])
     integrated_spec_df.to_csv(f'/Users/brianlorenz/uncover/Data/integrated_specs/{mock_name}_shifted_{id_msa}.csv', index=False)
-    def fint_pct(filts):
-        red_row = sed_df[sed_df['filter'] == filts[0]]
-        green_row = sed_df[sed_df['filter'] == filts[1]]
-        blue_row = sed_df[sed_df['filter'] == filts[2]]
-        cont_percentile = compute_cont_pct(blue_row.eff_wavelength.iloc[0], green_row.eff_wavelength.iloc[0], red_row.eff_wavelength.iloc[0], blue_row.flux.iloc[0], red_row.flux.iloc[0])
+    def fint_pct_int_spec_df(integrated_spec_df, filt_idxs):
+        red_row = integrated_spec_df.iloc[filt_idxs[0]]
+        green_row = integrated_spec_df.iloc[filt_idxs[1]]
+        blue_row = integrated_spec_df.iloc[filt_idxs[2]]
+        cont_percentile = compute_cont_pct(blue_row.wave_aa, green_row.wave_aa, red_row.wave_aa, blue_row.integrated_spec_flux_jy, red_row.integrated_spec_flux_jy)
         return cont_percentile, red_row, green_row, blue_row
-    ha_cont_pct, ha_red_row, ha_green_row, ha_blue_row = fint_pct(ha_filters)
-    pab_cont_pct, pab_red_row, pab_green_row, pab_blue_row = fint_pct(pab_filters)
+    ha_cont_pct, ha_red_row, ha_green_row, ha_blue_row = fint_pct_int_spec_df(integrated_spec_df, ha_idxs)
+    pab_cont_pct, pab_red_row, pab_green_row, pab_blue_row = fint_pct_int_spec_df(integrated_spec_df, pab_idxs)
+
     ha_redflux = integrated_sed_jy[ha_idxs[0]]
     ha_greenflux = integrated_sed_jy[ha_idxs[1]]
     ha_blueflux = integrated_sed_jy[ha_idxs[2]]
     pab_redflux = integrated_sed_jy[pab_idxs[0]]
     pab_greenflux = integrated_sed_jy[pab_idxs[1]]
     pab_blueflux = integrated_sed_jy[pab_idxs[2]]
+
     ha_cont = np.percentile([ha_redflux, ha_blueflux], ha_cont_pct*100)
     pab_cont = np.percentile([pab_redflux, pab_blueflux], pab_cont_pct*100)
 
     ha_line_scaled_transmission = get_transmission_at_line(ha_sedpy_filt, line_list[0][1] * (1+redshift))
     pab_line_scaled_transmission = get_transmission_at_line(pab_sedpy_filt, line_list[1][1] * (1+redshift))
     correction_ratio = pab_line_scaled_transmission/ha_line_scaled_transmission
+    print(correction_ratio)
 
     ha_line = ha_greenflux - ha_cont
     pab_line = pab_greenflux - pab_cont
     line_ratio_from_spec = ha_line/pab_line
     line_ratio_from_spec = line_ratio_from_spec / correction_ratio
+    new_ratio_test = (ha_line / ha_line_scaled_transmission) / (pab_line / pab_line_scaled_transmission) / ((line_list[0][1] / line_list[1][1])**2)
 
 
     # # Recompute with polyfit continuum
@@ -212,25 +240,29 @@ def integrate_spec(mock_name, id_msa):
     ax_pab = axarr[1]
     
     colors = ['red', 'green', 'blue']
-    def plt_filters(filters, ax, greenflux):
-        for i in range(len(filters)):
-            sedpy_name = filters[i].replace('f_', 'jwst_')
-            sedpy_filt = observate.load_filters([sedpy_name])[0]
+    def plt_filters(sedpy_filters, ax, greenflux):
+        for i in range(len(sedpy_filters)):
+            sedpy_filt = sedpy_filters[i]
+            # sedpy_name = filters[i].replace('f_', 'jwst_')
+            # sedpy_filt = observate.load_filters([sedpy_name])[0]
             scale = np.max(sedpy_filt.transmission/greenflux)
             ax.plot(sedpy_filt.wavelength/1e4, sedpy_filt.transmission/scale, ls='-', marker='None', color=colors[i], lw=1)
-    plt_filters(ha_filters, ax_ha, ha_greenflux)
-    plt_filters(pab_filters, ax_pab, pab_greenflux)
+    plt_filters([ha_red_sedpy_filt, ha_sedpy_filt, ha_blue_sedpy_filt], ax_ha, ha_greenflux)
+    plt_filters([pab_red_sedpy_filt, pab_sedpy_filt, pab_blue_sedpy_filt], ax_pab, pab_greenflux)
 
-    ax_ha.plot(ha_red_row['eff_wavelength'], ha_redflux, color='red', ls='None', marker='o')
-    ax_ha.plot(ha_green_row['eff_wavelength'], ha_greenflux, color='green', ls='None', marker='o')
-    ax_ha.plot(ha_blue_row['eff_wavelength'], ha_blueflux, color='blue', ls='None', marker='o')
-    ax_ha.plot(ha_green_row['eff_wavelength'], ha_cont, color='purple', ls='None', marker='o')
-    ax_ha.plot(ha_green_row['eff_wavelength'], ha_cont_fit, color='orange', ls='None', marker='o')
-    ax_pab.plot(pab_red_row['eff_wavelength'], pab_redflux, color='red', ls='None', marker='o')
-    ax_pab.plot(pab_green_row['eff_wavelength'], pab_greenflux, color='green', ls='None', marker='o')
-    ax_pab.plot(pab_blue_row['eff_wavelength'], pab_blueflux, color='blue', ls='None', marker='o')
-    ax_pab.plot(pab_green_row['eff_wavelength'], pab_cont, color='purple', ls='None', marker='o')
-    ax_pab.plot(pab_green_row['eff_wavelength'], pab_cont_fit, color='orange', ls='None', marker='o')
+    if use_filt != 'None':
+        for row in [ha_red_row, ha_green_row, ha_blue_row, pab_red_row, pab_green_row, pab_blue_row]:
+            row[wave_key] = row[wave_key] / 10000
+    ax_ha.plot(ha_red_row[wave_key], ha_redflux, color='red', ls='None', marker='o')
+    ax_ha.plot(ha_green_row[wave_key], ha_greenflux, color='green', ls='None', marker='o')
+    ax_ha.plot(ha_blue_row[wave_key], ha_blueflux, color='blue', ls='None', marker='o')
+    ax_ha.plot(ha_green_row[wave_key], ha_cont, color='purple', ls='None', marker='o')
+    ax_ha.plot(ha_green_row[wave_key], ha_cont_fit, color='orange', ls='None', marker='o')
+    ax_pab.plot(pab_red_row[wave_key], pab_redflux, color='red', ls='None', marker='o')
+    ax_pab.plot(pab_green_row[wave_key], pab_greenflux, color='green', ls='None', marker='o')
+    ax_pab.plot(pab_blue_row[wave_key], pab_blueflux, color='blue', ls='None', marker='o')
+    ax_pab.plot(pab_green_row[wave_key], pab_cont, color='purple', ls='None', marker='o')
+    ax_pab.plot(pab_green_row[wave_key], pab_cont_fit, color='orange', ls='None', marker='o')
     for ax in axarr:
         ax.plot(wavelength/10000, f_jy, ls='-', color='red', marker='None')
         ax.plot(wavelength[full_masks[0]]/10000, f_jy[full_masks[0]], ls='-', color='black', marker='None')
@@ -241,26 +273,75 @@ def integrate_spec(mock_name, id_msa):
     ax_pab.set_ylim(0.8*np.min(f_jy[full_masks[1]]), 1.2*np.max(f_jy[wave_masks[1]]))
     ax_ha.plot(wavelength[full_masks[0]]/10000, ha_p5(wavelength[full_masks[0]]), ls='-', color='orange', marker='None')
     ax_pab.plot(wavelength[full_masks[1]]/10000, pab_p5(wavelength[full_masks[1]]), ls='-', color='orange', marker='None')
-    ax_ha.set_xlim([ha_blue_row['eff_wavelength'].iloc[0]-0.1, ha_red_row['eff_wavelength'].iloc[0]+0.1])
-    ax_pab.set_xlim([pab_blue_row['eff_wavelength'].iloc[0]-0.1, pab_red_row['eff_wavelength'].iloc[0]+0.1])
+    ax_ha.set_xlim([ha_blue_row[wave_key]-0.1, ha_red_row[wave_key]+0.1]) # Need iloc for some cases, not others
+    ax_pab.set_xlim([pab_blue_row[wave_key]-0.1, pab_red_row[wave_key]+0.1])
     ax_ha.text(0.03, 0.9, f'int spec ratio: {round(line_ratio_from_spec, 2)}', transform=ax_ha.transAxes, color='purple')
-    ax_ha.text(0.03, 0.82, f'int spec fit ratio: {round(line_ratio_from_spec_fit)}', transform=ax_ha.transAxes, color='orange')
-    ax_ha.text(0.03, 0.74, f'emisison fit ratio: {round(line_ratio_emission_fit)}', transform=ax_ha.transAxes, color='black')
+    ax_ha.text(0.03, 0.82, f'int spec fit ratio: {round(line_ratio_from_spec_fit, 2)}', transform=ax_ha.transAxes, color='orange')
+    ax_ha.text(0.03, 0.74, f'emisison fit ratio: {round(line_ratio_emission_fit, 2)}', transform=ax_ha.transAxes, color='black')
+    ax_ha.text(0.03, 0.68, f'new ratio: {round(new_ratio_test, 2)}', transform=ax_ha.transAxes, color='black')
 
     ax_pab.text(0.03, 0.90, f'ha flux intspec: {ha_line:0.2e}                  pab flux intspec: {pab_line:0.2e}', transform=ax_pab.transAxes, color='purple')
     ax_pab.text(0.03, 0.82, f'ha flux int-fit: {ha_line_fit:0.2e}                  pab flux int-fit: {pab_line_fit:0.2e}', transform=ax_pab.transAxes, color='orange')
     ax_pab.text(0.03, 0.74, f'ha flux em-fit: {ha_flux_fit:0.2e}                  pab flux em-fit: {pab_flux_fit:0.2e}', transform=ax_pab.transAxes, color='black')
-    fig.savefig(f'/Users/brianlorenz/uncover/Figures/diagnostic_lineratio/mock_spectra/{mock_name}_shifted_{id_msa}.pdf')
+    fig.savefig(f'/Users/brianlorenz/uncover/Figures/diagnostic_lineratio/mock_spectra/{mock_name}_shifted_{id_msa}_{use_filt}.pdf')
     plt.close('all')
     return line_ratio_from_spec, ha_line, pab_line
+
+
+def make_filt(filt_name, wave_min, wave_max, filt_type='boxcar'):
+    """waves in micron
+    """
+    waves = np.arange(wave_min, wave_max, 0.0001) * 10000
+
+    if filt_type == 'boxcar':
+        trasms = np.ones(len(waves))
+    if filt_type == 'slanted':
+        trasms = np.linspace(1, 0.2, len(waves))    
+    trasms[0:10] = 0
+    trasms[-10:] = 0
+    
+                        
+    filt_df = pd.DataFrame(zip(waves, trasms))
+    filt_df.to_csv(f'/Users/brianlorenz/uncover/Data/filter_test/{filt_name}.par', index=False, sep=' ', header=False)
+
+
+def read_sedpy_filt(filt_name):
+    filt_path = f'/Users/brianlorenz/uncover/Data/filter_test/'
+    filt = observate.load_filters([filt_name], directory=filt_path)
+    return filt[0]
+
+
+def make_filts_ha_pab(filt_type='boxcar'):
+    """Makes boxcars around both of the lines for most galaxies
+    """
+    make_filt(f'ha_blue_{filt_type}', 1.30, 1.40, filt_type=filt_type)
+    make_filt(f'ha_green_{filt_type}', 1.80, 2.0, filt_type=filt_type)
+    make_filt(f'ha_red_{filt_type}', 2.05, 2.15, filt_type=filt_type)
+
+    make_filt(f'pab_blue_{filt_type}', 3.05, 3.25, filt_type=filt_type)
+    make_filt(f'pab_green_{filt_type}', 3.27, 3.77, filt_type=filt_type)
+    make_filt(f'pab_red_{filt_type}', 3.8, 3.9, filt_type=filt_type)
+
+
+# make_filts_ha_pab(filt_type='boxcar')
+make_filts_ha_pab(filt_type='slanted')
+# filt = read_sedpy_filt('ha_blue')
+# breakpoint()
+
+# generate_mock_lines(15, flux_multiplier=1, blackbody_temp=0)
+# integrate_spec('mock_ratio_15_flat', 47875, use_filt='boxcar')
+integrate_spec('mock_ratio_15_flat', 47875, use_filt='slanted')
+
+
+
 
 # generate_mock_lines(15, flux_multiplier=1)
 # generate_mock_lines(10, flux_multiplier=1, blackbody_temp=4000)
 # generate_mock_lines(15, flux_multiplier=1, blackbody_temp=3000)
 # generate_mock_lines(15, flux_multiplier=100)
 # integrate_spec('mock_ratio_15', 47875)
-integrate_spec('mock_ratio_15_flux_100', 47875)
-integrate_spec('mock_ratio_15', 25774)
-integrate_spec('mock_ratio_15_flux_100', 25774)
-integrate_spec('mock_ratio_10', 47875)
-integrate_spec('mock_ratio_15_temp_3000', 47875)
+# integrate_spec('mock_ratio_15_flux_100', 47875)
+# integrate_spec('mock_ratio_15', 25774)
+# integrate_spec('mock_ratio_15_flux_100', 25774)
+# integrate_spec('mock_ratio_10', 47875)
+# integrate_spec('mock_ratio_15_temp_3000', 47875)

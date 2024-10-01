@@ -171,7 +171,6 @@ def make_dustmap(id_msa):
     ha_line_scaled_transmission = get_transmission_at_line(ha_sedpy_filt, line_list[0][1] * (1+redshift))
     pab_line_scaled_transmission = get_transmission_at_line(pab_sedpy_filt, line_list[1][1] * (1+redshift))
     correction_ratio = pab_line_scaled_transmission/ha_line_scaled_transmission
-    breakpoint()
     
     
     fit_df = ascii.read(f'/Users/brianlorenz/uncover/Data/emission_fitting/{id_msa}_emission_fits.csv').to_pandas()
@@ -233,15 +232,7 @@ def make_dustmap(id_msa):
     
     
     
-    def get_cont_and_map(images, wht_images, pct):
-        """Finds continuum as the percentile between the other two filters"""
-        cont = np.percentile([images[0].data, images[2].data], pct*100, axis=0)
-        err_cont = np.sqrt(((1-pct)*(1/np.sqrt(wht_images[0].data))))**2 + (pct*(1/np.sqrt(wht_images[2].data))**2)
-        linemap = images[1].data - cont
-        err_linemap = np.sqrt(err_cont**2 + np.sqrt(1/wht_images[1].data)**2)
-        linemap_snr = linemap/err_linemap
-        image = make_lupton_rgb(images[0].data, images[1].data, images[2].data, stretch=0.25)
-        return cont, linemap, image, linemap_snr
+    
     
     def get_dustmap(halpha_map, pabeta_map): # Ha should be 18 times larger than pab, but it's only 3. Leading to huge Avs
         ha_map_scaled = halpha_map/ha_factor
@@ -258,6 +249,9 @@ def make_dustmap(id_msa):
         sed_lineratio = ha_sed_value / pab_sed_value
         # Correct sed ratio for filter widths
         sed_lineratio = sed_lineratio / correction_ratio
+
+        # Updated version
+        sed_lineratio = (ha_sed_value / ha_line_scaled_transmission) / (pab_sed_value / pab_line_scaled_transmission) / ((line_list[0][1] / line_list[1][1])**2)
         return sed_lineratio
     
     sed_lineratio = compute_lineratio(ha_sed_value, pab_sed_value, ha_line_scaled_transmission, pab_line_scaled_transmission)
@@ -578,7 +572,7 @@ def plot_sed_around_line(ax, filters, sed_df, spec_df, redshift, line_index, tra
     ax.set_ylim(0, 1.2*np.max(spec_df['flux']))
     return cont_percentile, line_value, line_value_scaled, trasm_flag, boot_lines, green_flux
 
-def make_3color(id_msa, line_index = 0, plot = False): 
+def make_3color(id_msa, line_index = 0, plot = False, image_size=(100,100)): 
     obj_skycoord = get_coords(id_msa)
 
     line_name = line_list[line_index][0]
@@ -586,17 +580,14 @@ def make_3color(id_msa, line_index = 0, plot = False):
     filt_red, filt_green, filt_blue, all_filts = find_filters_around_line(id_msa, line_index)
     filters = [filt_red, filt_green, filt_blue]
 
-    
 
-    
-
-    image_red, wht_image_red = get_cutout(obj_skycoord, filt_red)
-    image_green, wht_image_green = get_cutout(obj_skycoord, filt_green)
-    image_blue, wht_image_blue = get_cutout(obj_skycoord, filt_blue)
+    image_red, wht_image_red = get_cutout(obj_skycoord, filt_red, size=image_size)
+    image_green, wht_image_green = get_cutout(obj_skycoord, filt_green, size=image_size)
+    image_blue, wht_image_blue = get_cutout(obj_skycoord, filt_blue, size=image_size)
     images = [image_red, image_green, image_blue]
     wht_images = [wht_image_red, wht_image_green, wht_image_blue]
 
-    obj_segmap = get_cutout_segmap(obj_skycoord)
+    obj_segmap = get_cutout_segmap(obj_skycoord, size=image_size)
 
 
     # Plotting  single image
@@ -913,7 +904,6 @@ def check_line_ratio_spectra(ha_filters, pab_filters, spec_df, sed_df, id_msa, r
 
 def find_filters_around_line(id_msa, line_number):
     """
-    
     Parameters:
     id_msa (int):
     line_number (int): index of the line number in line-list, should be saved in the same way in zqual_df
@@ -955,9 +945,18 @@ def compute_cont_pct(blue_wave, green_wave, red_wave, blue_flux, red_flux):
         cont_percentile = 1-cont_percentile
     return cont_percentile
 
+def get_cont_and_map(images, wht_images, pct):
+    """Finds continuum as the percentile between the other two filters"""
+    cont = np.percentile([images[0].data, images[2].data], pct*100, axis=0)
+    err_cont = np.sqrt(((1-pct)*(1/np.sqrt(wht_images[0].data))))**2 + (pct*(1/np.sqrt(wht_images[2].data))**2)
+    linemap = images[1].data - cont
+    err_linemap = np.sqrt(err_cont**2 + np.sqrt(1/wht_images[1].data)**2)
+    linemap_snr = linemap/err_linemap
+    image = make_lupton_rgb(images[0].data, images[1].data, images[2].data, stretch=0.25)
+    return cont, linemap, image, linemap_snr
 # make_all_dustmap()
 # make_dustmap(39744)
-make_dustmap(47875)
+# make_dustmap(47875)
 # make_dustmap(38163)
 # make_dustmap(34114)
 
