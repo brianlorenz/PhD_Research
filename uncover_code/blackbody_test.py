@@ -16,7 +16,7 @@ from fit_emission_uncover import line_list
 from filter_integrals import get_transmission_at_line
 
 
-def generate_mock_lines(ha_pab_ratio, flux_multiplier = 1, blackbody_temp = 4000):
+def generate_mock_lines(ha_pab_ratio, flux_multiplier = 1, blackbody_temp = 4000, add_ons3=''):
     add_ons = ''
     add_ons2 = ''
     if flux_multiplier != 1:
@@ -25,13 +25,13 @@ def generate_mock_lines(ha_pab_ratio, flux_multiplier = 1, blackbody_temp = 4000
         add_ons2 = f'_temp_{blackbody_temp}'
     if blackbody_temp == 0:
         add_ons2 = f'_flat'
-    ha_pab_ratio_name = f'{ha_pab_ratio}{add_ons}{add_ons2}'
+    ha_pab_ratio_name = f'{ha_pab_ratio}{add_ons}{add_ons2}{add_ons3}'
 
     c = 299792458 # m/s
 
     ha_wave = 6564.6
     ha_amp = 2.32e-19 * flux_multiplier
-    ha_sigma = 50
+    ha_sigma = 150
     ha_flux  = ha_amp * ha_sigma * np.sqrt(2 * np.pi)
     print(f'ha_flux = {ha_flux}')
     ha_flux_jy = ha_flux / (1e-23*1e10*c / ((ha_wave)**2))
@@ -209,7 +209,11 @@ def integrate_spec(mock_name, id_msa, use_filt='None'):
     line_ratio_from_spec = ha_line/pab_line
     line_ratio_from_spec = line_ratio_from_spec / correction_ratio
     new_ratio_test = (ha_line / ha_line_scaled_transmission) / (pab_line / pab_line_scaled_transmission) / ((line_list[0][1] / line_list[1][1])**2)
-
+    ha_line_test = (ha_line / ha_line_scaled_transmission) * (line_list[0][1]**2)
+    ha_compared_to_em = (ha_line / ha_line_scaled_transmission) / 1.3e-5
+    pab_compared_to_em = (pab_line / pab_line_scaled_transmission) / 3.48e-6
+    breakpoint()
+    print(ha_line_test)
 
     # # Recompute with polyfit continuum
     # ha_cont_fit = ha_p5(ha_green_row['eff_wavelength']*10000)[0]
@@ -294,7 +298,7 @@ def make_filt(filt_name, wave_min, wave_max, filt_type='boxcar'):
     waves = np.arange(wave_min, wave_max, 0.0001) * 10000
 
     if filt_type == 'boxcar':
-        trasms = np.ones(len(waves))
+        trasms = np.ones(len(waves)) * 0.5
     if filt_type == 'slanted':
         trasms = np.linspace(1, 0.2, len(waves))    
     trasms[0:10] = 0
@@ -314,27 +318,27 @@ def read_sedpy_filt(filt_name):
 def make_filts_ha_pab(filt_type='boxcar'):
     """Makes boxcars around both of the lines for most galaxies
     """
-    make_filt(f'ha_blue_{filt_type}', 1.30, 1.40, filt_type=filt_type)
+    make_filt(f'ha_blue_{filt_type}', 1.60, 1.70, filt_type=filt_type)
     make_filt(f'ha_green_{filt_type}', 1.80, 2.0, filt_type=filt_type)
     make_filt(f'ha_red_{filt_type}', 2.05, 2.15, filt_type=filt_type)
 
     make_filt(f'pab_blue_{filt_type}', 3.05, 3.25, filt_type=filt_type)
-    make_filt(f'pab_green_{filt_type}', 3.27, 3.77, filt_type=filt_type)
+    make_filt(f'pab_green_{filt_type}', 3.57, 3.77, filt_type=filt_type)
     make_filt(f'pab_red_{filt_type}', 3.8, 3.9, filt_type=filt_type)
 
 
 # make_filts_ha_pab(filt_type='boxcar')
-make_filts_ha_pab(filt_type='slanted')
+# make_filts_ha_pab(filt_type='slanted')
 # filt = read_sedpy_filt('ha_blue')
 # breakpoint()
 
 # generate_mock_lines(15, flux_multiplier=1, blackbody_temp=0)
 # integrate_spec('mock_ratio_15_flat', 47875, use_filt='boxcar')
-integrate_spec('mock_ratio_15_flat', 47875, use_filt='slanted')
+# integrate_spec('mock_ratio_15_flat', 47875, use_filt='slanted')
 
 
 
-
+# generate_mock_lines(12, flux_multiplier=1, blackbody_temp=0, add_ons3='_wideha')
 # generate_mock_lines(15, flux_multiplier=1)
 # generate_mock_lines(10, flux_multiplier=1, blackbody_temp=4000)
 # generate_mock_lines(15, flux_multiplier=1, blackbody_temp=3000)

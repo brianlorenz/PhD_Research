@@ -91,7 +91,13 @@ def fit_emission_uncover(spectrum, save_name, bootstrap_num=-1):
     flux = flux[full_cut]
     err_flux = err_flux[full_cut]
     wavelength = wavelength[full_cut]
-    continuum = fit_continuum(wavelength, flux)
+    if '_flat' in save_name:
+        cont_flux = np.ones(len(wavelength)) * 1.5e-6 # From the blackbody code
+        c = 299792458 # m/s
+        continuum = cont_flux * (1e-23*1e10*c / (wavelength**2))
+        continuum = pd.Series(continuum)
+    else:
+        continuum = fit_continuum(wavelength, flux)
     popt, arr_popt, y_data_cont_sub = monte_carlo_fit(multi_gaussian, wavelength, scale_factor * continuum, scale_factor * flux, scale_factor * err_flux, np.array(guess), bounds, n_loops)
     err_popt = np.std(arr_popt, axis=0)
     
@@ -363,7 +369,6 @@ def monte_carlo_fit(func, wavelength, continuum, y_data, y_err, guess, bounds, n
     # y_data_cont_sub = y_data_cont_sub.fillna(0)
 
     start = time.time()
-
     popt, pcov = curve_fit(func, wavelength, y_data_cont_sub, guess, bounds=bounds)
     end = time.time()
     print(f'Length of one fit: {end-start}')
@@ -558,7 +563,6 @@ def fit_continuum(wavelength, flux, plot_cont=False):
         plt.plot(wavelength[mask], flux[mask], color='black')
         plt.plot(wavelength, continuum, color='orange')
         plt.show()
-        breakpoint()
     return continuum
 
 def clip_elines(flux, wavelength):
@@ -637,9 +641,9 @@ def fit_all_emission_uncover(id_msa_list):
 # fit_emission_uncover(spec_df, id_msa)
 
 # # Fitting the mock spectra
-# mock_name = 'mock_ratio_15_flat'
-# spec_df = ascii.read(f'/Users/brianlorenz/uncover/Data/mock_spectra/{mock_name}.csv').to_pandas()
-# fit_emission_uncover(spec_df, mock_name)
+mock_name = 'mock_ratio_12_flat_wideha'
+spec_df = ascii.read(f'/Users/brianlorenz/uncover/Data/mock_spectra/{mock_name}.csv').to_pandas()
+fit_emission_uncover(spec_df, mock_name)
 
 
 # zqual_df_cont_covered = ascii.read('/Users/brianlorenz/uncover/zqual_df_cont_covered.csv').to_pandas()
