@@ -24,7 +24,6 @@ def calzetti_law(wavelength_um):
         k_lambda = 2.659 * (-2.156 + 1.509 / wavelength_um - 0.198 / wavelength_um**2 + 0.011 / wavelength_um**3) + 4.05
     return k_lambda
 
-breakpoint()
 # Plot the Calzetti dust attenuation curve
 fig, ax = plt.subplots(figsize=(6,3))
 ax.plot(wavelength, calzetti_curve(wavelength), color='red')

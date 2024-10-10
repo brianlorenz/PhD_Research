@@ -1,4 +1,3 @@
-from compute_av import read_catalog_av, compute_ha_pab_av
 from uncover_read_data import read_spec_cat
 from astropy.io import ascii
 import numpy as np
@@ -10,7 +9,7 @@ from make_dust_maps import make_3color
 from uncover_read_data import read_raw_spec
 from uncover_make_sed import get_sed
 from compute_av import ha_factor, pab_factor, compute_ratio_from_av, compute_ha_pab_av, compute_ha_pab_av_from_dustmap, read_catalog_av
-
+import pandas as pd
 
 def diagnostic_av_emissionfit_vs_av_prospector(color_var = 'None'):
     zqual_df = read_spec_cat()
@@ -326,4 +325,55 @@ for truth_var in truth_vars:
         for color_var in color_vars:
             diagnostic_measured_value_vs_truth(truth_var=truth_var, plot_var=plot_var, color_var=color_var)
 
+def lineflux_compare(plot_all=False):
+    compare_emfit_df = ascii.read('/Users/brianlorenz/uncover/Figures/diagnostic_lineratio/compare_emfit_df.csv').to_pandas()
+    compare_emfit_df['ha_ratio'] = compare_emfit_df['ha_sed_flux'] / compare_emfit_df['ha_emfit_flux']
+    compare_emfit_df['pab_ratio'] = compare_emfit_df['pab_sed_flux'] / compare_emfit_df['pab_emfit_flux']
+
+    lineratio_df = ascii.read('/Users/brianlorenz/uncover/Figures/diagnostic_lineratio/lineratio_df.csv').to_pandas()
+    filtered_lineratio_df = ascii.read(f'/Users/brianlorenz/uncover/Figures/diagnostic_lineratio/filtered_lineratio_df.csv').to_pandas()
+    breakpoint()
+    compute_ratio_from_av(A_V_value)
+
+
+    if plot_all:
+        merged_df = pd.merge(compare_emfit_df, lineratio_df, on='id_msa')
+        add_str = '_all'
+    else:
+        merged_df = pd.merge(compare_emfit_df, filtered_lineratio_df, on='id_msa')
+        add_str = ''
+
+    fig, axarr = plt.subplots(1,3,figsize=(18,6))
+    ax_ha = axarr[0]
+    ax_pab = axarr[1]
+    ax_ratio = axarr[2]
+
+    ax_ha.plot(merged_df['ha_emfit_flux'], merged_df['ha_sed_flux'], marker='o', ls='None', color='black')
+    ax_pab.plot(merged_df['pab_emfit_flux'], merged_df['pab_sed_flux'], marker='o', ls='None', color='black')
+    ax_ratio.plot(merged_df['emission_fit_lineratio'], merged_df['sed_lineratio'], marker='o', ls='None', color='black')
+
+    for ax in axarr:
+        ax.tick_params(labelsize=12)
+        ax.set_xscale('log')
+        ax.set_yscale('log')
+        xlims = ax.get_xlim()
+        ylims = ax.get_ylim()
+        ax.plot([-100, 100], [-100, 100], ls='--', color='red', marker='None')
+        ax.set_xlim(xlims)
+        ax.set_ylim(ylims)
+    for ax in [ax_ha, ax_pab]:
+        ax.set_ylabel('SED Method Flux')
+        ax.set_xlabel('Emission Fit Flux')
+    
+    ax_ha.set_title('Halpha')
+    ax_pab.set_title('PaBeta')
+
+    ax_ratio.set_ylabel('SED Method Ratio')
+    ax_ratio.set_xlabel('Emission Fit Ratio')
+
+    fig.savefig(f'/Users/brianlorenz/uncover/Figures/diagnostic_lineratio/lineflux_compare{add_str}.pdf')
+
+# lineflux_compare(plot_all=True)
+
+# diagnostic_av_emissionfit_vs_av_prospector()
 # diagnostic_measured_value_vs_truth(truth_var='emission_fit', plot_var='line_ratio_prospector_fit', color_var='z_spec')

@@ -641,7 +641,7 @@ def fit_all_emission_uncover(id_msa_list):
 # fit_emission_uncover(spec_df, id_msa)
 
 # # Fitting the mock spectra
-# mock_name = 'mock_ratio_15_flat'
+# mock_name = 'mock_ratio_15_flat_with_he'
 # spec_df = ascii.read(f'/Users/brianlorenz/uncover/Data/mock_spectra/{mock_name}.csv').to_pandas()
 # fit_emission_uncover(spec_df, mock_name)
 

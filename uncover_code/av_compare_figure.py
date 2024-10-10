@@ -295,4 +295,4 @@ def emission_sed_compare():
 # generate_filtered_lineratio_df()
 # make_av_compare_figure(regenerate=False)
 # intspec_sed_compare()
-emission_sed_compare()
+# emission_sed_compare()

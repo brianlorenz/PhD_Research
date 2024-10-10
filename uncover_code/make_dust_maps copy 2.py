@@ -86,6 +86,7 @@ def make_all_dustmap():
     emission_ratios = []
     err_emission_ratios_low = []
     err_emission_ratios_high = []
+    sed_lineratio_scaleds = []
     ha_trasm_flags = []
     pab_trasm_flags = []
     int_spec_ha_compares = []
@@ -98,13 +99,8 @@ def make_all_dustmap():
     err_pab_sed_value_compare_highs = []
     line_ratio_from_spec_fit_sed_prospects = []
     spec_scale_factors = []
-
-    ha_sed_fluxes = []
-    pab_sed_fluxes = []
-    ha_emfit_fluxes = []
-    pab_emfit_fluxes = []
     for id_msa in id_msa_list:
-        sed_lineratio, err_sed_lineratios, line_ratio_from_spec, emission_lineratios, ha_trasm_flag, pab_trasm_flag, sed_intspec_compare_values, line_ratio_from_spec_fit_sed_prospect, spec_scale_factor, line_flux_compares = make_dustmap(id_msa)
+        sed_lineratio, err_sed_lineratios, line_ratio_from_spec, emission_lineratios, sed_lineratio_scaled, ha_trasm_flag, pab_trasm_flag, sed_intspec_compare_values, line_ratio_from_spec_fit_sed_prospect, spec_scale_factor = make_dustmap(id_msa)
         sed_ratios.append(sed_lineratio)
         err_sed_ratios_low.append(err_sed_lineratios[0])
         err_sed_ratios_high.append(err_sed_lineratios[1])
@@ -112,6 +108,7 @@ def make_all_dustmap():
         emission_ratios.append(emission_lineratios[0])
         err_emission_ratios_low.append(emission_lineratios[1])
         err_emission_ratios_high.append(emission_lineratios[2])
+        sed_lineratio_scaleds.append(sed_lineratio_scaled)
         ha_trasm_flags.append(ha_trasm_flag)
         pab_trasm_flags.append(pab_trasm_flag)
         int_spec_ha_compares.append(sed_intspec_compare_values[0])
@@ -124,19 +121,8 @@ def make_all_dustmap():
         err_pab_sed_value_compare_highs.append(sed_intspec_compare_values[7])
         line_ratio_from_spec_fit_sed_prospects.append(line_ratio_from_spec_fit_sed_prospect)
         spec_scale_factors.append(spec_scale_factor)
-
-        ha_sed_fluxes.append(line_flux_compares[0])
-        pab_sed_fluxes.append(line_flux_compares[1])
-        ha_emfit_fluxes.append(line_flux_compares[2])
-        pab_emfit_fluxes.append(line_flux_compares[3])
-
-    compare_emfit_df = pd.DataFrame(zip(id_msa_list, ha_sed_fluxes, pab_sed_fluxes, ha_emfit_fluxes, pab_emfit_fluxes), columns=['id_msa', 'ha_sed_flux', 'pab_sed_flux', 'ha_emfit_flux', 'pab_emfit_flux'])
-    compare_emfit_df.to_csv('/Users/brianlorenz/uncover/Figures/diagnostic_lineratio/compare_emfit_df.csv', index=False)
-
-    lineratio_df = pd.DataFrame(zip(id_msa_list, sed_ratios, err_sed_ratios_low, err_sed_ratios_high, spec_ratios, emission_ratios, err_emission_ratios_low, err_emission_ratios_high, int_spec_ha_compares, int_spec_pab_compares, ha_sed_value_compares, pab_sed_value_compares, err_ha_sed_value_compare_lows, err_ha_sed_value_compare_highs, err_pab_sed_value_compare_lows, err_pab_sed_value_compare_highs, line_ratio_from_spec_fit_sed_prospects, spec_scale_factors), columns=['id_msa', 'sed_lineratio', 'sed_lineratio_16', 'sed_lineratio_84', 'integrated_spec_lineratio', 'emission_fit_lineratio', 'err_emission_fit_lineratio_low', 'err_emission_fit_lineratio_high', 'int_spec_ha_compare', 'int_spec_pab_compare', 'sed_ha_compare', 'sed_pab_compare', 'sed_ha_compare_16', 'sed_ha_compare_84', 'sed_pab_compare_16', 'sed_pab_compare_84', 'line_ratio_prospector_fit', 'spec_scale_factor'])
+    lineratio_df = pd.DataFrame(zip(id_msa_list, sed_ratios, err_sed_ratios_low, err_sed_ratios_high, spec_ratios, emission_ratios, err_emission_ratios_low, err_emission_ratios_high, sed_lineratio_scaleds, int_spec_ha_compares, int_spec_pab_compares, ha_sed_value_compares, pab_sed_value_compares, err_ha_sed_value_compare_lows, err_ha_sed_value_compare_highs, err_pab_sed_value_compare_lows, err_pab_sed_value_compare_highs, line_ratio_from_spec_fit_sed_prospects, spec_scale_factors), columns=['id_msa', 'sed_lineratio', 'sed_lineratio_16', 'sed_lineratio_84', 'integrated_spec_lineratio', 'emission_fit_lineratio', 'err_emission_fit_lineratio_low', 'err_emission_fit_lineratio_high', 'sed_lineratio_widthscaled', 'int_spec_ha_compare', 'int_spec_pab_compare', 'sed_ha_compare', 'sed_pab_compare', 'sed_ha_compare_16', 'sed_ha_compare_84', 'sed_pab_compare_16', 'sed_pab_compare_84', 'line_ratio_prospector_fit', 'spec_scale_factor'])
     lineratio_df.to_csv('/Users/brianlorenz/uncover/Figures/diagnostic_lineratio/lineratio_df.csv', index=False)
-
-    
     # Then run "generate filtered line ratio df" from av_compare_figure
     zqual_df_cont_covered['ha_trasm_flag'] = ha_trasm_flags
     zqual_df_cont_covered['pab_trasm_flag'] = pab_trasm_flags
@@ -258,18 +244,23 @@ def make_dustmap(id_msa):
         return dustmap
     
     # Make SED plot, return percentile of line between the other two filters
-    ha_cont_pct, ha_sed_lineflux, ha_sed_value_scaled, ha_trasm_flag, ha_boot_lines, ha_green_flux_sed = plot_sed_around_line(ax_ha_sed, ha_filters, sed_df, spec_df, redshift, 0, line_transmissions[0], ha_transmissions, id_msa)
-    pab_cont_pct, pab_sed_lineflux, pab_sed_value_scaled, pab_trasm_flag, pab_boot_lines, pab_green_flux_sed = plot_sed_around_line(ax_pab_sed, pab_filters, sed_df, spec_df, redshift, 1, line_transmissions[1], pab_transmissions, id_msa)
+    ha_cont_pct, ha_sed_value, ha_sed_value_scaled, ha_trasm_flag, ha_boot_lines, ha_green_flux_sed = plot_sed_around_line(ax_ha_sed, ha_filters, sed_df, spec_df, redshift, 0, ha_transmissions, id_msa)
+    pab_cont_pct, pab_sed_value, pab_sed_value_scaled, pab_trasm_flag, pab_boot_lines, pab_green_flux_sed = plot_sed_around_line(ax_pab_sed, pab_filters, sed_df, spec_df, redshift, 1, pab_transmissions, id_msa)
+    def compute_lineratio(ha_sed_value, pab_sed_value, ha_line_scaled_transmission, pab_line_scaled_transmission, redshift):
+        sed_lineratio = ha_sed_value / pab_sed_value
+
+        # Updated version
+        sed_lineratio = (ha_sed_value / ha_line_scaled_transmission) / (pab_sed_value / pab_line_scaled_transmission) / ((line_list[0][1] / line_list[1][1])**2)
+        return sed_lineratio
     
-   
-    sed_lineratio = compute_lineratio(ha_sed_lineflux, pab_sed_lineflux)
-    boot_sed_lineratios = compute_lineratio(ha_boot_lines, pab_boot_lines)
+    sed_lineratio = compute_lineratio(ha_sed_value, pab_sed_value, ha_line_scaled_transmission, pab_line_scaled_transmission)
+    boot_sed_lineratios = compute_lineratio(ha_boot_lines, pab_boot_lines, ha_line_scaled_transmission, pab_line_scaled_transmission)
     err_sed_lineratio_low = np.percentile(boot_sed_lineratios, 16)
     err_sed_lineratio_high = np.percentile(boot_sed_lineratios, 84)
     err_sed_lineratios = [err_sed_lineratio_low, err_sed_lineratio_high]
-    # sed_lineratio_scaled = compute_lineratio(ha_sed_value_scaled, pab_sed_value_scaled, ha_line_scaled_transmission, pab_line_scaled_transmission)
+    sed_lineratio_scaled = compute_lineratio(ha_sed_value_scaled, pab_sed_value_scaled, ha_line_scaled_transmission, pab_line_scaled_transmission)
 
-    line_ratio_from_spec, int_spec_ha, int_spec_pab, line_ratio_from_spec_fit, line_ratio_from_spec_fit_sed, line_ratio_from_spec_fit_sed_prospect = check_line_ratio_spectra(ha_filters, pab_filters, spec_df, sed_df, id_msa, redshift, ax_ha_sed, ax_pab_sed, ha_green_flux_sed, pab_green_flux_sed, sed_lineratio, ha_transmissions, pab_transmissions, line_transmissions)
+    line_ratio_from_spec, int_spec_ha, int_spec_pab, line_ratio_from_spec_fit, line_ratio_from_spec_fit_sed, line_ratio_from_spec_fit_sed_prospect = check_line_ratio_spectra(ha_filters, pab_filters, spec_df, sed_df, id_msa, redshift, correction_ratio, ax_ha_sed, ax_pab_sed, ha_green_flux_sed, pab_green_flux_sed, sed_lineratio, ha_transmissions, pab_transmissions)
     print(f'Line ratio from integrated spectrum: {line_ratio_from_spec}')
     print(f'Line ratio from integrated spectrum polyfit: {line_ratio_from_spec_fit}')
     print(f'Line ratio from integrated spectrum polyfit using sed point: {line_ratio_from_spec_fit_sed}')
@@ -277,14 +268,14 @@ def make_dustmap(id_msa):
     # Compare sed and int spec measurements
     
     spec_scale_factor = np.nanmedian(spec_df['scaled_flux'] / spec_df['flux'])
-    int_spec_ha_compare = (int_spec_ha * spec_scale_factor) 
-    int_spec_pab_compare = (int_spec_pab * spec_scale_factor) 
-    ha_sed_value_compare = ha_sed_lineflux 
-    pab_sed_value_compare = pab_sed_lineflux 
-    err_sed_ha_sed_value_compare_low = np.percentile(ha_boot_lines, 16) 
-    err_sed_ha_sed_value_compare_high = np.percentile(ha_boot_lines, 84) 
-    err_sed_pab_sed_value_compare_low = np.percentile(pab_boot_lines, 16) 
-    err_sed_pab_sed_value_compare_high = np.percentile(pab_boot_lines, 84) 
+    int_spec_ha_compare = (int_spec_ha * spec_scale_factor) / correction_ratio
+    int_spec_pab_compare = (int_spec_pab * spec_scale_factor) / correction_ratio
+    ha_sed_value_compare = ha_sed_value / correction_ratio
+    pab_sed_value_compare = pab_sed_value / correction_ratio
+    err_sed_ha_sed_value_compare_low = np.percentile(ha_boot_lines, 16) / correction_ratio
+    err_sed_ha_sed_value_compare_high = np.percentile(ha_boot_lines, 84) / correction_ratio
+    err_sed_pab_sed_value_compare_low = np.percentile(pab_boot_lines, 16) / correction_ratio
+    err_sed_pab_sed_value_compare_high = np.percentile(pab_boot_lines, 84) / correction_ratio
     sed_intspec_compare_values = [int_spec_ha_compare, int_spec_pab_compare, ha_sed_value_compare, pab_sed_value_compare, err_sed_ha_sed_value_compare_low, err_sed_ha_sed_value_compare_high, err_sed_pab_sed_value_compare_low, err_sed_pab_sed_value_compare_high]
 
     # Make linemaps
@@ -330,13 +321,11 @@ def make_dustmap(id_msa):
     # dustmap[~snr_idx]=0
 
     
-    # Compare to emission fit
-    c = 299792458 # m/s
-    ha_flux_fit_jy = ha_flux_fit / (1e-23*1e10*c / ((line_list[0][1])**2))
-    pab_flux_fit_jy = pab_flux_fit / (1e-23*1e10*c / ((line_list[1][1])**2))
-    print(ha_sed_lineflux / ha_flux_fit_jy)
-    print(pab_sed_lineflux / pab_flux_fit_jy)
-    line_flux_compares = [ha_sed_lineflux, pab_sed_lineflux, ha_flux_fit_jy, pab_flux_fit_jy]
+
+    # For comparison to emission fit
+    fit_scale_factor = ha_sed_value/ha_flux_fit
+    pab_offset = (pab_sed_value/fit_scale_factor) / pab_flux_fit
+    
 
     def get_norm(image_map, scalea=1, lower_pct=10, upper_pct=99):
         # imagemap_scaled = np.log(scalea*image_map + 1) / np.log(scalea + 1)  
@@ -442,6 +431,7 @@ def make_dustmap(id_msa):
     ax_ha_image.text(2.2, 1.10, f'Emission fit: {round(line_ratio_from_emission, 2)}', fontsize=14, transform=ax_ha_image.transAxes)
     ax_ha_image.text(2.9, 1.10, f'sed: {round(sed_lineratio, 2)}', fontsize=14, transform=ax_ha_image.transAxes, color='purple')
     ax_ha_image.text(3.5, 1.10, f'Fit AV: {round((1/av_lineratio), 2)}', fontsize=14, transform=ax_ha_image.transAxes)
+    ax_pab_image.text(-0.05, -0.15, f'PaB offset when halpha is scaled to emission fit: {round((pab_offset), 2)}', fontsize=14, transform=ax_pab_image.transAxes)
     ax_segmap.text(-0.25, -0.15, f'Ha sigma: {round((ha_sigma), 2)}', fontsize=14, transform=ax_segmap.transAxes)
     ax_segmap.text(0.5, -0.15, f'PaB sigma: {round((pab_sigma), 2)}', fontsize=14, transform=ax_segmap.transAxes)
 
@@ -454,9 +444,9 @@ def make_dustmap(id_msa):
     # plt.show()
     fig.savefig(save_folder + f'/{id_msa}_dustmap.pdf')
 
-    return sed_lineratio, err_sed_lineratios, line_ratio_from_spec, emission_lineratios, ha_trasm_flag, pab_trasm_flag, sed_intspec_compare_values, line_ratio_from_spec_fit_sed_prospect, spec_scale_factor, line_flux_compares
+    return sed_lineratio, err_sed_lineratios, line_ratio_from_spec, emission_lineratios, sed_lineratio_scaled, ha_trasm_flag, pab_trasm_flag, sed_intspec_compare_values, line_ratio_from_spec_fit_sed_prospect, spec_scale_factor
 
-def plot_sed_around_line(ax, filters, sed_df, spec_df, redshift, line_index, line_scaled_transmission, transmissions, id_msa, bootstrap=1000, plt_purple_merged_point = 0, plt_prospect=0, show_trasm=0):
+def plot_sed_around_line(ax, filters, sed_df, spec_df, redshift, line_index, transmissions, id_msa, bootstrap=1000, plt_purple_merged_point = 0, plt_prospect=0, show_trasm=0):
     # Controls for various elements on the plot
     plt_verbose_text = show_trasm
     plt_sed_points = 1
@@ -507,13 +497,11 @@ def plot_sed_around_line(ax, filters, sed_df, spec_df, redshift, line_index, lin
     connect_color = 'purple'
     
     cont_percentile = compute_cont_pct(blue_wave, green_wave, red_wave, blue_flux, red_flux)
-    def compute_line(cont_pct, red_flx, green_flx, blue_flx, redshift, line_scaled_transmission):
+    def compute_line(cont_pct, red_flx, green_flx, blue_flx):
         cont_value = np.percentile([blue_flx, red_flx], cont_pct*100)
         line_value = green_flx - cont_value
-        line_flux = line_value / (1+redshift)**2
-        line_flux_cor = line_flux / line_scaled_transmission
-        return line_flux_cor, cont_value
-    line_flux, cont_value = compute_line(cont_percentile, red_flux, green_flux, blue_flux, redshift, line_scaled_transmission)
+        return line_value, cont_value
+    line_value, cont_value = compute_line(cont_percentile, red_flux, green_flux, blue_flux)
 
     boot_lines = []
     if bootstrap > 0:
@@ -531,7 +519,7 @@ def plot_sed_around_line(ax, filters, sed_df, spec_df, redshift, line_index, lin
             boot_red_flux = np.random.normal(loc=red_flux, scale=err_red_flux, size=1)
             boot_green_flux = np.random.normal(loc=green_flux, scale=err_green_flux, size=1)
             boot_blue_flux = np.random.normal(loc=blue_flux, scale=err_blue_flux, size=1)
-            boot_line, boot_cont = compute_line(cont_percentile, boot_red_flux, boot_green_flux, boot_blue_flux, redshift, line_scaled_transmission)            
+            boot_line, boot_cont = compute_line(cont_percentile, boot_red_flux, boot_green_flux, boot_blue_flux)            
             boot_lines.append(boot_line)
     boot_lines = np.array(boot_lines)
 
@@ -581,7 +569,7 @@ def plot_sed_around_line(ax, filters, sed_df, spec_df, redshift, line_index, lin
         ax.legend(fontsize=10)
     ax.set_xlim(0.8*line_wave_obs, 1.2*line_wave_obs)
     ax.set_ylim(0, 1.2*np.max(spec_df['flux']))
-    return cont_percentile, line_flux, line_value_scaled, trasm_flag, boot_lines, green_flux
+    return cont_percentile, line_value, line_value_scaled, trasm_flag, boot_lines, green_flux
 
 def make_3color(id_msa, line_index = 0, plot = False, image_size=(100,100)): 
     obj_skycoord = get_coords(id_msa)
@@ -661,7 +649,7 @@ def get_cutout_segmap(obj_skycoord, size = (100, 100)):
     segmap_cutout = Cutout2D(segmap, obj_skycoord, size, wcs=segmap_wcs)
     return segmap_cutout
 
-def check_line_ratio_spectra(ha_filters, pab_filters, spec_df, sed_df, id_msa, redshift, ax_ha_main, ax_pab_main, ha_green_flux_sed, pab_green_flux_sed, sed_lineratio, ha_transmissions, pab_transmissions, line_transmissions):
+def check_line_ratio_spectra(ha_filters, pab_filters, spec_df, sed_df, id_msa, redshift, correction_ratio, ax_ha_main, ax_pab_main, ha_green_flux_sed, pab_green_flux_sed, sed_lineratio, ha_transmissions, pab_transmissions):
     """Measure the line ratio just from integrating spectrum over the trasnmission curve"""
     wavelength = spec_df['wave_aa'].to_numpy()
     f_lambda = spec_df['flux_erg_aa'].to_numpy()
@@ -712,15 +700,17 @@ def check_line_ratio_spectra(ha_filters, pab_filters, spec_df, sed_df, id_msa, r
     pab_cont = np.percentile([pab_redflux, pab_blueflux], pab_cont_pct*100)
     
     # INtegrated spectrum
-    ha_line_sed_intspec = (ha_green_flux_sed - ha_cont) /  line_transmissions[0]
-    pab_line_sed_intspec = (pab_green_flux_sed - pab_cont) /  line_transmissions[1]
-    line_ratio_from_sed_minus_intspec = compute_lineratio(ha_line_sed_intspec, pab_line_sed_intspec)
-
+    ha_line_sed_intspec = ha_green_flux_sed - ha_cont
+    pab_line_sed_intspec = pab_green_flux_sed - pab_cont
+    line_ratio_from_sed_minus_intspec = ha_line_sed_intspec/pab_line_sed_intspec
+    line_ratio_from_sed_minus_intspec = line_ratio_from_sed_minus_intspec / correction_ratio
     # INtegrated spectrum with sed points
-    ha_line = (ha_greenflux - ha_cont) / line_transmissions[0]
-    pab_line = (pab_greenflux - pab_cont) / line_transmissions[1]
-    line_ratio_from_spec = compute_lineratio(ha_line, pab_line)
-    
+    ha_line = ha_greenflux - ha_cont
+    pab_line = pab_greenflux - pab_cont
+    line_ratio_from_spec = ha_line/pab_line
+    line_ratio_from_spec = line_ratio_from_spec / correction_ratio
+    line_ratio_from_spec =  (ha_line / ha_line_scaled_transmission) / (pab_line / pab_line_scaled_transmission) / ((line_list[0][1] / line_list[1][1])**2)
+
     # From integrated spectrum, but with polynomial fit
     shifted_wave = spec_df['wave_aa'].to_numpy()
     f_jy = spec_df['flux'].to_numpy()
@@ -737,15 +727,16 @@ def check_line_ratio_spectra(ha_filters, pab_filters, spec_df, sed_df, id_msa, r
     pab_integrated_poly_abmag = observate.getSED(shifted_wave, pab_p5_erg(shifted_wave), filterlist=[filters[pab_idxs[1]]])
     ha_cont_fit = 10**(-0.4*(ha_integrated_poly_abmag-8.9))[0] # Currently integrating the continuum fit ove rthe line's filter
     pab_cont_fit = 10**(-0.4*(pab_integrated_poly_abmag-8.9))[0]
-
-    ha_line_fit = (ha_greenflux - ha_cont_fit) / line_transmissions[0]
-    pab_line_fit = (pab_greenflux - pab_cont_fit) / line_transmissions[1]
-    line_ratio_from_spec_fit = compute_lineratio(ha_line_fit, pab_line_fit)
+    ha_line_fit = ha_greenflux - ha_cont_fit
+    pab_line_fit = pab_greenflux - pab_cont_fit
+    line_ratio_from_spec_fit = ha_line_fit/pab_line_fit
+    line_ratio_from_spec_fit = line_ratio_from_spec_fit / correction_ratio
 
     # This one uses the actual SED points
-    ha_line_fit_sed = (ha_green_flux_sed - ha_cont_fit) / line_transmissions[0]
-    pab_line_fit_sed = (pab_green_flux_sed - pab_cont_fit) / line_transmissions[1]
-    line_ratio_from_spec_fit_sed = compute_lineratio(ha_line_fit_sed, pab_line_fit_sed)
+    ha_line_fit_sed = ha_green_flux_sed - ha_cont_fit
+    pab_line_fit_sed = pab_green_flux_sed - pab_cont_fit
+    line_ratio_from_spec_fit_sed = ha_line_fit_sed/pab_line_fit_sed
+    line_ratio_from_spec_fit_sed = line_ratio_from_spec_fit_sed / correction_ratio
 
     # Here we use prospector spectrum and the actual SED points
     prospector_spec_df, prospector_sed_df = read_prospector(id_msa)
@@ -766,10 +757,10 @@ def check_line_ratio_spectra(ha_filters, pab_filters, spec_df, sed_df, id_msa, r
     pab_integrated_poly_abmag_prospect = observate.getSED(shifted_wave_prospect, pab_p5_erg_prospect(shifted_wave_prospect), filterlist=[filters[pab_idxs[1]]])
     ha_cont_fit_prospect = 10**(-0.4*(ha_integrated_poly_abmag_prospect-8.9))[0] # Currently integrating the continuum fit ove rthe line's filter
     pab_cont_fit_prospect = 10**(-0.4*(pab_integrated_poly_abmag_prospect-8.9))[0]
-
-    ha_line_fit_sed_prospect = (ha_green_flux_sed - ha_cont_fit_prospect) / line_transmissions[0]
-    pab_line_fit_sed_prospect = (pab_green_flux_sed - pab_cont_fit_prospect) / line_transmissions[1]
-    line_ratio_from_spec_fit_sed_prospect = compute_lineratio(ha_line_fit_sed_prospect, pab_line_fit_sed_prospect)
+    ha_line_fit_sed_prospect = ha_green_flux_sed - ha_cont_fit_prospect
+    pab_line_fit_sed_prospect = pab_green_flux_sed - pab_cont_fit_prospect
+    line_ratio_from_spec_fit_sed_prospect = ha_line_fit_sed_prospect/pab_line_fit_sed_prospect
+    line_ratio_from_spec_fit_sed_prospect = line_ratio_from_spec_fit_sed_prospect / correction_ratio
 
     ax_ha_main.plot(wavelength[full_masks[0]]/10000, ha_p5(wavelength[full_masks[0]]), ls='-', color='orange', marker='None')
     ax_pab_main.plot(wavelength[full_masks[1]]/10000, pab_p5(wavelength[full_masks[1]]), ls='-', color='orange', marker='None')
@@ -796,7 +787,7 @@ def check_line_ratio_spectra(ha_filters, pab_filters, spec_df, sed_df, id_msa, r
             plt_prospect = 1
         else:
             plt_prospect = 0
-        plot_sed_around_line(ax, ha_filters, sed_df, spec_df, redshift, 0, line_transmissions[0], ha_transmissions, id_msa, bootstrap=1000, plt_purple_merged_point=purple, plt_prospect=plt_prospect, show_trasm = trasm)
+        plot_sed_around_line(ax, ha_filters, sed_df, spec_df, redshift, 0, ha_transmissions, id_msa, bootstrap=1000, plt_purple_merged_point=purple, plt_prospect=plt_prospect, show_trasm = trasm)
     for i in range(n_figs):
         if i == 0:
             purple = 1
@@ -809,7 +800,7 @@ def check_line_ratio_spectra(ha_filters, pab_filters, spec_df, sed_df, id_msa, r
         else:
             plt_prospect = 0
         ax = axarr2[1, i]
-        plot_sed_around_line(ax, pab_filters, sed_df, spec_df, redshift, 1, line_transmissions[1], pab_transmissions, id_msa, bootstrap=1000, plt_purple_merged_point=purple, plt_prospect=plt_prospect, show_trasm=trasm)
+        plot_sed_around_line(ax, pab_filters, sed_df, spec_df, redshift, 1, pab_transmissions, id_msa, bootstrap=1000, plt_purple_merged_point=purple, plt_prospect=plt_prospect, show_trasm=trasm)
     for j in range(2):
         # SED only method
         ax = axarr2[0,j]
@@ -963,12 +954,6 @@ def get_cont_and_map(images, wht_images, pct):
     linemap_snr = linemap/err_linemap
     image = make_lupton_rgb(images[0].data, images[1].data, images[2].data, stretch=0.25)
     return cont, linemap, image, linemap_snr
-
-def compute_lineratio(ha_flux, pab_flux):
-    # Updated calculation with 1/lambda**2
-    lineratio = (ha_flux) / (pab_flux) / ((line_list[0][1] / line_list[1][1])**2)
-    return lineratio
-
 # make_all_dustmap()
 # make_dustmap(39744)
 # make_dustmap(47875)
@@ -977,7 +962,7 @@ def compute_lineratio(ha_flux, pab_flux):
 
 
 
-# make_dustmap(25774)
+# make_dustmap(25147)
 
 
 # make_3color(6291)

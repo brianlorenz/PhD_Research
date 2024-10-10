@@ -8,6 +8,7 @@ def compute_balmer_av(balmer_dec):
             balmer_av = R_V*2.32*np.log10(balmer_dec/2.86)
             return balmer_av
 
+
 def plot_balmer_stellar_avs(save_name):
     '''Makes a series of plots involving the balmer and stellar avs
     
