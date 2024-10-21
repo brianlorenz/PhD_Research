@@ -11,16 +11,37 @@ from uncover_make_sed import get_sed
 from compute_av import ha_factor, pab_factor, compute_ratio_from_av, compute_ha_pab_av, compute_ha_pab_av_from_dustmap, read_catalog_av
 import pandas as pd
 
-def diagnostic_av_emissionfit_vs_av_prospector(color_var = 'None'):
+def diagnostic_av_emissionfit_vs_av_prospector(color_var = 'None', use_subsample=True, remove_nii=False):
     zqual_df = read_spec_cat()
 
     zqual_df_cont_covered = ascii.read('/Users/brianlorenz/uncover/zqual_df_cont_covered.csv').to_pandas()
     lineratio_df = ascii.read('/Users/brianlorenz/uncover/Figures/diagnostic_lineratio/lineratio_df.csv').to_pandas()
-    lineratio_df['integrated_spec_av'] = compute_ha_pab_av(1/lineratio_df['integrated_spec_lineratio'])
-    lineratio_df['sed_av'] = compute_ha_pab_av(1/lineratio_df['sed_lineratio'])
     id_msa_list = zqual_df_cont_covered['id_msa']
+
+    if use_subsample:
+        filtered_lineratio_df = ascii.read(f'/Users/brianlorenz/uncover/Figures/diagnostic_lineratio/filtered_lineratio_df.csv').to_pandas()
+        lineratio_df = filtered_lineratio_df
+        id_msa_list = lineratio_df['id_msa']
+        add_str = '_subsamp'
+    else:
+        add_str = ''
+    if remove_nii:
+        add_str = add_str + '_removeNii'
+    
+    lineratio_df['integrated_spec_av'] = compute_ha_pab_av(1/lineratio_df['integrated_spec_lineratio'])
+    sed_lineratio = lineratio_df['sed_lineratio']
+    if remove_nii:
+        sed_lineratio = 0.8*sed_lineratio
+    lineratio_df['sed_av'] = compute_ha_pab_av(1/sed_lineratio)
+    
+    
+        
+
+
     redshifts = zqual_df_cont_covered['z_spec'].to_numpy()
-    fig, ax = plt.subplots(figsize=(6,6))
+    fig, axarr = plt.subplots(1, 2, figsize=(12,6))
+    ax_sed_emfit = axarr[0]
+    ax_emfit_prospector = axarr[1]
 
     ha_line_avg_transmissions = []
     pab_line_avg_transmissions = []
@@ -46,8 +67,8 @@ def diagnostic_av_emissionfit_vs_av_prospector(color_var = 'None'):
         id_msa = id_msa_list[i]
         emission_df = ascii.read(f'/Users/brianlorenz/uncover/Data/emission_fitting/{id_msa}_emission_fits.csv').to_pandas()
         
-        ha_filters, ha_images, wht_ha_images, obj_segmap = make_3color(id_msa, line_index=0, plot=False)
-        pab_filters, pab_images, wht_pab_images, obj_segmap = make_3color(id_msa, line_index=1, plot=False)
+        ha_filters, ha_images, wht_ha_images, obj_segmap, ha_photfnus = make_3color(id_msa, line_index=0, plot=False)
+        pab_filters, pab_images, wht_pab_images, obj_segmap, pab_photfnus = make_3color(id_msa, line_index=1, plot=False)
         ha_sedpy_name = ha_filters[1].replace('f', 'jwst_f')
         ha_sedpy_filt = observate.load_filters([ha_sedpy_name])[0]
         pab_sedpy_name = pab_filters[1].replace('f', 'jwst_f')
@@ -68,6 +89,12 @@ def diagnostic_av_emissionfit_vs_av_prospector(color_var = 'None'):
         err_ha_pab_ratio_low = emission_df['err_ha_pab_ratio_low'].iloc[0]
         err_ha_pab_ratio_high = emission_df['err_ha_pab_ratio_high'].iloc[0]
 
+        # Test for NII contributions, remove 20%
+        if remove_nii:
+            ha_pab_ratio = ha_pab_ratio*0.8
+            err_ha_pab_ratio_low = err_ha_pab_ratio_low*0.8
+            err_ha_pab_ratio_high = err_ha_pab_ratio_high*0.8
+
         av_emission_fit = compute_ha_pab_av(1/ha_pab_ratio)
         av_emission_fit_high = compute_ha_pab_av(1/(ha_pab_ratio-err_ha_pab_ratio_low))
         av_emission_fit_low = compute_ha_pab_av(1/(ha_pab_ratio+err_ha_pab_ratio_high))
@@ -81,105 +108,132 @@ def diagnostic_av_emissionfit_vs_av_prospector(color_var = 'None'):
         err_av_50s_lows.append(err_av_50_low)
         err_av_50s_highs.append(err_av_50_high)
 
-        rgba = cmap(norm(color_array[i]))
+        if color_var != 'None':
+            rgba = cmap(norm(color_array[i]))
+        else:
+            rgba = 'black'
 
-        ax.errorbar(av_emission_fit, av_50, xerr=np.array([[err_av_emission_fit_low, err_av_emission_fit_high]]).T, yerr=np.array([[err_av_50_low, err_av_50_high]]).T, marker='o', ls='None', color=rgba)
+        #FOr sed method
+        sed_av_50 = lineratio_df.iloc[i]['sed_av']
+        sed_av_16 = lineratio_df.iloc[i]['sed_av_16']
+        sed_av_84 = lineratio_df.iloc[i]['sed_av_84']
+        sed_err_av_50_low = sed_av_50-sed_av_16
+        sed_err_av_50_high = sed_av_84-sed_av_50
+        
+        print(f'sed av: {sed_av_50}')
+        ax_sed_emfit.errorbar(av_emission_fit, sed_av_50, xerr=np.array([[err_av_emission_fit_low, err_av_emission_fit_high]]).T, yerr=np.array([[sed_err_av_50_low, sed_err_av_50_high]]).T, marker='o', ls='None', color=rgba)
+        ax_emfit_prospector.errorbar(av_emission_fit, av_50, xerr=np.array([[err_av_emission_fit_low, err_av_emission_fit_high]]).T, yerr=np.array([[err_av_50_low, err_av_50_high]]).T, marker='o', ls='None', color=rgba)
     # one-to-one
-    ax.plot([-100, 100], [-100, 100], ls='--', color='red', marker='None')
-
-    ax.set_xlim(-1, 2.5)
-    ax.set_ylim(-1, 2.5)
-    ax.set_xlabel('Emission Fit AV')
-    ax.set_ylabel('Prospector AV')
-    sm =  ScalarMappable(norm=norm, cmap=cmap)
-    cbar = fig.colorbar(sm, ax=ax)
-    cbar.set_label(color_var, fontsize=16)
-    cbar.ax.tick_params(labelsize=16)
+    for ax in axarr:
+        ax.plot([-100, 100], [-100, 100], ls='--', color='red', marker='None')
+        ax.set_xlim(-1, 2.5)
+        ax.set_ylim(-1, 2.5)
+        ax.set_xlabel('Emission Fit AV')
+    ax_sed_emfit.set_ylabel('SED Method AV')
+    ax_sed_emfit.set_ylim(-1,8)
+    ax_emfit_prospector.set_ylabel('Prospector AV')
+    if color_var != 'None':
+        sm =  ScalarMappable(norm=norm, cmap=cmap)
+        cbar = fig.colorbar(sm, ax=ax)
+        cbar.set_label(color_var, fontsize=16)
+        cbar.ax.tick_params(labelsize=16)
     # plt.show()
-    fig.savefig(f'/Users/brianlorenz/uncover/Figures/diagnostic_lineratio/prospect_vs_fit_{color_var}.pdf')
+    fig.savefig(f'/Users/brianlorenz/uncover/Figures/diagnostic_lineratio/sed_and_prospect_vs_fit_{color_var}{add_str}.pdf')
     plt.close('all')
+    import sys
+    sys.exit()
 
 
     # Integrated spectra vs prospector
     fig, ax = plt.subplots(figsize=(6,6))
     for i in range(len(lineratio_df)):
-        rgba = cmap(norm(color_array[i]))
+        if color_var != 'None':
+            rgba = cmap(norm(color_array[i]))
         ax.plot(lineratio_df['integrated_spec_av'].iloc[i], av_50s[i], marker='o', ls='None', color=rgba)
     ax.plot([-100, 100], [-100, 100], ls='--', color='red', marker='None')
     ax.set_xlim(-2, 11)
     ax.set_ylim(-1, 2.5)
     ax.set_xlabel('Integrated Spectrum AV')
     ax.set_ylabel('Prospector AV')
-    sm =  ScalarMappable(norm=norm, cmap=cmap)
-    cbar = fig.colorbar(sm, ax=ax)
-    cbar.set_label(color_var, fontsize=16)
-    cbar.ax.tick_params(labelsize=16)
-    fig.savefig(f'/Users/brianlorenz/uncover/Figures/diagnostic_lineratio/prospect_vs_intspec_{color_var}.pdf')
+    if color_var != 'None':
+        sm =  ScalarMappable(norm=norm, cmap=cmap)
+        cbar = fig.colorbar(sm, ax=ax)
+        cbar.set_label(color_var, fontsize=16)
+        cbar.ax.tick_params(labelsize=16)
+    fig.savefig(f'/Users/brianlorenz/uncover/Figures/diagnostic_lineratio/prospect_vs_intspec_{color_var}{add_str}.pdf')
 
     # SED vs prospector
     fig, ax = plt.subplots(figsize=(6,6))
     for i in range(len(lineratio_df)):
-        rgba = cmap(norm(color_array[i]))
+        if color_var != 'None':
+            rgba = cmap(norm(color_array[i]))
         ax.plot(lineratio_df['sed_av'].iloc[i], av_50s[i], marker='o', ls='None', color=rgba)
     ax.plot([-100, 100], [-100, 100], ls='--', color='red', marker='None')
     ax.set_xlim(-2, 10)
     ax.set_ylim(-1, 2.5)
     ax.set_xlabel('SED AV')
     ax.set_ylabel('Prospector AV')
-    sm =  ScalarMappable(norm=norm, cmap=cmap)
-    cbar = fig.colorbar(sm, ax=ax)
-    cbar.set_label(color_var, fontsize=16)
-    cbar.ax.tick_params(labelsize=16)
-    fig.savefig(f'/Users/brianlorenz/uncover/Figures/diagnostic_lineratio/prospect_vs_sed_{color_var}.pdf')
+    if color_var != 'None':
+        sm =  ScalarMappable(norm=norm, cmap=cmap)
+        cbar = fig.colorbar(sm, ax=ax)
+        cbar.set_label(color_var, fontsize=16)
+        cbar.ax.tick_params(labelsize=16)
+    fig.savefig(f'/Users/brianlorenz/uncover/Figures/diagnostic_lineratio/prospect_vs_sed_{color_var}{add_str}.pdf')
 
     # SED vs prospector (1+z)2
     fig, ax = plt.subplots(figsize=(6,6))
     for i in range(len(lineratio_df)):
-        rgba = cmap(norm(color_array[i]))
+        if color_var != 'None':
+            rgba = cmap(norm(color_array[i]))
         ax.plot(lineratio_df['sed_av'].iloc[i] / (1+zqual_df_cont_covered['z_spec'].iloc[i])**2, av_50s[i], marker='o', ls='None', color=rgba)
     ax.plot([-100, 100], [-100, 100], ls='--', color='red', marker='None')
     ax.set_xlim(-1, 2.5)
     ax.set_ylim(-1, 2.5)
     ax.set_xlabel('SED AV / (1+z)^2')
     ax.set_ylabel('Prospector AV')
-    sm =  ScalarMappable(norm=norm, cmap=cmap)
-    cbar = fig.colorbar(sm, ax=ax)
-    cbar.set_label(color_var, fontsize=16)
-    cbar.ax.tick_params(labelsize=16)
-    fig.savefig(f'/Users/brianlorenz/uncover/Figures/diagnostic_lineratio/prospect_vs_sed_{color_var}_dividez.pdf')
+    if color_var != 'None':
+        sm =  ScalarMappable(norm=norm, cmap=cmap)
+        cbar = fig.colorbar(sm, ax=ax)
+        cbar.set_label(color_var, fontsize=16)
+        cbar.ax.tick_params(labelsize=16)
+    fig.savefig(f'/Users/brianlorenz/uncover/Figures/diagnostic_lineratio/prospect_vs_sed_{color_var}_dividez{add_str}.pdf')
 
     # SED vs prospector log10
     fig, ax = plt.subplots(figsize=(6,6))
     for i in range(len(lineratio_df)):
-        rgba = cmap(norm(color_array[i]))
+        if color_var != 'None':
+            rgba = cmap(norm(color_array[i]))
         ax.plot(np.log10(lineratio_df['sed_av'].iloc[i]), av_50s[i], marker='o', ls='None', color=rgba)
     ax.plot([-100, 100], [-100, 100], ls='--', color='red', marker='None')
     ax.set_xlim(-1, 2.5)
     ax.set_ylim(-1, 2.5)
     ax.set_xlabel('log10(SED AV)')
     ax.set_ylabel('Prospector AV')
-    sm =  ScalarMappable(norm=norm, cmap=cmap)
-    cbar = fig.colorbar(sm, ax=ax)
-    cbar.set_label(color_var, fontsize=16)
-    cbar.ax.tick_params(labelsize=16)
-    fig.savefig(f'/Users/brianlorenz/uncover/Figures/diagnostic_lineratio/prospect_vs_sed_{color_var}_log10.pdf')
+    if color_var != 'None':
+        sm =  ScalarMappable(norm=norm, cmap=cmap)
+        cbar = fig.colorbar(sm, ax=ax)
+        cbar.set_label(color_var, fontsize=16)
+        cbar.ax.tick_params(labelsize=16)
+    fig.savefig(f'/Users/brianlorenz/uncover/Figures/diagnostic_lineratio/prospect_vs_sed_{color_var}_log10{add_str}.pdf')
 
 
     # SED vs integrated spectrum
     fig, ax = plt.subplots(figsize=(6,6))
     for i in range(len(lineratio_df)):
-        rgba = cmap(norm(color_array[i]))
+        if color_var != 'None':
+            rgba = cmap(norm(color_array[i]))
         ax.plot(lineratio_df['sed_av'].iloc[i], lineratio_df['integrated_spec_av'].iloc[i], marker='o', ls='None', color=rgba)
     ax.plot([-100, 100], [-100, 100], ls='--', color='red', marker='None')
     ax.set_xlim(-2, 10)
     ax.set_ylim(-2, 10)
     ax.set_xlabel('SED AV')
     ax.set_ylabel('Integrated Spectrum AV')
-    sm =  ScalarMappable(norm=norm, cmap=cmap)
-    cbar = fig.colorbar(sm, ax=ax)
-    cbar.set_label(color_var, fontsize=16)
-    cbar.ax.tick_params(labelsize=16)
-    fig.savefig(f'/Users/brianlorenz/uncover/Figures/diagnostic_lineratio/integratedspec_vs_sed_{color_var}.pdf')
+    if color_var != 'None':
+        sm =  ScalarMappable(norm=norm, cmap=cmap)
+        cbar = fig.colorbar(sm, ax=ax)
+        cbar.set_label(color_var, fontsize=16)
+        cbar.ax.tick_params(labelsize=16)
+    fig.savefig(f'/Users/brianlorenz/uncover/Figures/diagnostic_lineratio/integratedspec_vs_sed_{color_var}{add_str}.pdf')
 
 
 def diagnostic_spec_flux_vs_phot_flux():
@@ -373,7 +427,65 @@ def lineflux_compare(plot_all=False):
 
     fig.savefig(f'/Users/brianlorenz/uncover/Figures/diagnostic_lineratio/lineflux_compare{add_str}.pdf')
 
+def hb_eq_width_continuum(use_subsample=1, line='pab'):
+    eq_width_df = ascii.read('/Users/brianlorenz/uncover/Figures/diagnostic_lineratio/eq_width_df.csv').to_pandas()
+    # breakpoint()
+    fig, ax = plt.subplots(figsize=(6,6))
+    eq_width_95 = eq_width_df[eq_width_df['continuum_adjust_factor'] == 0.95]
+    eq_width_97 = eq_width_df[eq_width_df['continuum_adjust_factor'] == 0.97]
+    eq_width_99 = eq_width_df[eq_width_df['continuum_adjust_factor'] == 0.99]
+    eq_dfs = [eq_width_95, eq_width_97, eq_width_99]
+    colors = ['black', 'orange', 'blue']
+    labels = ['5%', '3%', '1%']
+    for i in range(3):
+        ax.plot(eq_dfs[i]['PaB_eq_width'], eq_dfs[i]['flux_offset_factor'], marker='o', ls='--', color=colors[i], label=labels[i])
+    
+
+    # Vertical lines at the real equivalent widths from our galaxies
+    if use_subsample:
+        filtered_lineratio_df = ascii.read(f'/Users/brianlorenz/uncover/Figures/diagnostic_lineratio/filtered_lineratio_df.csv').to_pandas()
+        lineratio_df = filtered_lineratio_df
+        add_str = '_subsamp'
+    else:
+        lineratio_df = ascii.read('/Users/brianlorenz/uncover/Figures/diagnostic_lineratio/lineratio_df.csv').to_pandas()
+    id_msa_list = lineratio_df['id_msa']
+    line_eq_widths = []
+    for id_msa in id_msa_list:
+        emission_df = ascii.read(f'/Users/brianlorenz/uncover/Data/emission_fitting/{id_msa}_emission_fits.csv').to_pandas()
+        if line=='pab':
+            line_eq_width = emission_df['equivalent_width_aa'].iloc[1]
+            line_label = 'Sample PaB'
+            line_color = 'red'
+        elif line=='ha':
+            line_eq_width = emission_df['equivalent_width_aa'].iloc[0]
+            line_label = 'Sample Ha'
+            line_color = 'magenta'
+        line_eq_widths.append(line_eq_width)
+    ax.vlines(line_eq_widths, -5, 10, colors=line_color, linestyles='--', label=line_label)
+    
+    
+    ax.set_xscale('log')
+    ax.set_yscale('log')
+    import matplotlib.ticker as mticker
+    ax.xaxis.set_major_formatter(mticker.ScalarFormatter())
+    ax.yaxis.set_major_formatter(mticker.ScalarFormatter())
+    ax.yaxis.set_minor_formatter(mticker.ScalarFormatter())
+
+    ax.set_xlabel('Equivalent Width')
+    ax.set_ylabel('Flux Offset Factor')
+
+    ax.set_ylim(0.95, 5)
+
+    ax.legend()
+
+
+    fig.savefig(f'/Users/brianlorenz/uncover/Figures/diagnostic_lineratio/eq_width_test_{line}.pdf')
+
+
 # lineflux_compare(plot_all=True)
 
-# diagnostic_av_emissionfit_vs_av_prospector()
+# hb_eq_width_continuum(line='ha')
+# hb_eq_width_continuum(line='pab')
+
+# diagnostic_av_emissionfit_vs_av_prospector(remove_nii=True)
 # diagnostic_measured_value_vs_truth(truth_var='emission_fit', plot_var='line_ratio_prospector_fit', color_var='z_spec')

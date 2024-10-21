@@ -526,7 +526,8 @@ def plot_sed_around_line(ax, filters, sed_df, spec_df, redshift, line_index, tra
     if plt_purple_merged_point:
         ax.plot([red_wave, blue_wave], [red_flux, blue_flux], marker='None', ls='--', color=connect_color)
         ax.plot(green_wave, cont_value, marker='o', ls='None', color=connect_color)
-        ax.plot([green_wave,green_wave], [green_flux, cont_value], marker='None', ls='-', color='green', lw=2)
+        ax.plot([green_wave, green_wave], [green_flux, cont_value], marker='None', ls='-', color='green', lw=2)
+        
 
     # Compute the percentile to use when combining the continuum
     cont_value_scaled = np.percentile([red_flux_scaled, blue_flux_scaled], cont_percentile*100)
@@ -709,7 +710,7 @@ def check_line_ratio_spectra(ha_filters, pab_filters, spec_df, sed_df, id_msa, r
     pab_line = pab_greenflux - pab_cont
     line_ratio_from_spec = ha_line/pab_line
     line_ratio_from_spec = line_ratio_from_spec / correction_ratio
-    line_ratio_from_spec =  (ha_line / ha_line_scaled_transmission) / (pab_line / pab_line_scaled_transmission) / ((line_list[0][1] / line_list[1][1])**2)
+    # line_ratio_from_spec =  (ha_line / ha_line_scaled_transmission) / (pab_line / pab_line_scaled_transmission) / ((line_list[0][1] / line_list[1][1])**2)
 
     # From integrated spectrum, but with polynomial fit
     shifted_wave = spec_df['wave_aa'].to_numpy()

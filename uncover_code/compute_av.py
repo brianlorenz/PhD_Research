@@ -40,7 +40,8 @@ def compute_ha_pab_av_from_dustmap(dustmap_ratio):
     """ PaB / Ha is the ratio you need, should be slightly greater than 1/20. Already have pab ratio there, so don'tneed intrinsice"""
     R_V_value = 4.05
     k_factor = 2.5/(calzetti_law(ha_wave) - calzetti_law(pab_wave))
-    A_V_value = R_V_value*k_factor*np.log10(dustmap_ratio)
+    intrinsic_ratio = pab_factor / ha_factor
+    A_V_value = R_V_value*k_factor*np.log10(dustmap_ratio / intrinsic_ratio)
     return A_V_value
 
 def compute_balmer_av(balmer_dec):

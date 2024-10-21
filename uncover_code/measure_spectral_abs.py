@@ -10,8 +10,8 @@ def measure_feature(id_msa):
     spec_df = read_raw_spec(id_msa)
     sed_df = get_sed(id_msa)
 
-    ha_filters, ha_images, wht_ha_images, obj_segmap = make_3color(id_msa, line_index=0, plot=False)
-    pab_filters, pab_images, wht_pab_images, obj_segmap = make_3color(id_msa, line_index=1, plot=False)
+    ha_filters, ha_images, wht_ha_images, obj_segmap, ha_photfnus = make_3color(id_msa, line_index=0, plot=False)
+    pab_filters, pab_images, wht_pab_images, obj_segmap, pab_photfnus = make_3color(id_msa, line_index=1, plot=False)
 
     ha_filters = ['f_'+filt for filt in ha_filters]
     pab_filters = ['f_'+filt for filt in pab_filters]

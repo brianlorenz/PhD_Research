@@ -91,13 +91,22 @@ def fit_emission_uncover(spectrum, save_name, bootstrap_num=-1):
     flux = flux[full_cut]
     err_flux = err_flux[full_cut]
     wavelength = wavelength[full_cut]
-    if '_flat' in save_name:
+    if '_flat' in str(save_name):
         cont_flux = np.ones(len(wavelength)) * 1.5e-6 # From the blackbody code
         c = 299792458 # m/s
         continuum = cont_flux * (1e-23*1e10*c / (wavelength**2))
         continuum = pd.Series(continuum)
     else:
         continuum = fit_continuum(wavelength, flux)
+
+    def get_cont_value_at_line(line_wave, continuum, wavelength):
+        line_idx = np.argmin(np.abs(wavelength-line_wave))
+        cont_value = continuum.iloc[line_idx]
+        return cont_value
+    ha_cont_value = get_cont_value_at_line(line_list[0][1], continuum, wavelength)
+    pab_cont_value = get_cont_value_at_line(line_list[1][1], continuum, wavelength)
+    cont_values = [ha_cont_value, pab_cont_value]
+
     popt, arr_popt, y_data_cont_sub = monte_carlo_fit(multi_gaussian, wavelength, scale_factor * continuum, scale_factor * flux, scale_factor * err_flux, np.array(guess), bounds, n_loops)
     err_popt = np.std(arr_popt, axis=0)
     
@@ -135,6 +144,7 @@ def fit_emission_uncover(spectrum, save_name, bootstrap_num=-1):
         line_names) if name == 'Halpha'][0]
     pab_idx = [idx for idx, name in enumerate(line_names) if name == 'PaBeta'][0]
     ha_pab_ratio = [fluxes[ha_idx] / fluxes[pab_idx] for i in range(len(line_list))]
+    eq_widths = [fluxes[i] / cont_values[i] for i in range(len(line_list))]
 
     
     def compute_percentile_errs_on_line(line_idx, measured_line_flux):
@@ -193,11 +203,11 @@ def fit_emission_uncover(spectrum, save_name, bootstrap_num=-1):
     fit_df = pd.DataFrame(zip(line_names, line_centers_rest,
                               z_offset, err_z_offset, velocities, err_velocity, 
                               err_velocity_low, err_velocity_high, amps, err_amps, 
-                              sigs, err_sigs, fluxes, err_fluxes, err_fluxes_low, err_fluxes_high, ha_pab_ratio, err_ha_pab_ratio_low, err_ha_pab_ratio_high), 
+                              sigs, err_sigs, fluxes, err_fluxes, err_fluxes_low, err_fluxes_high, ha_pab_ratio, err_ha_pab_ratio_low, err_ha_pab_ratio_high, eq_widths), 
                               columns=['line_name', 'line_center_rest', 'z_offset', 'err_z_offset', 
                                        'velocity', 
                                        'err_fixed_velocity', 'err_fixed_velocity_low', 'err_fixed_velocity_high', 
-                                       'amplitude', 'err_amplitude', 'sigma', 'err_sigma', 'flux', 'err_flux', 'err_flux_low', 'err_flux_high', 'ha_pab_ratio', 'err_ha_pab_ratio_low', 'err_ha_pab_ratio_high'])
+                                       'amplitude', 'err_amplitude', 'sigma', 'err_sigma', 'flux', 'err_flux', 'err_flux_low', 'err_flux_high', 'ha_pab_ratio', 'err_ha_pab_ratio_low', 'err_ha_pab_ratio_high', 'equivalent_width_aa'])
     fit_df['signal_noise_ratio'] = fit_df['flux']/fit_df['err_flux']
 
 
@@ -255,7 +265,6 @@ def plot_emission_fit(emission_fit_dir, save_name, total_spec_df):
     continuum_df = ascii.read(emission_fit_dir+f'{save_name}_cont_sub.csv').to_pandas()
     continuum = continuum_df['continuum_sub_ydata']
     cont_wavelength = continuum_df['wavelength']
-
 
 
     # Set up the parameters from the fitting
@@ -641,11 +650,11 @@ def fit_all_emission_uncover(id_msa_list):
 # fit_emission_uncover(spec_df, id_msa)
 
 # # Fitting the mock spectra
-# mock_name = 'mock_ratio_15_flat_with_he'
+# mock_name = 'mock_ratio_15_flat'
 # spec_df = ascii.read(f'/Users/brianlorenz/uncover/Data/mock_spectra/{mock_name}.csv').to_pandas()
 # fit_emission_uncover(spec_df, mock_name)
 
 
-# zqual_df_cont_covered = ascii.read('/Users/brianlorenz/uncover/zqual_df_cont_covered.csv').to_pandas()
-# id_msa_list = zqual_df_cont_covered['id_msa']
-# fit_all_emission_uncover(id_msa_list)
+zqual_df_cont_covered = ascii.read('/Users/brianlorenz/uncover/zqual_df_cont_covered.csv').to_pandas()
+id_msa_list = zqual_df_cont_covered['id_msa']
+fit_all_emission_uncover(id_msa_list)

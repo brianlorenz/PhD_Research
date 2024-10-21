@@ -4,6 +4,8 @@ import matplotlib as mpl
 import numpy as np
 
 def plot_helium_vs_pab(id_msa_list, add_str, color_var='he_snr'):
+    lineratio_df = ascii.read(f'/Users/brianlorenz/uncover/Figures/diagnostic_lineratio/lineratio_df.csv', data_start=1).to_pandas()
+
     fig, axarr = plt.subplots(1, 2, figsize = (12, 6))
     fontsize = 12
 
@@ -20,6 +22,7 @@ def plot_helium_vs_pab(id_msa_list, add_str, color_var='he_snr'):
     for id_msa in id_msa_list:
         helium_df = ascii.read(f'/Users/brianlorenz/uncover/Data/emission_fitting/helium/{id_msa}_emission_fits_helium.csv').to_pandas()
         emission_df = ascii.read(f'/Users/brianlorenz/uncover/Data/emission_fitting/{id_msa}_emission_fits.csv').to_pandas()
+        lineratio_row = lineratio_df[lineratio_df['id_msa'] == id_msa]
 
         ha_flux = emission_df.iloc[0]['flux']
         pab_flux = emission_df.iloc[1]['flux']
@@ -31,8 +34,14 @@ def plot_helium_vs_pab(id_msa_list, add_str, color_var='he_snr'):
         if color_var == 'he_snr':
             norm = mpl.colors.Normalize(vmin=0, vmax=5) 
             rgba = cmap(norm(he_snr))
+            color_str = '_he_snr'
+        if color_var == 'sed_ratio':
+            norm = mpl.colors.Normalize(vmin=0, vmax=18) 
+            rgba = cmap(norm(lineratio_row['sed_lineratio']))
+            color_str = '_sed_ratio'
         else:
             rgba = 'black'
+            color_str = ''
         print(he_snr)
 
         ax_ha_pab.plot(ha_flux, pab_flux, marker='o', color='black', ls='None')
@@ -51,7 +60,7 @@ def plot_helium_vs_pab(id_msa_list, add_str, color_var='he_snr'):
 
     sm =  mpl.cm.ScalarMappable(norm=norm, cmap=cmap)
     cbar = fig.colorbar(sm)
-    cbar.set_label('Helium SNR', fontsize=fontsize)
+    cbar.set_label(color_var, fontsize=fontsize)
     cbar.ax.tick_params(labelsize=fontsize)
     for ax in axarr:
         ax.tick_params(labelsize=fontsize)
@@ -59,7 +68,7 @@ def plot_helium_vs_pab(id_msa_list, add_str, color_var='he_snr'):
 
 
 
-    fig.savefig(f'/Users/brianlorenz/uncover/Figures/diagnostic_lineratio/helium_strength_{add_str}.pdf')
+    fig.savefig(f'/Users/brianlorenz/uncover/Figures/diagnostic_lineratio/helium_strength_{add_str}{color_str}.pdf')
     # plt.show()
 
 
@@ -76,7 +85,10 @@ def scale_aspect(ax):
 zqual_df_cont_covered = ascii.read('/Users/brianlorenz/uncover/zqual_df_cont_covered.csv').to_pandas()
 id_msa_list = zqual_df_cont_covered['id_msa']
 plot_helium_vs_pab(id_msa_list, 'full_sample')
+plot_helium_vs_pab(id_msa_list, 'full_sample', color_var='sed_ratio')
+
 
 filtered_lineratio_df = ascii.read(f'/Users/brianlorenz/uncover/Figures/diagnostic_lineratio/filtered_lineratio_df.csv').to_pandas()
 id_msa_list = filtered_lineratio_df['id_msa']
 plot_helium_vs_pab(id_msa_list, 'good_sample')
+plot_helium_vs_pab(id_msa_list, 'good_sample', color_var='sed_ratio')
