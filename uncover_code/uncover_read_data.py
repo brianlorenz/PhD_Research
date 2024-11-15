@@ -26,6 +26,11 @@ def read_SPS_cat():
     sps_df = make_pd_table_from_fits(sps_loc)
     return sps_df
 
+def read_lineflux_cat():
+    lines_loc = '/Users/brianlorenz/uncover/Catalogs/uncover-msa-full_depth-default_drz-v0.8a-lines.fits'
+    lines_df = make_pd_table_from_fits(lines_loc)
+    return lines_df
+
 def read_segmap():
     segmap_loc = '/Users/brianlorenz/uncover/Catalogs/UNCOVER_v5.2.0_SEGMAP.fits'
     with fits.open(segmap_loc) as hdu:

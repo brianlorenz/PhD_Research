@@ -30,7 +30,7 @@ from filter_integrals import integrate_filter, get_transmission_at_line, get_lin
 from uncover_prospector_seds import read_prospector
 
 
-correct_pab = 1
+correct_pab = 0
 
 colors = ['red', 'green', 'blue']
 connect_color = 'green'
@@ -86,6 +86,7 @@ def make_all_dustmap():
     sed_ratios = []
     err_sed_ratios_low = []
     err_sed_ratios_high = []
+    sed_ratios_cor_he = []
     emission_ratios = []
     err_emission_ratios_low = []
     err_emission_ratios_high = []
@@ -107,10 +108,11 @@ def make_all_dustmap():
     ha_emfit_fluxes = []
     pab_emfit_fluxes = []
     for id_msa in id_msa_list:
-        sed_lineratio, err_sed_lineratios, line_ratio_from_spec, emission_lineratios, ha_trasm_flag, pab_trasm_flag, sed_intspec_compare_values, line_ratio_from_spec_fit_sed_prospect, spec_scale_factor, line_flux_compares = make_dustmap(id_msa)
+        sed_lineratio, err_sed_lineratios, line_ratio_from_spec, emission_lineratios, ha_trasm_flag, pab_trasm_flag, sed_intspec_compare_values, line_ratio_from_spec_fit_sed_prospect, spec_scale_factor, line_flux_compares, sed_lineratio_cor_he = make_dustmap(id_msa)
         sed_ratios.append(sed_lineratio)
         err_sed_ratios_low.append(err_sed_lineratios[0])
         err_sed_ratios_high.append(err_sed_lineratios[1])
+        sed_ratios_cor_he.append(sed_lineratio_cor_he)
         spec_ratios.append(line_ratio_from_spec)
         emission_ratios.append(emission_lineratios[0])
         err_emission_ratios_low.append(emission_lineratios[1])
@@ -136,7 +138,7 @@ def make_all_dustmap():
     compare_emfit_df = pd.DataFrame(zip(id_msa_list, ha_sed_fluxes, pab_sed_fluxes, ha_emfit_fluxes, pab_emfit_fluxes), columns=['id_msa', 'ha_sed_flux', 'pab_sed_flux', 'ha_emfit_flux', 'pab_emfit_flux'])
     compare_emfit_df.to_csv('/Users/brianlorenz/uncover/Figures/diagnostic_lineratio/compare_emfit_df.csv', index=False)
 
-    lineratio_df = pd.DataFrame(zip(id_msa_list, sed_ratios, err_sed_ratios_low, err_sed_ratios_high, spec_ratios, emission_ratios, err_emission_ratios_low, err_emission_ratios_high, int_spec_ha_compares, int_spec_pab_compares, ha_sed_value_compares, pab_sed_value_compares, err_ha_sed_value_compare_lows, err_ha_sed_value_compare_highs, err_pab_sed_value_compare_lows, err_pab_sed_value_compare_highs, line_ratio_from_spec_fit_sed_prospects, spec_scale_factors), columns=['id_msa', 'sed_lineratio', 'sed_lineratio_16', 'sed_lineratio_84', 'integrated_spec_lineratio', 'emission_fit_lineratio', 'err_emission_fit_lineratio_low', 'err_emission_fit_lineratio_high', 'int_spec_ha_compare', 'int_spec_pab_compare', 'sed_ha_compare', 'sed_pab_compare', 'sed_ha_compare_16', 'sed_ha_compare_84', 'sed_pab_compare_16', 'sed_pab_compare_84', 'line_ratio_prospector_fit', 'spec_scale_factor'])
+    lineratio_df = pd.DataFrame(zip(id_msa_list, sed_ratios, err_sed_ratios_low, err_sed_ratios_high, sed_ratios_cor_he, spec_ratios, emission_ratios, err_emission_ratios_low, err_emission_ratios_high, int_spec_ha_compares, int_spec_pab_compares, ha_sed_value_compares, pab_sed_value_compares, err_ha_sed_value_compare_lows, err_ha_sed_value_compare_highs, err_pab_sed_value_compare_lows, err_pab_sed_value_compare_highs, line_ratio_from_spec_fit_sed_prospects, spec_scale_factors), columns=['id_msa', 'sed_lineratio', 'sed_lineratio_16', 'sed_lineratio_84', 'sed_lineratio_cor_he', 'integrated_spec_lineratio', 'emission_fit_lineratio', 'err_emission_fit_lineratio_low', 'err_emission_fit_lineratio_high', 'int_spec_ha_compare', 'int_spec_pab_compare', 'sed_ha_compare', 'sed_pab_compare', 'sed_ha_compare_16', 'sed_ha_compare_84', 'sed_pab_compare_16', 'sed_pab_compare_84', 'line_ratio_prospector_fit', 'spec_scale_factor'])
     lineratio_df.to_csv('/Users/brianlorenz/uncover/Figures/diagnostic_lineratio/lineratio_df.csv', index=False)
 
     
@@ -200,6 +202,10 @@ def make_dustmap(id_msa):
     pab_flux_fit = fit_df.iloc[1]['flux']
     ha_sigma = fit_df.iloc[0]['sigma'] # full width of the line
     pab_sigma = fit_df.iloc[1]['sigma'] # full width of the line
+
+    helium_df = ascii.read(f'/Users/brianlorenz/uncover/Data/emission_fitting/helium/{id_msa}_emission_fits_helium.csv').to_pandas()
+    he_flux = helium_df.iloc[1]['flux']
+    pab_cor_helium_factor = pab_flux_fit / (pab_flux_fit + he_flux)
 
     # Check the coverage fraction of the lines - we want it high in the line, but 0 int he continuum filters
     ha_avg_transmission = get_line_coverage(ha_sedpy_filt, line_list[0][1] * (1+redshift), ha_sigma * (1+redshift))
@@ -270,8 +276,11 @@ def make_dustmap(id_msa):
     pab_cont_pct, pab_sed_lineflux, pab_sed_value_scaled, pab_trasm_flag, pab_boot_lines, pab_green_flux_sed = plot_sed_around_line(ax_pab_sed, pab_filters, sed_df, spec_df, redshift, 1, line_transmissions[1], pab_transmissions, id_msa)
     if correct_pab:
         pab_sed_lineflux = pab_sed_lineflux * 0.8
+
+    pab_sed_lineflux_cor_he = pab_cor_helium_factor * pab_sed_lineflux
    
     sed_lineratio = compute_lineratio(ha_sed_lineflux, pab_sed_lineflux)
+    sed_lineratio_cor_he = compute_lineratio(ha_sed_lineflux, pab_sed_lineflux_cor_he)
     boot_sed_lineratios = compute_lineratio(ha_boot_lines, pab_boot_lines)
     err_sed_lineratio_low = np.percentile(boot_sed_lineratios, 16)
     err_sed_lineratio_high = np.percentile(boot_sed_lineratios, 84)
@@ -423,6 +432,17 @@ def make_dustmap(id_msa):
     ax_ha_linemap.imshow(ha_linemap_logscaled, cmap=cmap, norm=ha_linemap_norm)
     ax_pab_linemap.imshow(pab_linemap_logscaled,cmap=cmap, norm=pab_linemap_norm)
 
+    x = np.arange(pab_linemap.shape[1])
+    y = np.arange(pab_linemap.shape[0])
+    X_pab, Y_pab = np.meshgrid(x, y)
+    # breakpoint()
+    # Set where pab snr is not at least 2, to zero
+    pab_linemap_snr_filt = deepcopy(pab_linemap)
+    pab_linemap_snr_filt[~pab_snr_idxs] = 0
+    ax_ha_linemap.contour(X_pab, Y_pab, pab_linemap_snr_filt, levels=3, cmap='Greys')
+
+
+
     # Smooth the dust map
     sigma = 3.0  # Standard deviation for Gaussian kernel
     kernel = Gaussian2DKernel(sigma)
@@ -430,7 +450,10 @@ def make_dustmap(id_msa):
 
     # Showdustmap, masked points in gray
     ax_dustmap.imshow(dustmap_logscaled, cmap=cmap, norm=dustmap_norm)
-    masked_dustmap = np.ma.masked_where(ha_linemap_snr+1 > 1.5, ha_linemap_snr+1)
+    combined_mask = np.logical_and(ha_linemap_snr>0, dilated_segmap_idxs)
+    # masked_dustmap = np.ma.masked_where(ha_linemap_snr+1 > 1.5, ha_linemap_snr+1)
+    # snr_mask_idxs = np.logical_and(masked_dustmap.mask,dilated_segmap_idxs)
+    masked_dustmap = np.ma.masked_where(combined_mask+1 > 1.5, combined_mask+1)
     from matplotlib import colors
     cmap_gray = colors.ListedColormap(['gray'])
     ax_dustmap.imshow(masked_dustmap, cmap=cmap_gray)
@@ -516,12 +539,12 @@ def make_dustmap(id_msa):
     ax_ha_pab.set_title('Ha / PaB')
     ax_dustmap2.set_title('Dust Map (AV)')
     
-    plt.show()
+    # plt.show()
 
 
     fig2.savefig(f'/Users/brianlorenz/uncover/Figures/dust_map_zoom/{id_msa}_dust_map_zoom.pdf')
 
-    return sed_lineratio, err_sed_lineratios, line_ratio_from_spec, emission_lineratios, ha_trasm_flag, pab_trasm_flag, sed_intspec_compare_values, line_ratio_from_spec_fit_sed_prospect, spec_scale_factor, line_flux_compares
+    return sed_lineratio, err_sed_lineratios, line_ratio_from_spec, emission_lineratios, ha_trasm_flag, pab_trasm_flag, sed_intspec_compare_values, line_ratio_from_spec_fit_sed_prospect, spec_scale_factor, line_flux_compares, sed_lineratio_cor_he
 
 def plot_sed_around_line(ax, filters, sed_df, spec_df, redshift, line_index, line_scaled_transmission, transmissions, id_msa, bootstrap=1000, plt_purple_merged_point = 0, plt_prospect=0, show_trasm=0):
     # Controls for various elements on the plot

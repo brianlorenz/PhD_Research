@@ -6,12 +6,13 @@ import matplotlib as mpl
 from matplotlib.cm import ScalarMappable
 from sedpy import observate
 from make_dust_maps import make_3color
-from uncover_read_data import read_raw_spec
+from uncover_read_data import read_raw_spec, read_lineflux_cat
 from uncover_make_sed import get_sed
 from compute_av import ha_factor, pab_factor, compute_ratio_from_av, compute_ha_pab_av, compute_ha_pab_av_from_dustmap, read_catalog_av
 import pandas as pd
+from fit_emission_uncover_wave_divide import line_list
 
-def diagnostic_av_emissionfit_vs_av_prospector(color_var = 'None', use_subsample=True, remove_nii=False):
+def diagnostic_av_emissionfit_vs_av_prospector(color_var = 'None', use_subsample=True, remove_nii=False, he_cor=False):
     zqual_df = read_spec_cat()
 
     zqual_df_cont_covered = ascii.read('/Users/brianlorenz/uncover/zqual_df_cont_covered.csv').to_pandas()
@@ -27,11 +28,15 @@ def diagnostic_av_emissionfit_vs_av_prospector(color_var = 'None', use_subsample
         add_str = ''
     if remove_nii:
         add_str = add_str + '_removeNii'
+    if he_cor:
+        add_str = add_str + '_corHe'
     
     lineratio_df['integrated_spec_av'] = compute_ha_pab_av(1/lineratio_df['integrated_spec_lineratio'])
     sed_lineratio = lineratio_df['sed_lineratio']
     if remove_nii:
         sed_lineratio = 0.8*sed_lineratio
+    if he_cor:
+        sed_lineratio = lineratio_df['sed_lineratio_cor_he']
     lineratio_df['sed_av'] = compute_ha_pab_av(1/sed_lineratio)
     
     
@@ -113,7 +118,7 @@ def diagnostic_av_emissionfit_vs_av_prospector(color_var = 'None', use_subsample
         else:
             rgba = 'black'
 
-        #FOr sed method
+        #For sed method
         sed_av_50 = lineratio_df.iloc[i]['sed_av']
         sed_av_16 = lineratio_df.iloc[i]['sed_av_16']
         sed_av_84 = lineratio_df.iloc[i]['sed_av_84']
@@ -449,19 +454,26 @@ def hb_eq_width_continuum(use_subsample=1, line='pab'):
     else:
         lineratio_df = ascii.read('/Users/brianlorenz/uncover/Figures/diagnostic_lineratio/lineratio_df.csv').to_pandas()
     id_msa_list = lineratio_df['id_msa']
+    lines_df = read_lineflux_cat()
     line_eq_widths = []
+    catalog_eq_widths = []
     for id_msa in id_msa_list:
         emission_df = ascii.read(f'/Users/brianlorenz/uncover/Data/emission_fitting/{id_msa}_emission_fits.csv').to_pandas()
+        lines_df_row = lines_df[lines_df['id_msa'] == id_msa]
         if line=='pab':
             line_eq_width = emission_df['equivalent_width_aa'].iloc[1]
+            catalog_eqw = lines_df_row['eqw_PaB'].iloc[0]
             line_label = 'Sample PaB'
             line_color = 'red'
         elif line=='ha':
             line_eq_width = emission_df['equivalent_width_aa'].iloc[0]
+            catalog_eqw = lines_df_row['eqw_Ha+NII'].iloc[0]
             line_label = 'Sample Ha'
             line_color = 'magenta'
         line_eq_widths.append(line_eq_width)
+        catalog_eq_widths.append(catalog_eqw)
     ax.vlines(line_eq_widths, -5, 10, colors=line_color, linestyles='--', label=line_label)
+    # ax.vlines(catalog_eq_widths, -5, 10, colors='purple', linestyles='--', label=line_label)
     
     
     ax.set_xscale('log')
@@ -482,10 +494,108 @@ def hb_eq_width_continuum(use_subsample=1, line='pab'):
     fig.savefig(f'/Users/brianlorenz/uncover/Figures/diagnostic_lineratio/eq_width_test_{line}.pdf')
 
 
+def line_cat_vs_measured():
+    fig, axarr = plt.subplots(2,2,figsize=(12,12))
+    ax_ha_flux = axarr[0,0]
+    ax_pab_flux = axarr[0,1]
+    ax_ha_eqw = axarr[1,0]
+    ax_pab_eqw = axarr[1,1]
+
+    filtered_lineratio_df = ascii.read(f'/Users/brianlorenz/uncover/Figures/diagnostic_lineratio/filtered_lineratio_df.csv').to_pandas()
+    lineratio_df = filtered_lineratio_df
+    id_msa_list = lineratio_df['id_msa']
+    lines_df = read_lineflux_cat()
+    
+    for id_msa in id_msa_list:
+        lines_df_row = lines_df[lines_df['id_msa'] == id_msa]
+        emission_df = ascii.read(f'/Users/brianlorenz/uncover/Data/emission_fitting/{id_msa}_emission_fits.csv').to_pandas()
+        c = 299792458 # m/s
+
+        ha_wave = line_list[0][1]
+        pab_wave = line_list[1][1]
+        ha_flux  = emission_df['flux'].iloc[0]
+        pab_flux  = emission_df['flux'].iloc[1]
+        ha_flux_jy = ha_flux / (1e-23*1e10*c / ((ha_wave)**2))
+        pab_flux_jy = pab_flux / (1e-23*1e10*c / ((pab_wave)**2))
+        ha_flux_cat_jy = lines_df_row['f_Ha+NII'].iloc[0] * 1e-8
+        pab_flux_cat_jy = lines_df_row['f_PaB'].iloc[0] * 1e-8
+
+        ha_eqw = emission_df['equivalent_width_aa'].iloc[0]
+        pab_eqw = emission_df['equivalent_width_aa'].iloc[1]
+        cat_ha_eqw = lines_df_row['eqw_Ha+NII'].iloc[0]
+        cat_pab_eqw = lines_df_row['eqw_PaB'].iloc[0]
+
+        # def plot_with_same_lims(ax, x, y):
+        #     min_val = min(np.min(x), np.min(y))
+        #     max_val = max(np.max(x), np.max(y))
+
+        #     # Create the plot
+        #     ax.plot(ha_flux_cat_jy, ha_flux_jy, marker='o', ls='None', color='black')
+
+        #     # Set limits
+        #     ax.set_xlim(min_val, max_val)
+        #     ax.set_ylim(min_val, max_val)
+
+
+        # plot_with_same_lims(ax_ha_flux, ha_flux_cat_jy, ha_flux_jy)
+        # plot_with_same_lims(ax_pab_flux, pab_flux_cat_jy, pab_flux_jy)
+        # plot_with_same_lims(ax_ha_eqw, cat_ha_eqw, ha_eqw)
+        # plot_with_same_lims(ax_pab_eqw, cat_pab_eqw, pab_eqw)
+        ax_ha_flux.plot(ha_flux_cat_jy, ha_flux_jy, marker='o', ls='None', color='black')
+        ax_pab_flux.plot(pab_flux_cat_jy, pab_flux_jy, marker='o', ls='None', color='black')
+        ax_ha_eqw.plot(cat_ha_eqw, ha_eqw, marker='o', ls='None', color='black')
+        ax_pab_eqw.plot(cat_pab_eqw, pab_eqw, marker='o', ls='None', color='black')
+    
+
+    fontsize = 14
+    # one-to-one
+    for ax in [ax_ha_flux, ax_pab_flux, ax_ha_eqw, ax_pab_eqw]:
+        xlims = ax.get_xlim()
+        ylims = ax.get_ylim()
+        ax.plot([-100, 10000], [-100, 10000], ls='--', color='red', marker='None')
+        ax.set_xlim(xlims)
+        ax.set_ylim(ylims)
+        ax.set_xscale('log')
+        ax.set_yscale('log')
+        ax.tick_params(labelsize=fontsize)
+    
+    ax_ha_flux.set_ylabel('Spec Fit Flux (Jy)', fontsize = fontsize)
+    ax_pab_flux.set_ylabel('Spec Fit Flux (Jy)', fontsize = fontsize)
+    ax_ha_eqw.set_ylabel('Spec Fit Eq Width (Angstrom)', fontsize = fontsize)
+    ax_pab_eqw.set_ylabel('Spec Fit Eq Width (Angstrom)', fontsize = fontsize)
+
+    ax_ha_flux.set_xlabel('Catalog Flux (Jy)', fontsize = fontsize)
+    ax_pab_flux.set_xlabel('Catalog Flux (Jy)', fontsize = fontsize)
+    ax_ha_eqw.set_xlabel('Catalog Eq Width (Angstrom)', fontsize = fontsize)
+    ax_pab_eqw.set_xlabel('Catalog Eq Width (Angstrom)', fontsize = fontsize)
+
+    ax_ha_flux.set_xlim(0.5e-5, 2e-4)
+    ax_ha_flux.set_ylim(0.5e-5, 2e-4)
+    ax_pab_flux.set_xlim(0.01e-6, 8e-5)
+    ax_pab_flux.set_ylim(0.01e-6, 8e-5)
+    ax_ha_eqw.set_xlim(50, 5000)
+    ax_ha_eqw.set_ylim(50, 5000)
+    ax_pab_eqw.set_xlim(3, 1500)
+    ax_pab_eqw.set_ylim(3, 1500)
+
+    # ax_ha_eqw.set_xscale('log')
+    # ax_ha_eqw.set_yscale('log')
+    # ax_pab_eqw.set_xscale('log')
+    # ax_pab_eqw.set_yscale('log')
+
+    ax_ha_flux.set_title('Ha', fontsize = 18)
+    ax_pab_flux.set_title('PaB', fontsize = 18)
+
+    fig.savefig('/Users/brianlorenz/uncover/Figures/diagnostic_lineratio/compare_to_catalog.pdf')
+
+
 # lineflux_compare(plot_all=True)
 
 # hb_eq_width_continuum(line='ha')
 # hb_eq_width_continuum(line='pab')
 
-# diagnostic_av_emissionfit_vs_av_prospector(remove_nii=True)
+# diagnostic_av_emissionfit_vs_av_prospector(remove_nii=False)
+# diagnostic_av_emissionfit_vs_av_prospector(remove_nii=False, he_cor=True)
 # diagnostic_measured_value_vs_truth(truth_var='emission_fit', plot_var='line_ratio_prospector_fit', color_var='z_spec')
+
+# line_cat_vs_measured()
