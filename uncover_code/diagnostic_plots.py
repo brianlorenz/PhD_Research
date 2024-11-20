@@ -384,15 +384,15 @@ for truth_var in truth_vars:
         for color_var in color_vars:
             diagnostic_measured_value_vs_truth(truth_var=truth_var, plot_var=plot_var, color_var=color_var)
 
-def lineflux_compare(plot_all=False):
+def lineflux_compare(plot_all=False, compare_to_cat=True):
     compare_emfit_df = ascii.read('/Users/brianlorenz/uncover/Figures/diagnostic_lineratio/compare_emfit_df.csv').to_pandas()
     compare_emfit_df['ha_ratio'] = compare_emfit_df['ha_sed_flux'] / compare_emfit_df['ha_emfit_flux']
     compare_emfit_df['pab_ratio'] = compare_emfit_df['pab_sed_flux'] / compare_emfit_df['pab_emfit_flux']
 
     lineratio_df = ascii.read('/Users/brianlorenz/uncover/Figures/diagnostic_lineratio/lineratio_df.csv').to_pandas()
     filtered_lineratio_df = ascii.read(f'/Users/brianlorenz/uncover/Figures/diagnostic_lineratio/filtered_lineratio_df.csv').to_pandas()
-    breakpoint()
-    compute_ratio_from_av(A_V_value)
+    # breakpoint()
+    # compute_ratio_from_av(A_V_value)
 
 
     if plot_all:
@@ -407,9 +407,40 @@ def lineflux_compare(plot_all=False):
     ax_pab = axarr[1]
     ax_ratio = axarr[2]
 
-    ax_ha.plot(merged_df['ha_emfit_flux'], merged_df['ha_sed_flux'], marker='o', ls='None', color='black')
-    ax_pab.plot(merged_df['pab_emfit_flux'], merged_df['pab_sed_flux'], marker='o', ls='None', color='black')
-    ax_ratio.plot(merged_df['emission_fit_lineratio'], merged_df['sed_lineratio'], marker='o', ls='None', color='black')
+    lines_df = read_lineflux_cat()
+    merged_df['cat_Ha_flux_jy'] = np.zeros(len(merged_df))
+    merged_df['cat_PaB_flux_jy'] = np.zeros(len(merged_df))
+    merged_df['cat_lineratio'] = np.zeros(len(merged_df))
+    for i in range(len(merged_df)):
+        id_msa = merged_df['id_msa'].iloc[i]
+        lines_df_row = lines_df[lines_df['id_msa'] == id_msa]
+        emission_df = ascii.read(f'/Users/brianlorenz/uncover/Data/emission_fitting/{id_msa}_emission_fits.csv').to_pandas()
+        c = 299792458 # m/s
+        ha_flux_cat_jy = lines_df_row['f_Ha+NII'].iloc[0] * 1e-8
+        pab_flux_cat_jy = lines_df_row['f_PaB'].iloc[0] * 1e-8
+        merged_df['cat_Ha_flux_jy'].iloc[i] = ha_flux_cat_jy
+        merged_df['cat_PaB_flux_jy'].iloc[i] = pab_flux_cat_jy
+        merged_df['cat_lineratio'] = merged_df['cat_Ha_flux_jy'] / merged_df['cat_PaB_flux_jy']
+
+    x_axis_plot_ha = merged_df['ha_emfit_flux']
+    x_axis_plot_pab = merged_df['pab_emfit_flux']
+    ratio_to_plot = merged_df['emission_fit_lineratio']
+    xlabel = 'Emission Fit'
+
+    add_str2 = ''
+    if compare_to_cat == True:
+        x_axis_plot_ha = merged_df['cat_Ha_flux_jy']
+        x_axis_plot_pab = merged_df['cat_PaB_flux_jy']
+        ratio_to_plot = merged_df['cat_lineratio']
+        xlabel = 'Catalog'
+        add_str2 = '_catalog'
+
+    ax_ha.plot(x_axis_plot_ha, merged_df['ha_sed_flux'], marker='o', ls='None', color='black')
+    ax_pab.plot(x_axis_plot_pab, merged_df['pab_sed_flux'], marker='o', ls='None', color='black')
+    ax_ratio.plot(ratio_to_plot, merged_df['sed_lineratio'], marker='o', ls='None', color='black')
+    for i in range(len(merged_df)):
+        ax_ha.text(x_axis_plot_ha.iloc[i], merged_df['ha_sed_flux'].iloc[i], f'{merged_df["id_msa"].iloc[i]}', color='black')
+        ax_pab.text(x_axis_plot_pab.iloc[i], merged_df['pab_sed_flux'].iloc[i], f'{merged_df["id_msa"].iloc[i]}', color='black')
 
     for ax in axarr:
         ax.tick_params(labelsize=12)
@@ -422,15 +453,15 @@ def lineflux_compare(plot_all=False):
         ax.set_ylim(ylims)
     for ax in [ax_ha, ax_pab]:
         ax.set_ylabel('SED Method Flux')
-        ax.set_xlabel('Emission Fit Flux')
+        ax.set_xlabel(f'{xlabel} Flux')
     
     ax_ha.set_title('Halpha')
     ax_pab.set_title('PaBeta')
 
     ax_ratio.set_ylabel('SED Method Ratio')
-    ax_ratio.set_xlabel('Emission Fit Ratio')
+    ax_ratio.set_xlabel(f'{xlabel} Ratio')
 
-    fig.savefig(f'/Users/brianlorenz/uncover/Figures/diagnostic_lineratio/lineflux_compare{add_str}.pdf')
+    fig.savefig(f'/Users/brianlorenz/uncover/Figures/diagnostic_lineratio/lineflux_compare{add_str2}{add_str}.pdf')
 
 def hb_eq_width_continuum(use_subsample=1, line='pab'):
     eq_width_df = ascii.read('/Users/brianlorenz/uncover/Figures/diagnostic_lineratio/eq_width_df.csv').to_pandas()
@@ -588,14 +619,16 @@ def line_cat_vs_measured():
 
     fig.savefig('/Users/brianlorenz/uncover/Figures/diagnostic_lineratio/compare_to_catalog.pdf')
 
+if __name__ == "__main__":
+    # lineflux_compare(plot_all=False, compare_to_cat=True)
+    # lineflux_compare(plot_all=False)
 
-# lineflux_compare(plot_all=True)
+    # hb_eq_width_continuum(line='ha')
+    # hb_eq_width_continuum(line='pab')
 
-# hb_eq_width_continuum(line='ha')
-# hb_eq_width_continuum(line='pab')
+    # diagnostic_av_emissionfit_vs_av_prospector(remove_nii=False)
+    # diagnostic_av_emissionfit_vs_av_prospector(remove_nii=False, he_cor=True)
+    # diagnostic_measured_value_vs_truth(truth_var='emission_fit', plot_var='line_ratio_prospector_fit', color_var='z_spec')
 
-# diagnostic_av_emissionfit_vs_av_prospector(remove_nii=False)
-# diagnostic_av_emissionfit_vs_av_prospector(remove_nii=False, he_cor=True)
-# diagnostic_measured_value_vs_truth(truth_var='emission_fit', plot_var='line_ratio_prospector_fit', color_var='z_spec')
-
-# line_cat_vs_measured()
+    # line_cat_vs_measured()
+    pass

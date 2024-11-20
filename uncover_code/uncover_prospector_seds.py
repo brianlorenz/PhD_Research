@@ -105,11 +105,13 @@ def make_all_prospector(id_msa_list):
     for id_msa in id_msa_list:
         make_prospector(id_msa, plt_jy=True)
 
-# id_msa = 47875
-# make_prospector(id_msa, plt_jy=True)
-# read_prospector(id_msa)
-# plot_prospector_vs_sed(id_msa)
-        
-# zqual_detected_df = ascii.read('/Users/brianlorenz/uncover/zqual_detected.csv').to_pandas()
-# id_msa_list = zqual_detected_df['id_msa'].to_list()
-# make_all_prospector(id_msa_list)
+if __name__ == "__main__":
+    # id_msa = 47875
+    # make_prospector(id_msa, plt_jy=True)
+    # read_prospector(id_msa)
+    # plot_prospector_vs_sed(id_msa)
+            
+    # zqual_detected_df = ascii.read('/Users/brianlorenz/uncover/zqual_detected.csv').to_pandas()
+    # id_msa_list = zqual_detected_df['id_msa'].to_list()
+    # make_all_prospector(id_msa_list)
+    pass

@@ -90,16 +90,17 @@ def scale_aspect(ax):
     xdiff = np.abs(xlims[1]-xlims[0])
     ax.set_aspect(xdiff/ydiff)
 
+if __name__ == "__main__":
+    # zqual_df_cont_covered = ascii.read('/Users/brianlorenz/uncover/zqual_df_cont_covered.csv').to_pandas()
+    # id_msa_list = zqual_df_cont_covered['id_msa']
+    # plot_helium_vs_pab(id_msa_list, 'full_sample')
+    # plot_helium_vs_pab(id_msa_list, 'full_sample', color_var='sed_ratio')
+    # plot_helium_vs_pab(id_msa_list, 'full_sample', color_var='redshift')
 
-# zqual_df_cont_covered = ascii.read('/Users/brianlorenz/uncover/zqual_df_cont_covered.csv').to_pandas()
-# id_msa_list = zqual_df_cont_covered['id_msa']
-# plot_helium_vs_pab(id_msa_list, 'full_sample')
-# plot_helium_vs_pab(id_msa_list, 'full_sample', color_var='sed_ratio')
-# plot_helium_vs_pab(id_msa_list, 'full_sample', color_var='redshift')
 
-
-# filtered_lineratio_df = ascii.read(f'/Users/brianlorenz/uncover/Figures/diagnostic_lineratio/filtered_lineratio_df.csv').to_pandas()
-# id_msa_list = filtered_lineratio_df['id_msa']
-# plot_helium_vs_pab(id_msa_list, 'good_sample')
-# plot_helium_vs_pab(id_msa_list, 'good_sample', color_var='sed_ratio')
-# plot_helium_vs_pab(id_msa_list, 'good_sample', color_var='redshift')
+    # filtered_lineratio_df = ascii.read(f'/Users/brianlorenz/uncover/Figures/diagnostic_lineratio/filtered_lineratio_df.csv').to_pandas()
+    # id_msa_list = filtered_lineratio_df['id_msa']
+    # plot_helium_vs_pab(id_msa_list, 'good_sample')
+    # plot_helium_vs_pab(id_msa_list, 'good_sample', color_var='sed_ratio')
+    # plot_helium_vs_pab(id_msa_list, 'good_sample', color_var='redshift')
+    pass

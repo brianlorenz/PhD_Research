@@ -48,6 +48,16 @@ def compare_sed_flux(id_msa, make_plot=True):
     prospector_spec_df['spec_scaled_flux'] = poly5(prospector_spec_df['flux_jy'], popt[0], popt[1], popt[2], popt[3], popt[4], popt[5])
     prospector_sed_df['spec_scaled_flux'] = poly5(prospector_sed_df['flux_jy'], popt[0], popt[1], popt[2], popt[3], popt[4], popt[5])
     loc_prospector_spec_df, loc_prospector_sed_df = get_prospect_df_loc(id_msa)
+   
+    # # Views the pab line
+    # redshift = 1.82
+    # prospector_spec_df['rest_wave_aa'] = (prospector_spec_df['wave_um'] / (1+redshift)) * 10000
+    # spec_idxs = np.logical_and(prospector_spec_df['wave_um']>3.0, prospector_spec_df['wave_um']<4.0)
+    # # spec_idxs = np.logical_and(prospector_spec_df['rest_wave_aa']>6400, prospector_spec_df['rest_wave_aa']<6800)
+    # plt.plot(prospector_spec_df[spec_idxs]['rest_wave_aa'], prospector_spec_df[spec_idxs]['flux_jy'])
+    # plt.show()
+    # breakpoint()
+   
     prospector_spec_df.to_csv(loc_prospector_spec_df, index=False)
     prospector_sed_df.to_csv(loc_prospector_sed_df, index=False)
 
@@ -106,11 +116,15 @@ def make_ratio_hist():
     ax.hist(ratio_df['red_ratio'], bins = bins, color='black')
     fig.savefig('/Users/brianlorenz/uncover/Figures/spec_sed_compare/hist_redratio.pdf')
     plt.close('all')
-# make_ratio_hist()
-# compare_sed_flux(47875)
 
-# zqual_detected_df = ascii.read('/Users/brianlorenz/uncover/zqual_detected.csv').to_pandas()
-# id_msa_list = zqual_detected_df['id_msa'].to_list()
-# compare_all_sed_flux(id_msa_list)
+if __name__ == "__main__":
+    # make_ratio_hist()
+    # compare_sed_flux(47875)
+    # compare_sed_flux(42213)
+
+    # zqual_detected_df = ascii.read('/Users/brianlorenz/uncover/zqual_detected.csv').to_pandas()
+    # id_msa_list = zqual_detected_df['id_msa'].to_list()
+    # compare_all_sed_flux(id_msa_list)
+    pass
 
 

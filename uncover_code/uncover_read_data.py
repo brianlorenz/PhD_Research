@@ -82,7 +82,8 @@ def make_pd_table_from_fits(file_loc):
         data_loc = hdu[1].data
         data_df = Table(data_loc).to_pandas()
         return data_df
-
+    
+# if __name__ == "__main__":
 # read_prism_lsf()
 # read_segmap()
 # fig, ax = plt.subplots(figsize=(20,20)) 

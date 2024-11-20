@@ -406,6 +406,21 @@ def velocity_to_sig(line_center, velocity):
     sig = line_center * (velocity / c)
     return sig
 
+def sig_to_velocity(line_center, sigma):
+    '''Given line center and velocity, get the std deviation of the Gaussian
+
+    Parameters:
+    line_center (float): Central wavelength of line (angstrom)
+    sig (float): Standard deviation of the gaussian (angstrom)
+    
+
+    Returns:
+    velocity (float): Rotational velocity of the galaxy (km/s). There might be a factor of 2 or so missing here
+    '''
+    c = 299792 #km/s
+    velocity = c * (sigma / line_center)
+    return velocity
+
 
 def get_flux(amp, sig, amp_err=0, sig_err=0):
     '''Given the amplitude and std deviation of a Gaussian, compute the line flux
@@ -617,9 +632,11 @@ def fit_all_emission_uncover(id_msa_list):
         spec_df = read_raw_spec(id_msa)
         fit_emission_uncover(spec_df, id_msa)
 
-# id_msa = 47875
-# spec_df = read_raw_spec(id_msa)
-# fit_emission_uncover(spec_df, id_msa)
+if __name__ == "__main__":
+    # id_msa = 47875
+    # spec_df = read_raw_spec(id_msa)
+    # fit_emission_uncover(spec_df, id_msa)
 
-    
-# fit_all_emission_uncover(id_msa_list)
+        
+    # fit_all_emission_uncover(id_msa_list)
+    pass
