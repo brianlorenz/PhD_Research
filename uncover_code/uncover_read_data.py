@@ -21,6 +21,11 @@ def read_supercat():
     supercat_df = make_pd_table_from_fits(supercat_loc)
     return supercat_df
 
+def read_aper_cat(aper_size='048'):
+    aper_cat_loc = f'/Users/brianlorenz/uncover/Catalogs/UNCOVER_v5.3.0_LW_D{aper_size}_CATALOG.fits'
+    aper_cat_df = make_pd_table_from_fits(aper_cat_loc)
+    return aper_cat_df
+
 def read_SPS_cat():
     sps_loc = '/Users/brianlorenz/uncover/Catalogs/msa_UNCOVER_v3.0.0_LW_SUPER_SPScatalog_spsv1.1.fits'
     sps_df = make_pd_table_from_fits(sps_loc)
@@ -83,13 +88,17 @@ def make_pd_table_from_fits(file_loc):
         data_df = Table(data_loc).to_pandas()
         return data_df
     
-# if __name__ == "__main__":
-# read_prism_lsf()
-# read_segmap()
-# fig, ax = plt.subplots(figsize=(20,20)) 
-# ax.imshow(image, vmin=np.percentile(image, 10), vmax=np.percentile(image, 75))
-# plt.show()
-# sps_df = read_SPS_cat()
-# breakpoint()
-# int_spec_df = read_integrated_spec(47875)
-# breakpoint()
+if __name__ == "__main__":
+    # read_prism_lsf()
+    # read_segmap()
+    # fig, ax = plt.subplots(figsize=(20,20)) 
+    # ax.imshow(image, vmin=np.percentile(image, 10), vmax=np.percentile(image, 75))
+    # plt.show()
+    # sps_df = read_SPS_cat()
+    # breakpoint()
+    # int_spec_df = read_integrated_spec(47875)
+    # breakpoint()
+    # supercat = read_supercat()
+    aper_cat_df = read_aper_cat()
+    breakpoint()
+    pass

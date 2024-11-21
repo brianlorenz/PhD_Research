@@ -1,4 +1,4 @@
-from uncover_read_data import read_supercat, read_raw_spec
+from uncover_read_data import read_supercat, read_raw_spec, read_aper_cat
 from uncover_sed_filters import unconver_read_filters, get_filt_cols
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -14,8 +14,15 @@ def read_sed(id_msa):
     sed_df = ascii.read(sed_loc).to_pandas()
     return sed_df
 
-def get_sed(id_msa):
+def make_aper_seds(id_msa_list, aper_size='048'):
+    for id_msa in id_msa_list:
+        sed_df = get_sed(id_msa, aper_size=aper_size)
+        sed_df.to_csv(f'/Users/brianlorenz/uncover/Data/seds/aper{aper_size}/{id_msa}_sed_aper{aper_size}.csv', index=False)
+
+def get_sed(id_msa, aper_size = 'None'):
     supercat_df = read_supercat()
+    if aper_size != 'None':
+        supercat_df = read_aper_cat(aper_size=aper_size)
     row = supercat_df[supercat_df['id_msa'] == id_msa]
     filt_dir, filters = unconver_read_filters()
     filt_cols = get_filt_cols(row)   
@@ -52,7 +59,12 @@ def plot_sed(sed_df, spec_df):
     ax.set_ylabel('Flux (Jy)', fontsize=font)
     plt.show()
 
-# main(6291)
-# main(6325)
-# main(7887)
-# main(9457)
+if __name__ == "__main__":
+    zqual_detected_df = ascii.read('/Users/brianlorenz/uncover/zqual_detected.csv').to_pandas()
+    id_msa_list = zqual_detected_df['id_msa'].to_list()
+    make_aper_seds(id_msa_list, aper_size='140')
+    # main(6291)
+    # main(6325)
+    # main(7887)
+    # main(9457)
+    pass

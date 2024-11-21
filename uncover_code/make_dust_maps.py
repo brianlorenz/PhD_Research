@@ -4,7 +4,7 @@ from astropy.io import fits, ascii
 from astropy import units as u
 from astropy.nddata import Cutout2D
 from astropy.convolution import Gaussian2DKernel, convolve
-from uncover_read_data import read_supercat, read_raw_spec, read_spec_cat, read_segmap, read_SPS_cat
+from uncover_read_data import read_supercat, read_raw_spec, read_spec_cat, read_segmap, read_SPS_cat, read_aper_cat
 from uncover_make_sed import read_sed
 from uncover_sed_filters import unconver_read_filters
 from fit_emission_uncover import line_list
@@ -108,8 +108,10 @@ def make_all_dustmap():
     pab_sed_fluxes = []
     ha_emfit_fluxes = []
     pab_emfit_fluxes = []
+
+    apertures = []
     for id_msa in id_msa_list:
-        sed_lineratio, err_sed_lineratios, line_ratio_from_spec, emission_lineratios, ha_trasm_flag, pab_trasm_flag, sed_intspec_compare_values, line_ratio_from_spec_fit_sed_prospect, spec_scale_factor, line_flux_compares, sed_lineratio_cor_he = make_dustmap(id_msa)
+        sed_lineratio, err_sed_lineratios, line_ratio_from_spec, emission_lineratios, ha_trasm_flag, pab_trasm_flag, sed_intspec_compare_values, line_ratio_from_spec_fit_sed_prospect, spec_scale_factor, line_flux_compares, sed_lineratio_cor_he, aperture = make_dustmap(id_msa)
         sed_ratios.append(sed_lineratio)
         err_sed_ratios_low.append(err_sed_lineratios[0])
         err_sed_ratios_high.append(err_sed_lineratios[1])
@@ -136,10 +138,12 @@ def make_all_dustmap():
         ha_emfit_fluxes.append(line_flux_compares[2])
         pab_emfit_fluxes.append(line_flux_compares[3])
 
+        apertures.append(aperture)
+
     compare_emfit_df = pd.DataFrame(zip(id_msa_list, ha_sed_fluxes, pab_sed_fluxes, ha_emfit_fluxes, pab_emfit_fluxes), columns=['id_msa', 'ha_sed_flux', 'pab_sed_flux', 'ha_emfit_flux', 'pab_emfit_flux'])
     compare_emfit_df.to_csv('/Users/brianlorenz/uncover/Figures/diagnostic_lineratio/compare_emfit_df.csv', index=False)
 
-    lineratio_df = pd.DataFrame(zip(id_msa_list, sed_ratios, err_sed_ratios_low, err_sed_ratios_high, sed_ratios_cor_he, spec_ratios, emission_ratios, err_emission_ratios_low, err_emission_ratios_high, int_spec_ha_compares, int_spec_pab_compares, ha_sed_value_compares, pab_sed_value_compares, err_ha_sed_value_compare_lows, err_ha_sed_value_compare_highs, err_pab_sed_value_compare_lows, err_pab_sed_value_compare_highs, line_ratio_from_spec_fit_sed_prospects, spec_scale_factors), columns=['id_msa', 'sed_lineratio', 'sed_lineratio_16', 'sed_lineratio_84', 'sed_lineratio_cor_he', 'integrated_spec_lineratio', 'emission_fit_lineratio', 'err_emission_fit_lineratio_low', 'err_emission_fit_lineratio_high', 'int_spec_ha_compare', 'int_spec_pab_compare', 'sed_ha_compare', 'sed_pab_compare', 'sed_ha_compare_16', 'sed_ha_compare_84', 'sed_pab_compare_16', 'sed_pab_compare_84', 'line_ratio_prospector_fit', 'spec_scale_factor'])
+    lineratio_df = pd.DataFrame(zip(id_msa_list, sed_ratios, err_sed_ratios_low, err_sed_ratios_high, sed_ratios_cor_he, spec_ratios, emission_ratios, err_emission_ratios_low, err_emission_ratios_high, int_spec_ha_compares, int_spec_pab_compares, ha_sed_value_compares, pab_sed_value_compares, err_ha_sed_value_compare_lows, err_ha_sed_value_compare_highs, err_pab_sed_value_compare_lows, err_pab_sed_value_compare_highs, line_ratio_from_spec_fit_sed_prospects, spec_scale_factors, apertures), columns=['id_msa', 'sed_lineratio', 'sed_lineratio_16', 'sed_lineratio_84', 'sed_lineratio_cor_he', 'integrated_spec_lineratio', 'emission_fit_lineratio', 'err_emission_fit_lineratio_low', 'err_emission_fit_lineratio_high', 'int_spec_ha_compare', 'int_spec_pab_compare', 'sed_ha_compare', 'sed_pab_compare', 'sed_ha_compare_16', 'sed_ha_compare_84', 'sed_pab_compare_16', 'sed_pab_compare_84', 'line_ratio_prospector_fit', 'spec_scale_factor', 'use_aper'])
     lineratio_df.to_csv('/Users/brianlorenz/uncover/Figures/diagnostic_lineratio/lineratio_df.csv', index=False)
 
     
@@ -185,6 +189,9 @@ def make_dustmap(id_msa):
     pab_filters = ['f_'+filt for filt in pab_filters]
     spec_df = read_raw_spec(id_msa)
     sed_df = read_sed(id_msa)
+    aper_cat_df = read_aper_cat(aper_size='048')
+    aper_cat_row = aper_cat_df[aper_cat_df['id_msa'] == id_msa]
+    breakpoint()
     zqual_df = read_spec_cat()
     redshift = zqual_df[zqual_df['id_msa']==id_msa]['z_spec'].iloc[0]
 
@@ -221,7 +228,9 @@ def make_dustmap(id_msa):
 
     # Segmap matching
     supercat_df = read_supercat()
-    id_dr3 = supercat_df[supercat_df['id_msa']==id_msa]['id'].iloc[0]
+    supercat_row = supercat_df[supercat_df['id_msa']==id_msa]
+    aperture = supercat_row['use_aper'].iloc[0] # arcsec
+    id_dr3 = supercat_row['id'].iloc[0]
     segmap_idxs = obj_segmap.data == id_dr3
     kernel = np.asarray([[False, True, False],
                      [True, True, True],
@@ -433,6 +442,11 @@ def make_dustmap(id_msa):
     ax_ha_linemap.imshow(ha_linemap_logscaled, cmap=cmap, norm=ha_linemap_norm)
     ax_pab_linemap.imshow(pab_linemap_logscaled,cmap=cmap, norm=pab_linemap_norm)
 
+    aperture_circle = plt.Circle((50, 50), aperture/0.04, edgecolor='green', facecolor='None', lw=3)
+    ax_ha_linemap.add_patch(aperture_circle)
+    aperture_circle = plt.Circle((50, 50), aperture/0.04, edgecolor='green', facecolor='None', lw=3)
+    ax_ha_cont.add_patch(aperture_circle)
+
     x = np.arange(pab_linemap.shape[1])
     y = np.arange(pab_linemap.shape[0])
     X_pab, Y_pab = np.meshgrid(x, y)
@@ -548,7 +562,7 @@ def make_dustmap(id_msa):
 
     fig2.savefig(f'/Users/brianlorenz/uncover/Figures/dust_map_zoom/{id_msa}_dust_map_zoom.pdf')
 
-    return sed_lineratio, err_sed_lineratios, line_ratio_from_spec, emission_lineratios, ha_trasm_flag, pab_trasm_flag, sed_intspec_compare_values, line_ratio_from_spec_fit_sed_prospect, spec_scale_factor, line_flux_compares, sed_lineratio_cor_he
+    return sed_lineratio, err_sed_lineratios, line_ratio_from_spec, emission_lineratios, ha_trasm_flag, pab_trasm_flag, sed_intspec_compare_values, line_ratio_from_spec_fit_sed_prospect, spec_scale_factor, line_flux_compares, sed_lineratio_cor_he, aperture
 
 def plot_sed_around_line(ax, filters, sed_df, spec_df, redshift, line_index, line_scaled_transmission, transmissions, id_msa, bootstrap=1000, plt_purple_merged_point = 0, plt_prospect=0, show_trasm=0):
     # Controls for various elements on the plot
@@ -783,7 +797,6 @@ def load_image(filt):
     with fits.open(image_str) as hdu:
         image = hdu[0].data
         wcs = WCS(hdu[0].header)
-        breakpoint()
         photflam = hdu[0].header['PHOTFLAM']
         photplam = hdu[0].header['PHOTPLAM']
         photfnu = hdu[0].header['PHOTFNU']
@@ -1132,7 +1145,7 @@ def flux_erg_to_jy(line_flux_erg, line_wave):
     return line_flux_jy
 
 if __name__ == "__main__":
-    # make_all_dustmap()
+    make_all_dustmap()
     # make_dustmap(39744)
     # make_dustmap(38163)
     # make_dustmap(34114)
@@ -1140,7 +1153,7 @@ if __name__ == "__main__":
 
 
     # make_dustmap(25147)
-    make_dustmap(47875)
+    # make_dustmap(47875)
     # make_dustmap(42213)
 
 
@@ -1148,7 +1161,8 @@ if __name__ == "__main__":
     # make_dustmap(32111)
 
 
-# make_3color(6291)
-# make_3color(22755)
-# make_3color(42203)
-# make_3color(42213)
+    # make_3color(6291)
+    # make_3color(22755)
+    # make_3color(42203)
+    # make_3color(42213)
+    pass

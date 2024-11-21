@@ -18,6 +18,7 @@ def generate_filtered_lineratio_df():
     # Read in the data
     lineratio_df = ascii.read(f'/Users/brianlorenz/uncover/Figures/diagnostic_lineratio/lineratio_df{add_str}.csv', data_start=1).to_pandas()
     zqual_df_cont_covered = ascii.read('/Users/brianlorenz/uncover/zqual_df_cont_covered.csv').to_pandas()
+    # supercat_df = read_supercat()
     good_rows = np.logical_and(zqual_df_cont_covered['ha_trasm_flag'] == 0, zqual_df_cont_covered['pab_trasm_flag'] == 0)
     good_ids = zqual_df_cont_covered[good_rows]['id_msa']
     filtered_linartio_df = lineratio_df[lineratio_df['id_msa'].isin(good_ids)]
@@ -32,7 +33,7 @@ def generate_filtered_lineratio_df():
         av_16, av_50, av_84 = read_catalog_av(id_msa, zqual_df)
         av_16s.append(av_16)
         av_50s.append(av_50)
-        av_84s.append(av_84)
+        av_84s.append(av_84)             
     filtered_linartio_df['av_16'] = av_16s
     filtered_linartio_df['av_50'] = av_50s
     filtered_linartio_df['av_84'] = av_84s
