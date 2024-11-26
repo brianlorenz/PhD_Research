@@ -384,13 +384,19 @@ for truth_var in truth_vars:
         for color_var in color_vars:
             diagnostic_measured_value_vs_truth(truth_var=truth_var, plot_var=plot_var, color_var=color_var)
 
-def lineflux_compare(plot_all=False, compare_to_cat=True):
-    compare_emfit_df = ascii.read('/Users/brianlorenz/uncover/Figures/diagnostic_lineratio/compare_emfit_df.csv').to_pandas()
+def lineflux_compare(plot_all=False, compare_to_cat=True, aper_size='None'):
+    if aper_size != 'None':
+        add_str3 = f'_aper{aper_size}'
+        lineratio_df = ascii.read(f'/Users/brianlorenz/uncover/Figures/diagnostic_lineratio/lineratio_df_aper{aper_size}.csv').to_pandas()
+        filtered_lineratio_df = ascii.read(f'/Users/brianlorenz/uncover/Figures/diagnostic_lineratio/filtered_lineratio_df_aper{aper_size}.csv').to_pandas()
+        compare_emfit_df = ascii.read(f'/Users/brianlorenz/uncover/Figures/diagnostic_lineratio/compare_emfit_df_aper{aper_size}.csv').to_pandas()
+    else:
+        add_str3 = ''
+        lineratio_df = ascii.read('/Users/brianlorenz/uncover/Figures/diagnostic_lineratio/lineratio_df.csv').to_pandas()
+        filtered_lineratio_df = ascii.read(f'/Users/brianlorenz/uncover/Figures/diagnostic_lineratio/filtered_lineratio_df.csv').to_pandas()
+        compare_emfit_df = ascii.read('/Users/brianlorenz/uncover/Figures/diagnostic_lineratio/compare_emfit_df.csv').to_pandas()
     compare_emfit_df['ha_ratio'] = compare_emfit_df['ha_sed_flux'] / compare_emfit_df['ha_emfit_flux']
     compare_emfit_df['pab_ratio'] = compare_emfit_df['pab_sed_flux'] / compare_emfit_df['pab_emfit_flux']
-
-    lineratio_df = ascii.read('/Users/brianlorenz/uncover/Figures/diagnostic_lineratio/lineratio_df.csv').to_pandas()
-    filtered_lineratio_df = ascii.read(f'/Users/brianlorenz/uncover/Figures/diagnostic_lineratio/filtered_lineratio_df.csv').to_pandas()
     # breakpoint()
     # compute_ratio_from_av(A_V_value)
 
@@ -461,7 +467,7 @@ def lineflux_compare(plot_all=False, compare_to_cat=True):
     ax_ratio.set_ylabel('SED Method Ratio')
     ax_ratio.set_xlabel(f'{xlabel} Ratio')
 
-    fig.savefig(f'/Users/brianlorenz/uncover/Figures/diagnostic_lineratio/lineflux_compare{add_str2}{add_str}.pdf')
+    fig.savefig(f'/Users/brianlorenz/uncover/Figures/diagnostic_lineratio/lineflux_compare{add_str2}{add_str}{add_str3}.pdf')
 
 def hb_eq_width_continuum(use_subsample=1, line='pab'):
     eq_width_df = ascii.read('/Users/brianlorenz/uncover/Figures/diagnostic_lineratio/eq_width_df.csv').to_pandas()
@@ -619,9 +625,70 @@ def line_cat_vs_measured():
 
     fig.savefig('/Users/brianlorenz/uncover/Figures/diagnostic_lineratio/compare_to_catalog.pdf')
 
+def sed_values_compare(aper_add_str='', use_subsample=True):
+    compare_sed_values_df = ascii.read(f'/Users/brianlorenz/uncover/Figures/diagnostic_lineratio/compare_sed_values_df{aper_add_str}.csv').to_pandas()
+    compare_emfit_df = ascii.read(f'/Users/brianlorenz/uncover/Figures/diagnostic_lineratio/compare_emfit_df{aper_add_str}.csv').to_pandas()
+    compare_sed_values_df = compare_sed_values_df.merge(compare_emfit_df, on='id_msa')
+
+    id_msa_list = compare_sed_values_df['id_msa'].to_list()
+    add_str = ''
+    if use_subsample:
+        filtered_lineratio_df = ascii.read(f'/Users/brianlorenz/uncover/Figures/diagnostic_lineratio/filtered_lineratio_df.csv').to_pandas()
+        lineratio_df = filtered_lineratio_df
+        id_msa_list = lineratio_df['id_msa']
+        add_str = '_subsamp'
+        compare_sed_values_df = compare_sed_values_df[compare_sed_values_df['id_msa'].isin(id_msa_list)]
+
+    fig, axarr = plt.subplots(2, 2, figsize=(12,12))
+    ax_ha = axarr[0,0]
+    ax_pab = axarr[0,1]
+    ax_ha_fluxcompare = axarr[1,0]
+    ax_pab_fluxcompare = axarr[1,1]
+    axes = [ax_ha, ax_pab, ax_ha_fluxcompare, ax_pab_fluxcompare]
+
+    ax_ha.plot(compare_sed_values_df['ha_sed_green_value'], compare_sed_values_df['ha_intspec_green_value'], marker='o', ls='None', color='black')
+    ax_pab.plot(compare_sed_values_df['pab_sed_green_value'], compare_sed_values_df['pab_intspec_green_value'], marker='o', ls='None', color='black')
+
+    ha_emfit_fluxes = []
+    pab_emfit_fluxes = []
+    for id_msa in id_msa_list:
+        emission_df = ascii.read(f'/Users/brianlorenz/uncover/Data/emission_fitting/{id_msa}_emission_fits.csv').to_pandas()
+        c = 299792458 # m/s
+
+        ha_wave = line_list[0][1]
+        pab_wave = line_list[1][1]
+        ha_flux  = emission_df['flux'].iloc[0]
+        pab_flux  = emission_df['flux'].iloc[1]
+        ha_flux_jy = ha_flux / (1e-23*1e10*c / ((ha_wave)**2))
+        pab_flux_jy = pab_flux / (1e-23*1e10*c / ((pab_wave)**2))
+        ha_emfit_fluxes.append(ha_flux_jy)
+        pab_emfit_fluxes.append(pab_flux_jy)
+    
+    ax_ha_fluxcompare.plot(compare_sed_values_df['ha_sed_flux'], compare_sed_values_df['ha_intspec_sedcont_flux'], marker='o', ls='None', color='black')
+    ax_pab_fluxcompare.plot(compare_sed_values_df['pab_sed_flux'], compare_sed_values_df['pab_intspec_sedcont_flux'], marker='o', ls='None', color='black')
+
+    breakpoint()
+
+    ax_ha.set_title('Halpha')
+    ax_pab.set_title('PaBeta')
+    for ax in axes:
+        ax.set_xlabel('SED green flux')
+        ax.set_ylabel('Integrated Spectrum green flux')
+        ax.set_xscale('log')
+        ax.set_yscale('log')
+        xlims = ax.get_xlim()
+        ylims = ax.get_ylim()
+        ax.plot([-100, 10000], [-100, 10000], ls='--', color='red', marker='None')
+        ax.set_xlim(xlims)
+        ax.set_ylim(ylims)
+        ax.tick_params(labelsize=14)
+    
+    fig.savefig(f'/Users/brianlorenz/uncover/Figures/diagnostic_lineratio/sed_values_compare_greenflux{add_str}.pdf')
+
+
 if __name__ == "__main__":
     # lineflux_compare(plot_all=False, compare_to_cat=True)
-    # lineflux_compare(plot_all=False)
+    # lineflux_compare(plot_all=False, compare_to_cat=False, aper_size='048')
 
     # hb_eq_width_continuum(line='ha')
     # hb_eq_width_continuum(line='pab')
@@ -631,4 +698,7 @@ if __name__ == "__main__":
     # diagnostic_measured_value_vs_truth(truth_var='emission_fit', plot_var='line_ratio_prospector_fit', color_var='z_spec')
 
     # line_cat_vs_measured()
+
+    sed_values_compare()
+    sed_values_compare(use_subsample=False)
     pass

@@ -14,9 +14,12 @@ cbar_min = 1.3
 cbar_max = 2.4
 cbar_label = 'redshift'
 
-def generate_filtered_lineratio_df():
+def generate_filtered_lineratio_df(aper_size="None"):
     # Read in the data
-    lineratio_df = ascii.read(f'/Users/brianlorenz/uncover/Figures/diagnostic_lineratio/lineratio_df{add_str}.csv', data_start=1).to_pandas()
+    if aper_size != "None":
+        lineratio_df = ascii.read(f'/Users/brianlorenz/uncover/Figures/diagnostic_lineratio/lineratio_df{add_str}_aper{aper_size}.csv', data_start=1).to_pandas()
+    else:
+        lineratio_df = ascii.read(f'/Users/brianlorenz/uncover/Figures/diagnostic_lineratio/lineratio_df{add_str}.csv', data_start=1).to_pandas()
     zqual_df_cont_covered = ascii.read('/Users/brianlorenz/uncover/zqual_df_cont_covered.csv').to_pandas()
     # supercat_df = read_supercat()
     good_rows = np.logical_and(zqual_df_cont_covered['ha_trasm_flag'] == 0, zqual_df_cont_covered['pab_trasm_flag'] == 0)
@@ -54,7 +57,10 @@ def generate_filtered_lineratio_df():
     filtered_linartio_df['emission_fit_av_low'] = emission_av_low
     filtered_linartio_df['emission_fit_av_high'] = emission_av_high
 
-    filtered_linartio_df.to_csv(f'/Users/brianlorenz/uncover/Figures/diagnostic_lineratio/filtered_lineratio_df{add_str}.csv', index=False)
+    if aper_size != "None":
+        filtered_linartio_df.to_csv(f'/Users/brianlorenz/uncover/Figures/diagnostic_lineratio/filtered_lineratio_df{add_str}_aper{aper_size}.csv', index=False)
+    else:
+        filtered_linartio_df.to_csv(f'/Users/brianlorenz/uncover/Figures/diagnostic_lineratio/filtered_lineratio_df{add_str}.csv', index=False)
     return 
 
 def make_av_compare_figure(regenerate = False):
@@ -293,7 +299,7 @@ def emission_sed_compare():
     fig.savefig(f'/Users/brianlorenz/uncover/Figures/paper_figures/emission_fit_compare{add_str}.pdf')
 
 if __name__ == "__main__":
-    # generate_filtered_lineratio_df()
+    generate_filtered_lineratio_df(aper_size='048')
     # make_av_compare_figure(regenerate=False)
     # intspec_sed_compare()
     # emission_sed_compare()

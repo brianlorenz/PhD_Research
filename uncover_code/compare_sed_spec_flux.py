@@ -10,9 +10,9 @@ from scipy.optimize import curve_fit
 from uncover_prospector_seds import read_prospector, get_prospect_df_loc
 
 
-def compare_sed_flux(id_msa, make_plot=True):
+def compare_sed_flux(id_msa, make_plot=True, aper_size='None'):
     spec_df = read_raw_spec(id_msa)
-    sed_df = get_sed(id_msa)
+    sed_df = get_sed(id_msa, aper_size=aper_size)
     filt_dict, filters = unconver_read_filters()
     
     wavelength = spec_df['wave_aa'].to_numpy()
@@ -68,7 +68,10 @@ def compare_sed_flux(id_msa, make_plot=True):
     blue_ratio = np.nanmedian(flux_ratio[0:8])
     red_ratio = np.nanmedian(flux_ratio[-8:])
 
-    sed_df.to_csv(f'/Users/brianlorenz/uncover/Data/seds/{id_msa}_sed.csv', index=False)
+    if aper_size != 'None':
+        sed_df.to_csv(f'/Users/brianlorenz/uncover/Data/seds/aper{aper_size}/{id_msa}_sed_aper{aper_size}.csv', index=False)
+    else:
+        sed_df.to_csv(f'/Users/brianlorenz/uncover/Data/seds/{id_msa}_sed.csv', index=False)
     if make_plot == True:
         fig, ax = plt.subplots(figsize=(6,6))
         ax.plot(spec_df['wave'], spec_df['flux'], color='blue', marker='None', ls='--', label='Spectrum')
@@ -86,13 +89,13 @@ def compare_sed_flux(id_msa, make_plot=True):
 
     return full_ratio, blue_ratio, red_ratio
 
-def compare_all_sed_flux(id_msa_list):
+def compare_all_sed_flux(id_msa_list, aper_size="None"):
     full_ratios = []
     blue_ratios = []
     red_ratios = []
     for id_msa in id_msa_list:
         print(f'Finding scaling factor for {id_msa}')
-        full_ratio, blue_ratio, red_ratio = compare_sed_flux(id_msa, make_plot=True)
+        full_ratio, blue_ratio, red_ratio = compare_sed_flux(id_msa, make_plot=True, aper_size=aper_size)
         full_ratios.append(full_ratio)
         blue_ratios.append(blue_ratio)
         red_ratios.append(red_ratio)
@@ -122,9 +125,9 @@ if __name__ == "__main__":
     # compare_sed_flux(47875)
     # compare_sed_flux(42213)
 
-    # zqual_detected_df = ascii.read('/Users/brianlorenz/uncover/zqual_detected.csv').to_pandas()
-    # id_msa_list = zqual_detected_df['id_msa'].to_list()
-    # compare_all_sed_flux(id_msa_list)
+    zqual_detected_df = ascii.read('/Users/brianlorenz/uncover/zqual_detected.csv').to_pandas()
+    id_msa_list = zqual_detected_df['id_msa'].to_list()
+    compare_all_sed_flux(id_msa_list, aper_size='048')
     pass
 
 

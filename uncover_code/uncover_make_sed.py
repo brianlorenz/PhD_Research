@@ -9,8 +9,10 @@ def main(id_msa):
     spec_df = read_raw_spec(id_msa)
     plot_sed(sed_df, spec_df)
 
-def read_sed(id_msa):
+def read_sed(id_msa, aper_size='None'):
     sed_loc = f'/Users/brianlorenz/uncover/Data/seds/{id_msa}_sed.csv'
+    if aper_size != 'None':
+        sed_loc = f'/Users/brianlorenz/uncover/Data/seds/aper{aper_size}/{id_msa}_sed_aper{aper_size}.csv'
     sed_df = ascii.read(sed_loc).to_pandas()
     return sed_df
 

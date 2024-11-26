@@ -26,6 +26,11 @@ def read_aper_cat(aper_size='048'):
     aper_cat_df = make_pd_table_from_fits(aper_cat_loc)
     return aper_cat_df
 
+def read_slit_loc_cat():
+    slit_loc = '/Users/brianlorenz/uncover/Catalogs/uncover-msa-DR4-shutter-locations.fits'
+    slit_loc_df = make_pd_table_from_fits(slit_loc)
+    return slit_loc_df
+
 def read_SPS_cat():
     sps_loc = '/Users/brianlorenz/uncover/Catalogs/msa_UNCOVER_v3.0.0_LW_SUPER_SPScatalog_spsv1.1.fits'
     sps_df = make_pd_table_from_fits(sps_loc)
@@ -82,12 +87,15 @@ def read_integrated_spec(id_msa):
     integrated_spec_df['flux_erg_aa'] = integrated_spec_df['integrated_spec_flux_jy'] * (1e-23*1e10*c / (integrated_spec_df['wave_aa']**2))
     return integrated_spec_df
 
+
 def make_pd_table_from_fits(file_loc):
     with fits.open(file_loc) as hdu:
         data_loc = hdu[1].data
         data_df = Table(data_loc).to_pandas()
         return data_df
-    
+
+make_pd_table_from_fits('/Users/brianlorenz/uncover/Catalogs/uncover-msa-full_depth-default_drz-v0.8a-lines.fits')
+
 if __name__ == "__main__":
     # read_prism_lsf()
     # read_segmap()
