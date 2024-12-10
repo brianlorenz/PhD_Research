@@ -93,5 +93,5 @@ def plot_offsets(all=False):
         save_loc = '/Users/brianlorenz/uncover/Figures/diagnostic_lineratio/simpletest_offset_compare_all.pdf'
     fig.savefig(save_loc)
 
-# plot_simpletests(all=True)
-# plot_offsets(all=True)
+plot_simpletests(all=False)
+plot_offsets(all=False)

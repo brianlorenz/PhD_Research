@@ -10,7 +10,7 @@ import initialize_mosdef_dirs as imd
 from axis_group_metallicities import compute_err_and_logerr, compute_O3N2_metallicity
 import matplotlib.patches as patches
 import time
-from uncover_read_data import read_raw_spec, read_prism_lsf
+from uncover_read_data import read_raw_spec, read_prism_lsf, read_fluxcal_spec
 from astropy.convolution import convolve
 from scipy.interpolate import interp1d
 
@@ -81,8 +81,8 @@ def fit_emission_uncover(spectrum, save_name, bootstrap_num=-1):
 
     
     wavelength = spectrum['rest_wave_aa']
-    flux = spectrum['rest_flux_erg_aa']
-    err_flux = spectrum['err_rest_flux_erg_aa']
+    flux = spectrum['rest_flux_calibrated_erg_aa']
+    err_flux = spectrum['err_rest_flux_calibrated_erg_aa']
     # Set Drop the nans, and set wavelength to cover it
     flux = flux.dropna()
     wavelength = wavelength[flux.index]
@@ -641,14 +641,14 @@ def get_fit_range(wavelength):
 
 def fit_all_emission_uncover(id_msa_list):
     for id_msa in id_msa_list:
-        spec_df = read_raw_spec(id_msa)
+        spec_df = read_fluxcal_spec(id_msa)
         fit_emission_uncover(spec_df, id_msa)
 
 
 if __name__ == "__main__":
     # # (Currently using)
     # id_msa = 47875
-    # spec_df = read_raw_spec(id_msa)
+    # spec_df = read_fluxcal_spec(id_msa)
     # fit_emission_uncover(spec_df, id_msa)
 
     # # Fitting the mock spectra
@@ -657,7 +657,7 @@ if __name__ == "__main__":
     # fit_emission_uncover(spec_df, mock_name)
 
 
-    # zqual_detected_df = ascii.read('/Users/brianlorenz/uncover/zqual_detected.csv').to_pandas()
-    # id_msa_list = zqual_detected_df['id_msa'].to_list()
-    # fit_all_emission_uncover(id_msa_list)  
+    zqual_detected_df = ascii.read('/Users/brianlorenz/uncover/zqual_detected.csv').to_pandas()
+    id_msa_list = zqual_detected_df['id_msa'].to_list()
+    fit_all_emission_uncover(id_msa_list)  
     pass

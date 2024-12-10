@@ -76,6 +76,11 @@ def read_raw_spec(id_msa):
         spec_df = correct_spec_to_sed(id_msa, spec_df)
     return spec_df
 
+def read_fluxcal_spec(id_msa):
+    spec_df_loc = f'/Users/brianlorenz/uncover/Data/fluxcal_specs/{id_msa}_fluxcal_spec.csv'
+    spec_df = ascii.read(spec_df_loc).to_pandas()
+    return spec_df
+
 def correct_spec_to_sed(id_msa, spec_df):
     ratio_df = ascii.read('/Users/brianlorenz/uncover/Figures/spec_sed_compare/compare_ratio.csv').to_pandas()
     scale_factor = ratio_df[ratio_df['id_msa']==id_msa].iloc[0]['full_ratio']
