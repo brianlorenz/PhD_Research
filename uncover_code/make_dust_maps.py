@@ -32,7 +32,7 @@ from shutter_loc import plot_shutter_pos
 
 
 correct_pab = 0
-fix_water = 1
+fix_water = 0
 
 colors = ['red', 'green', 'blue']
 connect_color = 'green'
@@ -85,7 +85,7 @@ def make_all_dustmap(aper_size = 'None'):
     aper_add_str = ''
     if aper_size != 'None':
         aper_add_str = f'_aper{aper_size}'
-    zqual_df_cont_covered = ascii.read('/Users/brianlorenz/uncover/zqual_df_cont_covered.csv').to_pandas()
+    zqual_df_cont_covered = ascii.read('/Users/brianlorenz/uncover/zqual_df_ha_cont_covered.csv').to_pandas()
     id_msa_list = zqual_df_cont_covered['id_msa']
     spec_ratios = []
     sed_ratios = []
@@ -122,7 +122,23 @@ def make_all_dustmap(aper_size = 'None'):
 
     apertures = []
     for id_msa in id_msa_list:
-        sed_lineratio, err_sed_lineratios, line_ratio_from_spec, emission_lineratios, ha_trasm_flag, pab_trasm_flag, sed_intspec_compare_values, line_ratio_from_spec_fit_sed_prospect, spec_scale_factor, line_flux_compares, sed_lineratio_cor_he, aperture, int_spec_vs_sed_point_values, linefluxes_intspec_sedcont = make_dustmap(id_msa, aper_size=aper_size)
+        try:
+            sed_lineratio, err_sed_lineratios, line_ratio_from_spec, emission_lineratios, ha_trasm_flag, pab_trasm_flag, sed_intspec_compare_values, line_ratio_from_spec_fit_sed_prospect, spec_scale_factor, line_flux_compares, sed_lineratio_cor_he, aperture, int_spec_vs_sed_point_values, linefluxes_intspec_sedcont = make_dustmap(id_msa, aper_size=aper_size)
+        except AssertionError:
+            sed_lineratio = -99
+            err_sed_lineratios = [-99,-99]
+            line_ratio_from_spec = -99
+            emission_lineratios = [-99,-99,-99]
+            ha_trasm_flag = -99
+            pab_trasm_flag = -99
+            sed_intspec_compare_values = [-99,-99,-99,-99,-99,-99,-99,-99]
+            line_ratio_from_spec_fit_sed_prospect = -99
+            spec_scale_factor = -99
+            line_flux_compares = [-99,-99,-99,-99]
+            sed_lineratio_cor_he = -99
+            aperture = -99 
+            int_spec_vs_sed_point_values = [-99,-99,-99,-99]
+            linefluxes_intspec_sedcont = [-99,-99]
         sed_ratios.append(sed_lineratio)
         err_sed_ratios_low.append(err_sed_lineratios[0])
         err_sed_ratios_high.append(err_sed_lineratios[1])
@@ -214,6 +230,16 @@ def make_dustmap(id_msa, aper_size='None'):
     sed_df = read_sed(id_msa, aper_size=aper_size)
     zqual_df = read_spec_cat()
     redshift = zqual_df[zqual_df['id_msa']==id_msa]['z_spec'].iloc[0]
+
+    for j in range(6):
+        if j < 3:
+            filt_check = ha_filters[j]
+        else:
+            filt_check = pab_filters[j-3]
+        if np.isnan(sed_df[sed_df['filter'] == filt_check]['flux'].iloc[0]) == True:
+            raise AssertionError(f'SED in filter {filt_check} for {id_msa} is NaN, exiting')
+            
+
 
     ha_line_scaled_transmission = get_transmission_at_line(ha_sedpy_filt, line_list[0][1] * (1+redshift))
     pab_line_scaled_transmission = get_transmission_at_line(pab_sedpy_filt, line_list[1][1] * (1+redshift))
@@ -320,9 +346,9 @@ def make_dustmap(id_msa, aper_size='None'):
     # sed_lineratio_scaled = compute_lineratio(ha_sed_value_scaled, pab_sed_value_scaled, ha_line_scaled_transmission, pab_line_scaled_transmission)
 
     line_ratio_from_spec, int_spec_ha, int_spec_pab, line_ratio_from_spec_fit, line_ratio_from_spec_fit_sed, line_ratio_from_spec_fit_sed_prospect, int_spec_vs_sed_fluxes, linefluxes_intspec_sedcont = check_line_ratio_spectra(ha_filters, pab_filters, spec_df, sed_df, id_msa, redshift, ax_ha_sed, ax_pab_sed, ha_sed_fluxes, pab_sed_fluxes, sed_lineratio, ha_transmissions, pab_transmissions, line_transmissions, ha_cont_pct, pab_cont_pct)
-    print(f'Line ratio from integrated spectrum: {line_ratio_from_spec}')
-    print(f'Line ratio from integrated spectrum polyfit: {line_ratio_from_spec_fit}')
-    print(f'Line ratio from integrated spectrum polyfit using sed point: {line_ratio_from_spec_fit_sed}')
+    # print(f'Line ratio from integrated spectrum: {line_ratio_from_spec}')
+    # print(f'Line ratio from integrated spectrum polyfit: {line_ratio_from_spec_fit}')
+    # print(f'Line ratio from integrated spectrum polyfit using sed point: {line_ratio_from_spec_fit_sed}')
 
     # Compare sed and int spec measurements
     spec_scale_factor = np.nanmedian(spec_df['scaled_flux'] / spec_df['flux'])
@@ -402,8 +428,8 @@ def make_dustmap(id_msa, aper_size='None'):
     # Compare to emission fit
     ha_flux_fit_jy = flux_erg_to_jy(ha_flux_fit, line_list[0][1])
     pab_flux_fit_jy = flux_erg_to_jy(pab_flux_fit, line_list[1][1])
-    print(ha_sed_lineflux / ha_flux_fit_jy)
-    print(pab_sed_lineflux / pab_flux_fit_jy)
+    # print(ha_sed_lineflux / ha_flux_fit_jy)
+    # print(pab_sed_lineflux / pab_flux_fit_jy)
     line_flux_compares = [ha_sed_lineflux, pab_sed_lineflux, ha_flux_fit_jy, pab_flux_fit_jy]
 
     def get_norm(image_map, scalea=1, lower_pct=10, upper_pct=99):
@@ -434,7 +460,7 @@ def make_dustmap(id_msa, aper_size='None'):
     pab_cont_logscaled = make_log_rgb(pab_cont, pab_cont, pab_cont, scalea=cont_scalea)[:,:,0]
     ha_linemap_logscaled = make_log_rgb(ha_linemap, ha_linemap, ha_linemap, scalea=linemap_scalea)[:,:,0]
     pab_linemap_logscaled = make_log_rgb(pab_linemap, pab_linemap, pab_linemap, scalea=linemap_scalea)[:,:,0]  
-    dustmap_logscaled = make_log_rgb(dustmap, dustmap, dustmap, scalea=dustmap_scalea)[:,:,0]    
+    dustmap_logscaled = make_log_rgb(dustmap, dustmap, dustmap, scalea=dustmap_scalea)[:,:,0]   
     ha_cont_norm  = get_norm(ha_cont_logscaled, lower_pct=cont_lower_pct, upper_pct=cont_upper_pct)
     pab_cont_norm = get_norm(pab_cont_logscaled, lower_pct=cont_lower_pct, upper_pct=cont_upper_pct)
     ha_linemap_norm = get_norm(ha_linemap_logscaled, lower_pct=linemap_lower_pct, upper_pct=linemap_upper_pct)
@@ -468,9 +494,16 @@ def make_dustmap(id_msa, aper_size='None'):
     ax_ha_linemap.add_patch(aperture_circle)
     aperture_circle = plt.Circle((50, 50), aperture/0.04, edgecolor='green', facecolor='None', lw=3)
     ax_ha_cont.add_patch(aperture_circle)
+    aperture_circle = plt.Circle((50, 50), aperture/0.04, edgecolor='green', facecolor='None', lw=3)
+    ax_pab_cont.add_patch(aperture_circle)
+    aperture_circle = plt.Circle((50, 50), aperture/0.04, edgecolor='green', facecolor='None', lw=3)
+    ax_pab_linemap.add_patch(aperture_circle)
 
     # Plot the slits
     plot_shutter_pos(ax_ha_cont, id_msa, ha_images[1].wcs)
+    plot_shutter_pos(ax_ha_linemap, id_msa, ha_images[1].wcs)
+    plot_shutter_pos(ax_pab_cont, id_msa, ha_images[1].wcs)
+    plot_shutter_pos(ax_pab_linemap, id_msa, ha_images[1].wcs)
 
     x = np.arange(pab_linemap.shape[1])
     y = np.arange(pab_linemap.shape[0])
@@ -620,6 +653,7 @@ def plot_sed_around_line(ax, filters, sed_df, spec_df, redshift, line_index, lin
         if i == 0:
             red_wave = sed_row['eff_wavelength'].iloc[0]
             red_flux = sed_row['spec_scaled_flux'].iloc[0]
+            # red_flux = sed_row['flux'].iloc[0]
             err_red_flux = sed_row['err_spec_scaled_flux'].iloc[0]
             red_flux_scaled = red_flux/sed_row['eff_width'].iloc[0]
             if fix_water == 1 and line_index == 1:
@@ -663,12 +697,14 @@ def plot_sed_around_line(ax, filters, sed_df, spec_df, redshift, line_index, lin
                 
         if i == 1:
             green_wave = sed_row['eff_wavelength'].iloc[0]
+            # green_flux = sed_row['flux'].iloc[0]
             green_flux = sed_row['spec_scaled_flux'].iloc[0]
             err_green_flux = sed_row['err_spec_scaled_flux'].iloc[0]
             green_flux_scaled = green_flux/sed_row['eff_width'].iloc[0]
         if i == 2:
             blue_wave = sed_row['eff_wavelength'].iloc[0]
             blue_flux = sed_row['spec_scaled_flux'].iloc[0]
+            # blue_flux = sed_row['flux'].iloc[0]
             err_blue_flux = sed_row['err_spec_scaled_flux'].iloc[0]
             blue_flux_scaled = blue_flux/sed_row['eff_width'].iloc[0]
 
@@ -1123,7 +1159,7 @@ def find_filters_around_line(id_msa, line_number):
     supercat_df = read_supercat()
     filt_names = get_filt_cols(supercat_df, skip_wide_bands=True)
     filt_names.sort()
-    zqual_detected_df = ascii.read('/Users/brianlorenz/uncover/zqual_detected.csv').to_pandas()
+    zqual_detected_df = ascii.read('/Users/brianlorenz/uncover/zqual_df_ha_detected.csv').to_pandas()
     zqual_row = zqual_detected_df[zqual_detected_df['id_msa'] == id_msa]
     detected_filt = zqual_row[f'line{line_number}_filt'].iloc[0]
     detected_index = [i for i in range(len(filt_names)) if filt_names[i] == detected_filt][0]
@@ -1191,12 +1227,13 @@ def compute_line(cont_pct, red_flx, green_flx, blue_flx, redshift, line_scaled_t
         return line_flux_cor, cont_value
 
 if __name__ == "__main__":
-    # make_all_dustmap()
+    make_all_dustmap()
     # make_all_dustmap(aper_size='048')
     # make_dustmap(39744)
     # make_dustmap(38163)
     # make_dustmap(34114)
     # make_dustmap(14573)
+    # make_dustmap(19179)
 
 
     # make_dustmap(25147)

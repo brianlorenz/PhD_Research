@@ -8,9 +8,12 @@ def integrate_filter(sedpy_filt):
     scaled_transmission = transmission/scale_factor
     return scaled_transmission
 
-def get_transmission_at_line(sedpy_filt, line_wave_aa, estimated_sigma=50):
+def get_transmission_at_line(sedpy_filt, line_wave_aa, estimated_sigma=50, trasm_type='scaled'):
     ## Sigma in angstroms
     scaled_transmission = integrate_filter(sedpy_filt)
+
+    if trasm_type == 'raw':
+        scaled_transmission = sedpy_filt.transmission
 
     # Old method - only at central wavelength
     # wave_idx = np.argmin(np.abs(line_wave_aa-sedpy_filt.wavelength))  

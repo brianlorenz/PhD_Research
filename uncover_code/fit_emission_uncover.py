@@ -110,7 +110,6 @@ def fit_emission_uncover(spectrum, save_name, bootstrap_num=-1):
     line_names = [line_list[i][0] for i in range(len(line_list))]
     line_centers_rest = [line_list[i][1] for i in range(len(line_list))]
     z_offset = [popt[0] for i in range(len(line_list))]
-    print(err_popt)
     err_z_offset = [err_popt[0] for i in range(len(line_list))]
     velocity = [popt[1] for i in range(len(line_list))]
     err_velocity = [err_popt[1] for i in range(len(line_list))]
@@ -480,7 +479,6 @@ def multi_gaussian(wavelength, *pars, fit=True):
     # interpolate the lsf to match the wavelengths of the data
     lsf['wave_aa'] = lsf['WAVELENGTH'] * 10000
     interp_lsf = interp1d(lsf['wave_aa'], lsf['R'], kind='linear')
-    print(wavelength)
     lsf_r_wave_matched = interp_lsf(wavelength)
     lsf_FWHMs = [line_list[i][1] / interp_lsf(line_list[i][1]) for i in range(len(line_list))]
     # sigma = wavelength / (R * 2.355)
@@ -637,6 +635,7 @@ if __name__ == "__main__":
     # spec_df = read_raw_spec(id_msa)
     # fit_emission_uncover(spec_df, id_msa)
 
-        
-    # fit_all_emission_uncover(id_msa_list)
+    zqual_detected_df = ascii.read('/Users/brianlorenz/uncover/zqual_detected.csv').to_pandas()
+    id_msa_list = zqual_detected_df['id_msa'].to_list()
+    fit_all_emission_uncover(id_msa_list)  
     pass

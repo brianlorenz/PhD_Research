@@ -299,7 +299,7 @@ def diagnostic_measured_value_vs_truth(truth_var, plot_var, color_var='None'):
     filtered_lineratio_df['prospector_lineratio_84'] = 1/compute_ratio_from_av(filtered_lineratio_df['av_16'])
     filtered_lineratio_df['prospector_lineratio_16'] = 1/compute_ratio_from_av(filtered_lineratio_df['av_84'])
 
-    zqual_df_cont_covered = ascii.read('/Users/brianlorenz/uncover/zqual_df_cont_covered.csv').to_pandas()
+    zqual_df_cont_covered = ascii.read('/Users/brianlorenz/uncover/zqual_df_ha_cont_covered.csv').to_pandas()
     # breakpoint()
 
     fig, ax = plt.subplots(figsize=(6,6))
@@ -318,6 +318,8 @@ def diagnostic_measured_value_vs_truth(truth_var, plot_var, color_var='None'):
 
         # breakpoint()
         zqual_row = zqual_df_cont_covered[zqual_df_cont_covered['id_msa'] == id_msa]
+        if len(zqual_row) < 1:
+            continue
 
         if color_var == 'z_spec':
             norm = mpl.colors.Normalize(vmin=1.3, vmax=2.4) 
@@ -415,7 +417,9 @@ def lineflux_compare(plot_all=False, compare_to_cat=True, aper_size='None'):
 
     lines_df = read_lineflux_cat()
     merged_df['cat_Ha_flux_jy'] = np.zeros(len(merged_df))
+    merged_df['cat_Ha_SNR'] = np.zeros(len(merged_df))
     merged_df['cat_PaB_flux_jy'] = np.zeros(len(merged_df))
+    merged_df['cat_PaB_SNR'] = np.zeros(len(merged_df))
     merged_df['cat_lineratio'] = np.zeros(len(merged_df))
     for i in range(len(merged_df)):
         id_msa = merged_df['id_msa'].iloc[i]
@@ -424,9 +428,18 @@ def lineflux_compare(plot_all=False, compare_to_cat=True, aper_size='None'):
         c = 299792458 # m/s
         ha_flux_cat_jy = lines_df_row['f_Ha+NII'].iloc[0] * 1e-8
         pab_flux_cat_jy = lines_df_row['f_PaB'].iloc[0] * 1e-8
+        err_ha_flux_cat_jy = lines_df_row['e_Ha+NII'].iloc[0] * 1e-8
+        err_pab_flux_cat_jy = lines_df_row['e_PaB'].iloc[0] * 1e-8
         merged_df['cat_Ha_flux_jy'].iloc[i] = ha_flux_cat_jy
         merged_df['cat_PaB_flux_jy'].iloc[i] = pab_flux_cat_jy
+        merged_df['cat_Ha_SNR'].iloc[i] = ha_flux_cat_jy / err_ha_flux_cat_jy
+        merged_df['cat_PaB_SNR'].iloc[i] = pab_flux_cat_jy / err_pab_flux_cat_jy
         merged_df['cat_lineratio'] = merged_df['cat_Ha_flux_jy'] / merged_df['cat_PaB_flux_jy']
+
+    test_row = merged_df[merged_df['id_msa'] == 47875] 
+    ha_compare = test_row['ha_sed_flux'] / test_row['cat_Ha_flux_jy']
+    pab_compare = test_row['pab_sed_flux'] / test_row['cat_PaB_flux_jy']
+    breakpoint()
 
     x_axis_plot_ha = merged_df['ha_emfit_flux']
     x_axis_plot_pab = merged_df['pab_emfit_flux']
@@ -468,6 +481,29 @@ def lineflux_compare(plot_all=False, compare_to_cat=True, aper_size='None'):
     ax_ratio.set_xlabel(f'{xlabel} Ratio')
 
     fig.savefig(f'/Users/brianlorenz/uncover/Figures/diagnostic_lineratio/lineflux_compare{add_str2}{add_str}{add_str3}.pdf')
+
+    fig2, ax2 = plt.subplots(figsize=(6,6))
+    
+    for i in range(len(merged_df)):
+        if merged_df.iloc[i]['id_msa'] in [27862, 34114, 39744, 36689, 39855, 25147, 25774, 47875, 18471, 42213]:
+            color = 'red'
+        else:
+            color = 'black'
+        print(merged_df.iloc[i]['id_msa'])
+        ax2.plot(merged_df.iloc[i]['cat_Ha_SNR'], merged_df.iloc[i]['cat_PaB_SNR'], color=color, marker='o', ls='None')
+    ax2.set_xlabel('Ha SNR')
+    ax2.set_ylabel('PaB SNR')
+    for ax in [ax2]:
+        ax.tick_params(labelsize=12)
+        ax.set_xscale('log')
+        ax.set_yscale('log')
+        xlims = ax.get_xlim()
+        ylims = ax.get_ylim()
+        ax.plot([-100, 100], [-100, 100], ls='--', color='red', marker='None')
+        ax.set_xlim(xlims)
+        ax.set_ylim(ylims)
+    fig2.savefig(f'/Users/brianlorenz/uncover/Figures/diagnostic_lineratio/SNR_compare_Ha_PaB.pdf')
+
 
 def hb_eq_width_continuum(use_subsample=1, line='pab'):
     eq_width_df = ascii.read('/Users/brianlorenz/uncover/Figures/diagnostic_lineratio/eq_width_df.csv').to_pandas()
@@ -538,7 +574,7 @@ def line_cat_vs_measured():
     ax_ha_eqw = axarr[1,0]
     ax_pab_eqw = axarr[1,1]
 
-    filtered_lineratio_df = ascii.read(f'/Users/brianlorenz/uncover/Figures/diagnostic_lineratio/filtered_lineratio_df.csv').to_pandas()
+    filtered_lineratio_df = ascii.read(f'/Users/brianlorenz/uncover/Figures/diagnostic_lineratio/lineratio_df.csv').to_pandas()
     lineratio_df = filtered_lineratio_df
     id_msa_list = lineratio_df['id_msa']
     lines_df = read_lineflux_cat()
@@ -557,10 +593,10 @@ def line_cat_vs_measured():
         ha_flux_cat_jy = lines_df_row['f_Ha+NII'].iloc[0] * 1e-8
         pab_flux_cat_jy = lines_df_row['f_PaB'].iloc[0] * 1e-8
 
-        ha_eqw = emission_df['equivalent_width_aa'].iloc[0]
-        pab_eqw = emission_df['equivalent_width_aa'].iloc[1]
-        cat_ha_eqw = lines_df_row['eqw_Ha+NII'].iloc[0]
-        cat_pab_eqw = lines_df_row['eqw_PaB'].iloc[0]
+        # ha_eqw = emission_df['equivalent_width_aa'].iloc[0]
+        # pab_eqw = emission_df['equivalent_width_aa'].iloc[1]
+        # cat_ha_eqw = lines_df_row['eqw_Ha+NII'].iloc[0]
+        # cat_pab_eqw = lines_df_row['eqw_PaB'].iloc[0]
 
         # def plot_with_same_lims(ax, x, y):
         #     min_val = min(np.min(x), np.min(y))
@@ -580,20 +616,21 @@ def line_cat_vs_measured():
         # plot_with_same_lims(ax_pab_eqw, cat_pab_eqw, pab_eqw)
         ax_ha_flux.plot(ha_flux_cat_jy, ha_flux_jy, marker='o', ls='None', color='black')
         ax_pab_flux.plot(pab_flux_cat_jy, pab_flux_jy, marker='o', ls='None', color='black')
-        ax_ha_eqw.plot(cat_ha_eqw, ha_eqw, marker='o', ls='None', color='black')
-        ax_pab_eqw.plot(cat_pab_eqw, pab_eqw, marker='o', ls='None', color='black')
+        # ax_ha_eqw.plot(cat_ha_eqw, ha_eqw, marker='o', ls='None', color='black')
+        # ax_pab_eqw.plot(cat_pab_eqw, pab_eqw, marker='o', ls='None', color='black')
     
 
     fontsize = 14
     # one-to-one
     for ax in [ax_ha_flux, ax_pab_flux, ax_ha_eqw, ax_pab_eqw]:
+        ax.set_xscale('log')
+        ax.set_yscale('log')
         xlims = ax.get_xlim()
         ylims = ax.get_ylim()
         ax.plot([-100, 10000], [-100, 10000], ls='--', color='red', marker='None')
         ax.set_xlim(xlims)
         ax.set_ylim(ylims)
-        ax.set_xscale('log')
-        ax.set_yscale('log')
+        
         ax.tick_params(labelsize=fontsize)
     
     ax_ha_flux.set_ylabel('Spec Fit Flux (Jy)', fontsize = fontsize)
@@ -606,10 +643,10 @@ def line_cat_vs_measured():
     ax_ha_eqw.set_xlabel('Catalog Eq Width (Angstrom)', fontsize = fontsize)
     ax_pab_eqw.set_xlabel('Catalog Eq Width (Angstrom)', fontsize = fontsize)
 
-    ax_ha_flux.set_xlim(0.5e-5, 2e-4)
-    ax_ha_flux.set_ylim(0.5e-5, 2e-4)
-    ax_pab_flux.set_xlim(0.01e-6, 8e-5)
-    ax_pab_flux.set_ylim(0.01e-6, 8e-5)
+    # ax_ha_flux.set_xlim(0.5e-5, 2e-4)
+    # ax_ha_flux.set_ylim(0.5e-5, 2e-4)
+    # ax_pab_flux.set_xlim(0.01e-6, 8e-5)
+    # ax_pab_flux.set_ylim(0.01e-6, 8e-5)
     ax_ha_eqw.set_xlim(50, 5000)
     ax_ha_eqw.set_ylim(50, 5000)
     ax_pab_eqw.set_xlim(3, 1500)
@@ -667,13 +704,11 @@ def sed_values_compare(aper_add_str='', use_subsample=True):
     ax_ha_fluxcompare.plot(compare_sed_values_df['ha_sed_flux'], compare_sed_values_df['ha_intspec_sedcont_flux'], marker='o', ls='None', color='black')
     ax_pab_fluxcompare.plot(compare_sed_values_df['pab_sed_flux'], compare_sed_values_df['pab_intspec_sedcont_flux'], marker='o', ls='None', color='black')
 
-    breakpoint()
-
     ax_ha.set_title('Halpha')
     ax_pab.set_title('PaBeta')
     for ax in axes:
-        ax.set_xlabel('SED green flux')
-        ax.set_ylabel('Integrated Spectrum green flux')
+        ax.set_xlabel('SED green flux', fontsize=14)
+        ax.set_ylabel('Integrated Spectrum green flux', fontsize=14)
         ax.set_xscale('log')
         ax.set_yscale('log')
         xlims = ax.get_xlim()
@@ -682,13 +717,16 @@ def sed_values_compare(aper_add_str='', use_subsample=True):
         ax.set_xlim(xlims)
         ax.set_ylim(ylims)
         ax.tick_params(labelsize=14)
+    for ax in axes[2:]:
+        ax.set_xlabel('SED lineflux', fontsize=14)
+        ax.set_ylabel('Integrated Spectrum lineflux', fontsize=14)
     
     fig.savefig(f'/Users/brianlorenz/uncover/Figures/diagnostic_lineratio/sed_values_compare_greenflux{add_str}.pdf')
 
 
 if __name__ == "__main__":
-    # lineflux_compare(plot_all=False, compare_to_cat=True)
-    # lineflux_compare(plot_all=False, compare_to_cat=False, aper_size='048')
+    lineflux_compare(plot_all=True, compare_to_cat=True)
+    # lineflux_compare(plot_all=True, compare_to_cat=False)
 
     # hb_eq_width_continuum(line='ha')
     # hb_eq_width_continuum(line='pab')
@@ -699,6 +737,6 @@ if __name__ == "__main__":
 
     # line_cat_vs_measured()
 
-    sed_values_compare()
-    sed_values_compare(use_subsample=False)
+    # sed_values_compare()
+    # sed_values_compare(use_subsample=False)
     pass

@@ -657,7 +657,7 @@ if __name__ == "__main__":
     # fit_emission_uncover(spec_df, mock_name)
 
 
-    # zqual_df_cont_covered = ascii.read('/Users/brianlorenz/uncover/zqual_df_cont_covered.csv').to_pandas()
-    # id_msa_list = zqual_df_cont_covered['id_msa']
-    # fit_all_emission_uncover(id_msa_list)
+    # zqual_detected_df = ascii.read('/Users/brianlorenz/uncover/zqual_detected.csv').to_pandas()
+    # id_msa_list = zqual_detected_df['id_msa'].to_list()
+    # fit_all_emission_uncover(id_msa_list)  
     pass

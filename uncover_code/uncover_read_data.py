@@ -107,6 +107,6 @@ if __name__ == "__main__":
     # int_spec_df = read_integrated_spec(47875)
     # breakpoint()
     # supercat = read_supercat()
-    aper_cat_df = read_aper_cat()
-    breakpoint()
+    # aper_cat_df = read_aper_cat()
+    # breakpoint()
     pass

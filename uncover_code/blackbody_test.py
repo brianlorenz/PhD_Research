@@ -437,7 +437,7 @@ if __name__ == "__main__":
 
 
     # generate_mock_lines(12, flux_multiplier=1, blackbody_temp=0, add_ons3='_wideha')
-    # generate_mock_lines(15, flux_multiplier=1, blackbody_temp=0, add_ons3='_narrowha')
+    generate_mock_lines(15, flux_multiplier=32, blackbody_temp=0, add_ons3='_narrowha')
     # generate_mock_lines(15, flux_multiplier=1, blackbody_temp=0, add_ons3='_with_he')
     # generate_mock_lines(15, flux_multiplier=1, blackbody_temp=0)
     # generate_mock_lines(10, flux_multiplier=1, blackbody_temp=4000)

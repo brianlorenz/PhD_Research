@@ -14,7 +14,7 @@ from uncover_read_data import read_raw_spec, read_prism_lsf
 from astropy.convolution import convolve
 from scipy.interpolate import interp1d
 
-emission_fit_dir = '/Users/brianlorenz/uncover/Data/emission_fitting/helium'
+emission_fit_dir = '/Users/brianlorenz/uncover/Data/emission_fitting/helium/'
 
 line_list = [
     ('Halpha', 6564.6),
@@ -632,8 +632,6 @@ def get_fit_range(wavelength):
 def fit_all_emission_uncover(id_msa_list):
     for id_msa in id_msa_list:
         print(id_msa)
-        if id_msa < 25148:
-            continue
         spec_df = read_raw_spec(id_msa)
         fit_emission_uncover(spec_df, id_msa)
 
@@ -647,7 +645,12 @@ def fit_all_emission_uncover(id_msa_list):
 # spec_df = ascii.read(f'/Users/brianlorenz/uncover/Data/mock_spectra/{mock_name}.csv').to_pandas()
 # fit_emission_uncover(spec_df, mock_name)
 
+if __name__ == "__main__":
+    # id_msa = 18471
+    # spec_df = read_raw_spec(id_msa)
+    # fit_emission_uncover(spec_df, id_msa)
 
-# zqual_df_cont_covered = ascii.read('/Users/brianlorenz/uncover/zqual_df_cont_covered.csv').to_pandas()
-# id_msa_list = zqual_df_cont_covered['id_msa']
-# fit_all_emission_uncover(id_msa_list)
+    # REMOVE LIMIE IN FIT ALL
+    zqual_df_cont_covered = ascii.read('/Users/brianlorenz/uncover/zqual_df_ha_cont_covered.csv').to_pandas()
+    id_msa_list = zqual_df_cont_covered['id_msa']
+    fit_all_emission_uncover(id_msa_list)

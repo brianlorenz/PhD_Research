@@ -14,6 +14,7 @@ def compare_sed_flux(id_msa, make_plot=True, aper_size='None'):
     spec_df = read_raw_spec(id_msa)
     sed_df = get_sed(id_msa, aper_size=aper_size)
     filt_dict, filters = unconver_read_filters()
+    breakpoint()
     
     wavelength = spec_df['wave_aa'].to_numpy()
     f_lambda = spec_df['flux_erg_aa'].to_numpy()
@@ -122,12 +123,12 @@ def make_ratio_hist():
 
 if __name__ == "__main__":
     # make_ratio_hist()
+    # compare_sed_flux(6325)
     # compare_sed_flux(47875)
-    # compare_sed_flux(42213)
 
-    zqual_detected_df = ascii.read('/Users/brianlorenz/uncover/zqual_detected.csv').to_pandas()
-    id_msa_list = zqual_detected_df['id_msa'].to_list()
-    compare_all_sed_flux(id_msa_list, aper_size='048')
+    # zqual_detected_df = ascii.read('/Users/brianlorenz/uncover/zqual_detected.csv').to_pandas()
+    # id_msa_list = zqual_detected_df['id_msa'].to_list()
+    # compare_all_sed_flux(id_msa_list, aper_size='048')
     pass
 
 

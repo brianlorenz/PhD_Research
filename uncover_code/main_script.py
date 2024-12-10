@@ -1,5 +1,5 @@
 from uncover_sed_filters import unconver_read_filters, get_filt_cols
-from uncover_read_data import read_supercat, read_spec_cat
+from uncover_read_data import read_supercat, read_spec_cat, read_lineflux_cat
 from compare_sed_spec_flux import compare_sed_flux, compare_all_sed_flux
 from fit_emission_uncover import fit_all_emission_uncover
 from astropy.io import ascii
@@ -13,16 +13,16 @@ def main(redo_fit=False):
     zqual_df_covered = select_spectra(zqual_df)
     id_msa_list = zqual_df_covered['id_msa'].to_list()
     
-    #Ensure that all ids are in the catalog:
+    # Ensure that all ids are in the catalog:
     supercat = read_supercat()
     id_msa_list = [id_msa for id_msa in id_msa_list if len(supercat[supercat['id_msa'] == id_msa]) == 1]
     if redo_fit == True:
         make_all_prospector(id_msa_list)
         compare_all_sed_flux(id_msa_list) 
-        # breakpoint()
         fit_all_emission_uncover(id_msa_list)
     
     detected_list, ha_detected_list, detected_snrs, ha_detected_snrs, all_ha_snrs = select_detected_lines(id_msa_list)
+    breakpoint()
     zqual_df_detected = zqual_df_covered[zqual_df_covered['id_msa'].isin(detected_list)]
     zqual_df_detected.to_csv('/Users/brianlorenz/uncover/zqual_detected.csv', index=False)
 
@@ -41,9 +41,6 @@ def main(redo_fit=False):
     
     detected_cont_covered = check_cont_coverage(detected_list)
     ha_detected_cont_covered = check_cont_coverage(ha_detected_list)
-
-    breakpoint()
-
 
     zqual_df_cont_covered = zqual_df_detected[zqual_df_detected['id_msa'].isin(detected_cont_covered)]
     zqual_df_cont_covered.to_csv('/Users/brianlorenz/uncover/zqual_df_cont_covered.csv', index=False)
@@ -97,14 +94,25 @@ def select_detected_lines(id_msa_list, thresh = 2):
     ha_detected_list = []
     ha_detected_snrs = []
     all_ha_snrs = []
+
+    lines_df = read_lineflux_cat()
     for id_msa in id_msa_list:
+        lines_df_row = lines_df[lines_df['id_msa'] == id_msa]
         emission_df = ascii.read(f'/Users/brianlorenz/uncover/Data/emission_fitting/{id_msa}_emission_fits.csv').to_pandas()
         ha_snr = emission_df[emission_df['line_name']=='Halpha']['signal_noise_ratio'].iloc[0]
         pab_snr = emission_df[emission_df['line_name']=='PaBeta']['signal_noise_ratio'].iloc[0]
+
+        ha_flux_cat = lines_df_row['f_Ha+NII'].iloc[0]
+        ha_err_cat = lines_df_row['e_Ha+NII'].iloc[0]
+        pab_flux_cat = lines_df_row['f_PaB'].iloc[0]
+        pab_err_cat = lines_df_row['e_PaB'].iloc[0]
+        ha_snr = ha_flux_cat / ha_err_cat
+        pab_snr = pab_flux_cat / pab_err_cat
+
         if ha_snr > thresh and pab_snr > thresh:
             detected_list.append(id_msa)
             detected_snrs.append((ha_snr, pab_snr))
-        if ha_snr > 0.5:
+        if ha_snr > 1:
             ha_detected_list.append(id_msa)
             ha_detected_snrs.append((ha_snr, pab_snr))
         all_ha_snrs.append(ha_snr)

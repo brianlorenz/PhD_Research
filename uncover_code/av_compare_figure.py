@@ -299,7 +299,7 @@ def emission_sed_compare():
     fig.savefig(f'/Users/brianlorenz/uncover/Figures/paper_figures/emission_fit_compare{add_str}.pdf')
 
 if __name__ == "__main__":
-    generate_filtered_lineratio_df(aper_size='048')
+    generate_filtered_lineratio_df()
     # make_av_compare_figure(regenerate=False)
     # intspec_sed_compare()
     # emission_sed_compare()
