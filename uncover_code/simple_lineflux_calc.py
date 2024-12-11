@@ -140,7 +140,7 @@ def compute_line(cont_pct, red_flx, green_flx, blue_flx, redshift, scaled_transm
         line_value = line_value * filter_width  # erg/s/cm2
 
         # Scale by raw transmission curve
-        line_value = line_value / raw_transmission
+        # line_value = line_value / raw_transmission
 
         #Scale by transmission
         # line_value = line_value / scaled_transmission
@@ -205,5 +205,6 @@ if __name__ == "__main__":
     # calc_lineflux(25774)
     # calc_lineflux(39855)
     
+    # 34506 is broken. And 39409
     calc_all_lineflux(all=True)  
     pass

@@ -71,9 +71,9 @@ def plot_offsets(all=False):
     # cat_label = 'UNCOVER Catalog'
     # emfit_label = 'emission fit'
 
-    ax.plot(data_df['ha_sed_div_cat'], data_df['pab_sed_div_cat'], marker='o', color='black', ls='None')
-    ax.set_xlabel('Ha offset sed/cat')
-    ax.set_ylabel('PaB offset sed/cat')
+    ax.plot(data_df['ha_sed_div_emfit'], data_df['pab_sed_div_emfit'], marker='o', color='black', ls='None')
+    ax.set_xlabel('Ha offset sed/emfit')
+    ax.set_ylabel('PaB offset sed/emfit')
 
     
 
@@ -93,5 +93,5 @@ def plot_offsets(all=False):
         save_loc = '/Users/brianlorenz/uncover/Figures/diagnostic_lineratio/simpletest_offset_compare_all.pdf'
     fig.savefig(save_loc)
 
-plot_simpletests(all=False)
-plot_offsets(all=False)
+plot_simpletests(all=True)
+plot_offsets(all=True)

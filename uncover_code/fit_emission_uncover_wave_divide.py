@@ -40,7 +40,6 @@ def fit_emission_uncover(spectrum, save_name, bootstrap_num=-1):
         n_loops = 0
     else:
         n_loops = 10
-
     
 
 
@@ -642,6 +641,7 @@ def get_fit_range(wavelength):
 def fit_all_emission_uncover(id_msa_list):
     for id_msa in id_msa_list:
         spec_df = read_fluxcal_spec(id_msa)
+        print(f'Fitting emission for {id_msa}')
         fit_emission_uncover(spec_df, id_msa)
 
 
