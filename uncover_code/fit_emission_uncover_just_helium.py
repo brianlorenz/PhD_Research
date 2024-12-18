@@ -10,7 +10,7 @@ import initialize_mosdef_dirs as imd
 from axis_group_metallicities import compute_err_and_logerr, compute_O3N2_metallicity
 import matplotlib.patches as patches
 import time
-from uncover_read_data import read_raw_spec, read_prism_lsf
+from uncover_read_data import read_raw_spec, read_prism_lsf, read_fluxcal_spec
 from astropy.convolution import convolve
 from scipy.interpolate import interp1d
 
@@ -27,7 +27,7 @@ lines_dict = {
 line_centers_rest = [line_list[i][1] for i in range(len(line_list))]
 
 
-def fit_emission_uncover(spectrum, save_name, bootstrap_num=-1):
+def fit_emission_uncove_helium(spectrum, save_name, bootstrap_num=-1):
     """
     Parameters:
     bootstrap_num (int): Set to -1 to avoid bootstrap, set to the number to read in the corresponding spectrum and fit that
@@ -39,7 +39,7 @@ def fit_emission_uncover(spectrum, save_name, bootstrap_num=-1):
     if bootstrap_num > -1:
         n_loops = 0
     else:
-        n_loops = 10
+        n_loops = 1
 
     
 
@@ -84,8 +84,8 @@ def fit_emission_uncover(spectrum, save_name, bootstrap_num=-1):
 
     
     wavelength = spectrum['rest_wave_aa']
-    flux = spectrum['rest_flux_erg_aa']
-    err_flux = spectrum['err_rest_flux_erg_aa']
+    flux = spectrum['rest_flux_calibrated_erg_aa']
+    err_flux = spectrum['err_rest_flux_calibrated_erg_aa']
     # Set Drop the nans, and set wavelength to cover it
     flux = flux.dropna()
     wavelength = wavelength[flux.index]
@@ -629,11 +629,13 @@ def get_fit_range(wavelength):
 
 
 
-def fit_all_emission_uncover(id_msa_list):
+def fit_all_emission_uncover_helium(id_msa_list):
     for id_msa in id_msa_list:
+        if id_msa < 25147:
+            continue
         print(id_msa)
-        spec_df = read_raw_spec(id_msa)
-        fit_emission_uncover(spec_df, id_msa)
+        spec_df = read_fluxcal_spec(id_msa)
+        fit_emission_uncove_helium(spec_df, id_msa)
 
 # # (Currently using)
 # id_msa = 38163
@@ -650,7 +652,6 @@ if __name__ == "__main__":
     # spec_df = read_raw_spec(id_msa)
     # fit_emission_uncover(spec_df, id_msa)
 
-    # REMOVE LIMIE IN FIT ALL
-    zqual_df_cont_covered = ascii.read('/Users/brianlorenz/uncover/zqual_df_ha_cont_covered.csv').to_pandas()
-    id_msa_list = zqual_df_cont_covered['id_msa']
-    fit_all_emission_uncover(id_msa_list)
+    zqual_detected_df = ascii.read('/Users/brianlorenz/uncover/zqual_detected.csv').to_pandas()
+    id_msa_list = zqual_detected_df['id_msa'].to_list()
+    fit_all_emission_uncover_helium(id_msa_list)  

@@ -1,5 +1,5 @@
 from uncover_make_sed import read_sed
-from make_dust_maps import make_3color, compute_cont_pct
+from make_dust_maps import make_3color, compute_cont_pct, compute_line
 from filter_integrals import get_transmission_at_line
 from uncover_read_data import read_spec_cat, read_lineflux_cat
 from sedpy import observate
@@ -96,9 +96,12 @@ def measure_lineflux(sed_df, redshift, filters, scaled_transmission, raw_transmi
 
     
     cont_percentile = compute_cont_pct(blue_wave, green_wave, red_wave, blue_flux, red_flux)
-    cont_percentile2 = compute_cont_pct(blue_wave, green_wave, red_wave, blue_flux_erg_s_cm2, red_flux_erg_s_cm2)
-    line_flux, cont_value = compute_line(cont_percentile, red_flux, green_flux, blue_flux, redshift, scaled_transmission, raw_transmission, filter_width, filter_wave, line_wave)
-    line_flux_already_erg, cont_value_already_erg = compute_line_already_erg(cont_percentile, red_flux_erg_s_cm2, green_flux_erg_s_cm2, blue_flux_erg_s_cm2, redshift, scaled_transmission, raw_transmission, filter_width, filter_wave, line_wave)
+    print(blue_flux)
+    print(green_flux)
+    print(red_flux)
+    # cont_percentile2 = compute_cont_pct(blue_wave, green_wave, red_wave, blue_flux_erg_s_cm2, red_flux_erg_s_cm2)
+    line_flux, cont_value = compute_line(cont_percentile, red_flux, green_flux, blue_flux, redshift, scaled_transmission, raw_transmission, filter_width, line_wave)
+    # line_flux_already_erg, cont_value_already_erg = compute_line_already_erg(cont_percentile, red_flux_erg_s_cm2, green_flux_erg_s_cm2, blue_flux_erg_s_cm2, redshift, scaled_transmission, raw_transmission, filter_width, filter_wave, line_wave)
 
 
     return line_flux
@@ -114,37 +117,7 @@ def compute_line_already_erg(cont_pct, red_flx, green_flx, blue_flx, redshift, s
 
         return line_value, cont_value
 
-def compute_line(cont_pct, red_flx, green_flx, blue_flx, redshift, scaled_transmission, raw_transmission, filter_width, filter_wave, line_wave):
-        cont_value = np.percentile([blue_flx, red_flx], cont_pct*100)
 
-        line_value = green_flx - cont_value # Jy
-
-        # Put in erg/s/cm2/Hz
-        line_value = line_value * 1e-23
-
-        # Multiply by the frequency of effective filter wavelength
-        c = 299792458 # m/s
-        # filter_wave_m = filter_wave * 1e-10 
-        # line_value = line_value * (c / filter_wave_m)
-
-        # # Convert from f_nu to f_lambda
-        observed_wave = line_wave * (1+redshift)
-        line_value = line_value * ((c*1e10) / (observed_wave)**2) # erg/s/cm2/angstrom
-        # line_value = line_value / (line_wave**2)
-
-        #Multiply by line wave to get F
-        # line_value = line_value * line_wave * (1+redshift)
-
-        # # Multiply by filter width to just get F
-        # Filter width is observed frame width
-        line_value = line_value * filter_width  # erg/s/cm2
-
-        # Scale by raw transmission curve
-        # line_value = line_value / raw_transmission
-
-        #Scale by transmission
-        # line_value = line_value / scaled_transmission
-        return line_value, cont_value
 
 
 def calc_all_lineflux(all=False):
@@ -203,8 +176,8 @@ if __name__ == "__main__":
     # calc_lineflux(47875)
     # calc_lineflux(14573)
     # calc_lineflux(25774)
-    # calc_lineflux(39855)
+    calc_lineflux(39744)
     
     # 34506 is broken. And 39409
-    calc_all_lineflux(all=True)  
+    # calc_all_lineflux(all=True)  
     pass
