@@ -2,7 +2,7 @@ from uncover_read_data import read_supercat, read_raw_spec, read_spec_cat, read_
 from uncover_make_sed import get_sed
 from uncover_sed_filters import unconver_read_filters
 from sedpy import observate
-from make_dust_maps import make_3color
+from make_dust_maps_old import make_3color
 import matplotlib.pyplot as plt
 import numpy as np
 

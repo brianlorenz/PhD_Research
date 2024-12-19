@@ -9,10 +9,10 @@ import pandas as pd
 from uncover_sed_filters import unconver_read_filters
 from sedpy import observate
 from uncover_make_sed import read_sed
-from make_dust_maps import compute_cont_pct, make_3color
+from make_dust_maps_old import compute_cont_pct, make_3color
 from uncover_read_data import read_supercat, read_raw_spec, read_spec_cat, read_segmap, read_SPS_cat
 from scipy.optimize import curve_fit
-from fit_emission_uncover import line_list
+from fit_emission_uncover_old import line_list
 from filter_integrals import get_transmission_at_line
 from fit_emission_uncover_wave_divide import fit_emission_uncover
 

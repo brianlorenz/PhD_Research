@@ -1,10 +1,10 @@
 from uncover_sed_filters import unconver_read_filters, get_filt_cols
 from uncover_read_data import read_supercat, read_spec_cat, read_lineflux_cat
 from compare_sed_spec_flux import compare_sed_flux, compare_all_sed_flux
-from fit_emission_uncover import fit_all_emission_uncover
+from fit_emission_uncover_old import fit_all_emission_uncover
 from astropy.io import ascii
-from make_dust_maps import make_all_3color, make_all_dustmap
-from make_dust_maps import find_filters_around_line
+from make_dust_maps_old import make_all_3color, make_all_dustmap
+from make_dust_maps_old import find_filters_around_line
 from uncover_prospector_seds import make_all_prospector
 target_lines = 6563, 12820
 

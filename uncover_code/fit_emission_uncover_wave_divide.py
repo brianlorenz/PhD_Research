@@ -10,9 +10,10 @@ import initialize_mosdef_dirs as imd
 from axis_group_metallicities import compute_err_and_logerr, compute_O3N2_metallicity
 import matplotlib.patches as patches
 import time
-from uncover_read_data import read_raw_spec, read_prism_lsf, read_fluxcal_spec
+from uncover_read_data import read_raw_spec, read_prism_lsf, read_fluxcal_spec, get_id_msa_list
 from astropy.convolution import convolve
 from scipy.interpolate import interp1d
+from compute_av import compute_ha_pab_av
 
 emission_fit_dir = '/Users/brianlorenz/uncover/Data/emission_fitting/'
 
@@ -144,6 +145,7 @@ def fit_emission_uncover(spectrum, save_name, bootstrap_num=-1):
     pab_idx = [idx for idx, name in enumerate(line_names) if name == 'PaBeta'][0]
     ha_pab_ratio = [fluxes[ha_idx] / fluxes[pab_idx] for i in range(len(line_list))]
     eq_widths = [fluxes[i] / cont_values[i] for i in range(len(line_list))]
+    ha_pab_av = [compute_ha_pab_av(1/ha_pab_ratio[i]) for i in range(len(line_list))]
 
     
     def compute_percentile_errs_on_line(line_idx, measured_line_flux):
@@ -175,6 +177,7 @@ def fit_emission_uncover(spectrum, save_name, bootstrap_num=-1):
         all_ha_fluxes, hg_errs_low_high = compute_percentile_errs_on_line(ha_idx, fluxes[ha_idx])
         all_pab_fluxes, hd_errs_low_high = compute_percentile_errs_on_line(pab_idx, fluxes[pab_idx])
         all_ha_pab_ratios = [all_ha_fluxes[i]/all_pab_fluxes[i] for i in range(len(arr_popt))]
+        all_avs = [compute_ha_pab_av(1/all_ha_pab_ratios[i]) for i in range(len(arr_popt))]
 
         velocity_monte_carlo = [arr_popt[i][1] for i in range(len(arr_popt))]
         err_velocity_low_high = np.percentile(velocity_monte_carlo, [16,84])
@@ -198,15 +201,17 @@ def fit_emission_uncover(spectrum, save_name, bootstrap_num=-1):
   
     err_ha_pab_ratio_low = ha_pab_ratio - np.percentile(all_ha_pab_ratios, 16)
     err_ha_pab_ratio_high = np.percentile(all_ha_pab_ratios, 84) - ha_pab_ratio
+    err_av_low = ha_pab_av - np.percentile(all_avs, 16)
+    err_av_high = np.percentile(all_avs, 84) - ha_pab_av
 
     fit_df = pd.DataFrame(zip(line_names, line_centers_rest,
                               z_offset, err_z_offset, velocities, err_velocity, 
                               err_velocity_low, err_velocity_high, amps, err_amps, 
-                              sigs, err_sigs, fluxes, err_fluxes, err_fluxes_low, err_fluxes_high, ha_pab_ratio, err_ha_pab_ratio_low, err_ha_pab_ratio_high, eq_widths), 
+                              sigs, err_sigs, fluxes, err_fluxes, err_fluxes_low, err_fluxes_high, ha_pab_ratio, err_ha_pab_ratio_low, err_ha_pab_ratio_high, ha_pab_av, err_av_low, err_av_high, eq_widths), 
                               columns=['line_name', 'line_center_rest', 'z_offset', 'err_z_offset', 
                                        'velocity', 
                                        'err_fixed_velocity', 'err_fixed_velocity_low', 'err_fixed_velocity_high', 
-                                       'amplitude', 'err_amplitude', 'sigma', 'err_sigma', 'flux', 'err_flux', 'err_flux_low', 'err_flux_high', 'ha_pab_ratio', 'err_ha_pab_ratio_low', 'err_ha_pab_ratio_high', 'equivalent_width_aa'])
+                                       'amplitude', 'err_amplitude', 'sigma', 'err_sigma', 'flux', 'err_flux', 'err_flux_low', 'err_flux_high', 'ha_pab_ratio', 'err_ha_pab_ratio_low', 'err_ha_pab_ratio_high', 'ha_pab_av', 'err_ha_pab_av_low', 'err_ha_pab_av_high', 'equivalent_width_aa'])
     fit_df['signal_noise_ratio'] = fit_df['flux']/fit_df['err_flux']
 
 
@@ -647,7 +652,7 @@ def fit_all_emission_uncover(id_msa_list):
 
 if __name__ == "__main__":
     # # (Currently using)
-    # id_msa = 47875
+    # id_msa = 39744
     # spec_df = read_fluxcal_spec(id_msa)
     # fit_emission_uncover(spec_df, id_msa)
 
@@ -657,7 +662,6 @@ if __name__ == "__main__":
     # fit_emission_uncover(spec_df, mock_name)
 
 
-    zqual_detected_df = ascii.read('/Users/brianlorenz/uncover/zqual_detected.csv').to_pandas()
-    id_msa_list = zqual_detected_df['id_msa'].to_list()
+    id_msa_list = get_id_msa_list(full_sample=True)
     fit_all_emission_uncover(id_msa_list)  
     pass

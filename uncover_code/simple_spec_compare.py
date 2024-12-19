@@ -1,10 +1,10 @@
 from uncover_make_sed import read_sed
-from make_dust_maps import make_3color, compute_cont_pct
+from make_dust_maps_old import make_3color, compute_cont_pct
 from filter_integrals import get_transmission_at_line
 from uncover_read_data import read_spec_cat, read_lineflux_cat, read_raw_spec
 from uncover_sed_filters import unconver_read_filters
 from sedpy import observate
-from fit_emission_uncover import line_list
+from fit_emission_uncover_old import line_list
 from astropy.io import ascii
 import numpy as np
 import pandas as pd

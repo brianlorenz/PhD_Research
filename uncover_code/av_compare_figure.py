@@ -5,7 +5,7 @@ from compute_av import ha_factor, pab_factor, compute_ratio_from_av, compute_ha_
 from uncover_read_data import read_supercat, read_raw_spec, read_spec_cat, read_segmap, read_SPS_cat
 import pandas as pd
 import matplotlib as mpl
-from make_dust_maps import make_3color
+from make_dust_maps_old import make_3color
 from sedpy import observate
 
 add_str = ''

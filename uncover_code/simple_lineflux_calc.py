@@ -1,9 +1,9 @@
 from uncover_make_sed import read_sed
-from make_dust_maps import make_3color, compute_cont_pct, compute_line
+from simple_make_dustmap import make_3color, compute_cont_pct, compute_line
 from filter_integrals import get_transmission_at_line
-from uncover_read_data import read_spec_cat, read_lineflux_cat
+from uncover_read_data import read_spec_cat, read_lineflux_cat, get_id_msa_list
 from sedpy import observate
-from fit_emission_uncover import line_list
+from fit_emission_uncover_old import line_list
 from astropy.io import ascii
 import numpy as np
 import pandas as pd
@@ -16,9 +16,8 @@ def calc_lineflux(id_msa):
     zqual_df = read_spec_cat()
     redshift = zqual_df[zqual_df['id_msa']==id_msa]['z_spec'].iloc[0]
 
-
-    ha_filters, ha_images, wht_ha_images, obj_segmap, ha_photfnus = make_3color(id_msa, line_index=0, plot=False)
-    pab_filters, pab_images, wht_pab_images, obj_segmap, pab_photfnus = make_3color(id_msa, line_index=1, plot=False)
+    ha_filters, ha_images, wht_ha_images, obj_segmap, ha_photfnus, ha_all_lines = make_3color(id_msa, line_index=0, plot=False)
+    pab_filters, pab_images, wht_pab_images, obj_segmap, pab_photfnus, pab_all_lines = make_3color(id_msa, line_index=1, plot=False)
     ha_sedpy_name = ha_filters[1].replace('f', 'jwst_f')
     ha_sedpy_filt = observate.load_filters([ha_sedpy_name])[0]
     pab_sedpy_name = pab_filters[1].replace('f', 'jwst_f')
@@ -100,8 +99,7 @@ def measure_lineflux(sed_df, redshift, filters, scaled_transmission, raw_transmi
     print(green_flux)
     print(red_flux)
     # cont_percentile2 = compute_cont_pct(blue_wave, green_wave, red_wave, blue_flux_erg_s_cm2, red_flux_erg_s_cm2)
-    line_flux, cont_value = compute_line(cont_percentile, red_flux, green_flux, blue_flux, redshift, scaled_transmission, raw_transmission, filter_width, line_wave)
-    # line_flux_already_erg, cont_value_already_erg = compute_line_already_erg(cont_percentile, red_flux_erg_s_cm2, green_flux_erg_s_cm2, blue_flux_erg_s_cm2, redshift, scaled_transmission, raw_transmission, filter_width, filter_wave, line_wave)
+    line_flux, cont_value = compute_line(cont_percentile, red_flux, green_flux, blue_flux, redshift, raw_transmission, filter_width, line_wave)
 
 
     return line_flux
@@ -120,13 +118,7 @@ def compute_line_already_erg(cont_pct, red_flx, green_flx, blue_flx, redshift, s
 
 
 
-def calc_all_lineflux(all=False):
-    id_msa_list = [39744, 36689, 39855, 25147, 25774, 47875, 18471, 42213]
-    
-    if all:
-        zqual_detected_df = ascii.read('/Users/brianlorenz/uncover/zqual_detected.csv').to_pandas()
-        id_msa_list = zqual_detected_df['id_msa'].to_list()
-
+def calc_all_lineflux(id_msa_list):
     ha_sed_fluxes = []
     pab_sed_fluxes = []
     ha_cat_fluxes = []
@@ -150,10 +142,7 @@ def calc_all_lineflux(all=False):
     emission_offset_df['pab_cat_div_emfit'] = emission_offset_df['pab_cat_flux'] / emission_offset_df['pab_emfit_flux']
     emission_offset_df['difference_in_offset_ratio_cat'] = emission_offset_df['pab_sed_div_cat'] / emission_offset_df['ha_sed_div_cat']
     emission_offset_df['difference_in_offset_ratio_emfit'] = emission_offset_df['pab_sed_div_emfit'] / emission_offset_df['ha_sed_div_emfit']
-    add_str = ''
-    if all:
-        add_str = '_all'
-    emission_offset_df.to_csv(f'/Users/brianlorenz/uncover/Figures/diagnostic_lineratio/simpletest_offset_df{add_str}.csv', index=False)
+    emission_offset_df.to_csv(f'/Users/brianlorenz/uncover/Figures/diagnostic_lineratio/simpletest_offset_df.csv', index=False)
     print(f'\n\n\n')
     print(f'median offset in Ha {np.median(emission_offset_df["ha_sed_div_emfit"])}')
     print(f'median offset in PaB {np.median(emission_offset_df["pab_sed_div_emfit"])}')
@@ -176,8 +165,8 @@ if __name__ == "__main__":
     # calc_lineflux(47875)
     # calc_lineflux(14573)
     # calc_lineflux(25774)
-    calc_lineflux(39744)
+    # calc_lineflux(39744)
     
-    # 34506 is broken. And 39409
-    # calc_all_lineflux(all=True)  
+    id_msa_list = get_id_msa_list(full_sample=True)
+    calc_all_lineflux(id_msa_list)  
     pass

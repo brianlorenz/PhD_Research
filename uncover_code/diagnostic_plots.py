@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 import matplotlib as mpl
 from matplotlib.cm import ScalarMappable
 from sedpy import observate
-from make_dust_maps import make_3color
+from make_dust_maps_old import make_3color
 from uncover_read_data import read_raw_spec, read_lineflux_cat
 from uncover_make_sed import get_sed
 from compute_av import ha_factor, pab_factor, compute_ratio_from_av, compute_ha_pab_av, compute_ha_pab_av_from_dustmap, read_catalog_av

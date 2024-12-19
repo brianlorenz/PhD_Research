@@ -1,4 +1,4 @@
-from make_dust_maps import make_3color, compute_cont_pct
+from make_dust_maps_old import make_3color, compute_cont_pct
 import matplotlib.pyplot as plt
 from matplotlib.gridspec import GridSpec
 # from sedpy import observate

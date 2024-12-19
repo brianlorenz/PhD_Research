@@ -7,7 +7,7 @@ from astropy.convolution import Gaussian2DKernel, convolve
 from uncover_read_data import read_supercat, read_raw_spec, read_spec_cat, read_segmap, read_SPS_cat, read_aper_cat, read_fluxcal_spec
 from uncover_make_sed import read_sed
 from uncover_sed_filters import unconver_read_filters
-from fit_emission_uncover import line_list
+from fit_emission_uncover_old import line_list
 from sedpy import observate
 import matplotlib.pyplot as plt
 from matplotlib.gridspec import GridSpec

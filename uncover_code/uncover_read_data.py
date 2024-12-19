@@ -8,6 +8,10 @@ from sedpy import observate
 import os
 from astropy.io import ascii
 from astropy.wcs import WCS
+from astropy.coordinates import SkyCoord
+import astropy.units as u
+
+
 
 c = 299792458 # m/s
 
@@ -92,12 +96,42 @@ def read_integrated_spec(id_msa):
     integrated_spec_df['flux_erg_aa'] = integrated_spec_df['integrated_spec_flux_jy'] * (1e-23*1e10*c / (integrated_spec_df['wave_aa']**2))
     return integrated_spec_df
 
+def match_supercat(id_msa):
+    spec_df = read_spec_cat()
+    supercat = read_supercat()
+
+    target_ra = spec_df[spec_df['id_msa'] == id_msa]['ra'].iloc[0]  
+    target_dec = spec_df[spec_df['id_msa'] == id_msa]['dec'].iloc[0]
+    target_coord = SkyCoord(ra=target_ra * u.deg, dec=target_dec * u.deg)
+
+    ra_array = supercat['ra'].to_numpy()
+    dec_array = supercat['dec'].to_numpy()
+    sky_coords = SkyCoord(ra=ra_array * u.deg, dec=dec_array * u.deg)
+    separations = target_coord.separation(sky_coords)
+    closest_index = np.argmin(separations)
+    closest_object = supercat.iloc[closest_index]
+    print("Separation:", separations[closest_index])
+
+    breakpoint()
+
 
 def make_pd_table_from_fits(file_loc):
     with fits.open(file_loc) as hdu:
         data_loc = hdu[1].data
         data_df = Table(data_loc).to_pandas()
         return data_df
+    
+def get_id_msa_list(full_sample=False):
+    if full_sample:
+        id_msa_df = ascii.read('/Users/brianlorenz/uncover/Data/sample_selection/total_before_cuts.csv').to_pandas()
+        id_msa_list = id_msa_df['id_msa'].tolist()
+        id_msa_skip_df = ascii.read('/Users/brianlorenz/uncover/Data/sample_selection/id_msa_skipped.csv').to_pandas()
+        id_msa_skips = id_msa_skip_df['id_msa'].tolist()
+        id_msa_list = [x for x in id_msa_list if x not in id_msa_skips]
+    else:
+        id_msa_df = ascii.read('/Users/brianlorenz/uncover/Data/sample_selection/main_sample.csv').to_pandas()
+        id_msa_list = id_msa_df['id_msa'].tolist()
+    return id_msa_list
 
 make_pd_table_from_fits('/Users/brianlorenz/uncover/Catalogs/uncover-msa-full_depth-default_drz-v0.8a-lines.fits')
 
@@ -111,7 +145,10 @@ if __name__ == "__main__":
     # breakpoint()
     # int_spec_df = read_integrated_spec(47875)
     # breakpoint()
+    # match_supercat(49991)
+    # match_supercat(42041)
     # supercat = read_supercat()
+    # spec_df = read_spec_cat()
     # aper_cat_df = read_aper_cat()
     # breakpoint()
     pass

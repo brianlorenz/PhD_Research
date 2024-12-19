@@ -1,4 +1,4 @@
-from uncover_read_data import read_raw_spec, read_spec_cat
+from uncover_read_data import read_raw_spec, read_spec_cat, get_id_msa_list
 from uncover_make_sed import get_sed
 from uncover_sed_filters import unconver_read_filters
 from sedpy import observate
@@ -78,12 +78,8 @@ def flux_calibrate_spectrum(id_msa):
 
 if __name__ == "__main__":
     # flux_calibrate_spectrum(47875)
-   
 
-    zqual_detected_df = ascii.read('/Users/brianlorenz/uncover/zqual_detected.csv').to_pandas()
-    id_msa_list = zqual_detected_df['id_msa'].to_list()
-    
-    # id_msa_list = [39744, 36689, 39855, 25147, 25774, 47875, 18471, 42213]
+    id_msa_list = get_id_msa_list(full_sample=False)
     for id_msa in id_msa_list:
         flux_calibrate_spectrum(id_msa)
 

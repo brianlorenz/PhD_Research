@@ -1,5 +1,5 @@
 import numpy as np
-from fit_emission_uncover import line_list
+from fit_emission_uncover_old import line_list
 from uncover_read_data import read_SPS_cat
 from dust_equations_prospector import dust2_to_AV
 
@@ -65,4 +65,4 @@ def read_catalog_av(id_msa, zqual_df):
     return av_16, av_50, av_84
 
 
-# print(compute_ha_pab_av(1/15))
+# print(compute_ha_pab_av(1/6))

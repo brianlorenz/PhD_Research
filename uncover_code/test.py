@@ -1,7 +1,7 @@
 from uncover_read_data import read_raw_spec, read_prism_lsf
 from scipy.interpolate import interp1d
 from astropy.io import ascii
-from fit_emission_uncover import line_list, sig_to_velocity, velocity_to_sig
+from fit_emission_uncover_old import line_list, sig_to_velocity, velocity_to_sig
 import numpy as np
 
 def check_emission_lsf(id_msa):

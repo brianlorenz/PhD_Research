@@ -4,10 +4,10 @@ from astropy.io import fits, ascii
 from astropy import units as u
 from astropy.nddata import Cutout2D
 from astropy.convolution import Gaussian2DKernel, convolve
-from uncover_read_data import read_supercat, read_raw_spec, read_spec_cat, read_segmap, read_SPS_cat, read_aper_cat, read_fluxcal_spec
+from uncover_read_data import read_supercat, read_raw_spec, read_spec_cat, read_segmap, read_SPS_cat, read_aper_cat, read_fluxcal_spec, get_id_msa_list
 from uncover_make_sed import read_sed
 from uncover_sed_filters import unconver_read_filters
-from fit_emission_uncover import line_list
+from fit_emission_uncover_old import line_list
 from sedpy import observate
 import matplotlib.pyplot as plt
 from matplotlib.gridspec import GridSpec
@@ -172,6 +172,16 @@ def make_dustmap_simple(id_msa, aper_size='None', cor_helium=False):
     err_line_ratio_from_emission_low = fit_df["err_ha_pab_ratio_low"].iloc[0]
     err_line_ratio_from_emission_high = fit_df["err_ha_pab_ratio_high"].iloc[0]
     emission_lineratios = [line_ratio_from_emission, err_line_ratio_from_emission_low, err_line_ratio_from_emission_high]
+    # Then compute AV measurements
+    sed_av = compute_ha_pab_av(1/sed_lineratio)
+    boot_sed_avs = compute_ha_pab_av(1/boot_sed_lineratios)
+    sed_av_16 = np.percentile(boot_sed_avs, 16)
+    sed_av_84 = np.percentile(boot_sed_avs, 84)
+    err_sed_av_low = sed_av - sed_av_16
+    err_sed_av_high = sed_av_84 - sed_av
+    sed_avs = [sed_av, err_sed_av_low, err_sed_av_high]
+    
+
 
 
     # Make linemaps
@@ -191,6 +201,7 @@ def make_dustmap_simple(id_msa, aper_size='None', cor_helium=False):
     pab_red_image_noise = jy_convert_factor*(1/np.sqrt(wht_pab_images[0].data))
     pab_green_image_noise = jy_convert_factor*(1/np.sqrt(wht_pab_images[1].data))
     pab_blue_image_noise = jy_convert_factor*(1/np.sqrt(wht_pab_images[2].data))
+    breakpoint()
     # Get the bootstrapped images
     bootstrap=10
     ha_red_image_boots = [np.random.normal(loc=ha_red_image_data, scale=ha_red_image_noise) for i in range(bootstrap)]
@@ -263,7 +274,6 @@ def make_dustmap_simple(id_msa, aper_size='None', cor_helium=False):
     ha_linemap_norm = get_norm(ha_linemap_logscaled, lower_pct=linemap_lower_pct, upper_pct=linemap_upper_pct)
     pab_linemap_norm = get_norm(pab_linemap_logscaled, lower_pct=linemap_lower_pct, upper_pct=linemap_upper_pct)
     dustmap_norm = get_norm(dustmap_logscaled, lower_pct=dustmap_lower_pct, upper_pct=dustmap_upper_pct)
-    breakpoint()
 
     # Display the images
     # ax_segmap.imshow(ha_linemap_snr_old)
@@ -368,7 +378,7 @@ def make_dustmap_simple(id_msa, aper_size='None', cor_helium=False):
     if aper_size != 'None':
         aper_add_str = f'_aper{aper_size}'
     fig.savefig(save_folder + f'/{id_msa}_dustmap{aper_add_str}.pdf')
-    plt.show()
+    # plt.show()
 
     plt.close('all')
 
@@ -476,7 +486,7 @@ def find_filters_around_line(id_msa, line_number):
     supercat_df = read_supercat()
     filt_names = get_filt_cols(supercat_df, skip_wide_bands=True)
     filt_names.sort()
-    zqual_detected_df = ascii.read('/Users/brianlorenz/uncover/zqual_df_ha_detected.csv').to_pandas()
+    zqual_detected_df = ascii.read('/Users/brianlorenz/uncover/zqual_df_simple.csv').to_pandas()
     zqual_row = zqual_detected_df[zqual_detected_df['id_msa'] == id_msa]
     detected_filt = zqual_row[f'line{line_number}_filt'].iloc[0]
     detected_index = [i for i in range(len(filt_names)) if filt_names[i] == detected_filt][0]
@@ -718,5 +728,9 @@ def make_combined_mask(snr_binary_map, segmap_idxs):
 if __name__ == "__main__":
     # make_all_dustmap()
     # make_all_dustmap(aper_size='048')
-    make_dustmap_simple(39744)
+    id_msa_list = get_id_msa_list(full_sample=False)
+    for id_msa in id_msa_list:
+        # if id_msa <34115:
+        #     continue
+        make_dustmap_simple(id_msa)
     # make_dustmap(38163)
