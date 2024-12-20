@@ -152,8 +152,8 @@ def make_dustmap_simple(id_msa, aper_size='None', cor_helium=False):
     ax_pab_snr = fig.add_subplot(gs[1, 4])
     ax_list = [ax_ha_sed,ax_ha_image,ax_ha_cont,ax_ha_linemap,ax_pab_sed,ax_pab_image,ax_pab_cont,ax_pab_linemap,ax_dustmap,ax_segmap,ax_ha_snr,ax_pab_snr]
     
-    ha_cont_pct, ha_sed_lineflux, ha_trasm_flag, ha_boot_lines, ha_sed_fluxes = plot_sed_around_line(ax_ha_sed, ha_filters, sed_df, spec_df, redshift, 0, ha_transmissions, id_msa)
-    pab_cont_pct, pab_sed_lineflux, pab_trasm_flag, pab_boot_lines, pab_sed_fluxes = plot_sed_around_line(ax_pab_sed, pab_filters, sed_df, spec_df, redshift, 1, pab_transmissions, id_msa)
+    ha_cont_pct, ha_sed_lineflux, ha_trasm_flag, ha_boot_lines, ha_sed_fluxes, ha_wave_pct = plot_sed_around_line(ax_ha_sed, ha_filters, sed_df, spec_df, redshift, 0, ha_transmissions, id_msa)
+    pab_cont_pct, pab_sed_lineflux, pab_trasm_flag, pab_boot_lines, pab_sed_fluxes, pab_wave_pct = plot_sed_around_line(ax_pab_sed, pab_filters, sed_df, spec_df, redshift, 1, pab_transmissions, id_msa)
 
     # CONSIDER Correcting the linefluxes here for NII, helium, transmission effects, etc
 
@@ -180,6 +180,11 @@ def make_dustmap_simple(id_msa, aper_size='None', cor_helium=False):
     err_sed_av_low = sed_av - sed_av_16
     err_sed_av_high = sed_av_84 - sed_av
     sed_avs = [sed_av, err_sed_av_low, err_sed_av_high]
+    #And emission fit av
+    av_from_emission = fit_df["ha_pab_av"].iloc[0]
+    err_av_from_emission_low = fit_df["err_ha_pab_av_low"].iloc[0]
+    err_av_from_emission_high = fit_df["err_ha_pab_av_high"].iloc[0]
+    emission_avs = [av_from_emission, err_av_from_emission_low, err_av_from_emission_high]
     
 
 
@@ -198,10 +203,11 @@ def make_dustmap_simple(id_msa, aper_size='None', cor_helium=False):
     ha_red_image_noise = jy_convert_factor*(1/np.sqrt(wht_ha_images[0].data))
     ha_green_image_noise = jy_convert_factor*(1/np.sqrt(wht_ha_images[1].data))
     ha_blue_image_noise = jy_convert_factor*(1/np.sqrt(wht_ha_images[2].data))
+    ha_image_noises = [ha_red_image_noise, ha_green_image_noise, ha_blue_image_noise]
     pab_red_image_noise = jy_convert_factor*(1/np.sqrt(wht_pab_images[0].data))
     pab_green_image_noise = jy_convert_factor*(1/np.sqrt(wht_pab_images[1].data))
     pab_blue_image_noise = jy_convert_factor*(1/np.sqrt(wht_pab_images[2].data))
-    breakpoint()
+    pab_image_noises = [pab_red_image_noise, pab_green_image_noise, pab_blue_image_noise]
     # Get the bootstrapped images
     bootstrap=10
     ha_red_image_boots = [np.random.normal(loc=ha_red_image_data, scale=ha_red_image_noise) for i in range(bootstrap)]
@@ -211,22 +217,22 @@ def make_dustmap_simple(id_msa, aper_size='None', cor_helium=False):
     pab_green_image_boots = [np.random.normal(loc=pab_green_image_data, scale=pab_green_image_noise) for i in range(bootstrap)]
     pab_blue_image_boots = [np.random.normal(loc=pab_blue_image_data, scale=pab_blue_image_noise) for i in range(bootstrap)]
 
-    ha_linemap, ha_contmap = compute_line(ha_cont_pct, ha_red_image_data, ha_green_image_data, ha_blue_image_data, redshift, 0, ha_filter_width, ha_rest_wavelength, images=True)
+    ha_linemap, ha_contmap, err_ha_linemap = compute_line(ha_cont_pct, ha_red_image_data, ha_green_image_data, ha_blue_image_data, redshift, 0, ha_filter_width, ha_rest_wavelength, images=True, image_noises=ha_image_noises, wave_pct=ha_wave_pct)
     ha_image = make_lupton_rgb(ha_images[0].data, ha_images[1].data, ha_images[2].data, stretch=0.25)
-    pab_linemap, pab_contmap = compute_line(pab_cont_pct, pab_red_image_data, pab_green_image_data, pab_blue_image_data, redshift, 0, pab_filter_width, pab_rest_wavelength, images=True)
+    pab_linemap, pab_contmap, err_pab_linemap = compute_line(pab_cont_pct, pab_red_image_data, pab_green_image_data, pab_blue_image_data, redshift, 0, pab_filter_width, pab_rest_wavelength, images=True, image_noises=pab_image_noises, wave_pct=pab_wave_pct)
     pab_image = make_lupton_rgb(pab_images[0].data, pab_images[1].data, pab_images[2].data, stretch=0.25)
     # Bootstrap to compute SNR
     ha_linemap_boots = []
     pab_linemap_boots = []
     for i in range(bootstrap):
-        ha_linemap_boot, ha_contmap_boot = compute_line(ha_cont_pct, ha_red_image_boots[i], ha_green_image_boots[i], ha_blue_image_boots[i], redshift, 0, ha_filter_width, ha_rest_wavelength, images=True) 
-        pab_linemap_boot, pab_contmap_boot = compute_line(pab_cont_pct, pab_red_image_boots[i], pab_green_image_boots[i], pab_blue_image_boots[i], redshift, 0, pab_filter_width, pab_rest_wavelength, images=True)
+        ha_linemap_boot, ha_contmap_boot, _ = compute_line(ha_cont_pct, ha_red_image_boots[i], ha_green_image_boots[i], ha_blue_image_boots[i], redshift, 0, ha_filter_width, ha_rest_wavelength, images=True, image_noises=ha_image_noises, wave_pct=ha_wave_pct) 
+        pab_linemap_boot, pab_contmap_boot, _ = compute_line(pab_cont_pct, pab_red_image_boots[i], pab_green_image_boots[i], pab_blue_image_boots[i], redshift, 0, pab_filter_width, pab_rest_wavelength, images=True, image_noises=pab_image_noises, wave_pct=pab_wave_pct)
         ha_linemap_boots.append(ha_linemap_boot)
         pab_linemap_boots.append(pab_linemap_boot)
     ha_linemap_boot_noise = np.std(ha_linemap_boots, axis=0)
     pab_linemap_boot_noise = np.std(pab_linemap_boots, axis=0)
-    ha_linemap_snr = ha_linemap / ha_linemap_boot_noise
-    pab_linemap_snr = pab_linemap / pab_linemap_boot_noise
+    ha_linemap_snr = ha_linemap / err_ha_linemap
+    pab_linemap_snr = pab_linemap / err_pab_linemap
     # Filter the maps by SNR
     ha_snr_thresh, ha_snr_idxs = get_snr_cut(ha_linemap_snr, snr_thresh=ha_snr_cut)
     pab_snr_thresh, pab_snr_idxs = get_snr_cut(pab_linemap_snr, snr_thresh=pab_snr_cut)
@@ -382,7 +388,7 @@ def make_dustmap_simple(id_msa, aper_size='None', cor_helium=False):
 
     plt.close('all')
 
-    return sed_lineratios, emission_lineratios
+    return sed_lineratios, emission_lineratios, sed_avs, emission_avs
 
 
 def get_norm(image_map, scalea=1, lower_pct=10, upper_pct=99):
@@ -587,6 +593,7 @@ def plot_sed_around_line(ax, filters, sed_df, spec_df, redshift, line_index, tra
     # Compute the percentile to use when combining the continuum
     connect_color = 'purple'
     
+    wave_pct = compute_wavelength_pct(blue_wave, green_wave, red_wave)
     cont_percentile = compute_cont_pct(blue_wave, green_wave, red_wave, blue_flux, red_flux)
     sedpy_name = filters[1].replace('f_', 'jwst_')
     sedpy_line_filt = observate.load_filters([sedpy_name])[0]
@@ -663,7 +670,7 @@ def plot_sed_around_line(ax, filters, sed_df, spec_df, redshift, line_index, tra
     ax.set_xlim(0.8*line_wave_obs, 1.2*line_wave_obs)
     ax.set_ylim(0, 1.2*np.max(spec_df['flux_calibrated_jy']))
     sed_fluxes = [red_flux, green_flux, blue_flux]
-    return cont_percentile, line_flux, trasm_flag, boot_lines, sed_fluxes
+    return cont_percentile, line_flux, trasm_flag, boot_lines, sed_fluxes, wave_pct
 
 
 def compute_cont_pct(blue_wave, green_wave, red_wave, blue_flux, red_flux):
@@ -674,8 +681,14 @@ def compute_cont_pct(blue_wave, green_wave, red_wave, blue_flux, red_flux):
         cont_percentile = 1-cont_percentile
     return cont_percentile
 
+def compute_wavelength_pct(blue_wave, green_wave, red_wave):
+    total_wave_diff = red_wave - blue_wave
+    line_wave_diff = green_wave - blue_wave
+    wave_pct = line_wave_diff/total_wave_diff
+    return wave_pct
 
-def compute_line(cont_pct, red_flx, green_flx, blue_flx, redshift, raw_transmission, filter_width, line_rest_wave, images=False):
+
+def compute_line(cont_pct, red_flx, green_flx, blue_flx, redshift, raw_transmission, filter_width, line_rest_wave, images=False, image_noises=[], wave_pct=50):
         """
         Fluxes in Jy
         Line rest wave in angstroms
@@ -698,6 +711,14 @@ def compute_line(cont_pct, red_flx, green_flx, blue_flx, redshift, raw_transmiss
         # # Multiply by filter width to just get F
         # Filter width is observed frame width
         line_value = line_value * filter_width  # erg/s/cm2
+
+        if images == True:
+            err_cont_value = np.sqrt(((wave_pct)*(image_noises[0])**2) + ((1-wave_pct)*(image_noises[2])**2))
+            err_line_value = np.sqrt(image_noises[1]**2 + err_cont_value**2)
+            err_line_value = err_line_value * 1e-23
+            err_line_value = err_line_value * ((c*1e10) / (observed_wave)**2)
+            err_line_value = err_line_value * filter_width
+            return line_value, cont_value, err_line_value
 
         # Scale by raw transmission curve
         # line_value = line_value / raw_transmission
@@ -725,12 +746,46 @@ def make_combined_mask(snr_binary_map, segmap_idxs):
         total_mask = np.ma.masked_where(combined_mask+1 > 1.5, combined_mask+1)
         return total_mask
 
+def make_all_dustmap(id_msa_list):
+    sed_lineratios = []
+    sed_lineratios_low = []
+    sed_lineratios_high = []
+    sed_avs = []
+    sed_avs_low = []
+    sed_avs_high = []
+    emission_lineratios = []
+    emission_lineratios_low = []
+    emission_lineratios_high = []
+    emission_avs = []
+    emission_avs_low = []
+    emission_avs_high = []
+    
+    for id_msa in id_msa_list:
+        try:
+            sed_lineratios_grouped, emission_lineratios_grouped, sed_avs_grouped, emission_avs_grouped = make_dustmap_simple(id_msa)
+        except:
+            sed_lineratios_grouped = [-99,-99,-99]
+            emission_lineratios_grouped = [-99,-99,-99]
+            sed_avs_grouped = [-99,-99,-99]
+            emission_avs_grouped = [-99,-99,-99]
+        sed_lineratios.append(sed_lineratios_grouped[0])
+        sed_lineratios_low.append(sed_lineratios_grouped[1])
+        sed_lineratios_high.append(sed_lineratios_grouped[2])
+        sed_avs.append(sed_avs_grouped[0])
+        sed_avs_low.append(sed_avs_grouped[1])
+        sed_avs_high.append(sed_avs_grouped[2])
+        emission_lineratios.append(emission_lineratios_grouped[0])
+        emission_lineratios_low.append(emission_lineratios_grouped[1])
+        emission_lineratios_high.append(emission_lineratios_grouped[2])
+        emission_avs.append(emission_avs_grouped[0])
+        emission_avs_low.append(emission_avs_grouped[1])
+        emission_avs_high.append(emission_avs_grouped[2])
+
+    dustmap_info_df = pd.DataFrame(zip(id_msa_list, sed_lineratios, sed_lineratios_low, sed_lineratios_high, sed_avs, sed_avs_low, sed_avs_high, emission_lineratios, emission_lineratios_low, emission_lineratios_high, emission_avs, emission_avs_low, emission_avs_high), columns=['id_msa', 'sed_lineratio', 'err_sed_lineratio_low', 'err_sed_lineratio_high', 'sed_av', 'err_sed_av_low', 'err_sed_av_high', 'emission_fit_lineratio', 'err_emission_fit_lineratio_low', 'err_emission_fit_lineratio_high', 'emission_fit_av', 'err_emission_fit_av_low', 'err_emission_fit_av_high'])
+    dustmap_info_df.to_csv('/Users/brianlorenz/uncover/Data/generated_tables/lineratio_av_df.csv', index=False)
+
 if __name__ == "__main__":
     # make_all_dustmap()
-    # make_all_dustmap(aper_size='048')
-    id_msa_list = get_id_msa_list(full_sample=False)
-    for id_msa in id_msa_list:
-        # if id_msa <34115:
-        #     continue
-        make_dustmap_simple(id_msa)
-    # make_dustmap(38163)
+    make_dustmap_simple(39744)
+    id_msa_list = get_id_msa_list(full_sample=True)
+    make_all_dustmap(id_msa_list)

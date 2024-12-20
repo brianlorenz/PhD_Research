@@ -128,6 +128,9 @@ def get_id_msa_list(full_sample=False):
         id_msa_skip_df = ascii.read('/Users/brianlorenz/uncover/Data/sample_selection/id_msa_skipped.csv').to_pandas()
         id_msa_skips = id_msa_skip_df['id_msa'].tolist()
         id_msa_list = [x for x in id_msa_list if x not in id_msa_skips]
+        id_msa_filter_edge_df = ascii.read('/Users/brianlorenz/uncover/Data/sample_selection/filt_edge.csv').to_pandas()
+        id_msa_filt_edge = id_msa_filter_edge_df['id_msa'].tolist()
+        id_msa_list = [x for x in id_msa_list if x not in id_msa_filt_edge]
     else:
         id_msa_df = ascii.read('/Users/brianlorenz/uncover/Data/sample_selection/main_sample.csv').to_pandas()
         id_msa_list = id_msa_df['id_msa'].tolist()
@@ -145,7 +148,7 @@ if __name__ == "__main__":
     # breakpoint()
     # int_spec_df = read_integrated_spec(47875)
     # breakpoint()
-    # match_supercat(49991)
+    match_supercat(49991)
     # match_supercat(42041)
     # supercat = read_supercat()
     # spec_df = read_spec_cat()

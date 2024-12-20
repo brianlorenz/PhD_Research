@@ -4,8 +4,10 @@ from plot_vals import scale_aspect
 from uncover_read_data import read_lineflux_cat, get_id_msa_list
 
 def paper_plot_sed_emfit_accuracy(id_msa_list):
-    full_data_df = ascii.read(f'/Users/brianlorenz/uncover/Figures/diagnostic_lineratio/simpletest_offset_df.csv').to_pandas()
+    full_data_df = ascii.read(f'/Users/brianlorenz/uncover/Data/generated_tables/lineflux_df.csv').to_pandas()
     data_df = full_data_df[full_data_df['id_msa'].isin(id_msa_list)]
+    full_lineratio_data_df = ascii.read(f'/Users/brianlorenz/uncover/Data/generated_tables/lineratio_av_df.csv').to_pandas()
+    lineratio_data_df = full_lineratio_data_df[full_lineratio_data_df['id_msa'].isin(id_msa_list)]
 
     fig, axarr = plt.subplots(1,3,figsize=(16,7))
     ax_ha_sed_vs_emfit = axarr[0]
@@ -15,15 +17,15 @@ def paper_plot_sed_emfit_accuracy(id_msa_list):
 
     ax_ha_sed_vs_emfit.plot(data_df['ha_emfit_flux'], data_df['ha_sed_flux'], marker='o', color='black', ls='None')
     ax_ha_sed_vs_emfit.set_xlabel('H$\\alpha$ Spectrum')
-    ax_ha_sed_vs_emfit.set_xlabel('H$\\alpha$ Photometry')
+    ax_ha_sed_vs_emfit.set_ylabel('H$\\alpha$ Photometry')
 
     ax_pab_sed_vs_emfit.plot(data_df['pab_emfit_flux'], data_df['pab_sed_flux'], marker='o', color='black', ls='None')
     ax_pab_sed_vs_emfit.set_xlabel('Pa$\\beta$ Spectrum')
-    ax_pab_sed_vs_emfit.set_xlabel('Pa$\\beta$ Photometry')
+    ax_pab_sed_vs_emfit.set_ylabel('Pa$\\beta$ Photometry')
 
-    ax_av_sed_vs_emfit.plot(data_df['pab_emfit_flux'], data_df['pab_sed_flux'], marker='o', color='black', ls='None')
-    ax_av_sed_vs_emfit.set_xlabel('Spectra AV')
-    ax_av_sed_vs_emfit.set_xlabel('Pa$\\beta$ Photometry')
+    ax_av_sed_vs_emfit.plot(lineratio_data_df['sed_av'], lineratio_data_df['emission_fit_av'], marker='o', color='black', ls='None')
+    ax_av_sed_vs_emfit.set_xlabel('AV Spectrum')
+    ax_av_sed_vs_emfit.set_ylabel('AV Photometry')
 
     for ax in ax_list:
         ax.set_xscale('log')
@@ -35,15 +37,15 @@ def paper_plot_sed_emfit_accuracy(id_msa_list):
         # scale_aspect(ax)
     ax_av_sed_vs_emfit.tick_params(labelsize=12)
     ax_av_sed_vs_emfit.plot([-1, 100], [-1, 100], ls='--', color='red', marker='None')
-    ax_av_sed_vs_emfit.set_xlim([0, 10])
-    ax_av_sed_vs_emfit.set_ylim([0, 10])
+    ax_av_sed_vs_emfit.set_xlim([-1, 4])
+    ax_av_sed_vs_emfit.set_ylim([-1, 4])
 
     save_loc = '/Users/brianlorenz/uncover/Figures/paper_figures/sed_vs_emfit.pdf'
     fig.savefig(save_loc)
 
 
 def plot_simpletests(id_msa_list):
-    full_data_df = ascii.read(f'/Users/brianlorenz/uncover/Figures/diagnostic_lineratio/simpletest_offset_df.csv').to_pandas()
+    full_data_df = ascii.read(f'/Users/brianlorenz/uncover/Data/generated_tables/lineflux_df.csv').to_pandas()
     data_df = full_data_df[full_data_df['id_msa'].isin(id_msa_list)]
 
     fig, axarr = plt.subplots(2,3,figsize=(16,10))
@@ -145,9 +147,9 @@ def plot_snr_compare(id_msa_list):
     fig.savefig(save_loc)
 
 def plot_offsets(all=False):
-    data_df = ascii.read(f'/Users/brianlorenz/uncover/Figures/diagnostic_lineratio/simpletest_offset_df.csv')
+    data_df = ascii.read(f'/Users/brianlorenz/uncover/Data/generated_tables/lineflux_df.csv')
     if all:
-        data_df = ascii.read(f'/Users/brianlorenz/uncover/Figures/diagnostic_lineratio/simpletest_offset_df_all.csv')
+        data_df = ascii.read(f'/Users/brianlorenz/uncover/Data/generated_tables/lineflux_df.csv')
 
     fig, ax = plt.subplots(1,1,figsize=(6,6))
    
@@ -172,14 +174,15 @@ def plot_offsets(all=False):
     
         
     plt.tight_layout()
-    save_loc = '/Users/brianlorenz/uncover/Figures/diagnostic_lineratio/simpletest_offset_compare.pdf'
+    save_loc = '/Users/brianlorenz/uncover/Data/generated_tables/lineflux_df.pdf'
     if all:
-        save_loc = '/Users/brianlorenz/uncover/Figures/diagnostic_lineratio/simpletest_offset_compare_all.pdf'
+        save_loc = '/Users/brianlorenz/uncover/Data/generated_tables/lineflux_df.pdf'
     fig.savefig(save_loc)
 
 if __name__ == "__main__":
     id_msa_list = get_id_msa_list(full_sample=True)
-    plot_simpletests(id_msa_list)
+    paper_plot_sed_emfit_accuracy(id_msa_list)
+    # plot_simpletests(id_msa_list)
     # plot_offsets(all=True)
 
     # id_msa_list = get_id_msa_list(full_sample=True)

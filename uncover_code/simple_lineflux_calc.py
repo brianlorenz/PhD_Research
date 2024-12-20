@@ -142,7 +142,7 @@ def calc_all_lineflux(id_msa_list):
     emission_offset_df['pab_cat_div_emfit'] = emission_offset_df['pab_cat_flux'] / emission_offset_df['pab_emfit_flux']
     emission_offset_df['difference_in_offset_ratio_cat'] = emission_offset_df['pab_sed_div_cat'] / emission_offset_df['ha_sed_div_cat']
     emission_offset_df['difference_in_offset_ratio_emfit'] = emission_offset_df['pab_sed_div_emfit'] / emission_offset_df['ha_sed_div_emfit']
-    emission_offset_df.to_csv(f'/Users/brianlorenz/uncover/Figures/diagnostic_lineratio/simpletest_offset_df.csv', index=False)
+    emission_offset_df.to_csv(f'/Users/brianlorenz/uncover/Data/generated_tables/lineflux_df.csv', index=False)
     print(f'\n\n\n')
     print(f'median offset in Ha {np.median(emission_offset_df["ha_sed_div_emfit"])}')
     print(f'median offset in PaB {np.median(emission_offset_df["pab_sed_div_emfit"])}')

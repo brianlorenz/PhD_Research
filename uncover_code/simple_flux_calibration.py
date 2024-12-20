@@ -79,7 +79,7 @@ def flux_calibrate_spectrum(id_msa):
 if __name__ == "__main__":
     # flux_calibrate_spectrum(47875)
 
-    id_msa_list = get_id_msa_list(full_sample=False)
+    id_msa_list = get_id_msa_list(full_sample=True)
     for id_msa in id_msa_list:
         flux_calibrate_spectrum(id_msa)
 
