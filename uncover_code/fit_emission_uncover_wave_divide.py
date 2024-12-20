@@ -14,6 +14,7 @@ from uncover_read_data import read_raw_spec, read_prism_lsf, read_fluxcal_spec, 
 from astropy.convolution import convolve
 from scipy.interpolate import interp1d
 from compute_av import compute_ha_pab_av
+from plot_vals import scale_aspect
 
 emission_fit_dir = '/Users/brianlorenz/uncover/Data/emission_fitting/'
 
@@ -222,7 +223,7 @@ def fit_emission_uncover(spectrum, save_name, bootstrap_num=-1):
 
 
 
-def plot_emission_fit(emission_fit_dir, save_name, total_spec_df):
+def plot_emission_fit(emission_fit_dir, save_name, total_spec_df, ax_plot='', plot_type=''):
     """Plots the fit to each emission line
 
     Parameters:
@@ -232,6 +233,7 @@ def plot_emission_fit(emission_fit_dir, save_name, total_spec_df):
     scaled (str): Set to true if plotting the scaled fits
     run_name (str): Set to name of prospector run to fit with those
     bootstrap_num (int): Which number in the bootstrap to plot, -1 to plot the original
+    plot_type (str): 'ha_only' or 'pab_only'
 
     Returns:
     Saves a pdf of the fits for all of the lines
@@ -249,7 +251,14 @@ def plot_emission_fit(emission_fit_dir, save_name, total_spec_df):
     ax = fig.add_axes([0.09, 0.08, 0.88, 0.42])
     ax_Ha = fig.add_axes([0.55, 0.55, 0.40, 0.40])
     ax_Hb = fig.add_axes([0.09, 0.55, 0.40, 0.40])
+    if plot_type == 'ha_only':
+        ax_Ha = ax_plot
+    if plot_type == 'pab_only':
+        ax_Hb = ax_plot
+
     axes_arr = [ax, ax_Ha, ax_Hb]
+
+    
 
     Ha_zoom_box_color = 'blue'
     ax_Ha.spines['bottom'].set_color(Ha_zoom_box_color)
@@ -324,7 +333,10 @@ def plot_emission_fit(emission_fit_dir, save_name, total_spec_df):
 
     ax_Ha.text(0.05, 0.93, f"Ha: {round(10**17*fit_df.iloc[0]['flux'], 4)}", transform=ax_Ha.transAxes)
     ax_Hb.text(0.05, 0.93, f"PaB: {round(10**17*fit_df.iloc[1]['flux'], 4)}", transform=ax_Hb.transAxes)
+    ax_Ha.text(0.05, 0.83, f"Ratio: {round(fit_df.iloc[0]['ha_pab_ratio'], 4)}", transform=ax_Ha.transAxes)
     ax_Hb.text(0.05, 0.83, f"Ratio: {round(fit_df.iloc[1]['ha_pab_ratio'], 4)}", transform=ax_Hb.transAxes)
+    ax_Ha.text(0.95, 0.93, f"SNR: {round(fit_df.iloc[0]['signal_noise_ratio'], 4)}", transform=ax_Ha.transAxes, horizontalalignment='right')
+    ax_Hb.text(0.95, 0.93, f"SNR: {round(fit_df.iloc[1]['signal_noise_ratio'], 4)}", transform=ax_Hb.transAxes, horizontalalignment='right')
 
     ax.set_ylim(-1 * 10**-20, 2e-19)
     # ax.set_ylim(np.percentile(continuum, [1, 99]))
@@ -338,7 +350,7 @@ def plot_emission_fit(emission_fit_dir, save_name, total_spec_df):
 
     fig.savefig(emission_fit_dir + 'plots' +
                 f'/{save_name}_emission_fit.pdf')
-    plt.close()
+    plt.close(fig)
     return
 
 
@@ -650,6 +662,25 @@ def fit_all_emission_uncover(id_msa_list):
         fit_emission_uncover(spec_df, id_msa)
 
 
+def plot_mosaic(id_msa_list, line = 'ha_only'):
+    "line (str): 'ha_only' or 'pab_only' "
+    nrows = 6
+    ncols = 6
+    fig, axarr = plt.subplots(nrows, ncols, figsize=(40,40))
+    plot_idxs = []
+    plot_count = 0
+    for i in range(nrows):
+        for j in range(ncols):
+            plot_idxs.append([i, j])
+    for id_msa in id_msa_list:
+        ax = axarr[plot_idxs[plot_count][0], plot_idxs[plot_count][1]]
+        spec_df = read_fluxcal_spec(id_msa)
+        plot_emission_fit(emission_fit_dir, id_msa, spec_df, ax_plot=ax, plot_type=line)
+        plot_count = plot_count + 1
+        scale_aspect(ax)
+        ax.set_title(f'id_msa = {id_msa}', fontsize=18)
+    fig.savefig(emission_fit_dir + 'plots' + f'/mosaic_{line}.pdf')
+
 if __name__ == "__main__":
     # # (Currently using)
     # id_msa = 39744
@@ -662,6 +693,9 @@ if __name__ == "__main__":
     # fit_emission_uncover(spec_df, mock_name)
 
 
-    id_msa_list = get_id_msa_list(full_sample=True)
-    fit_all_emission_uncover(id_msa_list)  
+    id_msa_list = get_id_msa_list(full_sample=False)
+    
+    # fit_all_emission_uncover(id_msa_list)  
+    # plot_mosaic(id_msa_list, line = 'ha_only')
+    plot_mosaic(id_msa_list, line = 'pab_only')
     pass

@@ -31,6 +31,9 @@ from uncover_prospector_seds import read_prospector
 from shutter_loc import plot_shutter_pos
 from copy import copy, deepcopy
 
+ha_trasm_thresh = 0.8
+pab_trasm_thresh = 0.8
+
 
 colors = ['red', 'green', 'blue']
 connect_color = 'green'
@@ -68,6 +71,7 @@ def make_dustmap_simple(id_msa, aper_size='None', cor_helium=False):
     # If either halpha or pab is detected in the end filters, decide what to do
     if ha_all_filts == False or pab_all_filts == False:
         print("One of the lines not detected in all filters")
+        print(f"Halpha: {ha_all_filts}, PaBeta: {pab_all_filts}")
         print("Consider different cont measurement method")
         print("Exiting")
         sys.exit("")
@@ -79,6 +83,8 @@ def make_dustmap_simple(id_msa, aper_size='None', cor_helium=False):
     sed_df = read_sed(id_msa, aper_size=aper_size)
     zqual_df = read_spec_cat()
     redshift = zqual_df[zqual_df['id_msa']==id_msa]['z_spec'].iloc[0]
+
+    # breakpoint()
     
     # Make sure all of the deesignated filters have data
     confirm_filters_not_NaN(id_msa, sed_df, ha_filters, pab_filters)
@@ -104,9 +110,10 @@ def make_dustmap_simple(id_msa, aper_size='None', cor_helium=False):
     pab_blue_avg_transmission = get_line_coverage(pab_blue_sedpy_filt, line_list[1][1] * (1+redshift), pab_sigma * (1+redshift))
     ha_transmissions = [ha_red_avg_transmission, ha_avg_transmission, ha_blue_avg_transmission]
     pab_transmissions = [pab_red_avg_transmission, pab_avg_transmission, pab_blue_avg_transmission]
-
-    if ha_avg_transmission < 0.9 or pab_avg_transmission < 0.9:
+    
+    if ha_avg_transmission < ha_trasm_thresh or pab_avg_transmission < pab_trasm_thresh:
         print("One of the lines not covered fully in the filters")
+        print(f"Halpha: {ha_avg_transmission}, PaBeta: {pab_avg_transmission}")
         print("Exiting")
         sys.exit("")
 
@@ -237,7 +244,6 @@ def make_dustmap_simple(id_msa, aper_size='None', cor_helium=False):
     ha_snr_thresh, ha_snr_idxs = get_snr_cut(ha_linemap_snr, snr_thresh=ha_snr_cut)
     pab_snr_thresh, pab_snr_idxs = get_snr_cut(pab_linemap_snr, snr_thresh=pab_snr_cut)
     snr_idx = np.logical_and(ha_snr_idxs, pab_snr_idxs)
-
 
     # Make dustmap
     dustmap = get_dustmap(ha_linemap, pab_linemap, ha_linemap_snr, pab_linemap_snr)
@@ -713,7 +719,7 @@ def compute_line(cont_pct, red_flx, green_flx, blue_flx, redshift, raw_transmiss
         line_value = line_value * filter_width  # erg/s/cm2
 
         if images == True:
-            err_cont_value = np.sqrt(((wave_pct)*(image_noises[0])**2) + ((1-wave_pct)*(image_noises[2])**2))
+            err_cont_value = np.sqrt((((wave_pct)**2)*(image_noises[0])**2) + (((1-wave_pct)**2)*(image_noises[2])**2))
             err_line_value = np.sqrt(image_noises[1]**2 + err_cont_value**2)
             err_line_value = err_line_value * 1e-23
             err_line_value = err_line_value * ((c*1e10) / (observed_wave)**2)
@@ -785,7 +791,7 @@ def make_all_dustmap(id_msa_list):
     dustmap_info_df.to_csv('/Users/brianlorenz/uncover/Data/generated_tables/lineratio_av_df.csv', index=False)
 
 if __name__ == "__main__":
-    # make_all_dustmap()
+    # make_dustmap_simple(48540)
     make_dustmap_simple(39744)
-    id_msa_list = get_id_msa_list(full_sample=True)
+    id_msa_list = get_id_msa_list(full_sample=False)
     make_all_dustmap(id_msa_list)

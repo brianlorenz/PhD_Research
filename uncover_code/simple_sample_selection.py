@@ -2,15 +2,16 @@ from uncover_sed_filters import unconver_read_filters, get_filt_cols
 from uncover_read_data import read_supercat, read_spec_cat, read_lineflux_cat
 from astropy.io import ascii
 from uncover_prospector_seds import make_all_prospector
-from simple_make_dustmap import make_3color, get_line_coverage
+from simple_make_dustmap import make_3color, get_line_coverage, ha_trasm_thresh, pab_trasm_thresh
 from sedpy import observate
 from fit_emission_uncover_wave_divide import line_list
 import sys
 import pandas as pd
 
 def sample_select():
-    ha_snr_thresh = 2
-    pab_snr_thresh = 2
+    ha_snr_thresh = 0
+    pab_snr_thresh = 0
+    overlap_thresh = 0.2
 
     zqual_df = find_good_spec()
     zqual_df_covered = select_spectra(zqual_df)
@@ -28,10 +29,17 @@ def sample_select():
     id_msa_ha_snr_flag = []
     id_msa_pab_snr_flag = []
     id_msa_line_notfullcover = []
+    id_msa_line_overlapcont = []
     id_msa_skipped = []
+
+    cont_overlap_flag = []
+    cont_overlap_value = []
+    line_notfullcover_flag = []
+    line_notfullcover_value = []
+
     for id_msa in id_msa_list:
         print(f"Checking sample selection for {id_msa}")
-        if id_msa in [42041, 49991]: 
+        if id_msa in [6325, 42041, 49991]: 
             print(f'Skipping {id_msa} for other issues')
             id_msa_skipped.append(id_msa)
             continue 
@@ -92,10 +100,39 @@ def sample_select():
         ha_transmissions = [ha_red_avg_transmission, ha_avg_transmission, ha_blue_avg_transmission]
         pab_transmissions = [pab_red_avg_transmission, pab_avg_transmission, pab_blue_avg_transmission]
 
-        if ha_avg_transmission < 0.9 or pab_avg_transmission < 0.9:
+        line_notfullcover_check = ''
+        if ha_avg_transmission < ha_trasm_thresh: 
+            line_notfullcover_check = 'ha'
+            line_notfullcover_value.append(ha_avg_transmission)
+        elif pab_avg_transmission < pab_trasm_thresh:
+            line_notfullcover_check = 'pab'
+            line_notfullcover_value.append(pab_avg_transmission)
+        if line_notfullcover_check != '':
             print("One of the lines not covered fully in the filters")
             id_msa_line_notfullcover.append(id_msa)
+            line_notfullcover_flag.append(line_notfullcover_check)
             continue
+
+        overlap_flag = ''
+        if ha_red_avg_transmission > overlap_thresh:
+            overlap_flag = 'ha_red'
+            cont_overlap_value.append(ha_red_avg_transmission)
+        elif ha_blue_avg_transmission > overlap_thresh:
+            overlap_flag = 'ha_blue'
+            cont_overlap_value.append(ha_blue_avg_transmission)
+        elif pab_red_avg_transmission > overlap_thresh:
+            overlap_flag = 'pab_red'
+            cont_overlap_value.append(pab_red_avg_transmission)
+        elif pab_blue_avg_transmission > overlap_thresh:
+            overlap_flag = 'pab_blue'
+            cont_overlap_value.append(pab_blue_avg_transmission)
+        
+        if overlap_flag != '':
+            print("One of the lines overlaps the cont filter")
+            id_msa_line_overlapcont.append(id_msa)
+            cont_overlap_flag.append(overlap_flag)
+            continue
+            
 
         if ha_snr < ha_snr_thresh:
             print(f"Ha SNR of {ha_snr} less than thresh of {ha_snr_thresh}")
@@ -108,12 +145,13 @@ def sample_select():
 
         id_msa_good_list.append(id_msa)
     
-    assert len(id_msa_list) == len(id_msa_good_list) + len(id_msa_line_notfullcover) + len(id_msa_filt_edge) + len(id_msa_ha_snr_flag) + len(id_msa_pab_snr_flag) + len(id_msa_skipped)
+    assert len(id_msa_list) == len(id_msa_good_list) + len(id_msa_line_notfullcover) + len(id_msa_filt_edge) + len(id_msa_ha_snr_flag) + len(id_msa_pab_snr_flag) + len(id_msa_skipped) + len(id_msa_line_overlapcont)
     good_df = pd.DataFrame(id_msa_good_list, columns=['id_msa'])
-    line_notfullcover_df = pd.DataFrame(id_msa_line_notfullcover, columns=['id_msa'])
+    line_notfullcover_df = pd.DataFrame(zip(id_msa_line_notfullcover, line_notfullcover_flag, line_notfullcover_value), columns=['id_msa', 'flag_line_coverage', 'line_trasm_value'])
     filt_edge_df = pd.DataFrame(id_msa_filt_edge, columns=['id_msa'])
     ha_snr_flag_df = pd.DataFrame(id_msa_ha_snr_flag, columns=['id_msa'])
     pab_snr_flag_df = pd.DataFrame(id_msa_pab_snr_flag, columns=['id_msa'])
+    cont_overlap_df = pd.DataFrame(zip(id_msa_line_overlapcont, cont_overlap_flag, cont_overlap_value), columns=['id_msa', 'flag_cont_overlap', 'cont_overlap_value'])
     id_msa_skipped_df = pd.DataFrame(id_msa_skipped, columns=['id_msa'])
 
     # Write the DataFrame to a text file using a space as a delimiter
@@ -123,7 +161,7 @@ def sample_select():
     ha_snr_flag_df.to_csv('/Users/brianlorenz/uncover/Data/sample_selection/ha_snr_flag.csv', index=False)
     pab_snr_flag_df.to_csv('/Users/brianlorenz/uncover/Data/sample_selection/pab_snr_flag.csv', index=False)
     id_msa_skipped_df.to_csv('/Users/brianlorenz/uncover/Data/sample_selection/id_msa_skipped.csv', index=False)
-
+    cont_overlap_df.to_csv('/Users/brianlorenz/uncover/Data/sample_selection/cont_overlap_line.csv', index=False)
     return
 
 def find_good_spec():
