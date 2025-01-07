@@ -41,7 +41,7 @@ connect_color = 'green'
 
 
 def make_dustmap_simple(id_msa, aper_size='None', cor_helium=False):
-    ha_snr_cut = 1
+    ha_snr_cut = 0.5
     pab_snr_cut = 0.5
 
 
@@ -144,7 +144,7 @@ def make_dustmap_simple(id_msa, aper_size='None', cor_helium=False):
     # Set up axes
     # fig, axarr = plt.subplots(2, 4, figsize=(16, 8))
     fig = plt.figure(figsize=(20, 8))
-    gs = GridSpec(2, 6, left=0.05, right=0.99, bottom=0.1, top=0.90, wspace=0.01, hspace=0.3)
+    gs = GridSpec(2, 6, left=0.05, right=0.95, bottom=0.1, top=0.90, wspace=0.01, hspace=0.3)
     ax_ha_sed = fig.add_subplot(gs[0, 0])
     ax_ha_image = fig.add_subplot(gs[0, 1])
     ax_ha_cont = fig.add_subplot(gs[0, 2])
@@ -159,11 +159,14 @@ def make_dustmap_simple(id_msa, aper_size='None', cor_helium=False):
     ax_pab_snr = fig.add_subplot(gs[1, 4])
     ax_list = [ax_ha_sed,ax_ha_image,ax_ha_cont,ax_ha_linemap,ax_pab_sed,ax_pab_image,ax_pab_cont,ax_pab_linemap,ax_dustmap,ax_segmap,ax_ha_snr,ax_pab_snr]
     
+    dustmap_cax = fig.add_axes([0.955, 0.55, 0.015, 0.35])
+
+
     ha_cont_pct, ha_sed_lineflux, ha_trasm_flag, ha_boot_lines, ha_sed_fluxes, ha_wave_pct = plot_sed_around_line(ax_ha_sed, ha_filters, sed_df, spec_df, redshift, 0, ha_transmissions, id_msa)
     pab_cont_pct, pab_sed_lineflux, pab_trasm_flag, pab_boot_lines, pab_sed_fluxes, pab_wave_pct = plot_sed_around_line(ax_pab_sed, pab_filters, sed_df, spec_df, redshift, 1, pab_transmissions, id_msa)
 
     # CONSIDER Correcting the linefluxes here for NII, helium, transmission effects, etc
-
+    # pab_sed_lineflux = 0.8*pab_sed_lineflux
 
     # Compute lineratios
     sed_lineratio = compute_lineratio(ha_sed_lineflux, pab_sed_lineflux)
@@ -280,12 +283,13 @@ def make_dustmap_simple(id_msa, aper_size='None', cor_helium=False):
     pab_contmap_logscaled = make_log_rgb(pab_contmap, pab_contmap, pab_contmap, scalea=cont_scalea)[:,:,0]
     ha_linemap_logscaled = make_log_rgb(ha_linemap, ha_linemap, ha_linemap, scalea=linemap_scalea)[:,:,0]
     pab_linemap_logscaled = make_log_rgb(pab_linemap, pab_linemap, pab_linemap, scalea=linemap_scalea)[:,:,0]  
-    dustmap_logscaled = make_log_rgb(dustmap, dustmap, dustmap, scalea=dustmap_scalea)[:,:,0]   
+    # dustmap_logscaled = make_log_rgb(dustmap, dustmap, dustmap, scalea=dustmap_scalea)[:,:,0]   
     ha_contmap_norm  = get_norm(ha_contmap_logscaled, lower_pct=cont_lower_pct, upper_pct=cont_upper_pct)
     pab_contmap_norm = get_norm(pab_contmap_logscaled, lower_pct=cont_lower_pct, upper_pct=cont_upper_pct)
     ha_linemap_norm = get_norm(ha_linemap_logscaled, lower_pct=linemap_lower_pct, upper_pct=linemap_upper_pct)
     pab_linemap_norm = get_norm(pab_linemap_logscaled, lower_pct=linemap_lower_pct, upper_pct=linemap_upper_pct)
-    dustmap_norm = get_norm(dustmap_logscaled, lower_pct=dustmap_lower_pct, upper_pct=dustmap_upper_pct)
+    # dustmap_norm = get_norm(dustmap_logscaled, lower_pct=dustmap_lower_pct, upper_pct=dustmap_upper_pct)
+    dustmap_norm = Normalize(vmin=0.1, vmax=5)
 
     # Display the images
     # ax_segmap.imshow(ha_linemap_snr_old)
@@ -303,8 +307,10 @@ def make_dustmap_simple(id_msa, aper_size='None', cor_helium=False):
     ax_ha_snr.imshow(ha_linemap_logscaled, cmap=cmap, norm=ha_linemap_norm)
     ax_pab_snr.imshow(pab_linemap_logscaled,cmap=cmap, norm=pab_linemap_norm)
 
-    ax_dustmap.imshow(dustmap_logscaled, cmap=cmap, norm=dustmap_norm)
-
+    dustmap_imshow = ax_dustmap.imshow(dustmap, cmap=cmap, norm=dustmap_norm)
+    dustmap_cbar = fig.colorbar(dustmap_imshow, cax=dustmap_cax)
+    dustmap_cbar.set_label('Dustmap AV', fontsize=14)
+    dustmap_cbar.ax.tick_params(labelsize=14)
 
     # Plot the aperture
     aperture_circle = plt.Circle((50, 50), aperture/0.04, edgecolor='green', facecolor='None', lw=3)
@@ -343,7 +349,7 @@ def make_dustmap_simple(id_msa, aper_size='None', cor_helium=False):
     
     from matplotlib import colors
     cmap_gray = colors.ListedColormap(['gray'])
-    # ax_dustmap.imshow(combined_mask_both, cmap=cmap_gray)
+    ax_dustmap.imshow(combined_mask_both, cmap=cmap_gray)
     ax_ha_snr.imshow(combined_mask_ha, cmap=cmap_gray)
     ax_pab_snr.imshow(combined_mask_pab, cmap=cmap_gray)
     ax_segmap.imshow(combined_mask_segmap, cmap=cmap_gray)
@@ -792,6 +798,6 @@ def make_all_dustmap(id_msa_list):
 
 if __name__ == "__main__":
     # make_dustmap_simple(48540)
-    make_dustmap_simple(39744)
+    # make_dustmap_simple(39744)
     id_msa_list = get_id_msa_list(full_sample=False)
     make_all_dustmap(id_msa_list)

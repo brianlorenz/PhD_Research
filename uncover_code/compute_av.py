@@ -65,4 +65,4 @@ def read_catalog_av(id_msa, zqual_df):
     return av_16, av_50, av_84
 
 
-# print(compute_ha_pab_av(1/6))
+print(compute_ha_pab_av(1/21.6))

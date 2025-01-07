@@ -5,12 +5,13 @@ import matplotlib.pyplot as plt
 import matplotlib as mpl
 from matplotlib.cm import ScalarMappable
 from sedpy import observate
-from make_dust_maps_old import make_3color
-from uncover_read_data import read_raw_spec, read_lineflux_cat
-from uncover_make_sed import get_sed
+from uncover_read_data import read_raw_spec, read_lineflux_cat, get_id_msa_list, read_fluxcal_spec
+from uncover_make_sed import get_sed, read_sed
 from compute_av import ha_factor, pab_factor, compute_ratio_from_av, compute_ha_pab_av, compute_ha_pab_av_from_dustmap, read_catalog_av
 import pandas as pd
-from fit_emission_uncover_wave_divide import line_list
+from fit_emission_uncover_wave_divide import line_list, plot_emission_fit, emission_fit_dir
+from simple_make_dustmap import plot_sed_around_line, get_line_coverage, make_3color
+from plot_vals import *
 
 def diagnostic_av_emissionfit_vs_av_prospector(color_var = 'None', use_subsample=True, remove_nii=False, he_cor=False):
     zqual_df = read_spec_cat()
@@ -439,7 +440,6 @@ def lineflux_compare(plot_all=False, compare_to_cat=True, aper_size='None'):
     test_row = merged_df[merged_df['id_msa'] == 47875] 
     ha_compare = test_row['ha_sed_flux'] / test_row['cat_Ha_flux_jy']
     pab_compare = test_row['pab_sed_flux'] / test_row['cat_PaB_flux_jy']
-    breakpoint()
 
     x_axis_plot_ha = merged_df['ha_emfit_flux']
     x_axis_plot_pab = merged_df['pab_emfit_flux']
@@ -724,8 +724,79 @@ def sed_values_compare(aper_add_str='', use_subsample=True):
     fig.savefig(f'/Users/brianlorenz/uncover/Figures/diagnostic_lineratio/sed_values_compare_greenflux{add_str}.pdf')
 
 
+def plot_line_assessment(id_msa_list):
+    "line (str): 'ha_only' or 'pab_only' "
+    zqual_df = read_spec_cat()
+    full_lineratio_data_df = ascii.read(f'/Users/brianlorenz/uncover/Data/generated_tables/lineratio_av_df.csv').to_pandas()
+
+
+    for id_msa in id_msa_list:
+        print(f'making line assessment plot for {id_msa}')
+        fig, axarr = plt.subplots(2, 2, figsize=(12,12))
+        
+        ax_ha_fit = axarr[0,0]
+        ax_pab_fit = axarr[1,0]
+        ax_ha_sed = axarr[0,1]
+        ax_pab_sed = axarr[1,1]
+        ax_list = [ax_ha_fit, ax_pab_fit, ax_ha_sed, ax_pab_sed]
+        spec_df = read_fluxcal_spec(id_msa)
+        plot_emission_fit(emission_fit_dir, id_msa, spec_df, ax_plot=ax_ha_fit, plot_type='ha_only')
+        plot_emission_fit(emission_fit_dir, id_msa, spec_df, ax_plot=ax_pab_fit, plot_type='pab_only')
+        
+        # For SED plot
+        ha_filters, ha_images, wht_ha_images, obj_segmap, ha_photfnus, ha_all_filts = make_3color(id_msa, line_index=0, plot=False)
+        pab_filters, pab_images, wht_pab_images, obj_segmap, pab_photfnus, pab_all_filts = make_3color(id_msa, line_index=1, plot=False)
+        ha_sedpy_name = ha_filters[1].replace('f', 'jwst_f')
+        ha_sedpy_filt = observate.load_filters([ha_sedpy_name])[0]
+        ha_filter_width = ha_sedpy_filt.rectangular_width
+        pab_sedpy_name = pab_filters[1].replace('f', 'jwst_f')
+        pab_sedpy_filt = observate.load_filters([pab_sedpy_name])[0]
+        pab_filter_width = pab_sedpy_filt.rectangular_width
+
+        ha_red_sedpy_name = ha_filters[0].replace('f', 'jwst_f')
+        ha_red_sedpy_filt = observate.load_filters([ha_red_sedpy_name])[0]
+        pab_red_sedpy_name = pab_filters[0].replace('f', 'jwst_f')
+        pab_red_sedpy_filt = observate.load_filters([pab_red_sedpy_name])[0]
+        ha_blue_sedpy_name = ha_filters[2].replace('f', 'jwst_f')
+        ha_blue_sedpy_filt = observate.load_filters([ha_blue_sedpy_name])[0]
+        pab_blue_sedpy_name = pab_filters[2].replace('f', 'jwst_f')
+        pab_blue_sedpy_filt = observate.load_filters([pab_blue_sedpy_name])[0]
+        ha_filters = ['f_'+filt for filt in ha_filters]
+        pab_filters = ['f_'+filt for filt in pab_filters]
+        sed_df = read_sed(id_msa)
+        redshift = zqual_df[zqual_df['id_msa']==id_msa]['z_spec'].iloc[0]
+
+        fit_df = ascii.read(f'/Users/brianlorenz/uncover/Data/emission_fitting/{id_msa}_emission_fits.csv').to_pandas()
+        ha_flux_fit = fit_df.iloc[0]['flux']
+        pab_flux_fit = fit_df.iloc[1]['flux']
+        ha_sigma = fit_df.iloc[0]['sigma'] # full width of the line
+        pab_sigma = fit_df.iloc[1]['sigma'] # full width of the line
+
+        ha_avg_transmission = get_line_coverage(ha_sedpy_filt, line_list[0][1] * (1+redshift), ha_sigma * (1+redshift))
+        pab_avg_transmission = get_line_coverage(pab_sedpy_filt, line_list[1][1] * (1+redshift), pab_sigma * (1+redshift))
+        ha_red_avg_transmission = get_line_coverage(ha_red_sedpy_filt, line_list[0][1] * (1+redshift), ha_sigma * (1+redshift))
+        pab_red_avg_transmission = get_line_coverage(pab_red_sedpy_filt, line_list[1][1] * (1+redshift), pab_sigma * (1+redshift))
+        ha_blue_avg_transmission = get_line_coverage(ha_blue_sedpy_filt, line_list[0][1] * (1+redshift), ha_sigma * (1+redshift))
+        pab_blue_avg_transmission = get_line_coverage(pab_blue_sedpy_filt, line_list[1][1] * (1+redshift), pab_sigma * (1+redshift))
+        ha_transmissions = [ha_red_avg_transmission, ha_avg_transmission, ha_blue_avg_transmission]
+        pab_transmissions = [pab_red_avg_transmission, pab_avg_transmission, pab_blue_avg_transmission]
+
+        ha_cont_pct, ha_sed_lineflux, ha_trasm_flag, ha_boot_lines, ha_sed_fluxes, ha_wave_pct = plot_sed_around_line(ax_ha_sed, ha_filters, sed_df, spec_df, redshift, 0, ha_transmissions, id_msa)
+        pab_cont_pct, pab_sed_lineflux, pab_trasm_flag, pab_boot_lines, pab_sed_fluxes, pab_wave_pct = plot_sed_around_line(ax_pab_sed, pab_filters, sed_df, spec_df, redshift, 1, pab_transmissions, id_msa)
+        
+        lineratio_data_row = full_lineratio_data_df[full_lineratio_data_df['id_msa'] == id_msa]
+        for ax in ax_list:
+            scale_aspect(ax)
+        ax_ha_fit.set_title(f'id_msa = {id_msa}', fontsize=18)
+        ax_ha_fit.set_ylabel(f'H$\\alpha$', fontsize=18)
+        ax_pab_fit.set_ylabel(f'Pa$\\beta$', fontsize=18)
+        ax_pab_fit.text(0.3, -0.2, f'Emission Fit AV {round(lineratio_data_row["emission_fit_av"].iloc[0], 3)}', fontsize=14, transform=ax_pab_fit.transAxes)
+        ax_pab_sed.text(0.1, -0.2,f'SED AV {round(lineratio_data_row["sed_av"].iloc[0], 3)}', fontsize=14, transform=ax_pab_sed.transAxes)
+        fig.savefig('/Users/brianlorenz/uncover/Figures/line_assessment/' + f'{id_msa}_line_assessment.pdf')
+        plt.close('all')
+
 if __name__ == "__main__":
-    lineflux_compare(plot_all=True, compare_to_cat=True)
+    # lineflux_compare(plot_all=True, compare_to_cat=True)
     # lineflux_compare(plot_all=True, compare_to_cat=False)
 
     # hb_eq_width_continuum(line='ha')
@@ -739,4 +810,11 @@ if __name__ == "__main__":
 
     # sed_values_compare()
     # sed_values_compare(use_subsample=False)
+
+    id_msa_list = get_id_msa_list(full_sample=False)
+    
+    # fit_all_emission_uncover(id_msa_list)  
+    # plot_mosaic(id_msa_list, line = 'ha_only')
+    # plot_mosaic(id_msa_list, line = 'pab_only')
+    plot_line_assessment(id_msa_list)
     pass

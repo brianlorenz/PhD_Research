@@ -148,10 +148,9 @@ if __name__ == "__main__":
     # breakpoint()
     # int_spec_df = read_integrated_spec(47875)
     # breakpoint()
-    match_supercat(6325)
+    # match_supercat(6325)
     # match_supercat(42041)
     # supercat = read_supercat()
     # spec_df = read_spec_cat()
     # aper_cat_df = read_aper_cat()
-    # breakpoint()
     pass

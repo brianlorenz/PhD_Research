@@ -50,11 +50,14 @@ def calc_lineflux(id_msa):
     
     ha_flux_erg_s_cm2 = measure_lineflux(sed_df, redshift, ha_filters, ha_line_scaled_transmission, ha_sedpy_transmission, line_list[0][1], ha_sedpy_width, ha_sedpy_wave, ha_sedpy_filts)
     pab_flux_erg_s_cm2 = measure_lineflux(sed_df, redshift, pab_filters, pab_line_scaled_transmission, pab_sedpy_transmission, line_list[1][1], pab_sedpy_width, pab_sedpy_wave, pab_sedpy_filts)
+    # pab_flux_erg_s_cm2 = pab_flux_erg_s_cm2*0.8
 
     lines_df = read_lineflux_cat()
     lines_df_row = lines_df[lines_df['id_msa'] == id_msa]
     ha_flux_cat_erg_s_cm2 = lines_df_row['f_Ha+NII'].iloc[0] * 1e-20
     pab_flux_cat_erg_s_cm2 = lines_df_row['f_PaB'].iloc[0] * 1e-20
+    err_ha_flux_cat_erg_s_cm2 = lines_df_row['e_Ha+NII'].iloc[0] * 1e-20
+    err_pab_flux_cat_erg_s_cm2 = lines_df_row['e_PaB'].iloc[0] * 1e-20
 
     fit_df = ascii.read(f'/Users/brianlorenz/uncover/Data/emission_fitting/{id_msa}_emission_fits.csv').to_pandas()
     ha_flux_emission_fit = fit_df['flux'].iloc[0]
@@ -69,7 +72,7 @@ def calc_lineflux(id_msa):
     print(f'PaB flux: {pab_flux_erg_s_cm2}')
     print(f'PaB flux fit compare: {pab_offset_factor}')
 
-    return ha_flux_erg_s_cm2, pab_flux_erg_s_cm2, ha_flux_cat_erg_s_cm2, pab_flux_cat_erg_s_cm2, ha_flux_emission_fit, pab_flux_emission_fit
+    return ha_flux_erg_s_cm2, pab_flux_erg_s_cm2, ha_flux_cat_erg_s_cm2, err_ha_flux_cat_erg_s_cm2, pab_flux_cat_erg_s_cm2, err_pab_flux_cat_erg_s_cm2, ha_flux_emission_fit, pab_flux_emission_fit
 
     # print(f'Ha/PaB: {(ha_flux/pab_flux) / (line_list[0][1]/line_list[1][1])**2}')
     # print(f'Cat Ha/PaB: {(ha_flux_cat_jy/pab_flux_cat_jy)}')
@@ -122,18 +125,22 @@ def calc_all_lineflux(id_msa_list):
     ha_sed_fluxes = []
     pab_sed_fluxes = []
     ha_cat_fluxes = []
+    err_ha_cat_fluxes = []
     pab_cat_fluxes = []
+    err_pab_cat_fluxes = []
     ha_emission_fits = []
     pab_emission_fits = []
     for id_msa in id_msa_list:
-        ha_flux_erg_s_cm2, pab_flux_erg_s_cm2, ha_flux_cat_erg_s_cm2, pab_flux_cat_erg_s_cm2, ha_flux_emission_fit, pab_flux_emission_fit= calc_lineflux(id_msa)
+        ha_flux_erg_s_cm2, pab_flux_erg_s_cm2, ha_flux_cat_erg_s_cm2, err_ha_flux_cat_erg_s_cm2, pab_flux_cat_erg_s_cm2, err_pab_flux_cat_erg_s_cm2, ha_flux_emission_fit, pab_flux_emission_fit= calc_lineflux(id_msa)
         ha_sed_fluxes.append(ha_flux_erg_s_cm2)
         pab_sed_fluxes.append(pab_flux_erg_s_cm2)
         ha_cat_fluxes.append(ha_flux_cat_erg_s_cm2)
+        err_ha_cat_fluxes.append(err_ha_flux_cat_erg_s_cm2)
+        err_pab_cat_fluxes.append(err_pab_flux_cat_erg_s_cm2)
         pab_cat_fluxes.append(pab_flux_cat_erg_s_cm2)
         ha_emission_fits.append(ha_flux_emission_fit)
         pab_emission_fits.append(pab_flux_emission_fit)
-    emission_offset_df = pd.DataFrame(zip(id_msa_list, ha_sed_fluxes, pab_sed_fluxes, ha_cat_fluxes, pab_cat_fluxes, ha_emission_fits, pab_emission_fits), columns=['id_msa', 'ha_sed_flux', 'pab_sed_flux', 'ha_cat_flux', 'pab_cat_flux', 'ha_emfit_flux', 'pab_emfit_flux'])
+    emission_offset_df = pd.DataFrame(zip(id_msa_list, ha_sed_fluxes, pab_sed_fluxes, ha_cat_fluxes, err_ha_cat_fluxes, pab_cat_fluxes, err_pab_cat_fluxes, ha_emission_fits, pab_emission_fits), columns=['id_msa', 'ha_sed_flux', 'pab_sed_flux', 'ha_cat_flux', 'err_ha_cat_flux', 'pab_cat_flux', 'err_pab_cat_flux', 'ha_emfit_flux', 'pab_emfit_flux'])
     emission_offset_df['ha_sed_div_cat'] = emission_offset_df['ha_sed_flux'] / emission_offset_df['ha_cat_flux']
     emission_offset_df['pab_sed_div_cat'] = emission_offset_df['pab_sed_flux'] / emission_offset_df['pab_cat_flux']
     emission_offset_df['ha_sed_div_emfit'] = emission_offset_df['ha_sed_flux'] / emission_offset_df['ha_emfit_flux']
@@ -167,6 +174,6 @@ if __name__ == "__main__":
     # calc_lineflux(25774)
     # calc_lineflux(39744)
     
-    id_msa_list = get_id_msa_list(full_sample=True)
+    id_msa_list = get_id_msa_list(full_sample=False)
     calc_all_lineflux(id_msa_list)  
     pass

@@ -28,6 +28,9 @@ lines_dict = {
 }
 line_centers_rest = [line_list[i][1] for i in range(len(line_list))]
 
+ha_fit_range = (6000, 7200)
+pab_fit_range = (12300, 13700)
+
 
 def fit_emission_uncover(spectrum, save_name, bootstrap_num=-1):
     """
@@ -316,8 +319,8 @@ def plot_emission_fit(emission_fit_dir, save_name, total_spec_df, ax_plot='', pl
     
 
  
-    Ha_plot_range = (6250, 6850)  # Angstrom
-    Hb_plot_range = (12500, 13100)
+    Ha_plot_range = ha_fit_range  # Angstrom
+    Hb_plot_range = pab_fit_range
     # Hb_plot_range = (4995, 5015)
 
     def set_plot_ranges(ax, axis, plot_range, box_color):
@@ -645,9 +648,9 @@ def get_fit_range(wavelength):
     Returns:
     """
     cut_ha = np.logical_and(
-        wavelength > 6000, wavelength < 7200)
+        wavelength > ha_fit_range[0], wavelength < ha_fit_range[1])
     cut_pab = np.logical_and(
-        wavelength > 12300, wavelength < 13700)
+        wavelength > pab_fit_range[0], wavelength < pab_fit_range[1])
     full_cut = np.logical_or(cut_pab, cut_ha)
     return full_cut
 
@@ -681,6 +684,7 @@ def plot_mosaic(id_msa_list, line = 'ha_only'):
         ax.set_title(f'id_msa = {id_msa}', fontsize=18)
     fig.savefig(emission_fit_dir + 'plots' + f'/mosaic_{line}.pdf')
 
+
 if __name__ == "__main__":
     # # (Currently using)
     # id_msa = 39744
@@ -696,6 +700,6 @@ if __name__ == "__main__":
     id_msa_list = get_id_msa_list(full_sample=False)
     
     # fit_all_emission_uncover(id_msa_list)  
-    # plot_mosaic(id_msa_list, line = 'ha_only')
+    plot_mosaic(id_msa_list, line = 'ha_only')
     plot_mosaic(id_msa_list, line = 'pab_only')
     pass

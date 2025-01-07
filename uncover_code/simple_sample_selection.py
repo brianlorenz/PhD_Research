@@ -1,5 +1,5 @@
 from uncover_sed_filters import unconver_read_filters, get_filt_cols
-from uncover_read_data import read_supercat, read_spec_cat, read_lineflux_cat
+from uncover_read_data import read_supercat, read_spec_cat, read_lineflux_cat, get_id_msa_list, read_SPS_cat
 from astropy.io import ascii
 from uncover_prospector_seds import make_all_prospector
 from simple_make_dustmap import make_3color, get_line_coverage, ha_trasm_thresh, pab_trasm_thresh
@@ -7,14 +7,23 @@ from sedpy import observate
 from fit_emission_uncover_wave_divide import line_list
 import sys
 import pandas as pd
+import matplotlib.pyplot as plt
+import matplotlib as mpl
+from plot_vals import stellar_mass_label, scale_aspect
 
 def sample_select():
     ha_snr_thresh = 0
-    pab_snr_thresh = 0
+    pab_snr_thresh = 5
     overlap_thresh = 0.2
 
     zqual_df = find_good_spec()
     zqual_df_covered = select_spectra(zqual_df)
+    line_not_covered_id_msas = []
+    for id_msa in zqual_df['id_msa']:
+        if len(zqual_df_covered[zqual_df_covered['id_msa'] == id_msa]) == 0:
+            line_not_covered_id_msas.append(id_msa)
+    line_not_covered_id_msas_df = pd.DataFrame(line_not_covered_id_msas, columns=['id_msa'])
+    line_not_covered_id_msas_df.to_csv('/Users/brianlorenz/uncover/Data/sample_selection/line_not_in_filt.csv', index=False)
     zqual_df_covered.to_csv('/Users/brianlorenz/uncover/zqual_df_simple.csv', index=False)
     id_msa_list = zqual_df_covered['id_msa'].to_list()
     total_id_msa_list_df = pd.DataFrame(id_msa_list, columns=['id_msa'])
@@ -204,4 +213,122 @@ def line_in_range(z, target_line, filt_cols, uncover_filt_dir):
             filt_name = filt
     return covered, filt_name
 
-sample_select()
+
+def paper_figure_sample_selection(id_msa_list, color_var='None'):
+    fig, ax = plt.subplots(figsize=(6,6))
+
+    fontsize = 14
+    markersize=8
+    gray_markersize = 4
+
+    zqual_df = read_spec_cat()
+    sps_df = read_SPS_cat()
+    # supercat_df = read_supercat()
+    lineratio_data_df = ascii.read(f'/Users/brianlorenz/uncover/Data/generated_tables/lineratio_av_df.csv').to_pandas()
+
+    line_notfullcover_df = ascii.read('/Users/brianlorenz/uncover/Data/sample_selection/line_notfullcover_df.csv').to_pandas()
+    filt_edge_df = ascii.read('/Users/brianlorenz/uncover/Data/sample_selection/filt_edge.csv').to_pandas()
+    ha_snr_flag_df = ascii.read('/Users/brianlorenz/uncover/Data/sample_selection/ha_snr_flag.csv').to_pandas()
+    pab_snr_flag_df = ascii.read('/Users/brianlorenz/uncover/Data/sample_selection/pab_snr_flag.csv').to_pandas()
+    id_msa_skipped_df = ascii.read('/Users/brianlorenz/uncover/Data/sample_selection/id_msa_skipped.csv').to_pandas()
+    id_msa_cont_overlap_line_df = ascii.read('/Users/brianlorenz/uncover/Data/sample_selection/cont_overlap_line.csv').to_pandas()
+    id_msa_not_in_filt_df = ascii.read('/Users/brianlorenz/uncover/Data/sample_selection/line_not_in_filt.csv').to_pandas()
+
+    id_redshift_issue_list = line_notfullcover_df['id_msa'].append(filt_edge_df['id_msa']).append(id_msa_skipped_df['id_msa']).append(id_msa_not_in_filt_df['id_msa']).append(id_msa_cont_overlap_line_df['id_msa']).to_list()
+
+    # Gray background
+    for id_msa in zqual_df['id_msa']:
+        marker = 'o'
+        zqual_row = zqual_df[zqual_df['id_msa'] == id_msa]
+
+        if zqual_row['flag_zspec_qual'].iloc[0] != 3 or zqual_row['flag_spec_qual'].iloc[0] != 0:
+            marker = 's'
+        if id_msa in id_redshift_issue_list:
+            marker = '^'
+
+        redshift = zqual_row['z_spec'].iloc[0]
+        if redshift < 1.3 or redshift > 2.4:
+            continue
+        id_dr2 = zqual_df[zqual_df['id_msa']==id_msa]['id_DR2'].iloc[0]
+        sps_row = sps_df[sps_df['id']==id_dr2]
+        stellar_mass_50 = sps_row['mstar_50']
+        if len(sps_row) == 0:
+            print(f'No SPS for {id_msa}')
+            continue
+        if marker=='o':
+            print(id_msa)
+
+        ax.plot(redshift, stellar_mass_50, marker=marker, color='gray', ls='None', ms=gray_markersize)
+
+    # Selected Sample
+    for id_msa in id_msa_list:
+        zqual_row = zqual_df[zqual_df['id_msa'] == id_msa]
+        # supercat_row = supercat_df[supercat_df['id_msa']==id_msa]
+        redshift = zqual_row['z_spec'].iloc[0]
+        id_dr2 = zqual_df[zqual_df['id_msa']==id_msa]['id_DR2'].iloc[0]
+        sps_row = sps_df[sps_df['id']==id_dr2]
+
+        stellar_mass_50 = sps_row['mstar_50']
+        err_stellar_mass_low = stellar_mass_50 - sps_row['mstar_16']
+        err_stellar_mass_high = sps_row['mstar_84'] - stellar_mass_50
+        dust2_50 = sps_row['dust2_50'].iloc[0]
+
+        # data_df_row = data_df[data_df['id_msa'] == id_msa]
+        lineratio_data_row = lineratio_data_df[lineratio_data_df['id_msa'] == id_msa]
+        fit_df = ascii.read(f'/Users/brianlorenz/uncover/Data/emission_fitting/{id_msa}_emission_fits.csv').to_pandas()
+        # ha_snr = fit_df['signal_noise_ratio'].iloc[0]
+        pab_snr = fit_df['signal_noise_ratio'].iloc[0]
+        
+        cmap = mpl.cm.inferno
+        
+        if color_var == 'sed_av':
+            norm = mpl.colors.Normalize(vmin=0, vmax=3) 
+            rgba = cmap(norm(lineratio_data_row['sed_av']))  
+            cbar_label = 'Photometry AV'
+        # if color_var == 'ha_snr':
+        #     norm = mpl.colors.LogNorm(vmin=2, vmax=100) 
+        #     rgba = cmap(norm(ha_snr))
+        #     cbar_label = 'H$\\alpha$ SNR'
+        # if color_var == 'pab_snr':
+        #     norm = mpl.colors.LogNorm(vmin=2, vmax=50) 
+        #     rgba = cmap(norm(pab_snr))
+        #     cbar_label = 'Pa$\\beta$ SNR'
+        if color_var == 'dust2':
+            norm = mpl.colors.Normalize(vmin=0, vmax=2) 
+            rgba = cmap(norm(dust2_50))
+            cbar_label = 'Prospector dust2_50'
+        if color_var != 'None':
+            color_str = f'_{color_var}'
+        else:
+            rgba = 'black'
+            color_str = ''
+
+        ax.errorbar(redshift, stellar_mass_50, yerr=[err_stellar_mass_low, err_stellar_mass_high], marker='o', color=rgba, ls='None', mec='black', ms=markersize)
+    ax.set_ylabel('Prospector '+stellar_mass_label, fontsize=fontsize)
+    ax.set_xlabel('Redshift', fontsize=fontsize)
+
+
+    
+     
+    ax.tick_params(labelsize=fontsize)
+    # ax.set_xlim([1e-20, 1e-15])
+    # ax.set_ylim([1e-20, 1e-15])
+    scale_aspect(ax)
+
+    # cb_ax = fig.add_axes([.91,.124,.02,.734])
+    if color_var != 'None':
+        sm =  mpl.cm.ScalarMappable(norm=norm, cmap=cmap)
+        cbar = fig.colorbar(sm,orientation='vertical', ax=ax)
+        cbar.set_label(cbar_label, fontsize=16)
+        cbar.ax.tick_params(labelsize=16)
+
+    save_loc = f'/Users/brianlorenz/uncover/Figures/paper_figures/sample_selection{color_str}.pdf'
+    fig.savefig(save_loc)
+
+
+if __name__ == "__main__":
+    # sample_select()
+    
+    id_msa_list = get_id_msa_list(full_sample=False)
+    paper_figure_sample_selection(id_msa_list, color_var='sed_av')
+    
