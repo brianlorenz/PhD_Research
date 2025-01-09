@@ -1,5 +1,5 @@
 from uncover_sed_filters import unconver_read_filters, get_filt_cols
-from uncover_read_data import read_supercat, read_spec_cat, read_lineflux_cat, get_id_msa_list, read_SPS_cat
+from uncover_read_data import read_supercat, read_spec_cat, read_lineflux_cat, get_id_msa_list, read_SPS_cat, read_SPS_cat_all
 from astropy.io import ascii
 from uncover_prospector_seds import make_all_prospector
 from simple_make_dustmap import make_3color, get_line_coverage, ha_trasm_thresh, pab_trasm_thresh
@@ -9,7 +9,8 @@ import sys
 import pandas as pd
 import matplotlib.pyplot as plt
 import matplotlib as mpl
-from plot_vals import stellar_mass_label, scale_aspect
+from plot_vals import stellar_mass_label, scale_aspect 
+import numpy as np
 
 def sample_select():
     ha_snr_thresh = 0
@@ -218,11 +219,14 @@ def paper_figure_sample_selection(id_msa_list, color_var='None'):
     fig, ax = plt.subplots(figsize=(6,6))
 
     fontsize = 14
-    markersize=8
+    normal_markersize=8
+    small_markersize = 4
     gray_markersize = 4
+    background_markersize = 2
 
     zqual_df = read_spec_cat()
     sps_df = read_SPS_cat()
+    sps_all_df = read_SPS_cat_all()
     # supercat_df = read_supercat()
     lineratio_data_df = ascii.read(f'/Users/brianlorenz/uncover/Data/generated_tables/lineratio_av_df.csv').to_pandas()
 
@@ -235,38 +239,59 @@ def paper_figure_sample_selection(id_msa_list, color_var='None'):
     id_msa_not_in_filt_df = ascii.read('/Users/brianlorenz/uncover/Data/sample_selection/line_not_in_filt.csv').to_pandas()
 
     id_redshift_issue_list = line_notfullcover_df['id_msa'].append(filt_edge_df['id_msa']).append(id_msa_skipped_df['id_msa']).append(id_msa_not_in_filt_df['id_msa']).append(id_msa_cont_overlap_line_df['id_msa']).to_list()
+    id_pab_snr_list = pab_snr_flag_df['id_msa'].to_list()
+
+    id_msa_list = id_msa_list + id_pab_snr_list
 
     # Gray background
+    all_masses = sps_all_df['mstar_50']
+    all_redshifts = sps_all_df['z_50']
+    # ax.plot(all_redshifts, all_masses, marker='o', ls='None', markersize=background_markersize, color='gray')
+    def truncate_colormap(cmap, minval=0.0, maxval=1.0, n=100):
+        new_cmap = mpl.colors.LinearSegmentedColormap.from_list(
+        'trunc({n},{a:.2f},{b:.2f})'.format(n=cmap.name, a=minval, b=maxval),
+        cmap(np.linspace(minval, maxval, n)))
+        return new_cmap
+    cmap = plt.get_cmap('gray_r')
+    new_cmap = truncate_colormap(cmap, 0, 0.7)
+    good_redshift_idx = np.logical_and(all_redshifts > 1.3, all_redshifts < 2.3)
+    good_mass_idx = np.logical_and(all_masses > 5.5, all_masses < 11.5)
+    good_both_idx = np.logical_and(good_redshift_idx, good_mass_idx)
+    ax.hexbin(all_redshifts[good_both_idx], all_masses[good_both_idx], gridsize=20, cmap=new_cmap)
+
+    # Gray high quality points
     for id_msa in zqual_df['id_msa']:
         marker = 'o'
         zqual_row = zqual_df[zqual_df['id_msa'] == id_msa]
 
         if zqual_row['flag_zspec_qual'].iloc[0] != 3 or zqual_row['flag_spec_qual'].iloc[0] != 0:
             marker = 's'
+            continue
         if id_msa in id_redshift_issue_list:
             marker = '^'
+        if id_msa in id_pab_snr_list:
+            marker = 'o'
 
         redshift = zqual_row['z_spec'].iloc[0]
         if redshift < 1.3 or redshift > 2.4:
             continue
-        id_dr2 = zqual_df[zqual_df['id_msa']==id_msa]['id_DR2'].iloc[0]
-        sps_row = sps_df[sps_df['id']==id_dr2]
+        # id_dr2 = zqual_df[zqual_df['id_msa']==id_msa]['id_DR2'].iloc[0]
+        sps_row = sps_df[sps_df['id_msa']==id_msa]
         stellar_mass_50 = sps_row['mstar_50']
         if len(sps_row) == 0:
             print(f'No SPS for {id_msa}')
             continue
-        if marker=='o':
-            print(id_msa)
 
-        ax.plot(redshift, stellar_mass_50, marker=marker, color='gray', ls='None', ms=gray_markersize)
+        ax.plot(redshift, stellar_mass_50, marker=marker, color='gray', ls='None', ms=gray_markersize, mec='black')
+
 
     # Selected Sample
     for id_msa in id_msa_list:
         zqual_row = zqual_df[zqual_df['id_msa'] == id_msa]
         # supercat_row = supercat_df[supercat_df['id_msa']==id_msa]
         redshift = zqual_row['z_spec'].iloc[0]
-        id_dr2 = zqual_df[zqual_df['id_msa']==id_msa]['id_DR2'].iloc[0]
-        sps_row = sps_df[sps_df['id']==id_dr2]
+        # id_dr2 = zqual_df[zqual_df['id_msa']==id_msa]['id_DR2'].iloc[0]
+        sps_row = sps_df[sps_df['id_msa']==id_msa]
 
         stellar_mass_50 = sps_row['mstar_50']
         err_stellar_mass_low = stellar_mass_50 - sps_row['mstar_16']
@@ -303,6 +328,11 @@ def paper_figure_sample_selection(id_msa_list, color_var='None'):
             rgba = 'black'
             color_str = ''
 
+        if id_msa in id_pab_snr_list:
+            markersize = small_markersize
+        else:
+            markersize = normal_markersize
+
         ax.errorbar(redshift, stellar_mass_50, yerr=[err_stellar_mass_low, err_stellar_mass_high], marker='o', color=rgba, ls='None', mec='black', ms=markersize)
     ax.set_ylabel('Prospector '+stellar_mass_label, fontsize=fontsize)
     ax.set_xlabel('Redshift', fontsize=fontsize)
@@ -311,8 +341,8 @@ def paper_figure_sample_selection(id_msa_list, color_var='None'):
     
      
     ax.tick_params(labelsize=fontsize)
-    # ax.set_xlim([1e-20, 1e-15])
-    # ax.set_ylim([1e-20, 1e-15])
+    ax.set_xlim([1.3, 2.3])
+    ax.set_ylim([5.5, 11])
     scale_aspect(ax)
 
     # cb_ax = fig.add_axes([.91,.124,.02,.734])

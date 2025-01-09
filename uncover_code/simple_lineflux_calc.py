@@ -7,7 +7,7 @@ from fit_emission_uncover_old import line_list
 from astropy.io import ascii
 import numpy as np
 import pandas as pd
-
+from compute_av import nii_correction_ha_flux, fe_correction_pab_flux
 
 def calc_lineflux(id_msa):
     sed_df = read_sed(id_msa)
@@ -50,7 +50,9 @@ def calc_lineflux(id_msa):
     
     ha_flux_erg_s_cm2 = measure_lineflux(sed_df, redshift, ha_filters, ha_line_scaled_transmission, ha_sedpy_transmission, line_list[0][1], ha_sedpy_width, ha_sedpy_wave, ha_sedpy_filts)
     pab_flux_erg_s_cm2 = measure_lineflux(sed_df, redshift, pab_filters, pab_line_scaled_transmission, pab_sedpy_transmission, line_list[1][1], pab_sedpy_width, pab_sedpy_wave, pab_sedpy_filts)
-    # pab_flux_erg_s_cm2 = pab_flux_erg_s_cm2*0.8
+    # Line flux corrections
+    nii_cor_ha_flux_erg_s_cm2 = ha_flux_erg_s_cm2*nii_correction_ha_flux
+    fe_cor_pab_flux_erg_s_cm2 = pab_flux_erg_s_cm2*fe_correction_pab_flux
 
     lines_df = read_lineflux_cat()
     lines_df_row = lines_df[lines_df['id_msa'] == id_msa]
@@ -62,17 +64,18 @@ def calc_lineflux(id_msa):
     fit_df = ascii.read(f'/Users/brianlorenz/uncover/Data/emission_fitting/{id_msa}_emission_fits.csv').to_pandas()
     ha_flux_emission_fit = fit_df['flux'].iloc[0]
     pab_flux_emission_fit = fit_df['flux'].iloc[1]
+    nii_cor_ha_flux_emission_fit = fit_df['nii_cor_flux'].iloc[0]
 
     ha_offset_factor = ha_flux_erg_s_cm2 / ha_flux_emission_fit
-    pab_offset_factor = pab_flux_erg_s_cm2 / pab_flux_emission_fit
+    pab_offset_factor = fe_cor_pab_flux_erg_s_cm2 / pab_flux_emission_fit
 
     print(f'All erg/s/cm^2')
-    print(f'Ha flux: {ha_flux_erg_s_cm2}')
-    print(f'Ha flux fit compare: {ha_offset_factor}')
-    print(f'PaB flux: {pab_flux_erg_s_cm2}')
+    print(f'Ha+Nii flux: {ha_flux_erg_s_cm2}')
+    print(f'Ha+Nii flux fit compare: {ha_offset_factor}')
+    print(f'PaB flux corrected for Fe: {fe_cor_pab_flux_erg_s_cm2}')
     print(f'PaB flux fit compare: {pab_offset_factor}')
 
-    return ha_flux_erg_s_cm2, pab_flux_erg_s_cm2, ha_flux_cat_erg_s_cm2, err_ha_flux_cat_erg_s_cm2, pab_flux_cat_erg_s_cm2, err_pab_flux_cat_erg_s_cm2, ha_flux_emission_fit, pab_flux_emission_fit
+    return ha_flux_erg_s_cm2, pab_flux_erg_s_cm2, ha_flux_cat_erg_s_cm2, err_ha_flux_cat_erg_s_cm2, pab_flux_cat_erg_s_cm2, err_pab_flux_cat_erg_s_cm2, ha_flux_emission_fit, nii_cor_ha_flux_emission_fit, pab_flux_emission_fit, nii_cor_ha_flux_erg_s_cm2, fe_cor_pab_flux_erg_s_cm2
 
     # print(f'Ha/PaB: {(ha_flux/pab_flux) / (line_list[0][1]/line_list[1][1])**2}')
     # print(f'Cat Ha/PaB: {(ha_flux_cat_jy/pab_flux_cat_jy)}')
@@ -129,9 +132,12 @@ def calc_all_lineflux(id_msa_list):
     pab_cat_fluxes = []
     err_pab_cat_fluxes = []
     ha_emission_fits = []
+    nii_cor_ha_flux_emission_fits = []
     pab_emission_fits = []
+    nii_cor_ha_flux_erg_s_cm2s = []
+    fe_cor_pab_flux_erg_s_cm2s = []
     for id_msa in id_msa_list:
-        ha_flux_erg_s_cm2, pab_flux_erg_s_cm2, ha_flux_cat_erg_s_cm2, err_ha_flux_cat_erg_s_cm2, pab_flux_cat_erg_s_cm2, err_pab_flux_cat_erg_s_cm2, ha_flux_emission_fit, pab_flux_emission_fit= calc_lineflux(id_msa)
+        ha_flux_erg_s_cm2, pab_flux_erg_s_cm2, ha_flux_cat_erg_s_cm2, err_ha_flux_cat_erg_s_cm2, pab_flux_cat_erg_s_cm2, err_pab_flux_cat_erg_s_cm2, ha_flux_emission_fit, nii_cor_ha_flux_emission_fit, pab_flux_emission_fit, nii_cor_ha_flux_erg_s_cm2, fe_cor_pab_flux_erg_s_cm2 = calc_lineflux(id_msa)
         ha_sed_fluxes.append(ha_flux_erg_s_cm2)
         pab_sed_fluxes.append(pab_flux_erg_s_cm2)
         ha_cat_fluxes.append(ha_flux_cat_erg_s_cm2)
@@ -139,12 +145,15 @@ def calc_all_lineflux(id_msa_list):
         err_pab_cat_fluxes.append(err_pab_flux_cat_erg_s_cm2)
         pab_cat_fluxes.append(pab_flux_cat_erg_s_cm2)
         ha_emission_fits.append(ha_flux_emission_fit)
+        nii_cor_ha_flux_emission_fits.append(nii_cor_ha_flux_emission_fit)
         pab_emission_fits.append(pab_flux_emission_fit)
-    emission_offset_df = pd.DataFrame(zip(id_msa_list, ha_sed_fluxes, pab_sed_fluxes, ha_cat_fluxes, err_ha_cat_fluxes, pab_cat_fluxes, err_pab_cat_fluxes, ha_emission_fits, pab_emission_fits), columns=['id_msa', 'ha_sed_flux', 'pab_sed_flux', 'ha_cat_flux', 'err_ha_cat_flux', 'pab_cat_flux', 'err_pab_cat_flux', 'ha_emfit_flux', 'pab_emfit_flux'])
+        nii_cor_ha_flux_erg_s_cm2s.append(nii_cor_ha_flux_erg_s_cm2)
+        fe_cor_pab_flux_erg_s_cm2s.append(fe_cor_pab_flux_erg_s_cm2)
+    emission_offset_df = pd.DataFrame(zip(id_msa_list, ha_sed_fluxes, pab_sed_fluxes, nii_cor_ha_flux_erg_s_cm2s, fe_cor_pab_flux_erg_s_cm2s, ha_cat_fluxes, err_ha_cat_fluxes, pab_cat_fluxes, err_pab_cat_fluxes, ha_emission_fits, nii_cor_ha_flux_emission_fits, pab_emission_fits), columns=['id_msa', 'ha_sed_flux', 'pab_sed_flux', 'nii_cor_ha_sed_flux', 'fe_cor_pab_sed_flux', 'ha_cat_flux', 'err_ha_cat_flux', 'pab_cat_flux', 'err_pab_cat_flux', 'ha_emfit_flux', 'nii_cor_ha_emfit_flux', 'pab_emfit_flux'])
     emission_offset_df['ha_sed_div_cat'] = emission_offset_df['ha_sed_flux'] / emission_offset_df['ha_cat_flux']
-    emission_offset_df['pab_sed_div_cat'] = emission_offset_df['pab_sed_flux'] / emission_offset_df['pab_cat_flux']
-    emission_offset_df['ha_sed_div_emfit'] = emission_offset_df['ha_sed_flux'] / emission_offset_df['ha_emfit_flux']
-    emission_offset_df['pab_sed_div_emfit'] = emission_offset_df['pab_sed_flux'] / emission_offset_df['pab_emfit_flux']
+    emission_offset_df['pab_sed_div_cat'] = emission_offset_df['fe_cor_pab_sed_flux'] / emission_offset_df['pab_cat_flux']
+    emission_offset_df['ha_sed_div_emfit'] = emission_offset_df['nii_cor_ha_sed_flux'] / emission_offset_df['nii_cor_ha_emfit_flux']
+    emission_offset_df['pab_sed_div_emfit'] = emission_offset_df['fe_cor_pab_sed_flux'] / emission_offset_df['pab_emfit_flux']
     emission_offset_df['ha_cat_div_emfit'] = emission_offset_df['ha_cat_flux'] / emission_offset_df['ha_emfit_flux']
     emission_offset_df['pab_cat_div_emfit'] = emission_offset_df['pab_cat_flux'] / emission_offset_df['pab_emfit_flux']
     emission_offset_df['difference_in_offset_ratio_cat'] = emission_offset_df['pab_sed_div_cat'] / emission_offset_df['ha_sed_div_cat']

@@ -35,3 +35,4 @@ mosdef_df['FIELD_STR'] = [mosdef_df.iloc[i]['FIELD'].decode(
 linemeas_df = read_file(imd.mosdef_dir + '/Mosdef_cats/linemeas_latest.fits')
 sfrs_df = read_file(imd.loc_sfrs_latest)
 agnflag_df = read_file(imd.mosdef_dir + '/Mosdef_cats/agnflag_latest.fits')
+

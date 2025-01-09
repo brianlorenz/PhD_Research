@@ -8,6 +8,9 @@ ha_factor = 2.79
 hb_factor = 1
 pab_factor = 0.155
 
+nii_correction_ha_flux = 0.75
+fe_correction_pab_flux = 0.8
+
 ha_wave = line_list[0][1]/10000
 pab_wave = line_list[1][1]/10000
 hb_wave = 0.4861
@@ -53,8 +56,8 @@ def compute_balmer_av(balmer_dec):
 
 def read_catalog_av(id_msa, zqual_df):
     sps_df = read_SPS_cat()
-    id_dr2 = zqual_df[zqual_df['id_msa']==id_msa]['id_DR2'].iloc[0]
-    sps_row = sps_df[sps_df['id']==id_dr2]
+    # id_dr2 = zqual_df[zqual_df['id_msa']==id_msa]['id_DR2'].iloc[0]
+    sps_row = sps_df[sps_df['id_msa']==id_msa]
     dust_16 = sps_row['dust2_16'].iloc[0]
     dust_50 = sps_row['dust2_50'].iloc[0]
     dust_84 = sps_row['dust2_84'].iloc[0]
@@ -65,4 +68,4 @@ def read_catalog_av(id_msa, zqual_df):
     return av_16, av_50, av_84
 
 
-print(compute_ha_pab_av(1/21.6))
+# print(compute_ha_pab_av(1/16))

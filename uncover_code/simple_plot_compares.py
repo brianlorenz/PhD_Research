@@ -4,6 +4,7 @@ from astropy.io import ascii
 from plot_vals import scale_aspect
 from uncover_read_data import read_lineflux_cat, get_id_msa_list
 from compute_av import compute_ha_pab_av
+import numpy as np
 
 def paper_plot_sed_emfit_accuracy(id_msa_list, color_var=''):
     full_data_df = ascii.read(f'/Users/brianlorenz/uncover/Data/generated_tables/lineflux_df.csv').to_pandas()
@@ -24,7 +25,7 @@ def paper_plot_sed_emfit_accuracy(id_msa_list, color_var=''):
         lineratio_data_row = lineratio_data_df[lineratio_data_df['id_msa'] == id_msa]
         fit_df = ascii.read(f'/Users/brianlorenz/uncover/Data/emission_fitting/{id_msa}_emission_fits.csv').to_pandas()
         ha_snr = fit_df['signal_noise_ratio'].iloc[0]
-        pab_snr = fit_df['signal_noise_ratio'].iloc[0]
+        pab_snr = fit_df['signal_noise_ratio'].iloc[1]
         
         cmap = mpl.cm.inferno
         
@@ -37,7 +38,7 @@ def paper_plot_sed_emfit_accuracy(id_msa_list, color_var=''):
             rgba = cmap(norm(ha_snr))
             cbar_label = 'H$\\alpha$ SNR'
         if color_var == 'pab_snr':
-            norm = mpl.colors.LogNorm(vmin=2, vmax=50) 
+            norm = mpl.colors.LogNorm(vmin=5, vmax=25) 
             rgba = cmap(norm(pab_snr))
             cbar_label = 'Pa$\\beta$ SNR'
         if color_var != 'None':
@@ -45,17 +46,26 @@ def paper_plot_sed_emfit_accuracy(id_msa_list, color_var=''):
         else:
             color_str = ''
 
-        ax_ha_sed_vs_emfit.plot(data_df_row['ha_emfit_flux'], data_df_row['ha_sed_flux'], marker='o', color=rgba, ls='None', mec='black', ms=markersize)
+        # Emission fit data
+        fit_nii_cor_ha_flux = fit_df['nii_cor_flux'].iloc[0]
+        err_fit_nii_cor_ha_flux_low = fit_df['err_nii_cor_flux_low'].iloc[0]
+        err_fit_nii_cor_ha_flux_high = fit_df['err_nii_cor_flux_high'].iloc[0]
+        fit_pab_flux = fit_df['nii_cor_flux'].iloc[1]
+        err_fit_pab_flux_low = fit_df['err_nii_cor_flux_low'].iloc[1]
+        err_fit_pab_flux_high = fit_df['err_nii_cor_flux_high'].iloc[1]
+
+        ax_ha_sed_vs_emfit.errorbar(fit_nii_cor_ha_flux, data_df_row['nii_cor_ha_sed_flux'], xerr=[[err_fit_nii_cor_ha_flux_low], [err_fit_nii_cor_ha_flux_high]], marker='o', color=rgba, ls='None', mec='black', ms=markersize, ecolor='black')
         ax_ha_sed_vs_emfit.set_xlabel('H$\\alpha$ Spectrum')
         ax_ha_sed_vs_emfit.set_ylabel('H$\\alpha$ Photometry')
 
-        ax_pab_sed_vs_emfit.plot(data_df_row['pab_emfit_flux'], data_df_row['pab_sed_flux'], marker='o', color=rgba, ls='None', mec='black', ms=markersize)
+        ax_pab_sed_vs_emfit.errorbar(fit_pab_flux, data_df_row['fe_cor_pab_sed_flux'], xerr=[[err_fit_pab_flux_low], [err_fit_pab_flux_high]], marker='o', color=rgba, ls='None', mec='black', ms=markersize, ecolor='black')
         ax_pab_sed_vs_emfit.set_xlabel('Pa$\\beta$ Spectrum')
         ax_pab_sed_vs_emfit.set_ylabel('Pa$\\beta$ Photometry')
 
-        ax_av_sed_vs_emfit.plot(lineratio_data_row['emission_fit_av'], lineratio_data_row['sed_av'], marker='o', color=rgba, ls='None', mec='black', ms=markersize)
-        ax_av_sed_vs_emfit.text(lineratio_data_row['emission_fit_av'], lineratio_data_row['sed_av'], f'{id_msa}')
-        print(lineratio_data_row['emission_fit_av'].iloc[0])
+        # breakpoint()
+        ax_av_sed_vs_emfit.errorbar(lineratio_data_row['emission_fit_av'], lineratio_data_row['sed_av'], xerr=[[lineratio_data_row['err_emission_fit_av_low'].iloc[0]], [lineratio_data_row['err_emission_fit_av_high'].iloc[0]]], yerr=[[lineratio_data_row['err_sed_av_low'].iloc[0]], [lineratio_data_row['err_sed_av_high'].iloc[0]]], marker='o', color=rgba, ls='None', mec='black', ms=markersize, ecolor='black')
+        # ax_av_sed_vs_emfit.text(lineratio_data_row['emission_fit_av'], lineratio_data_row['sed_av'], f'{id_msa}')
+        # print(lineratio_data_row['emission_fit_av'].iloc[0])
         ax_av_sed_vs_emfit.set_xlabel('AV Spectrum')
         ax_av_sed_vs_emfit.set_ylabel('AV Photometry')
 
@@ -244,8 +254,8 @@ def plot_offsets(all=False):
 
 if __name__ == "__main__":
     id_msa_list = get_id_msa_list(full_sample=False)
-    # paper_plot_sed_emfit_accuracy(id_msa_list, color_var='pab_snr')
-    plot_simpletests(id_msa_list)
+    paper_plot_sed_emfit_accuracy(id_msa_list, color_var='pab_snr')
+    # plot_simpletests(id_msa_list)
     # plot_offsets(all=True)
 
     # id_msa_list = get_id_msa_list(full_sample=True)

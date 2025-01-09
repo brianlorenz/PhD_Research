@@ -2,7 +2,7 @@ import matplotlib.pyplot as plt
 from astropy.io import ascii
 import matplotlib as mpl
 import numpy as np
-from uncover_read_data import read_lineflux_cat
+from uncover_read_data import read_lineflux_cat, get_id_msa_list
 
 def plot_helium_vs_pab(id_msa_list, add_str, color_var='he_snr'):
     lineratio_df = ascii.read(f'/Users/brianlorenz/uncover/Figures/diagnostic_lineratio/lineratio_df.csv', data_start=1).to_pandas()
@@ -59,7 +59,7 @@ def plot_helium_vs_pab(id_msa_list, add_str, color_var='he_snr'):
         ax_pab_he.plot(he_flux, pab_flux, marker='o', color=rgba, ls='None', mec='black')
         ax_pab_he.text(he_flux, pab_flux, f'{id_msa}')
 
-    ax_pab_he.set_xlim(-0.1e-18, 1.5e-18)
+    ax_pab_he.set_xlim(-0.1e-18, 2.0e-18)
     ax_pab_he.set_ylim(0, 6.5e-18)
     ax_pab_he.plot([-10e-18, 10e-18], [-10e-18, 10e-18], ls='--', color='red', marker='None', label='one-to-one')
     ax_pab_he.plot([-5e-18, 5e-18], [-10e-18, 10e-18], ls='--', color='orange', marker='None', label='pab = 2x he')
@@ -103,4 +103,6 @@ if __name__ == "__main__":
     # plot_helium_vs_pab(id_msa_list, 'good_sample')
     # plot_helium_vs_pab(id_msa_list, 'good_sample', color_var='sed_ratio')
     # plot_helium_vs_pab(id_msa_list, 'good_sample', color_var='redshift')
+    id_msa_list = get_id_msa_list(full_sample=False)
+    plot_helium_vs_pab(id_msa_list, '')
     pass

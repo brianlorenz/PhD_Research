@@ -35,10 +35,21 @@ def read_slit_loc_cat():
     slit_loc_df = make_pd_table_from_fits(slit_loc)
     return slit_loc_df
 
-def read_SPS_cat():
+def read_SPS_cat_old():
     sps_loc = '/Users/brianlorenz/uncover/Catalogs/msa_UNCOVER_v3.0.0_LW_SUPER_SPScatalog_spsv1.1.fits'
     sps_df = make_pd_table_from_fits(sps_loc)
     return sps_df
+
+def read_SPS_cat():
+    sps_loc = '/Users/brianlorenz/uncover/Catalogs/UNCOVER_v5.3.0_LW_SUPER_zspec_dr4_SPScatalog_spsv1.0.fits'
+    sps_df = make_pd_table_from_fits(sps_loc)
+    return sps_df
+
+def read_SPS_cat_all():
+    sps_all_loc = '/Users/brianlorenz/uncover/Catalogs/UNCOVER_v5.3.0_LW_SUPER_SPScatalog_spsv1.0.fits'
+    sps_all_df = make_pd_table_from_fits(sps_all_loc)
+    return sps_all_df
+    
 
 def read_lineflux_cat():
     lines_loc = '/Users/brianlorenz/uncover/Catalogs/uncover-msa-full_depth-default_drz-v0.8a-lines.fits'
@@ -153,4 +164,6 @@ if __name__ == "__main__":
     # supercat = read_supercat()
     # spec_df = read_spec_cat()
     # aper_cat_df = read_aper_cat()
+    sps_cat = read_SPS2_cat()
+    breakpoint()
     pass

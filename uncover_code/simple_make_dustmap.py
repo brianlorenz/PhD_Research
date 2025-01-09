@@ -23,7 +23,7 @@ from scipy import ndimage
 from scipy.signal import convolve2d
 from matplotlib.colors import Normalize, LogNorm
 from matplotlib.ticker import LogLocator, LogFormatterSciNotation
-from compute_av import ha_factor, pab_factor, compute_ratio_from_av, compute_ha_pab_av, compute_ha_pab_av_from_dustmap, read_catalog_av
+from compute_av import ha_factor, pab_factor, compute_ratio_from_av, compute_ha_pab_av, compute_ha_pab_av_from_dustmap, read_catalog_av, nii_correction_ha_flux, fe_correction_pab_flux
 from plot_log_linear_rgb import make_log_rgb
 from dust_equations_prospector import dust2_to_AV
 from filter_integrals import integrate_filter, get_transmission_at_line, get_line_coverage
@@ -84,7 +84,6 @@ def make_dustmap_simple(id_msa, aper_size='None', cor_helium=False):
     zqual_df = read_spec_cat()
     redshift = zqual_df[zqual_df['id_msa']==id_msa]['z_spec'].iloc[0]
 
-    # breakpoint()
     
     # Make sure all of the deesignated filters have data
     confirm_filters_not_NaN(id_msa, sed_df, ha_filters, pab_filters)
@@ -162,15 +161,20 @@ def make_dustmap_simple(id_msa, aper_size='None', cor_helium=False):
     dustmap_cax = fig.add_axes([0.955, 0.55, 0.015, 0.35])
 
 
-    ha_cont_pct, ha_sed_lineflux, ha_trasm_flag, ha_boot_lines, ha_sed_fluxes, ha_wave_pct = plot_sed_around_line(ax_ha_sed, ha_filters, sed_df, spec_df, redshift, 0, ha_transmissions, id_msa)
-    pab_cont_pct, pab_sed_lineflux, pab_trasm_flag, pab_boot_lines, pab_sed_fluxes, pab_wave_pct = plot_sed_around_line(ax_pab_sed, pab_filters, sed_df, spec_df, redshift, 1, pab_transmissions, id_msa)
+    ha_cont_pct, _, ha_trasm_flag, ha_boot_lines, ha_sed_fluxes, ha_wave_pct = plot_sed_around_line(ax_ha_sed, ha_filters, sed_df, spec_df, redshift, 0, ha_transmissions, id_msa)
+    pab_cont_pct, _, pab_trasm_flag, pab_boot_lines, pab_sed_fluxes, pab_wave_pct = plot_sed_around_line(ax_pab_sed, pab_filters, sed_df, spec_df, redshift, 1, pab_transmissions, id_msa)
 
-    # CONSIDER Correcting the linefluxes here for NII, helium, transmission effects, etc
-    # pab_sed_lineflux = 0.8*pab_sed_lineflux
+    # Read in the linefluxes from lineflux_df, don't need to be double-computing here, and already corrected 
+    lineflux_df = ascii.read(f'/Users/brianlorenz/uncover/Data/generated_tables/lineflux_df.csv').to_pandas()
+    lineflux_row = lineflux_df[lineflux_df['id_msa'] == id_msa]
+    nii_cor_ha_sed_lineflux = lineflux_row['nii_cor_ha_sed_flux'].iloc[0]
+    fe_cor_pab_sed_lineflux = lineflux_row['fe_cor_pab_sed_flux'].iloc[0]
+    nii_cor_ha_boot_lines = ha_boot_lines * nii_correction_ha_flux
+    fe_cor_pab_boot_lines = pab_boot_lines * fe_correction_pab_flux
 
     # Compute lineratios
-    sed_lineratio = compute_lineratio(ha_sed_lineflux, pab_sed_lineflux)
-    boot_sed_lineratios = compute_lineratio(ha_boot_lines, pab_boot_lines)
+    sed_lineratio = compute_lineratio(nii_cor_ha_sed_lineflux, fe_cor_pab_sed_lineflux)
+    boot_sed_lineratios = compute_lineratio(nii_cor_ha_boot_lines, fe_cor_pab_boot_lines)
     sed_lineratio_16 = np.percentile(boot_sed_lineratios, 16)
     sed_lineratio_84 = np.percentile(boot_sed_lineratios, 84)
     err_sed_lineratio_low = sed_lineratio - sed_lineratio_16
@@ -637,9 +641,9 @@ def plot_sed_around_line(ax, filters, sed_df, spec_df, redshift, line_index, tra
         ax.plot(green_wave, cont_value, marker='o', ls='None', color=connect_color)
         ax.plot([green_wave,green_wave], [green_flux, cont_value], marker='None', ls='-', color='green', lw=2)
         
-        fit_df = ascii.read(f'/Users/brianlorenz/uncover/Data/emission_fitting/{id_msa}_emission_fits.csv').to_pandas()
-        line_flux_fit = fit_df.iloc[line_index]['flux']
-        line_flux_fit_jy = flux_erg_to_jy(line_flux_fit, line_list[line_index][1])
+        # fit_df = ascii.read(f'/Users/brianlorenz/uncover/Data/emission_fitting/{id_msa}_emission_fits.csv').to_pandas()
+        # line_flux_fit = fit_df.iloc[line_index]['flux']
+        # line_flux_fit_jy = flux_erg_to_jy(line_flux_fit, line_list[line_index][1])
 
         # ax.text(0.98, 0.85, f'SED: {line_flux:.2e}', color='black', transform=ax.transAxes, horizontalalignment='right')
         # ax.text(0.98, 0.79, f'EmFit: {line_flux_fit_jy:.2e}', color='black', transform=ax.transAxes, horizontalalignment='right')

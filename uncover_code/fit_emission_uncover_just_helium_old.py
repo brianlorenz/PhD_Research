@@ -10,7 +10,7 @@ import initialize_mosdef_dirs as imd
 from axis_group_metallicities import compute_err_and_logerr, compute_O3N2_metallicity
 import matplotlib.patches as patches
 import time
-from uncover_read_data import read_raw_spec, read_prism_lsf, read_fluxcal_spec
+from uncover_read_data import read_raw_spec, read_prism_lsf, read_fluxcal_spec, get_id_msa_list
 from astropy.convolution import convolve
 from scipy.interpolate import interp1d
 
@@ -18,7 +18,7 @@ emission_fit_dir = '/Users/brianlorenz/uncover/Data/emission_fitting/helium/'
 
 line_list = [
     ('Halpha', 6564.6),
-    ('Helium', 12560.034)
+    ('Helium', 12570.034)
 ]
 lines_dict = {
     line_list[0][0]: line_list[0][1],
@@ -652,6 +652,8 @@ if __name__ == "__main__":
     # spec_df = read_raw_spec(id_msa)
     # fit_emission_uncover(spec_df, id_msa)
 
-    zqual_detected_df = ascii.read('/Users/brianlorenz/uncover/zqual_detected.csv').to_pandas()
-    id_msa_list = zqual_detected_df['id_msa'].to_list()
+    # zqual_detected_df = ascii.read('/Users/brianlorenz/uncover/zqual_detected.csv').to_pandas()
+    # id_msa_list = zqual_detected_df['id_msa'].to_list()
+
+    id_msa_list = get_id_msa_list(full_sample=False)
     fit_all_emission_uncover_helium(id_msa_list)  
