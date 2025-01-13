@@ -371,8 +371,9 @@ def plot_emission_fit(emission_fit_dir, save_name, total_spec_df, ax_plot='', pl
     ax.set_ylabel('F$_\lambda$', fontsize=axisfont)
     ax.tick_params(labelsize=ticksize, size=ticks)
 
-    fig.savefig(emission_fit_dir + 'plots' +
-                f'/{save_name}_emission_fit.pdf')
+    if plot_type == '':
+        fig.savefig(emission_fit_dir + 'plots' +
+                    f'/{save_name}_emission_fit.pdf')
     plt.close(fig)
     return
 
@@ -603,10 +604,12 @@ def fit_continuum(wavelength, flux, plot_cont=True, save_name=''):
     # ha_region_mask = wavelength[combined_mask] < 10000
     # pab_region_mask = wavelength[combined_mask] > 10000
 
-    ha_eline_mask = clip_elines_findpeaks(flux[ha_region], wavelength[ha_region])
-    pab_eline_mask = clip_elines_findpeaks(flux[pab_region], wavelength[pab_region])
+    # ha_eline_mask = clip_elines_findpeaks(flux[ha_region], wavelength[ha_region])
+    # pab_eline_mask = clip_elines_findpeaks(flux[pab_region], wavelength[pab_region])
+    ha_eline_mask = mask_elines_known_lines(flux[ha_region], wavelength[ha_region])
+    pab_eline_mask = mask_elines_known_lines(flux[pab_region], wavelength[pab_region])
     combined_mask = ha_eline_mask + pab_eline_mask
-    combined_mask = mask_lines(combined_mask, wavelength, line_list)    
+    # combined_mask = mask_lines(combined_mask, wavelength, line_list)    
     
     ha_regress_res = linregress(wavelength[combined_mask][ha_region], flux[combined_mask][ha_region])
     pab_regress_res = linregress(wavelength[combined_mask][pab_region], flux[combined_mask][pab_region])
@@ -619,8 +622,8 @@ def fit_continuum(wavelength, flux, plot_cont=True, save_name=''):
         ax_ha = axarr[0]
         ax_pab = axarr[1]
         def plot_cont_axis(ax, region):
-            ax.plot(wavelength[region], flux[region], color='red', label='masked')
-            ax.plot(wavelength[combined_mask][region], flux[combined_mask][region], color='black', label='use')
+            ax.plot(wavelength[region], flux[region], color='red', label='masked', marker='o')
+            ax.plot(wavelength[combined_mask][region], flux[combined_mask][region], color='black', label='use', marker='o', ls='None')
             ax.plot(wavelength[region], continuum[region], color='orange', label='continuum')
             ax.set_xlabel('Wavelength ($\\AA$)')
             ax.set_ylabel('Flux')
@@ -630,6 +633,13 @@ def fit_continuum(wavelength, flux, plot_cont=True, save_name=''):
         fig.savefig(f'/Users/brianlorenz/uncover/Data/emission_fitting/continuum/{save_name}_cont.pdf')
         plt.close()
     return continuum
+
+def mask_elines_known_lines(flux, wavelength):
+    mask_ha = np.logical_or(wavelength < 6200, wavelength > 7000)
+    mask_pab = np.logical_or(wavelength < 12200, wavelength > 13400)
+    mask = np.logical_and(mask_ha, mask_pab)
+    mask = mask.tolist()
+    return mask 
 
 def clip_elines_findpeaks(flux, wavelength):
     from scipy.signal import find_peaks
@@ -718,9 +728,9 @@ def fit_all_emission_uncover(id_msa_list):
 
 def plot_mosaic(id_msa_list, line = 'ha_only'):
     "line (str): 'ha_only' or 'pab_only' "
-    nrows = 6
-    ncols = 6
-    fig, axarr = plt.subplots(nrows, ncols, figsize=(40,40))
+    nrows = 4
+    ncols = 4
+    fig, axarr = plt.subplots(nrows, ncols, figsize=(20,20))
     plot_idxs = []
     plot_count = 0
     for i in range(nrows):
@@ -733,13 +743,19 @@ def plot_mosaic(id_msa_list, line = 'ha_only'):
         plot_count = plot_count + 1
         scale_aspect(ax)
         ax.set_title(f'id_msa = {id_msa}', fontsize=18)
+    while plot_count < nrows*ncols:
+        ax = axarr[plot_idxs[plot_count][0], plot_idxs[plot_count][1]]
+        ax.set_xticks([])
+        ax.set_yticks([])
+        plot_count = plot_count + 1
+
     fig.savefig(emission_fit_dir + 'plots' + f'/mosaic_{line}.pdf')
 
 
 if __name__ == "__main__":
     # # (Currently using)
     # id_msa = 39855
-    # id_msa = 18471
+    # id_msa = 42041
     # spec_df = read_fluxcal_spec(id_msa)
     # fit_emission_uncover(spec_df, id_msa)
 
@@ -751,7 +767,7 @@ if __name__ == "__main__":
 
     id_msa_list = get_id_msa_list(full_sample=False)
     
-    fit_all_emission_uncover(id_msa_list)  
+    # fit_all_emission_uncover(id_msa_list)  
     plot_mosaic(id_msa_list, line = 'ha_only')
     plot_mosaic(id_msa_list, line = 'pab_only')
     pass

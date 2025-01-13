@@ -171,6 +171,18 @@ def make_dustmap_simple(id_msa, aper_size='None', cor_helium=False):
     fe_cor_pab_sed_lineflux = lineflux_row['fe_cor_pab_sed_flux'].iloc[0]
     nii_cor_ha_boot_lines = ha_boot_lines * nii_correction_ha_flux
     fe_cor_pab_boot_lines = pab_boot_lines * fe_correction_pab_flux
+    
+    nii_cor_ha_sed_lineflux_16 = np.percentile(nii_cor_ha_boot_lines, 16)
+    nii_cor_ha_sed_lineflux_84 = np.percentile(nii_cor_ha_boot_lines, 84)
+    err_nii_cor_ha_sed_lineflux_low = nii_cor_ha_sed_lineflux - nii_cor_ha_sed_lineflux_16
+    err_nii_cor_ha_sed_lineflux_high = nii_cor_ha_sed_lineflux_84 - nii_cor_ha_sed_lineflux
+
+    fe_cor_pab_sed_lineflux_16 = np.percentile(fe_cor_pab_boot_lines, 16)
+    fe_cor_pab_sed_lineflux_84 = np.percentile(fe_cor_pab_boot_lines, 84)
+    err_fe_cor_pab_sed_lineflux_low = fe_cor_pab_sed_lineflux - fe_cor_pab_sed_lineflux_16
+    err_fe_cor_pab_sed_lineflux_high = fe_cor_pab_sed_lineflux_84 - fe_cor_pab_sed_lineflux
+
+    err_sed_linefluxes = [err_nii_cor_ha_sed_lineflux_low, err_nii_cor_ha_sed_lineflux_high, err_fe_cor_pab_sed_lineflux_low, err_fe_cor_pab_sed_lineflux_high]
 
     # Compute lineratios
     sed_lineratio = compute_lineratio(nii_cor_ha_sed_lineflux, fe_cor_pab_sed_lineflux)
@@ -342,8 +354,8 @@ def make_dustmap_simple(id_msa, aper_size='None', cor_helium=False):
     # pab_linemap_snr_filt[~pab_snr_idxs] = 0
     dustmap_snr_filt = deepcopy(dustmap)
     dustmap_snr_filt[~snr_idx] = 0
-    # ax_ha_linemap.contour(X_pab, Y_pab, dustmap_snr_filt, levels=[0.5, 1, 1.5, 2], cmap='Greys')
-    ax_segmap.contour(X_pab, Y_pab, dustmap_snr_filt, levels=[2, 4, 6, 8], cmap='Greys')
+    ax_ha_linemap.contour(X_pab, Y_pab, dustmap_snr_filt, levels=[0.5, 1, 1.5, 2], cmap='Greys')
+    # ax_segmap.contour(X_pab, Y_pab, dustmap_snr_filt, levels=[2, 4, 6, 8], cmap='Greys')
 
     # Masked points in gray
     combined_mask_ha = make_combined_mask(ha_linemap_snr_binary, dilated_segmap_idxs)
@@ -404,7 +416,7 @@ def make_dustmap_simple(id_msa, aper_size='None', cor_helium=False):
 
     plt.close('all')
 
-    return sed_lineratios, emission_lineratios, sed_avs, emission_avs
+    return sed_lineratios, emission_lineratios, sed_avs, emission_avs, err_sed_linefluxes
 
 
 def get_norm(image_map, scalea=1, lower_pct=10, upper_pct=99):
@@ -459,6 +471,8 @@ def make_3color(id_msa, line_index = 0, plot = False, image_size=(100,100)):
 def get_coords(id_msa):
     supercat_df = read_supercat()
     row = supercat_df[supercat_df['id_msa']==id_msa]
+    if id_msa == 42041:
+        row = supercat_df[supercat_df['id'] == 54635]
     obj_ra = row['ra'].iloc[0] * u.deg
     obj_dec = row['dec'].iloc[0] * u.deg
     obj_skycoord = SkyCoord(obj_ra, obj_dec)
@@ -775,15 +789,20 @@ def make_all_dustmap(id_msa_list):
     emission_avs = []
     emission_avs_low = []
     emission_avs_high = []
+    err_nii_cor_sed_ha_lineflux_lows = []
+    err_nii_cor_sed_ha_lineflux_highs = []
+    err_fe_cor_sed_pab_lineflux_lows = []
+    err_fe_cor_sed_pab_lineflux_highs = []
     
     for id_msa in id_msa_list:
         try:
-            sed_lineratios_grouped, emission_lineratios_grouped, sed_avs_grouped, emission_avs_grouped = make_dustmap_simple(id_msa)
+            sed_lineratios_grouped, emission_lineratios_grouped, sed_avs_grouped, emission_avs_grouped, err_sed_linefluxes_grouped = make_dustmap_simple(id_msa)
         except:
             sed_lineratios_grouped = [-99,-99,-99]
             emission_lineratios_grouped = [-99,-99,-99]
             sed_avs_grouped = [-99,-99,-99]
             emission_avs_grouped = [-99,-99,-99]
+            err_sed_linefluxes_grouped = [-99, -99, -99, -99]
         sed_lineratios.append(sed_lineratios_grouped[0])
         sed_lineratios_low.append(sed_lineratios_grouped[1])
         sed_lineratios_high.append(sed_lineratios_grouped[2])
@@ -796,12 +815,16 @@ def make_all_dustmap(id_msa_list):
         emission_avs.append(emission_avs_grouped[0])
         emission_avs_low.append(emission_avs_grouped[1])
         emission_avs_high.append(emission_avs_grouped[2])
+        err_nii_cor_sed_ha_lineflux_lows.append(err_sed_linefluxes_grouped[0])
+        err_nii_cor_sed_ha_lineflux_highs.append(err_sed_linefluxes_grouped[1])
+        err_fe_cor_sed_pab_lineflux_lows.append(err_sed_linefluxes_grouped[2])
+        err_fe_cor_sed_pab_lineflux_highs.append(err_sed_linefluxes_grouped[3])
 
-    dustmap_info_df = pd.DataFrame(zip(id_msa_list, sed_lineratios, sed_lineratios_low, sed_lineratios_high, sed_avs, sed_avs_low, sed_avs_high, emission_lineratios, emission_lineratios_low, emission_lineratios_high, emission_avs, emission_avs_low, emission_avs_high), columns=['id_msa', 'sed_lineratio', 'err_sed_lineratio_low', 'err_sed_lineratio_high', 'sed_av', 'err_sed_av_low', 'err_sed_av_high', 'emission_fit_lineratio', 'err_emission_fit_lineratio_low', 'err_emission_fit_lineratio_high', 'emission_fit_av', 'err_emission_fit_av_low', 'err_emission_fit_av_high'])
+    dustmap_info_df = pd.DataFrame(zip(id_msa_list, sed_lineratios, sed_lineratios_low, sed_lineratios_high, sed_avs, sed_avs_low, sed_avs_high, emission_lineratios, emission_lineratios_low, emission_lineratios_high, emission_avs, emission_avs_low, emission_avs_high, err_nii_cor_sed_ha_lineflux_lows, err_nii_cor_sed_ha_lineflux_highs, err_fe_cor_sed_pab_lineflux_lows, err_fe_cor_sed_pab_lineflux_highs), columns=['id_msa', 'sed_lineratio', 'err_sed_lineratio_low', 'err_sed_lineratio_high', 'sed_av', 'err_sed_av_low', 'err_sed_av_high', 'emission_fit_lineratio', 'err_emission_fit_lineratio_low', 'err_emission_fit_lineratio_high', 'emission_fit_av', 'err_emission_fit_av_low', 'err_emission_fit_av_high', 'err_nii_cor_sed_ha_lineflux_low', 'err_nii_cor_sed_ha_lineflux_high', 'err_fe_cor_sed_pab_lineflux_low', 'err_fe_cor_sed_pab_lineflux_high'])
     dustmap_info_df.to_csv('/Users/brianlorenz/uncover/Data/generated_tables/lineratio_av_df.csv', index=False)
 
 if __name__ == "__main__":
     # make_dustmap_simple(48540)
-    # make_dustmap_simple(39744)
+    # make_dustmap_simple(18471)
     id_msa_list = get_id_msa_list(full_sample=False)
     make_all_dustmap(id_msa_list)

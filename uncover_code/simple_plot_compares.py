@@ -38,7 +38,7 @@ def paper_plot_sed_emfit_accuracy(id_msa_list, color_var=''):
             rgba = cmap(norm(ha_snr))
             cbar_label = 'H$\\alpha$ SNR'
         if color_var == 'pab_snr':
-            norm = mpl.colors.LogNorm(vmin=5, vmax=25) 
+            norm = mpl.colors.Normalize(vmin=5, vmax=20) 
             rgba = cmap(norm(pab_snr))
             cbar_label = 'Pa$\\beta$ SNR'
         if color_var != 'None':
@@ -54,20 +54,29 @@ def paper_plot_sed_emfit_accuracy(id_msa_list, color_var=''):
         err_fit_pab_flux_low = fit_df['err_nii_cor_flux_low'].iloc[1]
         err_fit_pab_flux_high = fit_df['err_nii_cor_flux_high'].iloc[1]
 
-        ax_ha_sed_vs_emfit.errorbar(fit_nii_cor_ha_flux, data_df_row['nii_cor_ha_sed_flux'], xerr=[[err_fit_nii_cor_ha_flux_low], [err_fit_nii_cor_ha_flux_high]], marker='o', color=rgba, ls='None', mec='black', ms=markersize, ecolor='black')
+        err_sed_nii_cor_ha_flux_low = lineratio_data_row['err_nii_cor_sed_ha_lineflux_low'].iloc[0]
+        err_sed_nii_cor_ha_flux_high = lineratio_data_row['err_nii_cor_sed_ha_lineflux_high'].iloc[0]
+        err_sed_fe_cor_pab_flux_low = lineratio_data_row['err_fe_cor_sed_pab_lineflux_low'].iloc[0]
+        err_sed_fe_cor_pab_flux_high = lineratio_data_row['err_fe_cor_sed_pab_lineflux_high'].iloc[0]
+
+        ax_ha_sed_vs_emfit.errorbar(fit_nii_cor_ha_flux, data_df_row['nii_cor_ha_sed_flux'], xerr=[[err_fit_nii_cor_ha_flux_low], [err_fit_nii_cor_ha_flux_high]], yerr=[[err_sed_nii_cor_ha_flux_low],[err_sed_nii_cor_ha_flux_high]], marker='o', color=rgba, ls='None', mec='black', ms=markersize, ecolor='black')
         ax_ha_sed_vs_emfit.set_xlabel('H$\\alpha$ Spectrum')
         ax_ha_sed_vs_emfit.set_ylabel('H$\\alpha$ Photometry')
 
-        ax_pab_sed_vs_emfit.errorbar(fit_pab_flux, data_df_row['fe_cor_pab_sed_flux'], xerr=[[err_fit_pab_flux_low], [err_fit_pab_flux_high]], marker='o', color=rgba, ls='None', mec='black', ms=markersize, ecolor='black')
+        ax_pab_sed_vs_emfit.errorbar(fit_pab_flux, data_df_row['fe_cor_pab_sed_flux'], xerr=[[err_fit_pab_flux_low], [err_fit_pab_flux_high]], yerr=[[err_sed_fe_cor_pab_flux_low],[err_sed_fe_cor_pab_flux_high]], marker='o', color=rgba, ls='None', mec='black', ms=markersize, ecolor='black')
         ax_pab_sed_vs_emfit.set_xlabel('Pa$\\beta$ Spectrum')
         ax_pab_sed_vs_emfit.set_ylabel('Pa$\\beta$ Photometry')
 
-        # breakpoint()
         ax_av_sed_vs_emfit.errorbar(lineratio_data_row['emission_fit_av'], lineratio_data_row['sed_av'], xerr=[[lineratio_data_row['err_emission_fit_av_low'].iloc[0]], [lineratio_data_row['err_emission_fit_av_high'].iloc[0]]], yerr=[[lineratio_data_row['err_sed_av_low'].iloc[0]], [lineratio_data_row['err_sed_av_high'].iloc[0]]], marker='o', color=rgba, ls='None', mec='black', ms=markersize, ecolor='black')
-        # ax_av_sed_vs_emfit.text(lineratio_data_row['emission_fit_av'], lineratio_data_row['sed_av'], f'{id_msa}')
-        # print(lineratio_data_row['emission_fit_av'].iloc[0])
         ax_av_sed_vs_emfit.set_xlabel('AV Spectrum')
         ax_av_sed_vs_emfit.set_ylabel('AV Photometry')
+    
+        add_text = 1
+        if add_text:
+            ax_av_sed_vs_emfit.text(lineratio_data_row['emission_fit_av'], lineratio_data_row['sed_av'], f'{id_msa}')
+            ax_pab_sed_vs_emfit.text(fit_pab_flux, data_df_row['fe_cor_pab_sed_flux'], f'{id_msa}')
+            ax_ha_sed_vs_emfit.text(fit_nii_cor_ha_flux, data_df_row['nii_cor_ha_sed_flux'], f'{id_msa}')
+
 
     for ax in ax_list:
         ax.set_xscale('log')
@@ -86,7 +95,10 @@ def paper_plot_sed_emfit_accuracy(id_msa_list, color_var=''):
     cb_ax = fig.add_axes([.91,.124,.02,.734])
     if color_var != 'None':
         sm =  mpl.cm.ScalarMappable(norm=norm, cmap=cmap)
-        cbar = fig.colorbar(sm,orientation='vertical', cax=cb_ax)
+        cbar_ticks = [5, 10, 15, 20]
+        cbar_ticklabels = [str(tick) for tick in cbar_ticks]
+        cbar = fig.colorbar(sm, orientation='vertical', cax=cb_ax, ticks=cbar_ticks)
+        cbar.ax.set_yticklabels(cbar_ticklabels)  
         cbar.set_label(cbar_label, fontsize=16)
         cbar.ax.tick_params(labelsize=16)
 
@@ -149,7 +161,7 @@ def plot_simpletests(id_msa_list):
             ax_ha_cat_vs_emfit.text(data_df['ha_cat_flux'].iloc[i], data_df['ha_emfit_flux'].iloc[i], data_df['id_msa'].iloc[i])
             ax_pab_cat_vs_emfit.text(data_df['pab_cat_flux'].iloc[i], data_df['pab_emfit_flux'].iloc[i], data_df['id_msa'].iloc[i])
             ax_ratio_cat_vs_emfit.text(emfit_av.iloc[i], cat_av.iloc[i], data_df['id_msa'].iloc[i])
-    breakpoint()
+
     ax_ratio_cat_vs_emfit.set_ylabel('Catalog Lineflux AV')
     ax_ratio_cat_vs_emfit.set_xlabel('Emission Fit AV')
     ax_ratio_cat_vs_emfit.tick_params(labelsize=12)

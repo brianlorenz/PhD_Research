@@ -26,6 +26,8 @@ def get_transmission_at_line(sedpy_filt, line_wave_aa, estimated_sigma=50, trasm
     return line_transmission
 
 def get_line_coverage(sedpy_filt, line_wave_aa, line_width_aa):
+    if line_width_aa < 5:
+        line_width_aa = 25
     transmission = sedpy_filt.transmission
     wavelength_aa = sedpy_filt.wavelength
     transmission_max1 = transmission / np.max(transmission)

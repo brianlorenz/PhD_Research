@@ -26,6 +26,8 @@ def get_sed(id_msa, aper_size = 'None'):
     if aper_size != 'None':
         supercat_df = read_aper_cat(aper_size=aper_size)
     row = supercat_df[supercat_df['id_msa'] == id_msa]
+    if id_msa == 42041:
+        row = supercat_df[supercat_df['id'] == 54635]
     filt_dir, filters = unconver_read_filters()
     filt_cols = get_filt_cols(row)   
     fluxes = []

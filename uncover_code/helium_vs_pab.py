@@ -17,7 +17,7 @@ def plot_helium_vs_pab(id_msa_list, add_str, color_var='he_snr'):
 
     ax_ha_pab.set_xlabel('Halpha flux', fontsize=fontsize)
     ax_ha_pab.set_ylabel('PaB flux', fontsize=fontsize)
-    ax_pab_he.set_xlabel('He flux', fontsize=fontsize)
+    ax_pab_he.set_xlabel('Fe flux', fontsize=fontsize)
     ax_pab_he.set_ylabel('PaB flux', fontsize=fontsize)
 
     cmap = mpl.cm.inferno
@@ -60,16 +60,16 @@ def plot_helium_vs_pab(id_msa_list, add_str, color_var='he_snr'):
         ax_pab_he.text(he_flux, pab_flux, f'{id_msa}')
 
     ax_pab_he.set_xlim(-0.1e-18, 2.0e-18)
-    ax_pab_he.set_ylim(0, 6.5e-18)
+    ax_pab_he.set_ylim(0, 10e-18)
     ax_pab_he.plot([-10e-18, 10e-18], [-10e-18, 10e-18], ls='--', color='red', marker='None', label='one-to-one')
-    ax_pab_he.plot([-5e-18, 5e-18], [-10e-18, 10e-18], ls='--', color='orange', marker='None', label='pab = 2x he')
-    ax_pab_he.plot([-2.5e-18, 2.5e-18], [-10e-18, 10e-18], ls='--', color='green', marker='None', label='pab = 4x he')
+    ax_pab_he.plot([-5e-18, 5e-18], [-10e-18, 10e-18], ls='--', color='orange', marker='None', label='pab = 2x Fe')
+    ax_pab_he.plot([-2.5e-18, 2.5e-18], [-10e-18, 10e-18], ls='--', color='green', marker='None', label='pab = 4x Fe')
 
-    ax_pab_he.legend()
+    ax_pab_he.legend(loc=2)
 
     sm =  mpl.cm.ScalarMappable(norm=norm, cmap=cmap)
     cbar = fig.colorbar(sm)
-    cbar.set_label(color_var, fontsize=fontsize)
+    cbar.set_label('Fe SNR', fontsize=fontsize)
     cbar.ax.tick_params(labelsize=fontsize)
     for ax in axarr:
         ax.tick_params(labelsize=fontsize)

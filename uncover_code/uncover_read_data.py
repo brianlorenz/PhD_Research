@@ -87,8 +87,8 @@ def read_raw_spec(id_msa):
     spec_df['err_rest_flux_erg_aa'] = spec_df['err'] * (1e-23*1e10*c / (spec_df['wave_aa']**2)) * (1+redshift)
 
 
-    if os.path.exists('/Users/brianlorenz/uncover/Figures/spec_sed_compare/compare_ratio.csv'):
-        spec_df = correct_spec_to_sed(id_msa, spec_df)
+    # if os.path.exists('/Users/brianlorenz/uncover/Figures/spec_sed_compare/compare_ratio.csv'):
+    #     spec_df = correct_spec_to_sed(id_msa, spec_df)
     return spec_df
 
 def read_fluxcal_spec(id_msa):
@@ -160,10 +160,10 @@ if __name__ == "__main__":
     # int_spec_df = read_integrated_spec(47875)
     # breakpoint()
     # match_supercat(6325)
-    # match_supercat(42041)
+    match_supercat(42041)
     # supercat = read_supercat()
     # spec_df = read_spec_cat()
     # aper_cat_df = read_aper_cat()
-    sps_cat = read_SPS2_cat()
+    # sps_cat = read_SPS2_cat()
     breakpoint()
     pass

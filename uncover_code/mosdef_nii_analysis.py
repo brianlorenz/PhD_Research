@@ -2,6 +2,8 @@ import initialize_mosdef_dirs as imd
 from read_data import linemeas_df, mosdef_df
 import pandas as pd
 import numpy as np
+import matplotlib.pyplot as plt
+from plot_vals import *
 
 def mosdef_nii(linemeas_df, mosdef_df):
     
@@ -32,6 +34,26 @@ def mosdef_nii(linemeas_df, mosdef_df):
     std_nii_ha = np.std(linemeas_df['nii_ha_ratio'])
     print(f'median NII/HA (combined) = {round(median_nii_ha,4)}, with std = {round(std_nii_ha,4)}')
 
+    fig, axarr = plt.subplots(1,2,figsize=(10,5))
+    ax_6865 = axarr[0]
+    ax_combined = axarr[1]
+
+    bins = np.arange(0, 2, 0.05)
+    ax_6865.hist(linemeas_df['nii6865_ha_ratio'], bins=bins, color='black')
+    ax_combined.hist(linemeas_df['nii_ha_ratio'], bins=bins, color='black')
+
+    ax_6865.axvline(np.median(linemeas_df['nii6865_ha_ratio']), ls='--', color='red')
+    ax_combined.axvline(median_nii_ha, ls='--', color='red')
+    
+    for ax in axarr:
+        ax.set_xlim(0,2)
+        ax.set_ylim(0,75)
+        ax.set_xlabel('N Galaxies')    
+        scale_aspect(ax)
+    ax_6865.set_xlabel('NII 6865 / H$\\alpha$')    
+    ax_combined.set_xlabel('NII (combined) / H$\\alpha$')    
+
+    fig.savefig('/Users/brianlorenz/uncover/Figures/diagnostic_lineratio/nii_analysis.pdf')
 
 
 mosdef_nii(linemeas_df, mosdef_df)

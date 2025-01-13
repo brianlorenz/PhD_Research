@@ -13,7 +13,7 @@ from plot_vals import stellar_mass_label, scale_aspect
 import numpy as np
 
 def sample_select():
-    ha_snr_thresh = 0
+    ha_snr_thresh = 5
     pab_snr_thresh = 5
     overlap_thresh = 0.2
 
@@ -47,9 +47,12 @@ def sample_select():
     line_notfullcover_flag = []
     line_notfullcover_value = []
 
+    good_ha_trasms = []
+    good_pab_trasms  = []
+
     for id_msa in id_msa_list:
         print(f"Checking sample selection for {id_msa}")
-        if id_msa in [6325, 42041, 49991]: 
+        if id_msa in [6325, 49991]: 
             print(f'Skipping {id_msa} for other issues')
             id_msa_skipped.append(id_msa)
             continue 
@@ -154,9 +157,11 @@ def sample_select():
             continue
 
         id_msa_good_list.append(id_msa)
+        good_ha_trasms.append(ha_avg_transmission)
+        good_pab_trasms.append(pab_avg_transmission)
     
     assert len(id_msa_list) == len(id_msa_good_list) + len(id_msa_line_notfullcover) + len(id_msa_filt_edge) + len(id_msa_ha_snr_flag) + len(id_msa_pab_snr_flag) + len(id_msa_skipped) + len(id_msa_line_overlapcont)
-    good_df = pd.DataFrame(id_msa_good_list, columns=['id_msa'])
+    good_df = pd.DataFrame(zip(id_msa_good_list, good_ha_trasms, good_pab_trasms), columns=['id_msa', 'ha_trasm', 'pab_trasm'])
     line_notfullcover_df = pd.DataFrame(zip(id_msa_line_notfullcover, line_notfullcover_flag, line_notfullcover_value), columns=['id_msa', 'flag_line_coverage', 'line_trasm_value'])
     filt_edge_df = pd.DataFrame(id_msa_filt_edge, columns=['id_msa'])
     ha_snr_flag_df = pd.DataFrame(id_msa_ha_snr_flag, columns=['id_msa'])
@@ -357,8 +362,8 @@ def paper_figure_sample_selection(id_msa_list, color_var='None'):
 
 
 if __name__ == "__main__":
-    # sample_select()
+    sample_select()
     
-    id_msa_list = get_id_msa_list(full_sample=False)
-    paper_figure_sample_selection(id_msa_list, color_var='sed_av')
+    # id_msa_list = get_id_msa_list(full_sample=False)
+    # paper_figure_sample_selection(id_msa_list, color_var='sed_av')
     
