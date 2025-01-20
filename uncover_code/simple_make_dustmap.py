@@ -34,13 +34,15 @@ from copy import copy, deepcopy
 ha_trasm_thresh = 0.8
 pab_trasm_thresh = 0.8
 
+show_aper_and_slit = True
+
 
 colors = ['red', 'green', 'blue']
 connect_color = 'green'
 
 
 
-def make_dustmap_simple(id_msa, aper_size='None', cor_helium=False):
+def make_dustmap_simple(id_msa, aper_size='None'):
     ha_snr_cut = 0.5
     pab_snr_cut = 0.5
 
@@ -73,8 +75,8 @@ def make_dustmap_simple(id_msa, aper_size='None', cor_helium=False):
         print("One of the lines not detected in all filters")
         print(f"Halpha: {ha_all_filts}, PaBeta: {pab_all_filts}")
         print("Consider different cont measurement method")
-        print("Exiting")
-        sys.exit("")
+        # print("Exiting")
+        # sys.exit("")
 
     # Read in filters and redshift
     ha_filters = ['f_'+filt for filt in ha_filters]
@@ -94,27 +96,24 @@ def make_dustmap_simple(id_msa, aper_size='None', cor_helium=False):
     pab_flux_fit = fit_df.iloc[1]['flux']
     ha_sigma = fit_df.iloc[0]['sigma'] # full width of the line
     pab_sigma = fit_df.iloc[1]['sigma'] # full width of the line
-    # Helium fit properties, if correcting for it
-    if cor_helium:
-        helium_df = ascii.read(f'/Users/brianlorenz/uncover/Data/emission_fitting/helium/{id_msa}_emission_fits_helium.csv').to_pandas()
-        he_flux = helium_df.iloc[1]['flux']
-        pab_cor_helium_factor = pab_flux_fit / (pab_flux_fit + he_flux)
+    
 
-    # Check the coverage fraction of the lines - we want it high in the line, but 0 int he continuum filters
-    ha_avg_transmission = get_line_coverage(ha_sedpy_filt, line_list[0][1] * (1+redshift), ha_sigma * (1+redshift))
-    pab_avg_transmission = get_line_coverage(pab_sedpy_filt, line_list[1][1] * (1+redshift), pab_sigma * (1+redshift))
-    ha_red_avg_transmission = get_line_coverage(ha_red_sedpy_filt, line_list[0][1] * (1+redshift), ha_sigma * (1+redshift))
-    pab_red_avg_transmission = get_line_coverage(pab_red_sedpy_filt, line_list[1][1] * (1+redshift), pab_sigma * (1+redshift))
-    ha_blue_avg_transmission = get_line_coverage(ha_blue_sedpy_filt, line_list[0][1] * (1+redshift), ha_sigma * (1+redshift))
-    pab_blue_avg_transmission = get_line_coverage(pab_blue_sedpy_filt, line_list[1][1] * (1+redshift), pab_sigma * (1+redshift))
+
+    ha_avg_transmission = get_line_coverage(id_msa, ha_sedpy_filt, redshift, line_name='ha')
+    pab_avg_transmission = get_line_coverage(id_msa, pab_sedpy_filt, redshift, line_name='pab')
+    ha_red_avg_transmission = get_line_coverage(id_msa, ha_red_sedpy_filt, redshift, line_name='ha')
+    pab_red_avg_transmission = get_line_coverage(id_msa, pab_red_sedpy_filt, redshift, line_name='pab')
+    ha_blue_avg_transmission = get_line_coverage(id_msa, ha_blue_sedpy_filt, redshift, line_name='ha')
+    pab_blue_avg_transmission = get_line_coverage(id_msa, pab_blue_sedpy_filt, redshift, line_name='pab')
     ha_transmissions = [ha_red_avg_transmission, ha_avg_transmission, ha_blue_avg_transmission]
     pab_transmissions = [pab_red_avg_transmission, pab_avg_transmission, pab_blue_avg_transmission]
-    
+    print(f"Halpha: {ha_avg_transmission}, PaBeta: {pab_avg_transmission}")
+
     if ha_avg_transmission < ha_trasm_thresh or pab_avg_transmission < pab_trasm_thresh:
         print("One of the lines not covered fully in the filters")
         print(f"Halpha: {ha_avg_transmission}, PaBeta: {pab_avg_transmission}")
-        print("Exiting")
-        sys.exit("")
+        # print("Exiting")
+        # sys.exit("")
 
     # Segmap matching
     supercat_df = read_supercat()
@@ -165,7 +164,7 @@ def make_dustmap_simple(id_msa, aper_size='None', cor_helium=False):
     pab_cont_pct, _, pab_trasm_flag, pab_boot_lines, pab_sed_fluxes, pab_wave_pct = plot_sed_around_line(ax_pab_sed, pab_filters, sed_df, spec_df, redshift, 1, pab_transmissions, id_msa)
 
     # Read in the linefluxes from lineflux_df, don't need to be double-computing here, and already corrected 
-    lineflux_df = ascii.read(f'/Users/brianlorenz/uncover/Data/generated_tables/lineflux_df.csv').to_pandas()
+    lineflux_df = ascii.read(f'/Users/brianlorenz/uncover/Data/generated_tables/lineflux_df_all.csv').to_pandas()
     lineflux_row = lineflux_df[lineflux_df['id_msa'] == id_msa]
     nii_cor_ha_sed_lineflux = lineflux_row['nii_cor_ha_sed_flux'].iloc[0]
     fe_cor_pab_sed_lineflux = lineflux_row['fe_cor_pab_sed_flux'].iloc[0]
@@ -328,21 +327,22 @@ def make_dustmap_simple(id_msa, aper_size='None', cor_helium=False):
     dustmap_cbar.set_label('Dustmap AV', fontsize=14)
     dustmap_cbar.ax.tick_params(labelsize=14)
 
-    # Plot the aperture
-    aperture_circle = plt.Circle((50, 50), aperture/0.04, edgecolor='green', facecolor='None', lw=3)
-    ax_ha_linemap.add_patch(aperture_circle)
-    aperture_circle = plt.Circle((50, 50), aperture/0.04, edgecolor='green', facecolor='None', lw=3)
-    ax_ha_cont.add_patch(aperture_circle)
-    aperture_circle = plt.Circle((50, 50), aperture/0.04, edgecolor='green', facecolor='None', lw=3)
-    ax_pab_cont.add_patch(aperture_circle)
-    aperture_circle = plt.Circle((50, 50), aperture/0.04, edgecolor='green', facecolor='None', lw=3)
-    ax_pab_linemap.add_patch(aperture_circle)
+    if show_aper_and_slit == True:
+        # Plot the aperture
+        aperture_circle = plt.Circle((50, 50), aperture/0.04, edgecolor='green', facecolor='None', lw=3)
+        # ax_ha_linemap.add_patch(aperture_circle)
+        aperture_circle = plt.Circle((50, 50), aperture/0.04, edgecolor='green', facecolor='None', lw=3)
+        ax_ha_cont.add_patch(aperture_circle)
+        aperture_circle = plt.Circle((50, 50), aperture/0.04, edgecolor='green', facecolor='None', lw=3)
+        ax_pab_cont.add_patch(aperture_circle)
+        aperture_circle = plt.Circle((50, 50), aperture/0.04, edgecolor='green', facecolor='None', lw=3)
+        # ax_pab_linemap.add_patch(aperture_circle)
 
-    # Plot the slits
-    plot_shutter_pos(ax_ha_cont, id_msa, ha_images[1].wcs)
-    plot_shutter_pos(ax_ha_linemap, id_msa, ha_images[1].wcs)
-    plot_shutter_pos(ax_pab_cont, id_msa, ha_images[1].wcs)
-    plot_shutter_pos(ax_pab_linemap, id_msa, ha_images[1].wcs)
+        # Plot the slits
+        plot_shutter_pos(ax_ha_cont, id_msa, ha_images[1].wcs)
+        # plot_shutter_pos(ax_ha_linemap, id_msa, ha_images[1].wcs)
+        plot_shutter_pos(ax_pab_cont, id_msa, ha_images[1].wcs)
+        # plot_shutter_pos(ax_pab_linemap, id_msa, ha_images[1].wcs)
 
 
     # Dustmap Contours
@@ -351,17 +351,22 @@ def make_dustmap_simple(id_msa, aper_size='None', cor_helium=False):
     X_pab, Y_pab = np.meshgrid(x, y)
     # Set where pab snr is not at least 2, to zero
     pab_linemap_snr_filt = deepcopy(pab_linemap)
-    # pab_linemap_snr_filt[~pab_snr_idxs] = 0
+    pab_linemap_snr_filt[~pab_snr_idxs] = 0
     dustmap_snr_filt = deepcopy(dustmap)
     dustmap_snr_filt[~snr_idx] = 0
-    ax_ha_linemap.contour(X_pab, Y_pab, dustmap_snr_filt, levels=[0.5, 1, 1.5, 2], cmap='Greys')
-    # ax_segmap.contour(X_pab, Y_pab, dustmap_snr_filt, levels=[2, 4, 6, 8], cmap='Greys')
+    
 
     # Masked points in gray
     combined_mask_ha = make_combined_mask(ha_linemap_snr_binary, dilated_segmap_idxs)
     combined_mask_pab = make_combined_mask(pab_linemap_snr_binary, dilated_segmap_idxs)
     combined_mask_both = make_combined_mask(both_linemap_snr_binary, dilated_segmap_idxs)
     combined_mask_segmap = make_combined_mask(dilated_segmap_idxs, dilated_segmap_idxs)
+
+    # Make a copy of the snr map to be used for contouring
+    pab_contour_map = deepcopy(pab_linemap_snr)
+    pab_contour_map[~combined_mask_segmap.mask] = 0
+    ax_ha_linemap.contour(X_pab, Y_pab, pab_contour_map, levels=[1,2,3,4,5], cmap='Greys')
+    # ax_segmap.contour(X_pab, Y_pab, dustmap_snr_filt, levels=[2, 4, 6, 8], cmap='Greys')
     
     from matplotlib import colors
     cmap_gray = colors.ListedColormap(['gray'])
@@ -543,7 +548,10 @@ def find_filters_around_line(id_msa, line_number):
         return filt_red, filt_green, filt_blue, all_filts
     filt_red = filt_names[detected_index+1].split('_')[1]
     filt_green = filt_names[detected_index].split('_')[1]
-    filt_blue = filt_names[detected_index-1].split('_')[1]
+    subtract_filt = 1
+    if id_msa in [14573, 19896, 32111, 35436] and line_number==1:
+        subtract_filt = 2
+    filt_blue = filt_names[detected_index-subtract_filt].split('_')[1]
     
     return filt_red, filt_green, filt_blue, all_filts
 
@@ -590,7 +598,7 @@ def plot_sed_around_line(ax, filters, sed_df, spec_df, redshift, line_index, tra
     line_wave_rest = line_list[line_index][1]
     line_wave_obs = (line_wave_rest * (1+redshift))/1e4 # micron
     ax.axvline(line_wave_obs, ls='--', color='green') # observed line, Ha or PaB
-    ax.axvline(1.2560034*(1+redshift), ls='--', color='magenta') # He II https://www.mpe.mpg.de/ir/ISO/linelists/Hydrogenic.html
+    ax.axvline(1.257*(1+redshift), ls='--', color='magenta') # He II https://www.mpe.mpg.de/ir/ISO/linelists/Hydrogenic.html
     ax.axvline(1.083646*(1+redshift), ls='--', color='magenta') # He I https://iopscience.iop.org/article/10.3847/1538-3881/ab3a31
     ax.axvline(1.094*(1+redshift), ls='--', color='green') # Pa gamma
     # Can check lines here https://linelist.pa.uky.edu/atomic/query.cgi
@@ -646,7 +654,14 @@ def plot_sed_around_line(ax, filters, sed_df, spec_df, redshift, line_index, tra
             boot_red_flux = np.random.normal(loc=red_flux, scale=err_red_flux, size=1)
             boot_green_flux = np.random.normal(loc=green_flux, scale=err_green_flux, size=1)
             boot_blue_flux = np.random.normal(loc=blue_flux, scale=err_blue_flux, size=1)
-            boot_line, boot_cont = compute_line(cont_percentile, boot_red_flux, boot_green_flux, boot_blue_flux, redshift, 0, filter_width, line_wave_rest)            
+            boot_line, boot_cont = compute_line(cont_percentile, boot_red_flux[0], boot_green_flux[0], boot_blue_flux[0], redshift, 0, filter_width, line_wave_rest)            
+            if line_index == 0:
+                line_name = 'ha'
+            else:
+                line_name = 'pab'
+            line_trasm = get_line_coverage(id_msa, sedpy_line_filt, redshift, line_name)
+            boot_line = boot_line / line_trasm
+            
             boot_lines.append(boot_line)
     boot_lines = np.array(boot_lines)
 
@@ -776,7 +791,7 @@ def make_combined_mask(snr_binary_map, segmap_idxs):
         total_mask = np.ma.masked_where(combined_mask+1 > 1.5, combined_mask+1)
         return total_mask
 
-def make_all_dustmap(id_msa_list):
+def make_all_dustmap(id_msa_list, full_sample=False):
     sed_lineratios = []
     sed_lineratios_low = []
     sed_lineratios_high = []
@@ -795,9 +810,11 @@ def make_all_dustmap(id_msa_list):
     err_fe_cor_sed_pab_lineflux_highs = []
     
     for id_msa in id_msa_list:
+        print(f'Making dustmap for {id_msa}')
         try:
             sed_lineratios_grouped, emission_lineratios_grouped, sed_avs_grouped, emission_avs_grouped, err_sed_linefluxes_grouped = make_dustmap_simple(id_msa)
-        except:
+        except Exception as error:
+            print(error)
             sed_lineratios_grouped = [-99,-99,-99]
             emission_lineratios_grouped = [-99,-99,-99]
             sed_avs_grouped = [-99,-99,-99]
@@ -820,11 +837,50 @@ def make_all_dustmap(id_msa_list):
         err_fe_cor_sed_pab_lineflux_lows.append(err_sed_linefluxes_grouped[2])
         err_fe_cor_sed_pab_lineflux_highs.append(err_sed_linefluxes_grouped[3])
 
+
     dustmap_info_df = pd.DataFrame(zip(id_msa_list, sed_lineratios, sed_lineratios_low, sed_lineratios_high, sed_avs, sed_avs_low, sed_avs_high, emission_lineratios, emission_lineratios_low, emission_lineratios_high, emission_avs, emission_avs_low, emission_avs_high, err_nii_cor_sed_ha_lineflux_lows, err_nii_cor_sed_ha_lineflux_highs, err_fe_cor_sed_pab_lineflux_lows, err_fe_cor_sed_pab_lineflux_highs), columns=['id_msa', 'sed_lineratio', 'err_sed_lineratio_low', 'err_sed_lineratio_high', 'sed_av', 'err_sed_av_low', 'err_sed_av_high', 'emission_fit_lineratio', 'err_emission_fit_lineratio_low', 'err_emission_fit_lineratio_high', 'emission_fit_av', 'err_emission_fit_av_low', 'err_emission_fit_av_high', 'err_nii_cor_sed_ha_lineflux_low', 'err_nii_cor_sed_ha_lineflux_high', 'err_fe_cor_sed_pab_lineflux_low', 'err_fe_cor_sed_pab_lineflux_high'])
-    dustmap_info_df.to_csv('/Users/brianlorenz/uncover/Data/generated_tables/lineratio_av_df.csv', index=False)
+
+    if full_sample:
+        dustmap_info_df.to_csv('/Users/brianlorenz/uncover/Data/generated_tables/lineratio_av_df_all.csv', index=False)
+    else:
+        dustmap_info_df.to_csv('/Users/brianlorenz/uncover/Data/generated_tables/lineratio_av_df.csv', index=False)
+
+def copy_selected_sample_dustmaps(id_msa_list):
+    # Copies all the dustmaps from the sample subset to a different folder
+    import os
+    import stat
+    import shutil
+    import time
+
+
+    dustmap_dir = '/Users/brianlorenz/uncover/Figures/dust_maps/'
+    destination = '/Users/brianlorenz/uncover/Figures/dust_maps/sample_only/'
+
+    # List of the paths to all the figures
+    fig_list = []
+    for id_msa in id_msa_list:
+        fig_list.append(dustmap_dir + f'{id_msa}_dustmap.pdf')
+    
+    def copy_figure(fig_path):
+        fig_name = fig_path.split('/')[-1]
+
+        fileStatsObj = os.stat(fig_path)
+        modificationTime = time.ctime(fileStatsObj[stat.ST_MTIME])
+        print(f"Last Modified {fig_name}: ", modificationTime)
+
+        target = destination + '/' + fig_name
+        shutil.copyfile(fig_path, target)
+
+
+    def copy_all_figures(fig_list):
+        for fig_path in fig_list:
+            copy_figure(fig_path)
+
+    copy_all_figures(fig_list)
 
 if __name__ == "__main__":
-    # make_dustmap_simple(48540)
+    # make_dustmap_simple(14573)
     # make_dustmap_simple(18471)
     id_msa_list = get_id_msa_list(full_sample=False)
-    make_all_dustmap(id_msa_list)
+    # make_all_dustmap(id_msa_list, full_sample=True)
+    copy_selected_sample_dustmaps(id_msa_list)

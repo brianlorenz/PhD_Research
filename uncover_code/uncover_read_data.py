@@ -145,6 +145,13 @@ def get_id_msa_list(full_sample=False):
     else:
         id_msa_df = ascii.read('/Users/brianlorenz/uncover/Data/sample_selection/main_sample.csv').to_pandas()
         id_msa_list = id_msa_df['id_msa'].tolist()
+        
+        # Adding in the ones where we correct for line not fully covered
+        id_msa_line_notfullcover_df = ascii.read('/Users/brianlorenz/uncover/Data/sample_selection/line_notfullcover_df.csv').to_pandas()
+        id_msa_line_notfullcover_list = id_msa_line_notfullcover_df['id_msa'].tolist()
+        id_msa_list = id_msa_list + id_msa_line_notfullcover_list
+        pab_blues = [14573, 19896, 32111, 35436]
+        id_msa_list = id_msa_list+pab_blues
     return id_msa_list
 
 make_pd_table_from_fits('/Users/brianlorenz/uncover/Catalogs/uncover-msa-full_depth-default_drz-v0.8a-lines.fits')

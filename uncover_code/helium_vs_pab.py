@@ -2,12 +2,12 @@ import matplotlib.pyplot as plt
 from astropy.io import ascii
 import matplotlib as mpl
 import numpy as np
-from uncover_read_data import read_lineflux_cat, get_id_msa_list
+from uncover_read_data import read_lineflux_cat, get_id_msa_list, read_SPS_cat
 
 def plot_helium_vs_pab(id_msa_list, add_str, color_var='he_snr'):
     lineratio_df = ascii.read(f'/Users/brianlorenz/uncover/Figures/diagnostic_lineratio/lineratio_df.csv', data_start=1).to_pandas()
     zqual_df_cont_covered = ascii.read('/Users/brianlorenz/uncover/zqual_df_cont_covered.csv').to_pandas()
- 
+    sps_df = read_SPS_cat()
 
     fig, axarr = plt.subplots(1, 2, figsize = (12, 6))
     fontsize = 12
@@ -27,6 +27,7 @@ def plot_helium_vs_pab(id_msa_list, add_str, color_var='he_snr'):
         emission_df = ascii.read(f'/Users/brianlorenz/uncover/Data/emission_fitting/{id_msa}_emission_fits.csv').to_pandas()
         lineratio_row = lineratio_df[lineratio_df['id_msa'] == id_msa]
         zqual_df_cont_covered_row = zqual_df_cont_covered[zqual_df_cont_covered['id_msa']==id_msa]
+        sps_row = sps_df[sps_df['id_msa'] == id_msa]
 
         ha_flux = emission_df.iloc[0]['flux']
         pab_flux = emission_df.iloc[1]['flux']
@@ -48,6 +49,12 @@ def plot_helium_vs_pab(id_msa_list, add_str, color_var='he_snr'):
             norm = mpl.colors.Normalize(vmin=1.3, vmax=2.3) 
             rgba = cmap(norm(zqual_df_cont_covered_row['z_spec']))
             color_str = '_redshift'
+        elif color_var == 'metallicity':
+            norm = mpl.colors.Normalize(vmin=-1.2, vmax=0.1) 
+            rgba = cmap(norm(sps_row['met_50']))
+            print(sps_row['met_50'])
+            color_str = '_metallicity'
+        
         else:
             rgba = 'black'
             color_str = ''
@@ -104,5 +111,7 @@ if __name__ == "__main__":
     # plot_helium_vs_pab(id_msa_list, 'good_sample', color_var='sed_ratio')
     # plot_helium_vs_pab(id_msa_list, 'good_sample', color_var='redshift')
     id_msa_list = get_id_msa_list(full_sample=False)
-    plot_helium_vs_pab(id_msa_list, '')
+    # plot_helium_vs_pab(id_msa_list, '')
+    id_msa_list = [25147, 39855, 42213, 47875]
+    plot_helium_vs_pab(id_msa_list, '', color_var='metallicity')
     pass

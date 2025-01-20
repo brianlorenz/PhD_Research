@@ -81,12 +81,7 @@ def sample_select():
         pab_rest_wavelength = line_list[1][1]
 
 
-        # If either halpha or pab is detected in the end filters, decide what to do
-        if ha_all_filts == False or pab_all_filts == False:
-            print("One of the lines not detected in all filters")
-            print("Consider different cont measurement method")
-            id_msa_filt_edge.append(id_msa)
-            continue
+        
 
         # Emission fit properties
         fit_df = ascii.read(f'/Users/brianlorenz/uncover/Data/emission_fitting/{id_msa}_emission_fits.csv').to_pandas()
@@ -104,26 +99,29 @@ def sample_select():
         lines_df_pab_snr = lines_df_row['f_PaB'].iloc[0] / lines_df_row['e_PaB'].iloc[0]
 
         # Check the coverage fraction of the lines - we want it high in the line, but 0 int he continuum filters
-        ha_avg_transmission = get_line_coverage(ha_sedpy_filt, line_list[0][1] * (1+redshift), ha_sigma * (1+redshift))
-        pab_avg_transmission = get_line_coverage(pab_sedpy_filt, line_list[1][1] * (1+redshift), pab_sigma * (1+redshift))
-        ha_red_avg_transmission = get_line_coverage(ha_red_sedpy_filt, line_list[0][1] * (1+redshift), ha_sigma * (1+redshift))
-        pab_red_avg_transmission = get_line_coverage(pab_red_sedpy_filt, line_list[1][1] * (1+redshift), pab_sigma * (1+redshift))
-        ha_blue_avg_transmission = get_line_coverage(ha_blue_sedpy_filt, line_list[0][1] * (1+redshift), ha_sigma * (1+redshift))
-        pab_blue_avg_transmission = get_line_coverage(pab_blue_sedpy_filt, line_list[1][1] * (1+redshift), pab_sigma * (1+redshift))
+        ha_avg_transmission = get_line_coverage(id_msa, ha_sedpy_filt, redshift, line_name='ha')
+        pab_avg_transmission = get_line_coverage(id_msa, pab_sedpy_filt, redshift, line_name='pab')
+        ha_red_avg_transmission = get_line_coverage(id_msa, ha_red_sedpy_filt, redshift, line_name='ha')
+        pab_red_avg_transmission = get_line_coverage(id_msa, pab_red_sedpy_filt, redshift, line_name='pab')
+        ha_blue_avg_transmission = get_line_coverage(id_msa, ha_blue_sedpy_filt, redshift, line_name='ha')
+        pab_blue_avg_transmission = get_line_coverage(id_msa, pab_blue_sedpy_filt, redshift, line_name='pab')
         ha_transmissions = [ha_red_avg_transmission, ha_avg_transmission, ha_blue_avg_transmission]
         pab_transmissions = [pab_red_avg_transmission, pab_avg_transmission, pab_blue_avg_transmission]
 
-        line_notfullcover_check = ''
-        if ha_avg_transmission < ha_trasm_thresh: 
-            line_notfullcover_check = 'ha'
-            line_notfullcover_value.append(ha_avg_transmission)
-        elif pab_avg_transmission < pab_trasm_thresh:
-            line_notfullcover_check = 'pab'
-            line_notfullcover_value.append(pab_avg_transmission)
-        if line_notfullcover_check != '':
-            print("One of the lines not covered fully in the filters")
-            id_msa_line_notfullcover.append(id_msa)
-            line_notfullcover_flag.append(line_notfullcover_check)
+        if ha_snr < ha_snr_thresh:
+            print(f"Ha SNR of {ha_snr} less than thresh of {ha_snr_thresh}")
+            id_msa_ha_snr_flag.append(id_msa)
+            continue
+        if pab_snr < pab_snr_thresh:
+            print(f"PaB SNR of {pab_snr} less than thresh of {pab_snr_thresh}")
+            id_msa_pab_snr_flag.append(id_msa)
+            continue
+
+        # If either halpha or pab is detected in the end filters, decide what to do
+        if ha_all_filts == False or pab_all_filts == False:
+            print("One of the lines not detected in all filters")
+            print("Consider different cont measurement method")
+            id_msa_filt_edge.append(id_msa)
             continue
 
         overlap_flag = ''
@@ -146,15 +144,19 @@ def sample_select():
             cont_overlap_flag.append(overlap_flag)
             continue
             
-
-        if ha_snr < ha_snr_thresh:
-            print(f"Ha SNR of {ha_snr} less than thresh of {ha_snr_thresh}")
-            id_msa_ha_snr_flag.append(id_msa)
+        line_notfullcover_check = ''
+        if ha_avg_transmission < ha_trasm_thresh: 
+            line_notfullcover_check = 'ha'
+            line_notfullcover_value.append(ha_avg_transmission)
+        elif pab_avg_transmission < pab_trasm_thresh:
+            line_notfullcover_check = 'pab'
+            line_notfullcover_value.append(pab_avg_transmission)
+        if line_notfullcover_check != '':
+            print("One of the lines not covered fully in the filters")
+            id_msa_line_notfullcover.append(id_msa)
+            line_notfullcover_flag.append(line_notfullcover_check)
             continue
-        if pab_snr < pab_snr_thresh:
-            print(f"PaB SNR of {pab_snr} less than thresh of {pab_snr_thresh}")
-            id_msa_pab_snr_flag.append(id_msa)
-            continue
+        
 
         id_msa_good_list.append(id_msa)
         good_ha_trasms.append(ha_avg_transmission)
@@ -221,7 +223,9 @@ def line_in_range(z, target_line, filt_cols, uncover_filt_dir):
 
 
 def paper_figure_sample_selection(id_msa_list, color_var='None'):
-    fig, ax = plt.subplots(figsize=(6,6))
+    fig = plt.figure(figsize=(8,6))
+    ax = fig.add_axes([0.15,0.15,0.525,0.7])
+    cb_ax = fig.add_axes([0.725,0.15,0.04,0.7])
 
     fontsize = 14
     normal_markersize=8
@@ -233,7 +237,7 @@ def paper_figure_sample_selection(id_msa_list, color_var='None'):
     sps_df = read_SPS_cat()
     sps_all_df = read_SPS_cat_all()
     # supercat_df = read_supercat()
-    lineratio_data_df = ascii.read(f'/Users/brianlorenz/uncover/Data/generated_tables/lineratio_av_df.csv').to_pandas()
+    lineratio_data_df = ascii.read(f'/Users/brianlorenz/uncover/Data/generated_tables/lineratio_av_df_all.csv').to_pandas()
 
     line_notfullcover_df = ascii.read('/Users/brianlorenz/uncover/Data/sample_selection/line_notfullcover_df.csv').to_pandas()
     filt_edge_df = ascii.read('/Users/brianlorenz/uncover/Data/sample_selection/filt_edge.csv').to_pandas()
@@ -259,10 +263,12 @@ def paper_figure_sample_selection(id_msa_list, color_var='None'):
         return new_cmap
     cmap = plt.get_cmap('gray_r')
     new_cmap = truncate_colormap(cmap, 0, 0.7)
-    good_redshift_idx = np.logical_and(all_redshifts > 1.3, all_redshifts < 2.3)
+    good_redshift_idx = np.logical_and(all_redshifts > 1.3, all_redshifts < 2.5)
     good_mass_idx = np.logical_and(all_masses > 5.5, all_masses < 11.5)
     good_both_idx = np.logical_and(good_redshift_idx, good_mass_idx)
-    ax.hexbin(all_redshifts[good_both_idx], all_masses[good_both_idx], gridsize=20, cmap=new_cmap)
+    # hexbin_norm = mpl.colors.LogNorm(vmin=1, vmax=300) 
+    hexbin_norm = mpl.colors.Normalize(vmin=1, vmax=200) 
+    ax.hexbin(all_redshifts[good_both_idx], all_masses[good_both_idx], gridsize=15, cmap=new_cmap, norm=hexbin_norm, label='Full Photometric Sample')
 
     # Gray high quality points
     for id_msa in zqual_df['id_msa']:
@@ -286,7 +292,7 @@ def paper_figure_sample_selection(id_msa_list, color_var='None'):
         if len(sps_row) == 0:
             print(f'No SPS for {id_msa}')
             continue
-
+        
         ax.plot(redshift, stellar_mass_50, marker=marker, color='gray', ls='None', ms=gray_markersize, mec='black')
 
 
@@ -314,6 +320,8 @@ def paper_figure_sample_selection(id_msa_list, color_var='None'):
         if color_var == 'sed_av':
             norm = mpl.colors.Normalize(vmin=0, vmax=3) 
             rgba = cmap(norm(lineratio_data_row['sed_av']))  
+            if len(lineratio_data_row['sed_av']) == 0:
+                rgba = 'white'
             cbar_label = 'Photometry AV'
         # if color_var == 'ha_snr':
         #     norm = mpl.colors.LogNorm(vmin=2, vmax=100) 
@@ -338,7 +346,12 @@ def paper_figure_sample_selection(id_msa_list, color_var='None'):
         else:
             markersize = normal_markersize
 
+        print(id_msa)
+        print(lineratio_data_row['sed_av'])
+        # if id_msa == 11714:
+        #     breakpoint()
         ax.errorbar(redshift, stellar_mass_50, yerr=[err_stellar_mass_low, err_stellar_mass_high], marker='o', color=rgba, ls='None', mec='black', ms=markersize)
+        # ax.text(redshift, stellar_mass_50.iloc[0], f'{id_msa}')
     ax.set_ylabel('Prospector '+stellar_mass_label, fontsize=fontsize)
     ax.set_xlabel('Redshift', fontsize=fontsize)
 
@@ -346,24 +359,35 @@ def paper_figure_sample_selection(id_msa_list, color_var='None'):
     
      
     ax.tick_params(labelsize=fontsize)
-    ax.set_xlim([1.3, 2.3])
-    ax.set_ylim([5.5, 11])
+    ax.set_xlim([1.3, 2.5])
+    ax.set_ylim([5, 11])
     scale_aspect(ax)
 
-    # cb_ax = fig.add_axes([.91,.124,.02,.734])
+    
     if color_var != 'None':
         sm =  mpl.cm.ScalarMappable(norm=norm, cmap=cmap)
-        cbar = fig.colorbar(sm,orientation='vertical', ax=ax)
+        cbar = fig.colorbar(sm, orientation='vertical', cax=cb_ax)
         cbar.set_label(cbar_label, fontsize=16)
         cbar.ax.tick_params(labelsize=16)
+
+    # Legend
+    from matplotlib.lines import Line2D
+    from matplotlib.patches import RegularPolygon
+
+    custom_lines = [Line2D([0], [0], color='orange', marker='o', ls='None', mec='black'),
+                    Line2D([0], [0], color='orange', marker='o', markersize=4, ls='None', mec='black'),
+                    Line2D([0], [0], color='grey', marker='^', ls='None', mec='black'),
+    
+                    Line2D([0], [0], color='grey', marker='h', markersize=12, ls='None'),]
+    ax.legend(custom_lines, ['Selected Sample', 'Pa$\\beta$ SNR < 5', 'Line not in Filter', 'Full Photometric Sample'])
 
     save_loc = f'/Users/brianlorenz/uncover/Figures/paper_figures/sample_selection{color_str}.pdf'
     fig.savefig(save_loc)
 
 
 if __name__ == "__main__":
-    sample_select()
+    # sample_select()
     
-    # id_msa_list = get_id_msa_list(full_sample=False)
-    # paper_figure_sample_selection(id_msa_list, color_var='sed_av')
+    id_msa_list = get_id_msa_list(full_sample=False)
+    paper_figure_sample_selection(id_msa_list, color_var='sed_av')
     

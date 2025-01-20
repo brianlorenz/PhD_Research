@@ -8,6 +8,7 @@ from astropy.io import ascii
 import numpy as np
 import pandas as pd
 from compute_av import nii_correction_ha_flux, fe_correction_pab_flux
+from filter_integrals import get_line_coverage
 
 def calc_lineflux(id_msa):
     sed_df = read_sed(id_msa)
@@ -47,9 +48,9 @@ def calc_lineflux(id_msa):
 
     ha_line_scaled_transmission = get_transmission_at_line(ha_sedpy_filt, line_list[0][1] * (1+redshift))
     pab_line_scaled_transmission = get_transmission_at_line(pab_sedpy_filt, line_list[1][1] * (1+redshift))
-    
-    ha_flux_erg_s_cm2 = measure_lineflux(sed_df, redshift, ha_filters, ha_line_scaled_transmission, ha_sedpy_transmission, line_list[0][1], ha_sedpy_width, ha_sedpy_wave, ha_sedpy_filts)
-    pab_flux_erg_s_cm2 = measure_lineflux(sed_df, redshift, pab_filters, pab_line_scaled_transmission, pab_sedpy_transmission, line_list[1][1], pab_sedpy_width, pab_sedpy_wave, pab_sedpy_filts)
+
+    ha_flux_erg_s_cm2 = measure_lineflux(id_msa, sed_df, redshift, ha_filters, ha_line_scaled_transmission, ha_sedpy_transmission, line_list[0][1], ha_sedpy_width, ha_sedpy_wave, ha_sedpy_filts)
+    pab_flux_erg_s_cm2 = measure_lineflux(id_msa, sed_df, redshift, pab_filters, pab_line_scaled_transmission, pab_sedpy_transmission, line_list[1][1], pab_sedpy_width, pab_sedpy_wave, pab_sedpy_filts)
     # Line flux corrections
     nii_cor_ha_flux_erg_s_cm2 = ha_flux_erg_s_cm2*nii_correction_ha_flux
     fe_cor_pab_flux_erg_s_cm2 = pab_flux_erg_s_cm2*fe_correction_pab_flux
@@ -65,6 +66,8 @@ def calc_lineflux(id_msa):
     ha_flux_emission_fit = fit_df['flux'].iloc[0]
     pab_flux_emission_fit = fit_df['flux'].iloc[1]
     nii_cor_ha_flux_emission_fit = fit_df['nii_cor_flux'].iloc[0]
+    # print(f'ha width = {fit_df["sigma"].iloc[0]}')
+    # print(f'pab width = {fit_df["sigma"].iloc[1]}')
 
     ha_offset_factor = ha_flux_erg_s_cm2 / ha_flux_emission_fit
     pab_offset_factor = fe_cor_pab_flux_erg_s_cm2 / pab_flux_emission_fit
@@ -80,7 +83,7 @@ def calc_lineflux(id_msa):
     # print(f'Ha/PaB: {(ha_flux/pab_flux) / (line_list[0][1]/line_list[1][1])**2}')
     # print(f'Cat Ha/PaB: {(ha_flux_cat_jy/pab_flux_cat_jy)}')
 
-def measure_lineflux(sed_df, redshift, filters, scaled_transmission, raw_transmission, line_wave, filter_width, filter_wave, line_filts):
+def measure_lineflux(id_msa, sed_df, redshift, filters, scaled_transmission, raw_transmission, line_wave, filter_width, filter_wave, line_filts):
     for i in range(len(filters)):
         sed_row = sed_df[sed_df['filter'] == filters[i]]
         if i==0:
@@ -98,15 +101,30 @@ def measure_lineflux(sed_df, redshift, filters, scaled_transmission, raw_transmi
             # blue_flux = sed_row['integrated_spec_flux_jy'].iloc[0]
             blue_flux = sed_row['flux'].iloc[0]
             blue_flux_erg_s_cm2 = compute_filter_F(blue_flux, line_filts[2])
-
-    
+    def cor_he1(id_msa, blue_flux):
+        he1_emfit_df = ascii.read(f'/Users/brianlorenz/uncover/Data/emission_fitting/helium/{id_msa}_emission_fits_helium1.csv').to_pandas()
+        he1_flux = he1_emfit_df['flux'].iloc[1]
+        he1_wave = 10830
+        c = 299792458 # m/s
+        he1_flux_fnu = he1_flux / ((c*1e10) / (he1_wave)**2) 
+        he1_flux_jy = he1_flux_fnu / 1e-23
+        he1_flux_filt_spread = he1_flux_jy / filter_width
+        blue_flux = blue_flux - he1_flux_filt_spread  # THis is only about a 2% correction to total pab flux
+        return blue_flux
+    # blue_flux = cor_he1(id_msa, blue_flux)
     cont_percentile = compute_cont_pct(blue_wave, green_wave, red_wave, blue_flux, red_flux)
     print(blue_flux)
     print(green_flux)
     print(red_flux)
     # cont_percentile2 = compute_cont_pct(blue_wave, green_wave, red_wave, blue_flux_erg_s_cm2, red_flux_erg_s_cm2)
     line_flux, cont_value = compute_line(cont_percentile, red_flux, green_flux, blue_flux, redshift, raw_transmission, filter_width, line_wave)
-
+    if line_wave < 8000:
+        line_name = 'ha'
+    if line_wave > 8000:
+        line_name = 'pab'
+    line_transmission = get_line_coverage(id_msa, line_filts[1], redshift=redshift, line_name=line_name)
+    line_flux = line_flux / line_transmission
+    
 
     return line_flux
 
@@ -124,7 +142,7 @@ def compute_line_already_erg(cont_pct, red_flx, green_flx, blue_flx, redshift, s
 
 
 
-def calc_all_lineflux(id_msa_list):
+def calc_all_lineflux(id_msa_list, full_sample=False):
     ha_sed_fluxes = []
     pab_sed_fluxes = []
     ha_cat_fluxes = []
@@ -158,7 +176,10 @@ def calc_all_lineflux(id_msa_list):
     emission_offset_df['pab_cat_div_emfit'] = emission_offset_df['pab_cat_flux'] / emission_offset_df['pab_emfit_flux']
     emission_offset_df['difference_in_offset_ratio_cat'] = emission_offset_df['pab_sed_div_cat'] / emission_offset_df['ha_sed_div_cat']
     emission_offset_df['difference_in_offset_ratio_emfit'] = emission_offset_df['pab_sed_div_emfit'] / emission_offset_df['ha_sed_div_emfit']
-    emission_offset_df.to_csv(f'/Users/brianlorenz/uncover/Data/generated_tables/lineflux_df.csv', index=False)
+    if full_sample == False:
+        emission_offset_df.to_csv(f'/Users/brianlorenz/uncover/Data/generated_tables/lineflux_df.csv', index=False)
+    if full_sample == True:
+        emission_offset_df.to_csv(f'/Users/brianlorenz/uncover/Data/generated_tables/lineflux_df_all.csv', index=False)
     print(f'\n\n\n')
     print(f'median offset in Ha {np.median(emission_offset_df["ha_sed_div_emfit"])}')
     print(f'median offset in PaB {np.median(emission_offset_df["pab_sed_div_emfit"])}')
@@ -179,10 +200,10 @@ def compute_filter_F(f_nu_jy, sedpy_filt):
 
 if __name__ == "__main__":
     # calc_lineflux(47875)
-    # calc_lineflux(14573)
+    calc_lineflux(14573)
     # calc_lineflux(25774)
-    # calc_lineflux(39744)
+    # calc_lineflux(39855)
     
-    id_msa_list = get_id_msa_list(full_sample=False)
-    calc_all_lineflux(id_msa_list)  
+    # id_msa_list = get_id_msa_list(full_sample=True)
+    # calc_all_lineflux(id_msa_list, full_sample=True)  
     pass

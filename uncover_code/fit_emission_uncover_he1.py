@@ -13,14 +13,12 @@ import time
 from uncover_read_data import read_raw_spec, read_prism_lsf, read_fluxcal_spec, get_id_msa_list
 from astropy.convolution import convolve
 from scipy.interpolate import interp1d
-from compute_av import compute_ha_pab_av, nii_correction_ha_flux
-from plot_vals import scale_aspect
 
-emission_fit_dir = '/Users/brianlorenz/uncover/Data/emission_fitting/'
+emission_fit_dir = '/Users/brianlorenz/uncover/Data/emission_fitting/helium/'
 
 line_list = [
     ('Halpha', 6564.6),
-    ('PaBeta', 12821.7)
+    ('Helium', 10830)
 ]
 lines_dict = {
     line_list[0][0]: line_list[0][1],
@@ -28,11 +26,8 @@ lines_dict = {
 }
 line_centers_rest = [line_list[i][1] for i in range(len(line_list))]
 
-ha_fit_range = (5500, 7700)
-pab_fit_range = (11800, 14200)
 
-
-def fit_emission_uncover(spectrum, save_name, bootstrap_num=-1):
+def fit_emission_uncove_helium(spectrum, save_name, bootstrap_num=-1):
     """
     Parameters:
     bootstrap_num (int): Set to -1 to avoid bootstrap, set to the number to read in the corresponding spectrum and fit that
@@ -44,7 +39,8 @@ def fit_emission_uncover(spectrum, save_name, bootstrap_num=-1):
     if bootstrap_num > -1:
         n_loops = 0
     else:
-        n_loops = 10
+        n_loops = 1
+
     
 
 
@@ -70,7 +66,10 @@ def fit_emission_uncover(spectrum, save_name, bootstrap_num=-1):
     for i in range(len(line_list)):
         guess.append(velocity_guess)
         bounds_low.append(0.01)
-        bounds_high.append(100000)
+        if i==0:
+            bounds_high.append(10000)
+        if i==1:
+            bounds_high.append(1500)
     for i in range(len(line_list)):
         # if 'O3_5008' in line_names and 'O3_4960' in line_names:
         #     idx_5008 = line_names.index('O3_5008')
@@ -95,22 +94,7 @@ def fit_emission_uncover(spectrum, save_name, bootstrap_num=-1):
     flux = flux[full_cut]
     err_flux = err_flux[full_cut]
     wavelength = wavelength[full_cut]
-    if '_flat' in str(save_name):
-        cont_flux = np.ones(len(wavelength)) * 1.5e-6 # From the blackbody code
-        c = 299792458 # m/s
-        continuum = cont_flux * (1e-23*1e10*c / (wavelength**2))
-        continuum = pd.Series(continuum)
-    else:
-        continuum = fit_continuum(wavelength, flux, save_name=save_name)
-
-    def get_cont_value_at_line(line_wave, continuum, wavelength):
-        line_idx = np.argmin(np.abs(wavelength-line_wave))
-        cont_value = continuum.iloc[line_idx]
-        return cont_value
-    ha_cont_value = get_cont_value_at_line(line_list[0][1], continuum, wavelength)
-    pab_cont_value = get_cont_value_at_line(line_list[1][1], continuum, wavelength)
-    cont_values = [ha_cont_value, pab_cont_value]
-
+    continuum = fit_continuum(wavelength, flux)
     popt, arr_popt, y_data_cont_sub = monte_carlo_fit(multi_gaussian, wavelength, scale_factor * continuum, scale_factor * flux, scale_factor * err_flux, np.array(guess), bounds, n_loops)
     err_popt = np.std(arr_popt, axis=0)
     
@@ -123,7 +107,7 @@ def fit_emission_uncover(spectrum, save_name, bootstrap_num=-1):
     # Save the continuum-subtracted ydata
     imd.check_and_make_dir(emission_fit_dir)
     cont_sub_df = pd.DataFrame(zip(wavelength, y_data_cont_sub / scale_factor), columns=['wavelength','continuum_sub_ydata'])
-    cont_sub_df.to_csv(f'{emission_fit_dir}{save_name}_cont_sub.csv', index=False)
+    cont_sub_df.to_csv(f'{emission_fit_dir}{save_name}_cont_sub_helium1.csv', index=False)
 
     # Now, parse the results into a dataframe
     line_names = [line_list[i][0] for i in range(len(line_list))]
@@ -146,27 +130,14 @@ def fit_emission_uncover(spectrum, save_name, bootstrap_num=-1):
     err_fluxes = [i[1] for i in flux_tuples]
     ha_idx = [idx for idx, name in enumerate(
         line_names) if name == 'Halpha'][0]
-    pab_idx = [idx for idx, name in enumerate(line_names) if name == 'PaBeta'][0]
-
-    # Apply nii correction to the halpha flux
-    import copy
-    nii_cor_fluxes = copy.deepcopy(fluxes)
-    nii_cor_err_fluxes = copy.deepcopy(err_fluxes)
-    nii_cor_fluxes[ha_idx] = nii_cor_fluxes[ha_idx] * nii_correction_ha_flux
-    nii_cor_err_fluxes[ha_idx] = nii_cor_err_fluxes[ha_idx] * nii_correction_ha_flux
-
-
-    ha_pab_ratio = [nii_cor_fluxes[ha_idx] / nii_cor_fluxes[pab_idx] for i in range(len(line_list))]
-    eq_widths = [nii_cor_fluxes[i] / cont_values[i] for i in range(len(line_list))]
-    ha_pab_av = [compute_ha_pab_av(1/ha_pab_ratio[i]) for i in range(len(line_list))]
+    pab_idx = [idx for idx, name in enumerate(line_names) if name == 'Helium'][0]
+    ha_pab_ratio = [fluxes[ha_idx] / fluxes[pab_idx] for i in range(len(line_list))]
 
     
-    def compute_percentile_errs_on_line(line_idx, measured_line_flux, nii_cor=False):
+    def compute_percentile_errs_on_line(line_idx, measured_line_flux):
         line_amps = [arr_popt[i][1 + len(line_list) + line_idx]/scale_factor for i in range(len(arr_popt))]
         line_sigs = [velocity_to_sig(line_list[line_idx][1], arr_popt[i][1+line_idx])for i in range(len(arr_popt))]
         line_fluxes = [get_flux(line_amps[i], line_sigs[i])[0] for i in range(len(arr_popt))]
-        if nii_cor == True:
-            line_fluxes = [line_fluxes[i] * nii_correction_ha_flux for i in range(len(line_fluxes))]
         err_line_fluxes_low_high = np.percentile(line_fluxes, [16, 84])
         err_line_fluxes_low_high = np.abs(measured_line_flux-err_line_fluxes_low_high)
         
@@ -182,9 +153,6 @@ def fit_emission_uncover(spectrum, save_name, bootstrap_num=-1):
     err_fluxes = -99*np.ones(len(ha_pab_ratio))
     err_fluxes_low = -99*np.ones(len(ha_pab_ratio))
     err_fluxes_high = -99*np.ones(len(ha_pab_ratio))
-    nii_cor_err_fluxes = -99*np.ones(len(ha_pab_ratio))
-    nii_cor_err_fluxes_low = -99*np.ones(len(ha_pab_ratio))
-    nii_cor_err_fluxes_high = -99*np.ones(len(ha_pab_ratio))
     err_amps = -99*np.ones(len(ha_pab_ratio))
     err_sigs = -99*np.ones(len(ha_pab_ratio))
     err_velocity_low = -99*np.ones(len(ha_pab_ratio))
@@ -193,10 +161,8 @@ def fit_emission_uncover(spectrum, save_name, bootstrap_num=-1):
 
     if n_loops > 0:
         all_ha_fluxes, hg_errs_low_high = compute_percentile_errs_on_line(ha_idx, fluxes[ha_idx])
-        all_nii_cor_ha_fluxes, nii_cor_hg_errs_low_high = compute_percentile_errs_on_line(ha_idx, nii_cor_fluxes[ha_idx], nii_cor=True)
         all_pab_fluxes, hd_errs_low_high = compute_percentile_errs_on_line(pab_idx, fluxes[pab_idx])
-        all_ha_pab_ratios = [all_nii_cor_ha_fluxes[i]/all_pab_fluxes[i] for i in range(len(arr_popt))]
-        all_avs = [compute_ha_pab_av(1/all_ha_pab_ratios[i]) for i in range(len(arr_popt))]
+        all_ha_pab_ratios = [all_ha_fluxes[i]/all_pab_fluxes[i] for i in range(len(arr_popt))]
 
         velocity_monte_carlo = [arr_popt[i][1] for i in range(len(arr_popt))]
         err_velocity_low_high = np.percentile(velocity_monte_carlo, [16,84])
@@ -210,42 +176,36 @@ def fit_emission_uncover(spectrum, save_name, bootstrap_num=-1):
         err_fluxes_low = [hg_errs_low_high[0], hd_errs_low_high[0]]
         err_fluxes_high = [hg_errs_low_high[1], hd_errs_low_high[1]]
 
-        nii_cor_err_fluxes = [np.mean(nii_cor_hg_errs_low_high), np.mean(hd_errs_low_high)]
-        nii_cor_err_fluxes_low = [nii_cor_hg_errs_low_high[0], hd_errs_low_high[0]]
-        nii_cor_err_fluxes_high = [nii_cor_hg_errs_low_high[1], hd_errs_low_high[1]]
-
-
          
-        monte_carlo_df = pd.DataFrame(zip(velocity_monte_carlo, all_ha_fluxes, all_nii_cor_ha_fluxes, all_pab_fluxes, all_ha_pab_ratios), columns = ['velocity', 'ha_flux', 'nii_cor_ha_flux', 'pab_flux', 'ha_pab_ratio'])
+        monte_carlo_df = pd.DataFrame(zip(velocity_monte_carlo, all_ha_fluxes, all_pab_fluxes, all_ha_pab_ratios), columns = ['velocity', 'ha_flux', 'pab_flux', 'ha_pab_ratio'])
         imd.check_and_make_dir(emission_fit_dir)
-        monte_carlo_df.to_csv(emission_fit_dir + f'{save_name}_monte_carlo.csv', index=False)
+        monte_carlo_df.to_csv(emission_fit_dir + f'{save_name}_monte_carlo_helium1.csv', index=False)
 
 
    
   
     err_ha_pab_ratio_low = ha_pab_ratio - np.percentile(all_ha_pab_ratios, 16)
     err_ha_pab_ratio_high = np.percentile(all_ha_pab_ratios, 84) - ha_pab_ratio
-    err_av_low = ha_pab_av - np.percentile(all_avs, 16)
-    err_av_high = np.percentile(all_avs, 84) - ha_pab_av
 
     fit_df = pd.DataFrame(zip(line_names, line_centers_rest,
                               z_offset, err_z_offset, velocities, err_velocity, 
                               err_velocity_low, err_velocity_high, amps, err_amps, 
-                              sigs, err_sigs, fluxes, err_fluxes, err_fluxes_low, err_fluxes_high, nii_cor_fluxes, nii_cor_err_fluxes, nii_cor_err_fluxes_low, nii_cor_err_fluxes_high, ha_pab_ratio, err_ha_pab_ratio_low, err_ha_pab_ratio_high, ha_pab_av, err_av_low, err_av_high, eq_widths), 
+                              sigs, err_sigs, fluxes, err_fluxes, err_fluxes_low, err_fluxes_high, ha_pab_ratio, err_ha_pab_ratio_low, err_ha_pab_ratio_high), 
                               columns=['line_name', 'line_center_rest', 'z_offset', 'err_z_offset', 
                                        'velocity', 
                                        'err_fixed_velocity', 'err_fixed_velocity_low', 'err_fixed_velocity_high', 
-                                       'amplitude', 'err_amplitude', 'sigma', 'err_sigma', 'flux', 'err_flux', 'err_flux_low', 'err_flux_high', 'nii_cor_flux', 'err_nii_cor_flux', 'err_nii_cor_flux_low', 'err_nii_cor_flux_high', 'ha_pab_ratio', 'err_ha_pab_ratio_low', 'err_ha_pab_ratio_high', 'ha_pab_av', 'err_ha_pab_av_low', 'err_ha_pab_av_high', 'equivalent_width_aa'])
+                                       'amplitude', 'err_amplitude', 'sigma', 'err_sigma', 'flux', 'err_flux', 'err_flux_low', 'err_flux_high', 'ha_pab_ratio', 'err_ha_pab_ratio_low', 'err_ha_pab_ratio_high'])
     fit_df['signal_noise_ratio'] = fit_df['flux']/fit_df['err_flux']
 
+
     imd.check_and_make_dir(emission_fit_dir)
-    fit_df.to_csv(emission_fit_dir + f'/{save_name}_emission_fits.csv', index=False)
+    fit_df.to_csv(emission_fit_dir + f'/{save_name}_emission_fits_helium1.csv', index=False)
     plot_emission_fit(emission_fit_dir, save_name, spectrum)
     return
 
 
 
-def plot_emission_fit(emission_fit_dir, save_name, total_spec_df, ax_plot='', plot_type=''):
+def plot_emission_fit(emission_fit_dir, save_name, total_spec_df):
     """Plots the fit to each emission line
 
     Parameters:
@@ -255,7 +215,6 @@ def plot_emission_fit(emission_fit_dir, save_name, total_spec_df, ax_plot='', pl
     scaled (str): Set to true if plotting the scaled fits
     run_name (str): Set to name of prospector run to fit with those
     bootstrap_num (int): Which number in the bootstrap to plot, -1 to plot the original
-    plot_type (str): 'ha_only' or 'pab_only'
 
     Returns:
     Saves a pdf of the fits for all of the lines
@@ -267,20 +226,13 @@ def plot_emission_fit(emission_fit_dir, save_name, total_spec_df, ax_plot='', pl
     legendfont = 14
     textfont = 16
 
-    fit_df = ascii.read(emission_fit_dir + f'/{save_name}_emission_fits.csv').to_pandas()
+    fit_df = ascii.read(emission_fit_dir + f'/{save_name}_emission_fits_helium1.csv').to_pandas()
 
     fig = plt.figure(figsize=(8, 8))
     ax = fig.add_axes([0.09, 0.08, 0.88, 0.42])
     ax_Ha = fig.add_axes([0.55, 0.55, 0.40, 0.40])
     ax_Hb = fig.add_axes([0.09, 0.55, 0.40, 0.40])
-    if plot_type == 'ha_only':
-        ax_Ha = ax_plot
-    if plot_type == 'pab_only':
-        ax_Hb = ax_plot
-
     axes_arr = [ax, ax_Ha, ax_Hb]
-
-    
 
     Ha_zoom_box_color = 'blue'
     ax_Ha.spines['bottom'].set_color(Ha_zoom_box_color)
@@ -297,9 +249,10 @@ def plot_emission_fit(emission_fit_dir, save_name, total_spec_df, ax_plot='', pl
   
     # spectrum = total_spec_df['rest_flux_erg_aa']
     wavelength = total_spec_df['rest_wave_aa']
-    continuum_df = ascii.read(emission_fit_dir+f'{save_name}_cont_sub.csv').to_pandas()
+    continuum_df = ascii.read(emission_fit_dir+f'{save_name}_cont_sub_helium1.csv').to_pandas()
     continuum = continuum_df['continuum_sub_ydata']
     cont_wavelength = continuum_df['wavelength']
+
 
 
     # Set up the parameters from the fitting
@@ -312,7 +265,7 @@ def plot_emission_fit(emission_fit_dir, save_name, total_spec_df, ax_plot='', pl
 
     gauss_fit = multi_gaussian(wavelength, pars, fit=False)
     gauss_fit_df = pd.DataFrame(zip(wavelength, gauss_fit), columns=['rest_wavelength', 'gaussian_fit'])
-    gauss_fit_df.to_csv(emission_fit_dir + f'{save_name}_gaussian_fit.csv', index=False)
+    gauss_fit_df.to_csv(emission_fit_dir + f'{save_name}_gaussian_fit_helium1.csv', index=False)
     hb_range = wavelength > 12000
 
     # Plots the spectrum and fit on all axes
@@ -338,8 +291,8 @@ def plot_emission_fit(emission_fit_dir, save_name, total_spec_df, ax_plot='', pl
     
 
  
-    Ha_plot_range = ha_fit_range  # Angstrom
-    Hb_plot_range = pab_fit_range
+    Ha_plot_range = (6250, 6850)  # Angstrom
+    Hb_plot_range = (9000, 12000)
     # Hb_plot_range = (4995, 5015)
 
     def set_plot_ranges(ax, axis, plot_range, box_color):
@@ -355,10 +308,7 @@ def plot_emission_fit(emission_fit_dir, save_name, total_spec_df, ax_plot='', pl
 
     ax_Ha.text(0.05, 0.93, f"Ha: {round(10**17*fit_df.iloc[0]['flux'], 4)}", transform=ax_Ha.transAxes)
     ax_Hb.text(0.05, 0.93, f"PaB: {round(10**17*fit_df.iloc[1]['flux'], 4)}", transform=ax_Hb.transAxes)
-    ax_Ha.text(0.05, 0.83, f"Ratio: {round(fit_df.iloc[0]['ha_pab_ratio'], 4)}", transform=ax_Ha.transAxes)
     ax_Hb.text(0.05, 0.83, f"Ratio: {round(fit_df.iloc[1]['ha_pab_ratio'], 4)}", transform=ax_Hb.transAxes)
-    ax_Ha.text(0.95, 0.93, f"SNR: {round(fit_df.iloc[0]['signal_noise_ratio'], 4)}", transform=ax_Ha.transAxes, horizontalalignment='right')
-    ax_Hb.text(0.95, 0.93, f"SNR: {round(fit_df.iloc[1]['signal_noise_ratio'], 4)}", transform=ax_Hb.transAxes, horizontalalignment='right')
 
     ax.set_ylim(-1 * 10**-20, 2e-19)
     # ax.set_ylim(np.percentile(continuum, [1, 99]))
@@ -369,11 +319,11 @@ def plot_emission_fit(emission_fit_dir, save_name, total_spec_df, ax_plot='', pl
     ax.set_xlabel('Wavelength ($\\rm{\AA}$)', fontsize=axisfont)
     ax.set_ylabel('F$_\lambda$', fontsize=axisfont)
     ax.tick_params(labelsize=ticksize, size=ticks)
+    print('plotted')
 
-    if plot_type == '':
-        fig.savefig(emission_fit_dir + 'plots' +
-                    f'/{save_name}_emission_fit.pdf')
-    plt.close(fig)
+    fig.savefig(emission_fit_dir + '/plots' +
+                f'/{save_name}_emission_fit1.pdf')
+    plt.close()
     return
 
 
@@ -417,6 +367,7 @@ def monte_carlo_fit(func, wavelength, continuum, y_data, y_err, guess, bounds, n
     # y_data_cont_sub = y_data_cont_sub.fillna(0)
 
     start = time.time()
+
     popt, pcov = curve_fit(func, wavelength, y_data_cont_sub, guess, bounds=bounds)
     end = time.time()
     print(f'Length of one fit: {end-start}')
@@ -596,59 +547,23 @@ def get_cuts(wavelength_cut_section, width=7):
 #     continuum = regress_res.intercept + regress_res.slope*x_regress
 #     return continuum
 
-def fit_continuum(wavelength, flux, plot_cont=True, save_name=''):
-    # combined_mask = clip_elines(flux, wavelength)
+def fit_continuum(wavelength, flux, plot_cont=False):
+    mask = clip_elines(flux, wavelength)
     ha_region = wavelength < 10000
     pab_region = ~ha_region
-    # ha_region_mask = wavelength[combined_mask] < 10000
-    # pab_region_mask = wavelength[combined_mask] > 10000
-
-    # ha_eline_mask = clip_elines_findpeaks(flux[ha_region], wavelength[ha_region])
-    # pab_eline_mask = clip_elines_findpeaks(flux[pab_region], wavelength[pab_region])
-    ha_eline_mask = mask_elines_known_lines(flux[ha_region], wavelength[ha_region])
-    pab_eline_mask = mask_elines_known_lines(flux[pab_region], wavelength[pab_region])
-    combined_mask = ha_eline_mask + pab_eline_mask
-    # combined_mask = mask_lines(combined_mask, wavelength, line_list)    
-    
-    ha_regress_res = linregress(wavelength[combined_mask][ha_region], flux[combined_mask][ha_region])
-    pab_regress_res = linregress(wavelength[combined_mask][pab_region], flux[combined_mask][pab_region])
+    ha_region_mask = wavelength[mask] < 10000
+    pab_region_mask = wavelength[mask] > 10000
+    ha_regress_res = linregress(wavelength[mask][ha_region_mask], flux[mask][ha_region_mask])
+    pab_regress_res = linregress(wavelength[mask][pab_region_mask], flux[mask][pab_region_mask])
     continuum = ha_regress_res.intercept + ha_regress_res.slope*wavelength
     continuum[pab_region] = pab_regress_res.intercept + pab_regress_res.slope*wavelength[pab_region]
-    
-   
     if plot_cont:
-        fig, axarr = plt.subplots(1,2,figsize=(12,6))
-        ax_ha = axarr[0]
-        ax_pab = axarr[1]
-        def plot_cont_axis(ax, region):
-            ax.plot(wavelength[region], flux[region], color='red', label='masked', marker='o')
-            ax.plot(wavelength[combined_mask][region], flux[combined_mask][region], color='black', label='use', marker='o', ls='None')
-            ax.plot(wavelength[region], continuum[region], color='orange', label='continuum')
-            ax.set_xlabel('Wavelength ($\\AA$)')
-            ax.set_ylabel('Flux')
-        plot_cont_axis(ax_ha, ha_region)
-        plot_cont_axis(ax_pab, pab_region)
-        ax_ha.legend()
-        fig.savefig(f'/Users/brianlorenz/uncover/Data/emission_fitting/continuum/{save_name}_cont.pdf')
-        plt.close()
+        plt.plot(wavelength, flux, color='red')
+        plt.plot(wavelength[mask], flux[mask], color='black')
+        plt.plot(wavelength, continuum, color='orange')
+        plt.show()
+        breakpoint()
     return continuum
-
-def mask_elines_known_lines(flux, wavelength):
-    mask_ha = np.logical_or(wavelength < 6200, wavelength > 7000)
-    mask_pab = np.logical_or(wavelength < 12200, wavelength > 13400)
-    mask = np.logical_and(mask_ha, mask_pab)
-    mask = mask.tolist()
-    return mask 
-
-def clip_elines_findpeaks(flux, wavelength):
-    from scipy.signal import find_peaks
-    peaks, properties = find_peaks(flux, prominence=(np.std(flux), None))
-    mask = np.full(len(flux), True)
-    mask[peaks] = False
-    mask = mask.tolist()
-    mask = extend_mask(mask)
-    mask = extend_mask(mask)
-    return mask
 
 def clip_elines(flux, wavelength):
     check_range = 10
@@ -668,28 +583,25 @@ def clip_elines(flux, wavelength):
             mask.append(False)
         else:
             mask.append(True)
+    def extend_mask(mask1):
+        mask2 = []
+        for i in range(len(mask1)):
+            if i == 0 or i == len(mask1)-1:
+                mask2.append(True)
+            elif mask1[i-1] == False:
+                mask2.append(False)
+            elif mask1[i+1] == False:
+                mask2.append(False)
+            else:
+                mask2.append(True)
+        return mask2
     mask =  extend_mask(mask)
     mask =  extend_mask(mask)
     mask = mask_lines(mask, wavelength, line_list)
     return mask
 
-def extend_mask(mask1):
-    mask2 = []
-    for i in range(len(mask1)):
-        if i == 0 or i == len(mask1)-1:
-            mask2.append(True)
-        elif mask1[i-1] == False:
-            mask2.append(False)
-        elif mask1[i+1] == False:
-            mask2.append(False)
-        elif mask1[i] == False:
-            mask2.append(False)
-        else:
-            mask2.append(True)
-    return mask2
-
 def mask_lines(mask, wavelength, line_list):
-    line_width = 200 #angstrom
+    line_width = 400 #angstrom
     for i in range(len(line_list)):  
         line_wave = line_list[i][1]
         low_bound = line_wave - line_width
@@ -708,9 +620,9 @@ def get_fit_range(wavelength):
     Returns:
     """
     cut_ha = np.logical_and(
-        wavelength > ha_fit_range[0], wavelength < ha_fit_range[1])
+        wavelength > 6000, wavelength < 7200)
     cut_pab = np.logical_and(
-        wavelength > pab_fit_range[0], wavelength < pab_fit_range[1])
+        wavelength > 9000, wavelength < 12000)
     full_cut = np.logical_or(cut_pab, cut_ha)
     return full_cut
 
@@ -718,55 +630,31 @@ def get_fit_range(wavelength):
 
 
 
-def fit_all_emission_uncover(id_msa_list):
+def fit_all_emission_uncover_helium(id_msa_list):
     for id_msa in id_msa_list:
+        if id_msa < 25147:
+            continue
+        print(id_msa)
         spec_df = read_fluxcal_spec(id_msa)
-        print(f'Fitting emission for {id_msa}')
-        fit_emission_uncover(spec_df, id_msa)
+        fit_emission_uncove_helium(spec_df, id_msa)
 
+# # (Currently using)
+# id_msa = 38163
+# spec_df = read_raw_spec(id_msa)
+# fit_emission_uncover(spec_df, id_msa)
 
-def plot_mosaic(id_msa_list, line = 'ha_only'):
-    "line (str): 'ha_only' or 'pab_only' "
-    nrows = 4
-    ncols = 4
-    fig, axarr = plt.subplots(nrows, ncols, figsize=(20,20))
-    plot_idxs = []
-    plot_count = 0
-    for i in range(nrows):
-        for j in range(ncols):
-            plot_idxs.append([i, j])
-    for id_msa in id_msa_list:
-        ax = axarr[plot_idxs[plot_count][0], plot_idxs[plot_count][1]]
-        spec_df = read_fluxcal_spec(id_msa)
-        plot_emission_fit(emission_fit_dir, id_msa, spec_df, ax_plot=ax, plot_type=line)
-        plot_count = plot_count + 1
-        scale_aspect(ax)
-        ax.set_title(f'id_msa = {id_msa}', fontsize=18)
-    while plot_count < nrows*ncols:
-        ax = axarr[plot_idxs[plot_count][0], plot_idxs[plot_count][1]]
-        ax.set_xticks([])
-        ax.set_yticks([])
-        plot_count = plot_count + 1
-
-    fig.savefig(emission_fit_dir + 'plots' + f'/mosaic_{line}.pdf')
-
+# # Fitting the mock spectra
+# mock_name = 'mock_ratio_15_temp_3000'
+# spec_df = ascii.read(f'/Users/brianlorenz/uncover/Data/mock_spectra/{mock_name}.csv').to_pandas()
+# fit_emission_uncover(spec_df, mock_name)
 
 if __name__ == "__main__":
-    # # (Currently using)
-    # id_msa = 14573
-    # id_msa = 42041
-    # spec_df = read_fluxcal_spec(id_msa)
-    # fit_emission_uncover(spec_df, id_msa)
+    id_msa = 14573
+    spec_df = read_fluxcal_spec(id_msa)
+    fit_emission_uncove_helium(spec_df, id_msa)
 
-    # # Fitting the mock spectra
-    # mock_name = 'mock_ratio_15_flat'
-    # spec_df = ascii.read(f'/Users/brianlorenz/uncover/Data/mock_spectra/{mock_name}.csv').to_pandas()
-    # fit_emission_uncover(spec_df, mock_name)
+    # zqual_detected_df = ascii.read('/Users/brianlorenz/uncover/zqual_detected.csv').to_pandas()
+    # id_msa_list = zqual_detected_df['id_msa'].to_list()
 
-
-    id_msa_list = get_id_msa_list(full_sample=True)
-    
-    fit_all_emission_uncover(id_msa_list)  
-    # plot_mosaic(id_msa_list, line = 'ha_only')
-    # plot_mosaic(id_msa_list, line = 'pab_only')
-    pass
+    # id_msa_list = get_id_msa_list(full_sample=False)
+    # fit_all_emission_uncover_helium(id_msa_list)  

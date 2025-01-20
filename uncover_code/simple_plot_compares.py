@@ -2,7 +2,7 @@ import matplotlib.pyplot as plt
 import matplotlib as mpl
 from astropy.io import ascii
 from plot_vals import scale_aspect
-from uncover_read_data import read_lineflux_cat, get_id_msa_list
+from uncover_read_data import read_lineflux_cat, get_id_msa_list, read_SPS_cat
 from compute_av import compute_ha_pab_av
 import numpy as np
 
@@ -11,6 +11,7 @@ def paper_plot_sed_emfit_accuracy(id_msa_list, color_var=''):
     data_df = full_data_df[full_data_df['id_msa'].isin(id_msa_list)]
     full_lineratio_data_df = ascii.read(f'/Users/brianlorenz/uncover/Data/generated_tables/lineratio_av_df.csv').to_pandas()
     lineratio_data_df = full_lineratio_data_df[full_lineratio_data_df['id_msa'].isin(id_msa_list)]
+    sps_df = read_SPS_cat()
 
     fig, axarr = plt.subplots(1,3,figsize=(18,6))
     ax_ha_sed_vs_emfit = axarr[0]
@@ -23,6 +24,7 @@ def paper_plot_sed_emfit_accuracy(id_msa_list, color_var=''):
     for id_msa in id_msa_list:
         data_df_row = data_df[data_df['id_msa'] == id_msa]
         lineratio_data_row = lineratio_data_df[lineratio_data_df['id_msa'] == id_msa]
+        sps_row = sps_df[sps_df['id_msa']==id_msa]
         fit_df = ascii.read(f'/Users/brianlorenz/uncover/Data/emission_fitting/{id_msa}_emission_fits.csv').to_pandas()
         ha_snr = fit_df['signal_noise_ratio'].iloc[0]
         pab_snr = fit_df['signal_noise_ratio'].iloc[1]
@@ -41,6 +43,10 @@ def paper_plot_sed_emfit_accuracy(id_msa_list, color_var=''):
             norm = mpl.colors.Normalize(vmin=5, vmax=20) 
             rgba = cmap(norm(pab_snr))
             cbar_label = 'Pa$\\beta$ SNR'
+        elif color_var == 'metallicity':
+            norm = mpl.colors.Normalize(vmin=-1.2, vmax=0.1) 
+            rgba = cmap(norm(sps_row['met_50']))
+            cbar_label = 'Prospector Metallicity'
         if color_var != 'None':
             color_str = f'_{color_var}'
         else:
@@ -83,13 +89,13 @@ def paper_plot_sed_emfit_accuracy(id_msa_list, color_var=''):
         ax.set_yscale('log')
         ax.tick_params(labelsize=12)
         ax.plot([1e-20, 1e-15], [1e-20, 1e-15], ls='--', color='red', marker='None')
-        ax.set_xlim([1e-20, 1e-15])
-        ax.set_ylim([1e-20, 1e-15])
+        ax.set_xlim([5e-19, 8e-16])
+        ax.set_ylim([5e-19, 8e-16])
         scale_aspect(ax)
     ax_av_sed_vs_emfit.tick_params(labelsize=12)
     ax_av_sed_vs_emfit.plot([-10, 100], [-10, 100], ls='--', color='red', marker='None')
-    ax_av_sed_vs_emfit.set_xlim([-2.5, 4])
-    ax_av_sed_vs_emfit.set_ylim([-2.5, 4])
+    ax_av_sed_vs_emfit.set_xlim([-1.5, 4.5])
+    ax_av_sed_vs_emfit.set_ylim([-1.5, 4.5])
     scale_aspect(ax_av_sed_vs_emfit)
 
     cb_ax = fig.add_axes([.91,.124,.02,.734])
