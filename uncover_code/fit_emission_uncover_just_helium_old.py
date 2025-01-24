@@ -631,8 +631,8 @@ def get_fit_range(wavelength):
 
 def fit_all_emission_uncover_helium(id_msa_list):
     for id_msa in id_msa_list:
-        if id_msa < 25147:
-            continue
+        # if id_msa < 25147:
+        #     continue
         print(id_msa)
         spec_df = read_fluxcal_spec(id_msa)
         fit_emission_uncove_helium(spec_df, id_msa)

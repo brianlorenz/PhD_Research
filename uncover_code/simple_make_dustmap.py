@@ -40,16 +40,37 @@ show_aper_and_slit = True
 colors = ['red', 'green', 'blue']
 connect_color = 'green'
 
+id_msa_image_size_dict = {
+    14573:(40,40),
+    18471:(60,60), 
+    19179:(80,80),
+    19896:(70,70),
+    25147:(50,50),
+    25774:(40,40),
+    32111:(50,50),
+    34114:(60,60),
+    35436:(40,40),
+    36689:(40,40),
+    38163:(100,100),
+    39744:(50,50),
+    39855:(50,50),
+    42213:(50,50),
+    47875:(50,50) 
+}
 
-
-def make_dustmap_simple(id_msa, aper_size='None'):
+def make_dustmap_simple(id_msa, aper_size='None', axarr_final=[], ax_labels=False, label_str=''):
     ha_snr_cut = 0.5
     pab_snr_cut = 0.5
+    
+    if len(axarr_final) > 0:
+        image_size = id_msa_image_size_dict[id_msa]
+    else:
+        image_size = (100, 100)
 
 
     # Read in the images
-    ha_filters, ha_images, wht_ha_images, obj_segmap, ha_photfnus, ha_all_filts = make_3color(id_msa, line_index=0, plot=False)
-    pab_filters, pab_images, wht_pab_images, obj_segmap, pab_photfnus, pab_all_filts = make_3color(id_msa, line_index=1, plot=False)
+    ha_filters, ha_images, wht_ha_images, obj_segmap, ha_photfnus, ha_all_filts = make_3color(id_msa, line_index=0, plot=False, image_size=image_size)
+    pab_filters, pab_images, wht_pab_images, obj_segmap, pab_photfnus, pab_all_filts = make_3color(id_msa, line_index=1, plot=False, image_size=image_size)
     ha_sedpy_name = ha_filters[1].replace('f', 'jwst_f')
     ha_sedpy_filt = observate.load_filters([ha_sedpy_name])[0]
     ha_filter_width = ha_sedpy_filt.rectangular_width
@@ -90,7 +111,7 @@ def make_dustmap_simple(id_msa, aper_size='None'):
     # Make sure all of the deesignated filters have data
     confirm_filters_not_NaN(id_msa, sed_df, ha_filters, pab_filters)
 
-    # Emission fit properties
+    # Emission fit prosperties
     fit_df = ascii.read(f'/Users/brianlorenz/uncover/Data/emission_fitting/{id_msa}_emission_fits.csv').to_pandas()
     ha_flux_fit = fit_df.iloc[0]['flux']
     pab_flux_fit = fit_df.iloc[1]['flux']
@@ -166,6 +187,7 @@ def make_dustmap_simple(id_msa, aper_size='None'):
     # Read in the linefluxes from lineflux_df, don't need to be double-computing here, and already corrected 
     lineflux_df = ascii.read(f'/Users/brianlorenz/uncover/Data/generated_tables/lineflux_df_all.csv').to_pandas()
     lineflux_row = lineflux_df[lineflux_df['id_msa'] == id_msa]
+    ha_sed_lineflux = lineflux_row['ha_sed_flux'].iloc[0]
     nii_cor_ha_sed_lineflux = lineflux_row['nii_cor_ha_sed_flux'].iloc[0]
     fe_cor_pab_sed_lineflux = lineflux_row['fe_cor_pab_sed_flux'].iloc[0]
     nii_cor_ha_boot_lines = ha_boot_lines * nii_correction_ha_flux
@@ -176,12 +198,17 @@ def make_dustmap_simple(id_msa, aper_size='None'):
     err_nii_cor_ha_sed_lineflux_low = nii_cor_ha_sed_lineflux - nii_cor_ha_sed_lineflux_16
     err_nii_cor_ha_sed_lineflux_high = nii_cor_ha_sed_lineflux_84 - nii_cor_ha_sed_lineflux
 
+    ha_sed_lineflux_16 = np.percentile(ha_boot_lines, 16)
+    ha_sed_lineflux_84 = np.percentile(ha_boot_lines, 84)
+    err_ha_sed_lineflux_low = ha_sed_lineflux - ha_sed_lineflux_16
+    err_ha_sed_lineflux_high = ha_sed_lineflux_84 - ha_sed_lineflux
+
     fe_cor_pab_sed_lineflux_16 = np.percentile(fe_cor_pab_boot_lines, 16)
     fe_cor_pab_sed_lineflux_84 = np.percentile(fe_cor_pab_boot_lines, 84)
     err_fe_cor_pab_sed_lineflux_low = fe_cor_pab_sed_lineflux - fe_cor_pab_sed_lineflux_16
     err_fe_cor_pab_sed_lineflux_high = fe_cor_pab_sed_lineflux_84 - fe_cor_pab_sed_lineflux
 
-    err_sed_linefluxes = [err_nii_cor_ha_sed_lineflux_low, err_nii_cor_ha_sed_lineflux_high, err_fe_cor_pab_sed_lineflux_low, err_fe_cor_pab_sed_lineflux_high]
+    err_sed_linefluxes = [err_nii_cor_ha_sed_lineflux_low, err_nii_cor_ha_sed_lineflux_high, err_fe_cor_pab_sed_lineflux_low, err_fe_cor_pab_sed_lineflux_high, err_ha_sed_lineflux_low, err_ha_sed_lineflux_high]
 
     # Compute lineratios
     sed_lineratio = compute_lineratio(nii_cor_ha_sed_lineflux, fe_cor_pab_sed_lineflux)
@@ -418,6 +445,47 @@ def make_dustmap_simple(id_msa, aper_size='None'):
         aper_add_str = f'_aper{aper_size}'
     fig.savefig(save_folder + f'/{id_msa}_dustmap{aper_add_str}.pdf')
     # plt.show()
+
+    if len(axarr_final) > 0:
+        paper_font = 24
+        # Plot for paper
+        ax_ha_image_paper = axarr_final[0]
+        ax_pab_image_paper = axarr_final[1]
+        ax_ha_map_paper = axarr_final[2]
+        ax_pab_overlay_paper = axarr_final[3]
+
+        ax_ha_image_paper.imshow(ha_image)
+        ax_pab_image_paper.imshow(pab_image)
+        ax_ha_map_paper.imshow(ha_linemap_logscaled, cmap=cmap, norm=ha_linemap_norm)
+        ax_pab_overlay_paper.imshow(ha_linemap_logscaled, cmap=cmap, norm=ha_linemap_norm)
+        # Dustmap Contours
+        x = np.arange(pab_linemap.shape[1])
+        y = np.arange(pab_linemap.shape[0])
+        X_pab, Y_pab = np.meshgrid(x, y)
+        
+        # Make a copy of the snr map to be used for contouring
+        pab_contour_map = deepcopy(pab_linemap_snr)
+        pab_contour_map[~combined_mask_segmap.mask] = 0
+        ax_pab_overlay_paper.contour(X_pab, Y_pab, pab_contour_map, levels=[1,2,3,4,5], cmap='Greys')
+
+        for ax in axarr_final:
+            scale_aspect(ax)
+            ax.set_xticks([]); ax.set_yticks([])
+        
+        # ax_ha_image_paper.text(text_start, text_height+0.1, f'{id_msa}', color='black', fontsize=14, transform=ax_ha_image_paper.transAxes)
+        ax_ha_image_paper.set_ylabel(label_str, fontsize=paper_font)
+        # ax_ha_image_paper.set_xlabel(f'{id_msa}', fontsize=paper_font)
+
+        if ax_labels:
+            # ax_ha_image_paper.text(text_start, text_height, f'H$\\alpha$ Image', color='black', fontsize=paper_font, transform=ax_ha_image_paper.transAxes)
+            # ax_pab_image_paper.text(text_start, text_height, f'Pa$\\beta$ Image', color='black', fontsize=paper_font, transform=ax_pab_image_paper.transAxes)
+            # ax_ha_map_paper.text(text_start, text_height, f'H$\\alpha$ Linemap', color='black', fontsize=paper_font, transform=ax_ha_map_paper.transAxes)
+            # ax_pab_overlay_paper.text(text_start, text_height, f'Pa$\\beta$ Contours', color='black', fontsize=paper_font, transform=ax_pab_overlay_paper.transAxes)
+            ax_ha_image_paper.set_title(f'H$\\alpha$ Image', fontsize=paper_font)
+            ax_pab_image_paper.set_title(f'Pa$\\beta$ Image', fontsize=paper_font)
+            ax_ha_map_paper.set_title(f'H$\\alpha$ Linemap', fontsize=paper_font)
+            ax_pab_overlay_paper.set_title(f'Pa$\\beta$ Contours', fontsize=paper_font)
+
 
     plt.close('all')
 
@@ -808,9 +876,12 @@ def make_all_dustmap(id_msa_list, full_sample=False):
     err_nii_cor_sed_ha_lineflux_highs = []
     err_fe_cor_sed_pab_lineflux_lows = []
     err_fe_cor_sed_pab_lineflux_highs = []
+    err_sed_ha_lineflux_lows = []
+    err_sed_ha_lineflux_highs = []
     
     for id_msa in id_msa_list:
         print(f'Making dustmap for {id_msa}')
+        # sed_lineratios_grouped, emission_lineratios_grouped, sed_avs_grouped, emission_avs_grouped, err_sed_linefluxes_grouped = make_dustmap_simple(id_msa)
         try:
             sed_lineratios_grouped, emission_lineratios_grouped, sed_avs_grouped, emission_avs_grouped, err_sed_linefluxes_grouped = make_dustmap_simple(id_msa)
         except Exception as error:
@@ -819,7 +890,7 @@ def make_all_dustmap(id_msa_list, full_sample=False):
             emission_lineratios_grouped = [-99,-99,-99]
             sed_avs_grouped = [-99,-99,-99]
             emission_avs_grouped = [-99,-99,-99]
-            err_sed_linefluxes_grouped = [-99, -99, -99, -99]
+            err_sed_linefluxes_grouped = [-99, -99, -99, -99, -99, -99]
         sed_lineratios.append(sed_lineratios_grouped[0])
         sed_lineratios_low.append(sed_lineratios_grouped[1])
         sed_lineratios_high.append(sed_lineratios_grouped[2])
@@ -836,9 +907,11 @@ def make_all_dustmap(id_msa_list, full_sample=False):
         err_nii_cor_sed_ha_lineflux_highs.append(err_sed_linefluxes_grouped[1])
         err_fe_cor_sed_pab_lineflux_lows.append(err_sed_linefluxes_grouped[2])
         err_fe_cor_sed_pab_lineflux_highs.append(err_sed_linefluxes_grouped[3])
+        err_sed_ha_lineflux_lows.append(err_sed_linefluxes_grouped[4])
+        err_sed_ha_lineflux_highs.append(err_sed_linefluxes_grouped[5])
 
 
-    dustmap_info_df = pd.DataFrame(zip(id_msa_list, sed_lineratios, sed_lineratios_low, sed_lineratios_high, sed_avs, sed_avs_low, sed_avs_high, emission_lineratios, emission_lineratios_low, emission_lineratios_high, emission_avs, emission_avs_low, emission_avs_high, err_nii_cor_sed_ha_lineflux_lows, err_nii_cor_sed_ha_lineflux_highs, err_fe_cor_sed_pab_lineflux_lows, err_fe_cor_sed_pab_lineflux_highs), columns=['id_msa', 'sed_lineratio', 'err_sed_lineratio_low', 'err_sed_lineratio_high', 'sed_av', 'err_sed_av_low', 'err_sed_av_high', 'emission_fit_lineratio', 'err_emission_fit_lineratio_low', 'err_emission_fit_lineratio_high', 'emission_fit_av', 'err_emission_fit_av_low', 'err_emission_fit_av_high', 'err_nii_cor_sed_ha_lineflux_low', 'err_nii_cor_sed_ha_lineflux_high', 'err_fe_cor_sed_pab_lineflux_low', 'err_fe_cor_sed_pab_lineflux_high'])
+    dustmap_info_df = pd.DataFrame(zip(id_msa_list, sed_lineratios, sed_lineratios_low, sed_lineratios_high, sed_avs, sed_avs_low, sed_avs_high, emission_lineratios, emission_lineratios_low, emission_lineratios_high, emission_avs, emission_avs_low, emission_avs_high, err_nii_cor_sed_ha_lineflux_lows, err_nii_cor_sed_ha_lineflux_highs, err_fe_cor_sed_pab_lineflux_lows, err_fe_cor_sed_pab_lineflux_highs, err_sed_ha_lineflux_lows, err_sed_ha_lineflux_highs), columns=['id_msa', 'sed_lineratio', 'err_sed_lineratio_low', 'err_sed_lineratio_high', 'sed_av', 'err_sed_av_low', 'err_sed_av_high', 'emission_fit_lineratio', 'err_emission_fit_lineratio_low', 'err_emission_fit_lineratio_high', 'emission_fit_av', 'err_emission_fit_av_low', 'err_emission_fit_av_high', 'err_nii_cor_sed_ha_lineflux_low', 'err_nii_cor_sed_ha_lineflux_high', 'err_fe_cor_sed_pab_lineflux_low', 'err_fe_cor_sed_pab_lineflux_high', 'err_sed_ha_lineflux_low', 'err_sed_ha_lineflux_high'])
 
     if full_sample:
         dustmap_info_df.to_csv('/Users/brianlorenz/uncover/Data/generated_tables/lineratio_av_df_all.csv', index=False)
@@ -878,9 +951,59 @@ def copy_selected_sample_dustmaps(id_msa_list):
 
     copy_all_figures(fig_list)
 
+def make_paper_fig_dustmaps(id_msa_list, sortby = 'mass'):
+    import math
+    rows_per_page = 5
+    n_pages = math.ceil(len(id_msa_list) / rows_per_page)
+    sps_df = read_SPS_cat()
+    lineratio_df = ascii.read(f'/Users/brianlorenz/uncover/Data/generated_tables/lineratio_av_df.csv').to_pandas()
+    merged_df = lineratio_df.merge(sps_df, on='id_msa')
+
+    if sortby == 'mass':
+        merged_df=merged_df.sort_values('mstar_50')
+        sort_name = 'mass'
+    if sortby == 'av':
+        merged_df=merged_df.sort_values('sed_av')
+        sort_name = 'av'
+    merged_df=merged_df.reset_index(drop=True)
+        
+    # Need to sort the ids first
+    for i in range(n_pages):
+        if i < n_pages-1:
+            rows_this_page = rows_per_page
+        else:
+            rows_this_page = len(id_msa_list) % rows_per_page
+            if rows_this_page == 0:
+                rows_this_page = rows_per_page
+        fig, axarr = plt.subplots(rows_this_page, 4, figsize=(16,4*rows_this_page))
+        plt.subplots_adjust(wspace=0.1, hspace=0.15)
+        
+        for j in range(rows_this_page):
+            index = i*rows_per_page+j
+            if index == len(id_msa_list):
+                for ax in axarr[j]:
+                    ax.set_axis_off()
+                continue
+            id_msa = int(merged_df.iloc[index]['id_msa'])
+            print(id_msa)
+            axarr_id_msa = axarr[j]
+            if j == 0:
+                ax_labels = True
+            else:
+                ax_labels = False
+            if sortby == 'mass':
+                label_str = f"Mass: {merged_df.iloc[index]['mstar_50']:.2f}"
+            elif sortby == 'av':
+                label_str = f"A$_V$: {merged_df.iloc[index]['sed_av']:.2f}"
+            make_dustmap_simple(id_msa, axarr_final=axarr_id_msa, ax_labels=ax_labels, label_str=label_str)
+        fig.savefig(f'/Users/brianlorenz/uncover/Figures/paper_figures/dustmaps_{sort_name}_page{i}.pdf', bbox_inches='tight')
+
 if __name__ == "__main__":
     # make_dustmap_simple(14573)
     # make_dustmap_simple(18471)
     id_msa_list = get_id_msa_list(full_sample=False)
-    # make_all_dustmap(id_msa_list, full_sample=True)
-    copy_selected_sample_dustmaps(id_msa_list)
+    # print(id_msa_list)
+    make_all_dustmap(id_msa_list, full_sample=True)
+    # copy_selected_sample_dustmaps(id_msa_list)
+    # make_paper_fig_dustmaps(id_msa_list, sortby='av')
+    # make_paper_fig_dustmaps(id_msa_list, sortby='mass')

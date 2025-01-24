@@ -107,9 +107,15 @@ def make_all_prospector(id_msa_list):
 
 if __name__ == "__main__":
     # id_msa = 47875
-    # make_prospector(id_msa, plt_jy=True)
-    # read_prospector(id_msa)
+    # zqual_df = read_spec_cat()
+    # redshift = zqual_df[zqual_df['id_msa']==id_msa]['z_spec'].iloc[0]
+    # prospector_spec_df, prospector_sed_df = read_prospector(id_msa)
+    # pab_region = np.logical_and(prospector_spec_df['wave_um'] > 1.0*(1+redshift), prospector_spec_df['wave_um']<1.5*(1+redshift))
+    # plt.plot(prospector_spec_df[pab_region]['wave_um']/(1+redshift), prospector_spec_df[pab_region]['flux_jy']*(1+redshift))
+    # breakpoint()
     # plot_prospector_vs_sed(id_msa)
+    # make_prospector(id_msa, plt_jy=True)
+
             
     # zqual_detected_df = ascii.read('/Users/brianlorenz/uncover/zqual_detected.csv').to_pandas()
     # id_msa_list = zqual_detected_df['id_msa'].to_list()

@@ -3,6 +3,8 @@ from fit_emission_uncover_old import line_list
 from uncover_read_data import read_SPS_cat
 from dust_equations_prospector import dust2_to_AV
 
+avneb_str = 'A$_{\\mathrm{V,neb}}$'
+
 # theoretical scalings (to Hb, from naveen's paper)
 ha_factor = 2.79
 hb_factor = 1

@@ -9,7 +9,7 @@ import sys
 import pandas as pd
 import matplotlib.pyplot as plt
 import matplotlib as mpl
-from plot_vals import stellar_mass_label, scale_aspect 
+from plot_vals import stellar_mass_label, scale_aspect, sfr_label
 import numpy as np
 
 def sample_select():
@@ -108,15 +108,15 @@ def sample_select():
         ha_transmissions = [ha_red_avg_transmission, ha_avg_transmission, ha_blue_avg_transmission]
         pab_transmissions = [pab_red_avg_transmission, pab_avg_transmission, pab_blue_avg_transmission]
 
-        if ha_snr < ha_snr_thresh:
-            print(f"Ha SNR of {ha_snr} less than thresh of {ha_snr_thresh}")
-            id_msa_ha_snr_flag.append(id_msa)
-            continue
         if pab_snr < pab_snr_thresh:
             print(f"PaB SNR of {pab_snr} less than thresh of {pab_snr_thresh}")
             id_msa_pab_snr_flag.append(id_msa)
             continue
-
+        if ha_snr < ha_snr_thresh:
+            print(f"Ha SNR of {ha_snr} less than thresh of {ha_snr_thresh}")
+            id_msa_ha_snr_flag.append(id_msa)
+            continue
+        
         # If either halpha or pab is detected in the end filters, decide what to do
         if ha_all_filts == False or pab_all_filts == False:
             print("One of the lines not detected in all filters")
@@ -222,7 +222,7 @@ def line_in_range(z, target_line, filt_cols, uncover_filt_dir):
     return covered, filt_name
 
 
-def paper_figure_sample_selection(id_msa_list, color_var='None'):
+def paper_figure_sample_selection(id_msa_list, color_var='None', plot_sfr_mass=False):
     fig = plt.figure(figsize=(8,6))
     ax = fig.add_axes([0.15,0.15,0.525,0.7])
     cb_ax = fig.add_axes([0.725,0.15,0.04,0.7])
@@ -247,40 +247,51 @@ def paper_figure_sample_selection(id_msa_list, color_var='None'):
     id_msa_cont_overlap_line_df = ascii.read('/Users/brianlorenz/uncover/Data/sample_selection/cont_overlap_line.csv').to_pandas()
     id_msa_not_in_filt_df = ascii.read('/Users/brianlorenz/uncover/Data/sample_selection/line_not_in_filt.csv').to_pandas()
 
-    id_redshift_issue_list = line_notfullcover_df['id_msa'].append(filt_edge_df['id_msa']).append(id_msa_skipped_df['id_msa']).append(id_msa_not_in_filt_df['id_msa']).append(id_msa_cont_overlap_line_df['id_msa']).to_list()
+    id_redshift_issue_list = filt_edge_df['id_msa'].append(id_msa_not_in_filt_df['id_msa']).append(id_msa_cont_overlap_line_df['id_msa']).to_list()
     id_pab_snr_list = pab_snr_flag_df['id_msa'].to_list()
+    id_skip_list = id_msa_skipped_df['id_msa'].to_list()
 
     id_msa_list = id_msa_list + id_pab_snr_list
 
     # Gray background
     all_masses = sps_all_df['mstar_50']
+    all_sfr100s = sps_all_df['sfr100_50']
+    all_log_sfr100s = np.log10(all_sfr100s)
     all_redshifts = sps_all_df['z_50']
     # ax.plot(all_redshifts, all_masses, marker='o', ls='None', markersize=background_markersize, color='gray')
-    def truncate_colormap(cmap, minval=0.0, maxval=1.0, n=100):
-        new_cmap = mpl.colors.LinearSegmentedColormap.from_list(
-        'trunc({n},{a:.2f},{b:.2f})'.format(n=cmap.name, a=minval, b=maxval),
-        cmap(np.linspace(minval, maxval, n)))
-        return new_cmap
     cmap = plt.get_cmap('gray_r')
     new_cmap = truncate_colormap(cmap, 0, 0.7)
     good_redshift_idx = np.logical_and(all_redshifts > 1.3, all_redshifts < 2.5)
-    good_mass_idx = np.logical_and(all_masses > 5.5, all_masses < 11.5)
-    good_both_idx = np.logical_and(good_redshift_idx, good_mass_idx)
+    good_mass_idx = np.logical_and(all_masses > 5, all_masses < 11)
+    good_sfr_idx = np.logical_and(all_log_sfr100s > -2.5, all_log_sfr100s < 2)
+    
     # hexbin_norm = mpl.colors.LogNorm(vmin=1, vmax=300) 
-    hexbin_norm = mpl.colors.Normalize(vmin=1, vmax=200) 
-    ax.hexbin(all_redshifts[good_both_idx], all_masses[good_both_idx], gridsize=15, cmap=new_cmap, norm=hexbin_norm, label='Full Photometric Sample')
+    
+    if plot_sfr_mass == False:
+        hexbin_norm = mpl.colors.Normalize(vmin=1, vmax=200) 
+        good_both_idx = np.logical_and(good_redshift_idx, good_mass_idx)
+        ax.hexbin(all_redshifts[good_both_idx], all_masses[good_both_idx], gridsize=15, cmap=new_cmap, norm=hexbin_norm, label='Full Photometric Sample')
+    else:
+        # hexbin_norm = mpl.colors.LogNorm(vmin=1, vmax=5000) 
+        hexbin_norm = mpl.colors.Normalize(vmin=1, vmax=500) 
+        good_both_idx = np.logical_and(good_sfr_idx, good_mass_idx)
+        ax.hexbin(all_masses[good_both_idx], all_log_sfr100s[good_both_idx], gridsize=15, cmap=new_cmap, norm=hexbin_norm, label='Full Photometric Sample')
 
     # Gray high quality points
     for id_msa in zqual_df['id_msa']:
+        if id_msa in id_skip_list or id_msa == 42041:
+            continue
+
         marker = 'o'
         zqual_row = zqual_df[zqual_df['id_msa'] == id_msa]
 
         if zqual_row['flag_zspec_qual'].iloc[0] != 3 or zqual_row['flag_spec_qual'].iloc[0] != 0:
             marker = 's'
             continue
+
         if id_msa in id_redshift_issue_list:
-            marker = '^'
-        if id_msa in id_pab_snr_list:
+            marker = 's'
+        elif id_msa in id_pab_snr_list:
             marker = 'o'
 
         redshift = zqual_row['z_spec'].iloc[0]
@@ -289,11 +300,17 @@ def paper_figure_sample_selection(id_msa_list, color_var='None'):
         # id_dr2 = zqual_df[zqual_df['id_msa']==id_msa]['id_DR2'].iloc[0]
         sps_row = sps_df[sps_df['id_msa']==id_msa]
         stellar_mass_50 = sps_row['mstar_50']
+        sfr100_50 = sps_row['sfr100_50']
+        log_sfr100_50 = np.log10(sps_row['sfr100_50'])
         if len(sps_row) == 0:
             print(f'No SPS for {id_msa}')
             continue
         
-        ax.plot(redshift, stellar_mass_50, marker=marker, color='gray', ls='None', ms=gray_markersize, mec='black')
+        if plot_sfr_mass == False:
+            ax.plot(redshift, stellar_mass_50, marker=marker, color='gray', ls='None', ms=gray_markersize, mec='black')
+            # ax.text(redshift, stellar_mass_50, f'{id_msa}')
+        else:
+            ax.plot(stellar_mass_50, log_sfr100_50, marker=marker, color='gray', ls='None', ms=gray_markersize, mec='black')
 
 
     # Selected Sample
@@ -307,6 +324,12 @@ def paper_figure_sample_selection(id_msa_list, color_var='None'):
         stellar_mass_50 = sps_row['mstar_50']
         err_stellar_mass_low = stellar_mass_50 - sps_row['mstar_16']
         err_stellar_mass_high = sps_row['mstar_84'] - stellar_mass_50
+
+        sfr100_50 = sps_row['sfr100_50']
+        log_sfr100_50 = np.log10(sps_row['sfr100_50'])
+        err_sfr100_50_low = log_sfr100_50 - np.log10(sps_row['sfr100_16'])
+        err_sfr100_50_high = np.log10(sps_row['sfr100_84']) - log_sfr100_50
+
         dust2_50 = sps_row['dust2_50'].iloc[0]
 
         # data_df_row = data_df[data_df['id_msa'] == id_msa]
@@ -316,6 +339,8 @@ def paper_figure_sample_selection(id_msa_list, color_var='None'):
         pab_snr = fit_df['signal_noise_ratio'].iloc[0]
         
         cmap = mpl.cm.inferno
+        cmap = truncate_colormap(cmap, 0.15, 1.0)
+
         
         if color_var == 'sed_av':
             norm = mpl.colors.Normalize(vmin=0, vmax=3) 
@@ -327,14 +352,18 @@ def paper_figure_sample_selection(id_msa_list, color_var='None'):
         #     norm = mpl.colors.LogNorm(vmin=2, vmax=100) 
         #     rgba = cmap(norm(ha_snr))
         #     cbar_label = 'H$\\alpha$ SNR'
-        # if color_var == 'pab_snr':
-        #     norm = mpl.colors.LogNorm(vmin=2, vmax=50) 
-        #     rgba = cmap(norm(pab_snr))
-        #     cbar_label = 'Pa$\\beta$ SNR'
+        if color_var == 'redshift':
+            norm = mpl.colors.LogNorm(vmin=1.2, vmax=2.5) 
+            rgba = cmap(norm(redshift))
+            cbar_label = 'Redshift'
         if color_var == 'dust2':
             norm = mpl.colors.Normalize(vmin=0, vmax=2) 
             rgba = cmap(norm(dust2_50))
             cbar_label = 'Prospector dust2_50'
+        if color_var == 'sfr':
+            norm = mpl.colors.LogNorm(vmin=0.1, vmax=50) 
+            rgba = cmap(norm(sfr100_50))
+            cbar_label = 'Prospector SFR'
         if color_var != 'None':
             color_str = f'_{color_var}'
         else:
@@ -347,21 +376,30 @@ def paper_figure_sample_selection(id_msa_list, color_var='None'):
             markersize = normal_markersize
 
         print(id_msa)
-        print(lineratio_data_row['sed_av'])
+        # print(lineratio_data_row['sed_av'])
         # if id_msa == 11714:
         #     breakpoint()
-        ax.errorbar(redshift, stellar_mass_50, yerr=[err_stellar_mass_low, err_stellar_mass_high], marker='o', color=rgba, ls='None', mec='black', ms=markersize)
-        # ax.text(redshift, stellar_mass_50.iloc[0], f'{id_msa}')
-    ax.set_ylabel('Prospector '+stellar_mass_label, fontsize=fontsize)
-    ax.set_xlabel('Redshift', fontsize=fontsize)
-
-
+        if plot_sfr_mass == False:
+            ax.errorbar(redshift, stellar_mass_50, yerr=[err_stellar_mass_low, err_stellar_mass_high], marker='o', color=rgba, ls='None', mec='black', ms=markersize)
+            # ax.text(redshift, stellar_mass_50.iloc[0], f'{id_msa}')
+        else:
+            ax.errorbar(stellar_mass_50, log_sfr100_50, xerr=[err_stellar_mass_low, err_stellar_mass_high], yerr=[err_sfr100_50_low, err_sfr100_50_high], marker='o', color=rgba, ls='None', mec='black', ms=markersize)
     
-     
+    if plot_sfr_mass == False:
+        ax.set_ylabel('Prospector '+stellar_mass_label, fontsize=fontsize)
+        ax.set_xlabel('Redshift', fontsize=fontsize) 
+        ax.set_xlim([1.3, 2.5])
+        ax.set_ylim([5, 11])
+        scale_aspect(ax)
+    else:
+        ax.set_xlabel('Prospector '+ stellar_mass_label, fontsize=fontsize)
+        ax.set_ylabel('Prospector '+ sfr_label, fontsize=fontsize) 
+        ax.set_xlim([5, 11])
+        ax.set_ylim([-2.5, 2])
+        # ax.set_yscale('log')
+    
     ax.tick_params(labelsize=fontsize)
-    ax.set_xlim([1.3, 2.5])
-    ax.set_ylim([5, 11])
-    scale_aspect(ax)
+    
 
     
     if color_var != 'None':
@@ -374,20 +412,31 @@ def paper_figure_sample_selection(id_msa_list, color_var='None'):
     from matplotlib.lines import Line2D
     from matplotlib.patches import RegularPolygon
 
-    custom_lines = [Line2D([0], [0], color='orange', marker='o', ls='None', mec='black'),
+    custom_lines = [Line2D([0], [0], color='orange', marker='o', markersize=8, ls='None', mec='black'),
                     Line2D([0], [0], color='orange', marker='o', markersize=4, ls='None', mec='black'),
-                    Line2D([0], [0], color='grey', marker='^', ls='None', mec='black'),
+                    Line2D([0], [0], color='grey', marker='s', markersize=4, ls='None', mec='black'),
     
                     Line2D([0], [0], color='grey', marker='h', markersize=12, ls='None'),]
     ax.legend(custom_lines, ['Selected Sample', 'Pa$\\beta$ SNR < 5', 'Line not in Filter', 'Full Photometric Sample'])
 
-    save_loc = f'/Users/brianlorenz/uncover/Figures/paper_figures/sample_selection{color_str}.pdf'
+    if plot_sfr_mass == False:
+        save_loc = f'/Users/brianlorenz/uncover/Figures/paper_figures/sample_selection{color_str}.pdf'
+    else:
+        save_loc = f'/Users/brianlorenz/uncover/Figures/paper_figures/sample_selection_sfrmass_{color_str}.pdf'
+
     fig.savefig(save_loc)
 
+def truncate_colormap(cmap, minval=0.0, maxval=1.0, n=100):
+        new_cmap = mpl.colors.LinearSegmentedColormap.from_list(
+        'trunc({n},{a:.2f},{b:.2f})'.format(n=cmap.name, a=minval, b=maxval),
+        cmap(np.linspace(minval, maxval, n)))
+        return new_cmap
 
 if __name__ == "__main__":
     # sample_select()
     
     id_msa_list = get_id_msa_list(full_sample=False)
-    paper_figure_sample_selection(id_msa_list, color_var='sed_av')
+    paper_figure_sample_selection(id_msa_list, color_var='sfr')
+    # paper_figure_sample_selection(id_msa_list, color_var='redshift', plot_sfr_mass=True)
+
     

@@ -9,14 +9,14 @@ def plot_helium_vs_pab(id_msa_list, add_str, color_var='he_snr'):
     zqual_df_cont_covered = ascii.read('/Users/brianlorenz/uncover/zqual_df_cont_covered.csv').to_pandas()
     sps_df = read_SPS_cat()
 
-    fig, axarr = plt.subplots(1, 2, figsize = (12, 6))
+    fig, ax_pab_he = plt.subplots(1, 1, figsize = (7, 6))
     fontsize = 12
 
-    ax_ha_pab = axarr[0]
-    ax_pab_he = axarr[1]
+    # ax_ha_pab = axarr[0]
+    # ax_pab_he = axarr[1]
 
-    ax_ha_pab.set_xlabel('Halpha flux', fontsize=fontsize)
-    ax_ha_pab.set_ylabel('PaB flux', fontsize=fontsize)
+    # ax_ha_pab.set_xlabel('Halpha flux', fontsize=fontsize)
+    # ax_ha_pab.set_ylabel('PaB flux', fontsize=fontsize)
     ax_pab_he.set_xlabel('Fe flux', fontsize=fontsize)
     ax_pab_he.set_ylabel('PaB flux', fontsize=fontsize)
 
@@ -32,6 +32,7 @@ def plot_helium_vs_pab(id_msa_list, add_str, color_var='he_snr'):
         ha_flux = emission_df.iloc[0]['flux']
         pab_flux = emission_df.iloc[1]['flux']
         he_flux = helium_df.iloc[1]['flux']
+        print(he_flux)
 
         he_sigma = helium_df.iloc[1]['sigma']
         he_snr = helium_df.iloc[1]['signal_noise_ratio']
@@ -52,7 +53,7 @@ def plot_helium_vs_pab(id_msa_list, add_str, color_var='he_snr'):
         elif color_var == 'metallicity':
             norm = mpl.colors.Normalize(vmin=-1.2, vmax=0.1) 
             rgba = cmap(norm(sps_row['met_50']))
-            print(sps_row['met_50'])
+            # print(sps_row['met_50'])
             color_str = '_metallicity'
         
         else:
@@ -60,27 +61,30 @@ def plot_helium_vs_pab(id_msa_list, add_str, color_var='he_snr'):
             color_str = ''
         # print(he_snr)
 
-        ax_ha_pab.plot(ha_flux, pab_flux, marker='o', color='black', ls='None')
-        ax_ha_pab.text(ha_flux, pab_flux, f'{id_msa}')
+        # ax_ha_pab.plot(ha_flux, pab_flux, marker='o', color='black', ls='None')
+        # ax_ha_pab.text(ha_flux, pab_flux, f'{id_msa}')
 
         ax_pab_he.plot(he_flux, pab_flux, marker='o', color=rgba, ls='None', mec='black')
         ax_pab_he.text(he_flux, pab_flux, f'{id_msa}')
 
-    ax_pab_he.set_xlim(-0.1e-18, 2.0e-18)
-    ax_pab_he.set_ylim(0, 10e-18)
-    ax_pab_he.plot([-10e-18, 10e-18], [-10e-18, 10e-18], ls='--', color='red', marker='None', label='one-to-one')
-    ax_pab_he.plot([-5e-18, 5e-18], [-10e-18, 10e-18], ls='--', color='orange', marker='None', label='pab = 2x Fe')
-    ax_pab_he.plot([-2.5e-18, 2.5e-18], [-10e-18, 10e-18], ls='--', color='green', marker='None', label='pab = 4x Fe')
-
+    
+    ax_pab_he.plot([-10e-18, 10e-16], [-10e-18, 10e-16], ls='--', color='red', marker='None', label='one-to-one')
+    ax_pab_he.plot([-5e-18, 5e-16], [-10e-18, 10e-16], ls='--', color='orange', marker='None', label='pab = 2x Fe')
+    ax_pab_he.plot([-2.5e-18, 2.5e-16], [-10e-18, 10e-16], ls='--', color='green', marker='None', label='pab = 4x Fe')
+    ax_pab_he.set_xscale('log')
+    ax_pab_he.set_yscale('log')
+    ax_pab_he.set_xlim(0.1e-18, 5e-17)
+    ax_pab_he.set_ylim(1e-18, 60e-18)
     ax_pab_he.legend(loc=2)
 
     sm =  mpl.cm.ScalarMappable(norm=norm, cmap=cmap)
     cbar = fig.colorbar(sm)
-    cbar.set_label('Fe SNR', fontsize=fontsize)
+    cbar.set_label(color_var, fontsize=fontsize)
     cbar.ax.tick_params(labelsize=fontsize)
-    for ax in axarr:
-        ax.tick_params(labelsize=fontsize)
-        scale_aspect(ax)
+    # for ax in axarr:
+    #     ax.tick_params(labelsize=fontsize)
+        # scale_aspect(ax)
+    ax_pab_he.tick_params(labelsize=fontsize)
 
 
 
@@ -112,6 +116,8 @@ if __name__ == "__main__":
     # plot_helium_vs_pab(id_msa_list, 'good_sample', color_var='redshift')
     id_msa_list = get_id_msa_list(full_sample=False)
     # plot_helium_vs_pab(id_msa_list, '')
-    id_msa_list = [25147, 39855, 42213, 47875]
+    id_msa_list = [14573, 18471, 19179, 25147, 32111, 38163, 39855, 42213, 47875]
+    # id_msa_list = [25147, 39855, 42213, 47875]
     plot_helium_vs_pab(id_msa_list, '', color_var='metallicity')
+    plot_helium_vs_pab(id_msa_list, '', color_var='he_snr')
     pass
