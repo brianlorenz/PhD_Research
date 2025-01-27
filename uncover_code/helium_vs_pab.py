@@ -4,7 +4,7 @@ import matplotlib as mpl
 import numpy as np
 from uncover_read_data import read_lineflux_cat, get_id_msa_list, read_SPS_cat
 
-def plot_helium_vs_pab(id_msa_list, add_str, color_var='he_snr'):
+def plot_helium_vs_pab(id_msa_list, color_var='he_snr'):
     lineratio_df = ascii.read(f'/Users/brianlorenz/uncover/Figures/diagnostic_lineratio/lineratio_df.csv', data_start=1).to_pandas()
     zqual_df_cont_covered = ascii.read('/Users/brianlorenz/uncover/zqual_df_cont_covered.csv').to_pandas()
     sps_df = read_SPS_cat()
@@ -12,11 +12,6 @@ def plot_helium_vs_pab(id_msa_list, add_str, color_var='he_snr'):
     fig, ax_pab_he = plt.subplots(1, 1, figsize = (7, 6))
     fontsize = 12
 
-    # ax_ha_pab = axarr[0]
-    # ax_pab_he = axarr[1]
-
-    # ax_ha_pab.set_xlabel('Halpha flux', fontsize=fontsize)
-    # ax_ha_pab.set_ylabel('PaB flux', fontsize=fontsize)
     ax_pab_he.set_xlabel('Fe flux', fontsize=fontsize)
     ax_pab_he.set_ylabel('PaB flux', fontsize=fontsize)
 
@@ -55,14 +50,21 @@ def plot_helium_vs_pab(id_msa_list, add_str, color_var='he_snr'):
             rgba = cmap(norm(sps_row['met_50']))
             # print(sps_row['met_50'])
             color_str = '_metallicity'
+        elif color_var == 'mass':
+            norm = mpl.colors.Normalize(vmin=7, vmax=11) 
+            rgba = cmap(norm(sps_row['mstar_50']))
+            # print(sps_row['met_50'])
+            color_str = '_mass'
+        elif color_var == 'sfr':
+            norm = mpl.colors.LogNorm(vmin=0.1, vmax=50) 
+            rgba = cmap(norm(sps_row['sfr100_50']))
+            # print(sps_row['met_50'])
+            color_str = '_sfr'
         
         else:
             rgba = 'black'
             color_str = ''
-        # print(he_snr)
-
-        # ax_ha_pab.plot(ha_flux, pab_flux, marker='o', color='black', ls='None')
-        # ax_ha_pab.text(ha_flux, pab_flux, f'{id_msa}')
+    
 
         ax_pab_he.plot(he_flux, pab_flux, marker='o', color=rgba, ls='None', mec='black')
         ax_pab_he.text(he_flux, pab_flux, f'{id_msa}')
@@ -88,8 +90,10 @@ def plot_helium_vs_pab(id_msa_list, add_str, color_var='he_snr'):
 
 
 
-    fig.savefig(f'/Users/brianlorenz/uncover/Figures/diagnostic_lineratio/he_plots/helium_strength_{add_str}{color_str}.pdf')
+    fig.savefig(f'/Users/brianlorenz/uncover/Figures/diagnostic_lineratio/he_plots/helium_strength_{color_str}.pdf')
     # plt.show()
+
+
 
 
         
@@ -118,6 +122,10 @@ if __name__ == "__main__":
     # plot_helium_vs_pab(id_msa_list, '')
     id_msa_list = [14573, 18471, 19179, 25147, 32111, 38163, 39855, 42213, 47875]
     # id_msa_list = [25147, 39855, 42213, 47875]
-    plot_helium_vs_pab(id_msa_list, '', color_var='metallicity')
-    plot_helium_vs_pab(id_msa_list, '', color_var='he_snr')
+    # plot_helium_vs_pab(id_msa_list, color_var='metallicity')
+    # plot_helium_vs_pab(id_msa_list, color_var='he_snr')
+    # plot_helium_vs_pab(id_msa_list, color_var='mass')
+    # plot_helium_vs_pab(id_msa_list, color_var='sfr')
+
+    plot_prop_vs_fe(id_msa_list, prop='mass')
     pass

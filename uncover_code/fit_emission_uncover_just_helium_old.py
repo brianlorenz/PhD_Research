@@ -655,5 +655,5 @@ if __name__ == "__main__":
     # zqual_detected_df = ascii.read('/Users/brianlorenz/uncover/zqual_detected.csv').to_pandas()
     # id_msa_list = zqual_detected_df['id_msa'].to_list()
 
-    id_msa_list = get_id_msa_list(full_sample=False)
+    id_msa_list = get_id_msa_list(full_sample=True)
     fit_all_emission_uncover_helium(id_msa_list)  

@@ -13,7 +13,7 @@ import time
 from uncover_read_data import read_raw_spec, read_prism_lsf, read_fluxcal_spec, get_id_msa_list
 from astropy.convolution import convolve
 from scipy.interpolate import interp1d
-from compute_av import compute_ha_pab_av, nii_correction_ha_flux
+from compute_av import compute_ha_pab_av, get_nii_correction
 from plot_vals import scale_aspect
 
 emission_fit_dir = '/Users/brianlorenz/uncover/Data/emission_fitting/'
@@ -152,8 +152,9 @@ def fit_emission_uncover(spectrum, save_name, bootstrap_num=-1):
     import copy
     nii_cor_fluxes = copy.deepcopy(fluxes)
     nii_cor_err_fluxes = copy.deepcopy(err_fluxes)
-    nii_cor_fluxes[ha_idx] = nii_cor_fluxes[ha_idx] * nii_correction_ha_flux
-    nii_cor_err_fluxes[ha_idx] = nii_cor_err_fluxes[ha_idx] * nii_correction_ha_flux
+    nii_correction_factor = get_nii_correction(save_name, sps_df = [])
+    nii_cor_fluxes[ha_idx] = nii_cor_fluxes[ha_idx] * nii_correction_factor
+    nii_cor_err_fluxes[ha_idx] = nii_cor_err_fluxes[ha_idx] * nii_correction_factor
 
 
     ha_pab_ratio = [nii_cor_fluxes[ha_idx] / nii_cor_fluxes[pab_idx] for i in range(len(line_list))]
@@ -166,7 +167,7 @@ def fit_emission_uncover(spectrum, save_name, bootstrap_num=-1):
         line_sigs = [velocity_to_sig(line_list[line_idx][1], arr_popt[i][1+line_idx])for i in range(len(arr_popt))]
         line_fluxes = [get_flux(line_amps[i], line_sigs[i])[0] for i in range(len(arr_popt))]
         if nii_cor == True:
-            line_fluxes = [line_fluxes[i] * nii_correction_ha_flux for i in range(len(line_fluxes))]
+            line_fluxes = [line_fluxes[i] * nii_correction_factor for i in range(len(line_fluxes))]
         err_line_fluxes_low_high = np.percentile(line_fluxes, [16, 84])
         err_line_fluxes_low_high = np.abs(measured_line_flux-err_line_fluxes_low_high)
         
@@ -720,6 +721,8 @@ def get_fit_range(wavelength):
 
 def fit_all_emission_uncover(id_msa_list):
     for id_msa in id_msa_list:
+        # if id_msa < 42042:
+        #     continue
         spec_df = read_fluxcal_spec(id_msa)
         print(f'Fitting emission for {id_msa}')
         fit_emission_uncover(spec_df, id_msa)
@@ -753,7 +756,7 @@ def plot_mosaic(id_msa_list, line = 'ha_only'):
 
 if __name__ == "__main__":
     # # (Currently using)
-    # id_msa = 14573
+    # id_msa = 22755
     # id_msa = 42041
     # spec_df = read_fluxcal_spec(id_msa)
     # fit_emission_uncover(spec_df, id_msa)
@@ -767,6 +770,6 @@ if __name__ == "__main__":
     id_msa_list = get_id_msa_list(full_sample=True)
     
     fit_all_emission_uncover(id_msa_list)  
-    # plot_mosaic(id_msa_list, line = 'ha_only')
-    # plot_mosaic(id_msa_list, line = 'pab_only')
+    plot_mosaic(id_msa_list, line = 'ha_only')
+    plot_mosaic(id_msa_list, line = 'pab_only')
     pass

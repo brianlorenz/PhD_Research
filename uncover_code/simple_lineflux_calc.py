@@ -7,7 +7,7 @@ from fit_emission_uncover_old import line_list
 from astropy.io import ascii
 import numpy as np
 import pandas as pd
-from compute_av import nii_correction_ha_flux, fe_correction_pab_flux
+from compute_av import get_nii_correction, get_fe_correction
 from filter_integrals import get_line_coverage
 
 def calc_lineflux(id_msa):
@@ -52,8 +52,8 @@ def calc_lineflux(id_msa):
     ha_flux_erg_s_cm2 = measure_lineflux(id_msa, sed_df, redshift, ha_filters, ha_line_scaled_transmission, ha_sedpy_transmission, line_list[0][1], ha_sedpy_width, ha_sedpy_wave, ha_sedpy_filts)
     pab_flux_erg_s_cm2 = measure_lineflux(id_msa, sed_df, redshift, pab_filters, pab_line_scaled_transmission, pab_sedpy_transmission, line_list[1][1], pab_sedpy_width, pab_sedpy_wave, pab_sedpy_filts)
     # Line flux corrections
-    nii_cor_ha_flux_erg_s_cm2 = ha_flux_erg_s_cm2*nii_correction_ha_flux
-    fe_cor_pab_flux_erg_s_cm2 = pab_flux_erg_s_cm2*fe_correction_pab_flux
+    nii_cor_ha_flux_erg_s_cm2 = ha_flux_erg_s_cm2*get_nii_correction(id_msa)
+    fe_cor_pab_flux_erg_s_cm2 = pab_flux_erg_s_cm2*get_fe_correction(id_msa)
 
     lines_df = read_lineflux_cat()
     lines_df_row = lines_df[lines_df['id_msa'] == id_msa]
@@ -200,10 +200,10 @@ def compute_filter_F(f_nu_jy, sedpy_filt):
 
 if __name__ == "__main__":
     # calc_lineflux(47875)
-    calc_lineflux(14573)
+    # calc_lineflux(14573)
     # calc_lineflux(25774)
     # calc_lineflux(39855)
     
-    # id_msa_list = get_id_msa_list(full_sample=True)
-    # calc_all_lineflux(id_msa_list, full_sample=True)  
+    id_msa_list = get_id_msa_list(full_sample=False)
+    calc_all_lineflux(id_msa_list, full_sample=False)  
     pass

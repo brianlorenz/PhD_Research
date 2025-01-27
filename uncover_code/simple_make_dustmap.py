@@ -23,7 +23,7 @@ from scipy import ndimage
 from scipy.signal import convolve2d
 from matplotlib.colors import Normalize, LogNorm
 from matplotlib.ticker import LogLocator, LogFormatterSciNotation
-from compute_av import ha_factor, pab_factor, compute_ratio_from_av, compute_ha_pab_av, compute_ha_pab_av_from_dustmap, read_catalog_av, nii_correction_ha_flux, fe_correction_pab_flux
+from compute_av import ha_factor, pab_factor, compute_ratio_from_av, compute_ha_pab_av, compute_ha_pab_av_from_dustmap, read_catalog_av, get_nii_correction, get_fe_correction
 from plot_log_linear_rgb import make_log_rgb
 from dust_equations_prospector import dust2_to_AV
 from filter_integrals import integrate_filter, get_transmission_at_line, get_line_coverage
@@ -190,8 +190,8 @@ def make_dustmap_simple(id_msa, aper_size='None', axarr_final=[], ax_labels=Fals
     ha_sed_lineflux = lineflux_row['ha_sed_flux'].iloc[0]
     nii_cor_ha_sed_lineflux = lineflux_row['nii_cor_ha_sed_flux'].iloc[0]
     fe_cor_pab_sed_lineflux = lineflux_row['fe_cor_pab_sed_flux'].iloc[0]
-    nii_cor_ha_boot_lines = ha_boot_lines * nii_correction_ha_flux
-    fe_cor_pab_boot_lines = pab_boot_lines * fe_correction_pab_flux
+    nii_cor_ha_boot_lines = ha_boot_lines * get_nii_correction(id_msa)
+    fe_cor_pab_boot_lines = pab_boot_lines * get_fe_correction(id_msa)
     
     nii_cor_ha_sed_lineflux_16 = np.percentile(nii_cor_ha_boot_lines, 16)
     nii_cor_ha_sed_lineflux_84 = np.percentile(nii_cor_ha_boot_lines, 84)
@@ -1000,8 +1000,10 @@ def make_paper_fig_dustmaps(id_msa_list, sortby = 'mass'):
 
 if __name__ == "__main__":
     # make_dustmap_simple(14573)
+    # lineflux_df = ascii.read(f'/Users/brianlorenz/uncover/Data/generated_tables/lineflux_df_all.csv').to_pandas()
+    # breakpoint()
     # make_dustmap_simple(18471)
-    id_msa_list = get_id_msa_list(full_sample=False)
+    id_msa_list = get_id_msa_list(full_sample=True)
     # print(id_msa_list)
     make_all_dustmap(id_msa_list, full_sample=True)
     # copy_selected_sample_dustmaps(id_msa_list)

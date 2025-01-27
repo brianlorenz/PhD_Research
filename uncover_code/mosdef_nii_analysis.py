@@ -4,9 +4,9 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 from plot_vals import *
+from compute_av import sanders_nii_ratio, sanders_plane
 
 def mosdef_nii(linemeas_df, mosdef_df):
-    
     # Redshift cut
     z_cut = np.logical_and(mosdef_df['Z_MOSFIRE'] > 1.3, mosdef_df['Z_MOSFIRE'] < 2.3)
     mosdef_df = mosdef_df[z_cut]
@@ -41,7 +41,7 @@ def mosdef_nii(linemeas_df, mosdef_df):
     print(f'median NII/HA (combined) = {round(median_nii_ha,4)}, with std = {round(std_nii_ha,4)}')
 
     # Histogram figure
-    fig, axarr = plt.subplots(1,2,figsize=(10,5))
+    fig, axarr = plt.subplots(1,2,figsize=(15,5))
     ax_6865 = axarr[0]
     ax_combined = axarr[1]
 
@@ -63,6 +63,20 @@ def mosdef_nii(linemeas_df, mosdef_df):
     fig.savefig('/Users/brianlorenz/uncover/Figures/diagnostic_lineratio/nii_relations/nii_analysis.pdf')
     plt.close('all')
 
+    fig, ax = plt.subplots(figsize=(6,6))
+    ax.plot(linemeas_df['NII6585_FLUX'], linemeas_df['nii_combined_flux'], color='black', marker='o', ls='None')
+    x_vals = np.arange(0,2e-16,1e-18)
+    y_vals = 1.5*x_vals
+    ax.plot(x_vals, y_vals, color='red', marker='None', ls='--', label='y=1.5*x')
+    ax.plot(x_vals, x_vals, color='green', marker='None', ls='--', label='y=x')
+    ax.set_xlabel('NII6585 Flux')
+    ax.set_ylabel('NII Combined Flux')
+    ax.set_xscale('log')
+    ax.set_yscale('log')
+    ax.legend()
+    fig.savefig('/Users/brianlorenz/uncover/Figures/diagnostic_lineratio/nii_relations/compare_nii.pdf')
+    plt.close('all')
+
     # Searching for corrrelations
     def check_cor(yvar):
         fig, ax = plt.subplots(figsize=(6,6))
@@ -78,4 +92,52 @@ def mosdef_nii(linemeas_df, mosdef_df):
     check_cor('Z_MOSFIRE')
     check_cor('12LOGOH_PP04_N2')
 
-mosdef_nii(linemeas_df, mosdef_df)
+    return merged_linemeas_df
+
+def check_sanders_plane(merged_linemeas_df, change_offset=False):
+    fig, axarr = plt.subplots(1,3,figsize=(15,5))
+    mosdef_log_sfr = merged_linemeas_df['LSFR']
+    mosdef_log_mass = merged_linemeas_df['LMASS']
+    mosdef_metallicity = merged_linemeas_df['12LOGOH_PP04_N2']
+    mosdef_nii6865_ha = merged_linemeas_df['nii6865_ha_ratio']
+
+    predicted_metallicity = sanders_plane(mosdef_log_mass, mosdef_log_sfr)
+    if change_offset:
+        linear_factor = 8.5
+        add_str='_scaled'
+    else:
+        linear_factor = 8.69
+        add_str=''
+    predicted_nii = sanders_nii_ratio(predicted_metallicity, linear_scale=linear_factor)
+    predicted_nii_met = sanders_nii_ratio(mosdef_metallicity, linear_scale=linear_factor)
+
+    ax_fmr = axarr[0]
+    ax_nii = axarr[1]
+    ax_nii_met = axarr[2]
+
+    ax_fmr.plot(mosdef_metallicity, predicted_metallicity, marker='o', color='black', ls='None')
+    ax_fmr.set_xlabel('MOSDEF Metallicity')
+    ax_fmr.set_ylabel('Predicted Metallicity from M+SFR')
+    ax_fmr.set_xlim(7.75, 9.25)
+    ax_fmr.set_ylim(7.75, 9.25)
+    
+    ax_nii.plot(mosdef_nii6865_ha, predicted_nii, marker='o', color='black', ls='None')
+    ax_nii.set_xlabel('MOSDEF NII/Ha')
+    ax_nii.set_ylabel('Predicted NII/Ha from M+SFR')
+    ax_nii.set_xlim(0, 1.5)
+    ax_nii.set_ylim(0, 1.5)
+
+    ax_nii_met.plot(mosdef_nii6865_ha, predicted_nii_met, marker='o', color='black', ls='None')
+    ax_nii_met.set_xlabel('MOSDEF NII/Ha')
+    ax_nii_met.set_ylabel('Predicted NII/Ha from MOSDEF Metallicity')
+    ax_nii_met.set_xlim(0, 1.5)
+    ax_nii_met.set_ylim(0, 1.5)
+
+    for ax in axarr:
+        ax.plot([-100, 100], [-100, 100], ls='--', color='red', marker='None')
+
+
+    fig.savefig(f'/Users/brianlorenz/uncover/Figures/diagnostic_lineratio/nii_relations/MOSDEF_calibration{add_str}.pdf')
+
+merged_linemeas_df = mosdef_nii(linemeas_df, mosdef_df)
+check_sanders_plane(merged_linemeas_df, change_offset=True)
