@@ -782,8 +782,8 @@ def plot_line_assessment(id_msa_list):
         ha_transmissions = [ha_red_avg_transmission, ha_avg_transmission, ha_blue_avg_transmission]
         pab_transmissions = [pab_red_avg_transmission, pab_avg_transmission, pab_blue_avg_transmission]
 
-        ha_cont_pct, ha_sed_lineflux, ha_trasm_flag, ha_boot_lines, ha_sed_fluxes, ha_wave_pct = plot_sed_around_line(ax_ha_sed, ha_filters, sed_df, spec_df, redshift, 0, ha_transmissions, id_msa)
-        pab_cont_pct, pab_sed_lineflux, pab_trasm_flag, pab_boot_lines, pab_sed_fluxes, pab_wave_pct = plot_sed_around_line(ax_pab_sed, pab_filters, sed_df, spec_df, redshift, 1, pab_transmissions, id_msa)
+        ha_cont_pct, ha_sed_lineflux, ha_trasm_flag, ha_boot_lines, ha_sed_fluxes, ha_wave_pct = plot_sed_around_line(ax_ha_sed, ha_filters, sed_df, spec_df, redshift, 0, ha_transmissions, id_msa, show_trasm=False, plt_purple_merged_point=True)
+        pab_cont_pct, pab_sed_lineflux, pab_trasm_flag, pab_boot_lines, pab_sed_fluxes, pab_wave_pct = plot_sed_around_line(ax_pab_sed, pab_filters, sed_df, spec_df, redshift, 1, pab_transmissions, id_msa, show_trasm=False, plt_purple_merged_point=True)
         
         lineratio_data_row = full_lineratio_data_df[full_lineratio_data_df['id_msa'] == id_msa]
         for ax in ax_list:
@@ -817,5 +817,7 @@ if __name__ == "__main__":
     # fit_all_emission_uncover(id_msa_list)  
     # plot_mosaic(id_msa_list, line = 'ha_only')
     # plot_mosaic(id_msa_list, line = 'pab_only')
-    plot_line_assessment(id_msa_list)
+    # plot_line_assessment(id_msa_list)
+
+    plot_line_assessment([32111, 19896])
     pass

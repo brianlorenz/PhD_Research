@@ -1,5 +1,5 @@
 import initialize_mosdef_dirs as imd
-from read_data import linemeas_df, mosdef_df, metal_df
+from read_data import linemeas_df, mosdef_df, metal_df, sfrs_df
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
@@ -94,12 +94,17 @@ def mosdef_nii(linemeas_df, mosdef_df):
 
     return merged_linemeas_df
 
-def check_sanders_plane(merged_linemeas_df, change_offset=False):
+def check_sanders_plane(merged_linemeas_df, sfrs_df, change_offset=False):
     fig, axarr = plt.subplots(1,3,figsize=(15,5))
-    mosdef_log_sfr = merged_linemeas_df['LSFR']
+    sfrs_df = sfrs_df[sfrs_df['SFR_CORR'] > 0]
+    merged_linemeas_df = sfrs_df.merge(merged_linemeas_df, on='ID')
+    mosdef_log_sfr = np.log10(merged_linemeas_df['SFR_CORR'])
     mosdef_log_mass = merged_linemeas_df['LMASS']
     mosdef_metallicity = merged_linemeas_df['12LOGOH_PP04_N2']
-    mosdef_nii6865_ha = merged_linemeas_df['nii6865_ha_ratio']
+    # mosdef_nii6865_ha = merged_linemeas_df['nii6865_ha_ratio']
+    mosdef_ha_abscor = merged_linemeas_df['HA6565_PREFERREDFLUX_x'] + merged_linemeas_df['HA6565_ABS_FLUX']
+    mosdef_nii6865 = merged_linemeas_df['NII6585_PREFERREDFLUX'] 
+    mosdef_nii6865_ha = mosdef_nii6865 / mosdef_ha_abscor
 
     predicted_metallicity = sanders_plane(mosdef_log_mass, mosdef_log_sfr)
     if change_offset:
@@ -140,4 +145,4 @@ def check_sanders_plane(merged_linemeas_df, change_offset=False):
     fig.savefig(f'/Users/brianlorenz/uncover/Figures/diagnostic_lineratio/nii_relations/MOSDEF_calibration{add_str}.pdf')
 
 merged_linemeas_df = mosdef_nii(linemeas_df, mosdef_df)
-check_sanders_plane(merged_linemeas_df, change_offset=True)
+check_sanders_plane(merged_linemeas_df, sfrs_df, change_offset=False)

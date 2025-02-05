@@ -35,6 +35,7 @@ def flux_calibrate_spectrum(id_msa):
         return fluxes * correction_factor
     sed_df['int_spec_flux_calibrated'] = correct_flux(sed_df['eff_wavelength'], sed_df['int_spec_flux'], popt)
     spec_df['flux_calibrated_jy'] = correct_flux(spec_df['wave'], spec_df['flux'], popt)
+    spec_df['err_flux_calibrated_jy'] = correct_flux(spec_df['wave'], spec_df['err'], popt)
     # popt, pcov = curve_fit(poly5, sed_df_nonan['int_spec_flux'], sed_df_nonan['flux'], p0=guess)
     # sed_df['int_spec_flux_calibrated'] = poly5(sed_df['int_spec_flux'], popt[0], popt[1], popt[2], popt[3], popt[4], popt[5])
     # spec_df['flux_calibrated_jy'] = poly5(spec_df['flux'], popt[0], popt[1], popt[2], popt[3], popt[4], popt[5])
@@ -46,7 +47,7 @@ def flux_calibrate_spectrum(id_msa):
     redshift = spec_cat[spec_cat['id_msa']==id_msa]['z_spec'].iloc[0]
     spec_df['rest_flux_calibrated_erg_aa'] = spec_df['flux_calibrated_erg_aa'] * (1+redshift)
 
-    spec_df['err_rest_flux_calibrated_erg_aa'] = spec_df['err'] * (1e-23*1e10*c / (spec_df['wave_aa']**2)) * (1+redshift)
+    spec_df['err_rest_flux_calibrated_erg_aa'] = spec_df['err_flux_calibrated_jy'] * (1e-23*1e10*c / (spec_df['wave_aa']**2)) * (1+redshift)
 
     print(f'Saving flux calibration for {id_msa}')
     sed_df.to_csv(f'/Users/brianlorenz/uncover/Data/seds/{id_msa}_sed.csv', index=False)
@@ -77,9 +78,9 @@ def flux_calibrate_spectrum(id_msa):
     plt.close('all')
 
 if __name__ == "__main__":
-    flux_calibrate_spectrum(42041)
+    # flux_calibrate_spectrum(42041)
 
-    # id_msa_list = get_id_msa_list(full_sample=True)
-    # for id_msa in id_msa_list:
-    #     flux_calibrate_spectrum(id_msa)
+    id_msa_list = get_id_msa_list(full_sample=True)
+    for id_msa in id_msa_list:
+        flux_calibrate_spectrum(id_msa)
 

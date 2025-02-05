@@ -150,8 +150,8 @@ def get_id_msa_list(full_sample=False):
         id_msa_line_notfullcover_df = ascii.read('/Users/brianlorenz/uncover/Data/sample_selection/line_notfullcover_df.csv').to_pandas()
         id_msa_line_notfullcover_list = id_msa_line_notfullcover_df['id_msa'].tolist()
         id_msa_list = id_msa_list + id_msa_line_notfullcover_list
-        pab_blues = [14573, 19896, 32111, 35436]
-        id_msa_list = id_msa_list+pab_blues
+        # pab_blues = [14573, 19896, 32111, 35436]
+        # id_msa_list = id_msa_list+pab_blues
     return id_msa_list
 
 make_pd_table_from_fits('/Users/brianlorenz/uncover/Catalogs/uncover-msa-full_depth-default_drz-v0.8a-lines.fits')
@@ -167,7 +167,7 @@ if __name__ == "__main__":
     # int_spec_df = read_integrated_spec(47875)
     # breakpoint()
     # match_supercat(6325)
-    match_supercat(42041)
+    # match_supercat(42041)
     # supercat = read_supercat()
     # spec_df = read_spec_cat()
     # aper_cat_df = read_aper_cat()

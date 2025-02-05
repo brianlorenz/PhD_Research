@@ -2,6 +2,7 @@ import numpy as np
 from fit_emission_uncover_old import line_list
 from uncover_read_data import read_SPS_cat
 from dust_equations_prospector import dust2_to_AV
+from astropy.io import ascii
 
 avneb_str = 'A$_{\\mathrm{V,neb}}$'
 
@@ -21,15 +22,13 @@ def get_nii_correction(id_msa, sps_df = []):
     nii_correction_factor = 1 / (1+niicombined_ha_rat)
     return nii_correction_factor
 
-
-
 def get_fe_correction(id_msa, sps_df = []): # From fe_diagnostics.py
     if len(sps_df) == 0:
         sps_df = read_SPS_cat()
     sps_row = sps_df[sps_df['id_msa'] == id_msa]
     log_mass = sps_row['mstar_50'].iloc[0]
     fe_cor_df = ascii.read('/Users/brianlorenz/uncover/Data/generated_tables/fe_cor_df.csv').to_pandas()
-    predicted_fe_pab_ratio = fe_cor_df['y_int']+fe_cor_df['slope']*log_mass
+    predicted_fe_pab_ratio = fe_cor_df['y_int'].iloc[0]+fe_cor_df['slope'].iloc[0]*log_mass
     pab_correction_factor = 1 / (1+predicted_fe_pab_ratio)
     return pab_correction_factor
 

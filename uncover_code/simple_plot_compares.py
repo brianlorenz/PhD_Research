@@ -9,7 +9,7 @@ import numpy as np
 def paper_plot_sed_emfit_accuracy(id_msa_list, color_var=''):
     full_data_df = ascii.read(f'/Users/brianlorenz/uncover/Data/generated_tables/lineflux_df.csv').to_pandas()
     data_df = full_data_df[full_data_df['id_msa'].isin(id_msa_list)]
-    full_lineratio_data_df = ascii.read(f'/Users/brianlorenz/uncover/Data/generated_tables/lineratio_av_df_all.csv').to_pandas()
+    full_lineratio_data_df = ascii.read(f'/Users/brianlorenz/uncover/Data/generated_tables/lineratio_av_df.csv').to_pandas()
     lineratio_data_df = full_lineratio_data_df[full_lineratio_data_df['id_msa'].isin(id_msa_list)]
     sps_df = read_SPS_cat()
 

@@ -204,6 +204,9 @@ if __name__ == "__main__":
     # calc_lineflux(25774)
     # calc_lineflux(39855)
     
-    id_msa_list = get_id_msa_list(full_sample=False)
-    calc_all_lineflux(id_msa_list, full_sample=False)  
+    # id_msa_list = get_id_msa_list(full_sample=True)
+    # calc_all_lineflux(id_msa_list, full_sample=True)  
+
+    id_msa_list = get_id_msa_list(full_sample=True)
+    calc_all_lineflux(id_msa_list, full_sample=True)  
     pass

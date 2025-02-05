@@ -34,7 +34,7 @@ from copy import copy, deepcopy
 ha_trasm_thresh = 0.8
 pab_trasm_thresh = 0.8
 
-show_aper_and_slit = True
+show_aper_and_slit = False
 
 
 colors = ['red', 'green', 'blue']
@@ -185,7 +185,7 @@ def make_dustmap_simple(id_msa, aper_size='None', axarr_final=[], ax_labels=Fals
     pab_cont_pct, _, pab_trasm_flag, pab_boot_lines, pab_sed_fluxes, pab_wave_pct = plot_sed_around_line(ax_pab_sed, pab_filters, sed_df, spec_df, redshift, 1, pab_transmissions, id_msa)
 
     # Read in the linefluxes from lineflux_df, don't need to be double-computing here, and already corrected 
-    lineflux_df = ascii.read(f'/Users/brianlorenz/uncover/Data/generated_tables/lineflux_df_all.csv').to_pandas()
+    lineflux_df = ascii.read(f'/Users/brianlorenz/uncover/Data/generated_tables/lineflux_df.csv').to_pandas()
     lineflux_row = lineflux_df[lineflux_df['id_msa'] == id_msa]
     ha_sed_lineflux = lineflux_row['ha_sed_flux'].iloc[0]
     nii_cor_ha_sed_lineflux = lineflux_row['nii_cor_ha_sed_flux'].iloc[0]
@@ -392,7 +392,7 @@ def make_dustmap_simple(id_msa, aper_size='None', axarr_final=[], ax_labels=Fals
     # Make a copy of the snr map to be used for contouring
     pab_contour_map = deepcopy(pab_linemap_snr)
     pab_contour_map[~combined_mask_segmap.mask] = 0
-    ax_ha_linemap.contour(X_pab, Y_pab, pab_contour_map, levels=[1,2,3,4,5], cmap='Greys')
+    # ax_ha_linemap.contour(X_pab, Y_pab, pab_contour_map, levels=[1,2,3,4,5], cmap='Greys')
     # ax_segmap.contour(X_pab, Y_pab, dustmap_snr_filt, levels=[2, 4, 6, 8], cmap='Greys')
     
     from matplotlib import colors
@@ -450,23 +450,54 @@ def make_dustmap_simple(id_msa, aper_size='None', axarr_final=[], ax_labels=Fals
         paper_font = 24
         # Plot for paper
         ax_ha_image_paper = axarr_final[0]
-        ax_pab_image_paper = axarr_final[1]
+        ax_150_image_paper = axarr_final[1]
         ax_ha_map_paper = axarr_final[2]
         ax_pab_overlay_paper = axarr_final[3]
 
+        obj_skycoord = get_coords(id_msa)
+
+        # Get 150 grayscale
+        image_150m, wht_image_150m, photfnu_150m = get_cutout(obj_skycoord, 'f150w', size=image_size)
+        
+        #Image plots
         ax_ha_image_paper.imshow(ha_image)
-        ax_pab_image_paper.imshow(pab_image)
+        ax_150_image_paper.imshow(image_150m.data, cmap='Greys_r')
         ax_ha_map_paper.imshow(ha_linemap_logscaled, cmap=cmap, norm=ha_linemap_norm)
         ax_pab_overlay_paper.imshow(ha_linemap_logscaled, cmap=cmap, norm=ha_linemap_norm)
-        # Dustmap Contours
+
+        # Add filters to HaImage
+        text_height = 0.92
+        text_start = 0.01
+        text_sep = 0.37
+        import matplotlib.patheffects as pe
+        ax_ha_image_paper.text(text_start, text_height, f'{ha_filters[2][2:].upper()}', fontsize=14, transform=ax_ha_image_paper.transAxes, color='blue', path_effects=[pe.withStroke(linewidth=3, foreground="white")])
+        ax_ha_image_paper.text(text_start+text_sep, text_height, f'{ha_filters[1][2:].upper()}', fontsize=14, transform=ax_ha_image_paper.transAxes, color='green', path_effects=[pe.withStroke(linewidth=3, foreground="white")])
+        ax_ha_image_paper.text(text_start+2*text_sep, text_height, f'{ha_filters[0][2:].upper()}', fontsize=14, transform=ax_ha_image_paper.transAxes, color='red', path_effects=[pe.withStroke(linewidth=3, foreground="white")])
+
+        # PaB Contours
         x = np.arange(pab_linemap.shape[1])
         y = np.arange(pab_linemap.shape[0])
         X_pab, Y_pab = np.meshgrid(x, y)
-        
         # Make a copy of the snr map to be used for contouring
         pab_contour_map = deepcopy(pab_linemap_snr)
         pab_contour_map[~combined_mask_segmap.mask] = 0
         ax_pab_overlay_paper.contour(X_pab, Y_pab, pab_contour_map, levels=[1,2,3,4,5], cmap='Greys')
+
+        # Ha Contours
+        x = np.arange(ha_linemap.shape[1])
+        y = np.arange(ha_linemap.shape[0])
+        X_ha, Y_ha = np.meshgrid(x, y)
+        ha_contour_map = deepcopy(ha_linemap_snr)
+        ha_contour_map[~combined_mask_segmap.mask] = 0
+        
+        def truncate_colormap(cmap, minval=0.0, maxval=1.0, n=100):
+            new_cmap = mpl.colors.LinearSegmentedColormap.from_list(
+            'trunc({n},{a:.2f},{b:.2f})'.format(n=cmap.name, a=minval, b=maxval),
+            cmap(np.linspace(minval, maxval, n)))
+            return new_cmap
+        cmap_ha = plt.get_cmap('inferno')
+        new_cmap_ha = truncate_colormap(cmap_ha, 0.2, 0.9)
+        ax_150_image_paper.contour(X_ha, Y_ha, ha_contour_map, levels=[1,2,3,4,5], cmap=new_cmap_ha)
 
         for ax in axarr_final:
             scale_aspect(ax)
@@ -482,7 +513,7 @@ def make_dustmap_simple(id_msa, aper_size='None', axarr_final=[], ax_labels=Fals
             # ax_ha_map_paper.text(text_start, text_height, f'H$\\alpha$ Linemap', color='black', fontsize=paper_font, transform=ax_ha_map_paper.transAxes)
             # ax_pab_overlay_paper.text(text_start, text_height, f'Pa$\\beta$ Contours', color='black', fontsize=paper_font, transform=ax_pab_overlay_paper.transAxes)
             ax_ha_image_paper.set_title(f'H$\\alpha$ Image', fontsize=paper_font)
-            ax_pab_image_paper.set_title(f'Pa$\\beta$ Image', fontsize=paper_font)
+            ax_150_image_paper.set_title(f'F150W', fontsize=paper_font)
             ax_ha_map_paper.set_title(f'H$\\alpha$ Linemap', fontsize=paper_font)
             ax_pab_overlay_paper.set_title(f'Pa$\\beta$ Contours', fontsize=paper_font)
 
@@ -656,18 +687,20 @@ def set_dustmap_av(dustmap, ha_linemap, ha_linemap_snr, pab_linemap, pab_linemap
     return dustmap
 
 
-def plot_sed_around_line(ax, filters, sed_df, spec_df, redshift, line_index, transmissions, id_msa, bootstrap=1000, plt_purple_merged_point=1, show_trasm=1):
+def plot_sed_around_line(ax, filters, sed_df, spec_df, redshift, line_index, transmissions, id_msa, bootstrap=1000, plt_purple_merged_point=True, show_trasm=False):
     # Controls for various elements on the plot
     plt_verbose_text = show_trasm
     plt_sed_points = 1
     plt_filter_curves = 1
     plt_spectrum = 1
+    plot_vlines = 0
 
     line_wave_rest = line_list[line_index][1]
     line_wave_obs = (line_wave_rest * (1+redshift))/1e4 # micron
     ax.axvline(line_wave_obs, ls='--', color='green') # observed line, Ha or PaB
-    ax.axvline(1.257*(1+redshift), ls='--', color='magenta') # He II https://www.mpe.mpg.de/ir/ISO/linelists/Hydrogenic.html
-    ax.axvline(1.083646*(1+redshift), ls='--', color='magenta') # He I https://iopscience.iop.org/article/10.3847/1538-3881/ab3a31
+    if plot_vlines:
+        ax.axvline(1.257*(1+redshift), ls='--', color='magenta') # He II https://www.mpe.mpg.de/ir/ISO/linelists/Hydrogenic.html
+        ax.axvline(1.083646*(1+redshift), ls='--', color='magenta') # He I https://iopscience.iop.org/article/10.3847/1538-3881/ab3a31
     ax.axvline(1.094*(1+redshift), ls='--', color='green') # Pa gamma
     # Can check lines here https://linelist.pa.uky.edu/atomic/query.cgi
     
@@ -694,7 +727,7 @@ def plot_sed_around_line(ax, filters, sed_df, spec_df, redshift, line_index, tra
         sedpy_name = filters[i].replace('f_', 'jwst_')
         sedpy_filt = observate.load_filters([sedpy_name])[0]
         if plt_filter_curves:
-            ax.plot(sedpy_filt.wavelength/1e4, sedpy_filt.transmission/1e6, ls='-', marker='None', color=colors[i], lw=1)
+            ax.plot(sedpy_filt.wavelength/1e4, sedpy_filt.transmission/6e5, ls='-', marker='None', color=colors[i], lw=1)
     
     # Compute the percentile to use when combining the continuum
     connect_color = 'purple'
@@ -886,6 +919,10 @@ def make_all_dustmap(id_msa_list, full_sample=False):
             sed_lineratios_grouped, emission_lineratios_grouped, sed_avs_grouped, emission_avs_grouped, err_sed_linefluxes_grouped = make_dustmap_simple(id_msa)
         except Exception as error:
             print(error)
+            print('ERROR')
+            print('ERROR')
+            print('ERROR')
+            print('ERROR')
             sed_lineratios_grouped = [-99,-99,-99]
             emission_lineratios_grouped = [-99,-99,-99]
             sed_avs_grouped = [-99,-99,-99]
@@ -953,7 +990,7 @@ def copy_selected_sample_dustmaps(id_msa_list):
 
 def make_paper_fig_dustmaps(id_msa_list, sortby = 'mass'):
     import math
-    rows_per_page = 5
+    rows_per_page = 3
     n_pages = math.ceil(len(id_msa_list) / rows_per_page)
     sps_df = read_SPS_cat()
     lineratio_df = ascii.read(f'/Users/brianlorenz/uncover/Data/generated_tables/lineratio_av_df.csv').to_pandas()
@@ -999,13 +1036,17 @@ def make_paper_fig_dustmaps(id_msa_list, sortby = 'mass'):
         fig.savefig(f'/Users/brianlorenz/uncover/Figures/paper_figures/dustmaps_{sort_name}_page{i}.pdf', bbox_inches='tight')
 
 if __name__ == "__main__":
-    # make_dustmap_simple(14573)
+    # make_dustmap_simple(32111)
     # lineflux_df = ascii.read(f'/Users/brianlorenz/uncover/Data/generated_tables/lineflux_df_all.csv').to_pandas()
     # breakpoint()
     # make_dustmap_simple(18471)
-    id_msa_list = get_id_msa_list(full_sample=True)
+    id_msa_list = get_id_msa_list(full_sample=False)
+    # breakpoint()
     # print(id_msa_list)
-    make_all_dustmap(id_msa_list, full_sample=True)
+    # make_all_dustmap(id_msa_list, full_sample=False)
     # copy_selected_sample_dustmaps(id_msa_list)
-    # make_paper_fig_dustmaps(id_msa_list, sortby='av')
+    make_paper_fig_dustmaps(id_msa_list, sortby='av')
     # make_paper_fig_dustmaps(id_msa_list, sortby='mass')
+
+    # id_msa_list = get_id_msa_list(full_sample=True)
+    # make_all_dustmap(id_msa_list, full_sample=True)

@@ -17,7 +17,7 @@ def plot_prop_vs_fe(id_msa_list, prop, color_var='he_snr', add_str=''):
     fontsize = 12
     
     
-    ax_prop_fe.set_ylabel('(Fe / PaB) ratio', fontsize=fontsize)
+    ax_prop_fe.set_ylabel('(FeII / PaB) ratio', fontsize=fontsize)
 
     cmap = mpl.cm.inferno
     
@@ -74,12 +74,13 @@ def plot_prop_vs_fe(id_msa_list, prop, color_var='he_snr', add_str=''):
             prop_str = ''
         rgba = 'black'
 
-        ax_prop_fe.set_xlabel(prop_str, fontsize=fontsize)
+        ax_prop_fe.set_xlabel('Mass', fontsize=fontsize)
+        # ax_prop_fe.set_xlabel(prop_str, fontsize=fontsize)
 
     
 
         ax_prop_fe.plot(x_val, fe_pab_ratio, marker='o', color=rgba, ls='None', mec='black')
-        ax_prop_fe.text(x_val, fe_pab_ratio, f'{id_msa}')
+        # ax_prop_fe.text(x_/Users/brianlorenz/uncover/Figures/diagnostic_lineratio/he_plots/fe_vs_mass.pdfval, fe_pab_ratio, f'{id_msa}')
 
     
     
@@ -98,7 +99,9 @@ def plot_prop_vs_fe(id_msa_list, prop, color_var='he_snr', add_str=''):
     fe_cor_df = pd.DataFrame(zip([y_int], [slope]), columns=['y_int', 'slope'])
     fe_cor_df.to_csv('/Users/brianlorenz/uncover/Data/generated_tables/fe_cor_df.csv', index=False)
 
-    fig.savefig(f'/Users/brianlorenz/uncover/Figures/diagnostic_lineratio/he_plots/fe_vs{prop_str}{add_str}.pdf')
+    scale_aspect(ax_prop_fe)
+
+    fig.savefig(f'/Users/brianlorenz/uncover/Figures/diagnostic_lineratio/he_plots/fe_vs{prop_str}{add_str}.pdf', bbox_inches='tight')
     # plt.show()
 
 def fit_fe_mass(fe_pab_ratios, mass_values):

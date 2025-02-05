@@ -223,6 +223,12 @@ def line_in_range(z, target_line, filt_cols, uncover_filt_dir):
 
 
 def paper_figure_sample_selection(id_msa_list, color_var='None', plot_sfr_mass=False):
+    show_squares = True
+    show_low_snr = True
+    show_sample = True
+    show_hexes = True
+
+
     fig = plt.figure(figsize=(8,6))
     ax = fig.add_axes([0.15,0.15,0.525,0.7])
     cb_ax = fig.add_axes([0.725,0.15,0.04,0.7])
@@ -265,17 +271,17 @@ def paper_figure_sample_selection(id_msa_list, color_var='None', plot_sfr_mass=F
     good_mass_idx = np.logical_and(all_masses > 5, all_masses < 11)
     good_sfr_idx = np.logical_and(all_log_sfr100s > -2.5, all_log_sfr100s < 2)
     
-    # hexbin_norm = mpl.colors.LogNorm(vmin=1, vmax=300) 
     
-    if plot_sfr_mass == False:
-        hexbin_norm = mpl.colors.Normalize(vmin=1, vmax=200) 
-        good_both_idx = np.logical_and(good_redshift_idx, good_mass_idx)
-        ax.hexbin(all_redshifts[good_both_idx], all_masses[good_both_idx], gridsize=15, cmap=new_cmap, norm=hexbin_norm, label='Full Photometric Sample')
-    else:
-        # hexbin_norm = mpl.colors.LogNorm(vmin=1, vmax=5000) 
-        hexbin_norm = mpl.colors.Normalize(vmin=1, vmax=500) 
-        good_both_idx = np.logical_and(good_sfr_idx, good_mass_idx)
-        ax.hexbin(all_masses[good_both_idx], all_log_sfr100s[good_both_idx], gridsize=15, cmap=new_cmap, norm=hexbin_norm, label='Full Photometric Sample')
+    if show_hexes:
+        if plot_sfr_mass == False:
+            hexbin_norm = mpl.colors.Normalize(vmin=1, vmax=200) 
+            good_both_idx = np.logical_and(good_redshift_idx, good_mass_idx)
+            ax.hexbin(all_redshifts[good_both_idx], all_masses[good_both_idx], gridsize=15, cmap=new_cmap, norm=hexbin_norm, label='Full Photometric Sample')
+        else:
+            # hexbin_norm = mpl.colors.LogNorm(vmin=1, vmax=5000) 
+            hexbin_norm = mpl.colors.Normalize(vmin=1, vmax=500) 
+            good_both_idx = np.logical_and(good_sfr_idx, good_mass_idx)
+            ax.hexbin(all_masses[good_both_idx], all_log_sfr100s[good_both_idx], gridsize=15, cmap=new_cmap, norm=hexbin_norm, label='Full Photometric Sample')
 
     # Gray high quality points
     for id_msa in zqual_df['id_msa']:
@@ -291,9 +297,13 @@ def paper_figure_sample_selection(id_msa_list, color_var='None', plot_sfr_mass=F
 
         if id_msa in id_redshift_issue_list:
             marker = 's'
+            if show_squares == False:
+                continue
         elif id_msa in id_pab_snr_list:
             marker = 'o'
-
+            if show_low_snr == False:
+                continue
+            
         redshift = zqual_row['z_spec'].iloc[0]
         if redshift < 1.3 or redshift > 2.4:
             continue
@@ -306,6 +316,10 @@ def paper_figure_sample_selection(id_msa_list, color_var='None', plot_sfr_mass=F
             print(f'No SPS for {id_msa}')
             continue
         
+        if show_sample == False:
+            if id_msa in id_msa_list and id_msa not in id_pab_snr_list:
+                continue
+
         if plot_sfr_mass == False:
             ax.plot(redshift, stellar_mass_50, marker=marker, color='gray', ls='None', ms=gray_markersize, mec='black')
             # ax.text(redshift, stellar_mass_50, f'{id_msa}')
@@ -315,6 +329,8 @@ def paper_figure_sample_selection(id_msa_list, color_var='None', plot_sfr_mass=F
 
     # Selected Sample
     for id_msa in id_msa_list:
+        
+
         zqual_row = zqual_df[zqual_df['id_msa'] == id_msa]
         # supercat_row = supercat_df[supercat_df['id_msa']==id_msa]
         redshift = zqual_row['z_spec'].iloc[0]
@@ -348,10 +364,6 @@ def paper_figure_sample_selection(id_msa_list, color_var='None', plot_sfr_mass=F
             if len(lineratio_data_row['sed_av']) == 0:
                 rgba = 'white'
             cbar_label = 'Photometry AV'
-        # if color_var == 'ha_snr':
-        #     norm = mpl.colors.LogNorm(vmin=2, vmax=100) 
-        #     rgba = cmap(norm(ha_snr))
-        #     cbar_label = 'H$\\alpha$ SNR'
         if color_var == 'redshift':
             norm = mpl.colors.LogNorm(vmin=1.2, vmax=2.5) 
             rgba = cmap(norm(redshift))
@@ -372,13 +384,15 @@ def paper_figure_sample_selection(id_msa_list, color_var='None', plot_sfr_mass=F
 
         if id_msa in id_pab_snr_list:
             markersize = small_markersize
+            if show_low_snr == False:
+                continue
         else:
             markersize = normal_markersize
+            if show_sample == False:
+                continue
 
         print(id_msa)
-        # print(lineratio_data_row['sed_av'])
-        # if id_msa == 11714:
-        #     breakpoint()
+
         if plot_sfr_mass == False:
             ax.errorbar(redshift, stellar_mass_50, yerr=[err_stellar_mass_low, err_stellar_mass_high], marker='o', color=rgba, ls='None', mec='black', ms=markersize)
             # ax.text(redshift, stellar_mass_50.iloc[0], f'{id_msa}')
@@ -401,7 +415,10 @@ def paper_figure_sample_selection(id_msa_list, color_var='None', plot_sfr_mass=F
     ax.tick_params(labelsize=fontsize)
     
 
-    
+    if show_sample == False and show_low_snr == False:
+        norm = mpl.colors.LogNorm(vmin=0.1, vmax=50) 
+        cbar_label = 'Prospector SFR'
+        color_str = '_sfr'
     if color_var != 'None':
         sm =  mpl.cm.ScalarMappable(norm=norm, cmap=cmap)
         cbar = fig.colorbar(sm, orientation='vertical', cax=cb_ax)
@@ -412,12 +429,25 @@ def paper_figure_sample_selection(id_msa_list, color_var='None', plot_sfr_mass=F
     from matplotlib.lines import Line2D
     from matplotlib.patches import RegularPolygon
 
-    custom_lines = [Line2D([0], [0], color='orange', marker='o', markersize=8, ls='None', mec='black'),
-                    Line2D([0], [0], color='orange', marker='o', markersize=4, ls='None', mec='black'),
-                    Line2D([0], [0], color='grey', marker='s', markersize=4, ls='None', mec='black'),
-    
-                    Line2D([0], [0], color='grey', marker='h', markersize=12, ls='None'),]
-    ax.legend(custom_lines, ['Selected Sample', 'Pa$\\beta$ SNR < 5', 'Line not in Filter', 'Full Photometric Sample'])
+    line_sample = Line2D([0], [0], color='orange', marker='o', markersize=8, ls='None', mec='black')
+    line_snr = Line2D([0], [0], color='orange', marker='o', markersize=4, ls='None', mec='black')
+    line_squares = Line2D([0], [0], color='grey', marker='s', markersize=4, ls='None', mec='black')
+    line_hexes = Line2D([0], [0], color='grey', marker='h', markersize=12, ls='None')
+    custom_lines = [line_sample, line_snr, line_squares, line_hexes]
+    custom_labels = ['Selected Sample', 'Pa$\\beta$ SNR < 5', 'Line not in Filter', 'Full Photometric Sample']
+    if show_hexes == False:
+        custom_lines = [line for line in custom_lines if line != line_hexes]
+        custom_labels = [lab for lab in custom_labels if lab != 'Full Photometric Sample']
+    if show_sample == False:
+        custom_lines = [line for line in custom_lines if line != line_sample]
+        custom_labels = [lab for lab in custom_labels if lab != 'Selected Sample']
+    if show_low_snr == False:
+        custom_lines = [line for line in custom_lines if line != line_snr]
+        custom_labels = [lab for lab in custom_labels if lab != 'Pa$\\beta$ SNR < 5']
+    if show_squares == False:
+        custom_lines = [line for line in custom_lines if line != line_squares]
+        custom_labels = [lab for lab in custom_labels if lab != 'Line not in Filter']
+    ax.legend(custom_lines, custom_labels, loc=3)
 
     if plot_sfr_mass == False:
         save_loc = f'/Users/brianlorenz/uncover/Figures/paper_figures/sample_selection{color_str}.pdf'
