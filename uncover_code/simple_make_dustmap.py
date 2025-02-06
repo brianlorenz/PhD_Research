@@ -1043,9 +1043,9 @@ if __name__ == "__main__":
     id_msa_list = get_id_msa_list(full_sample=False)
     # breakpoint()
     # print(id_msa_list)
-    # make_all_dustmap(id_msa_list, full_sample=False)
+    make_all_dustmap(id_msa_list, full_sample=False)
     # copy_selected_sample_dustmaps(id_msa_list)
-    make_paper_fig_dustmaps(id_msa_list, sortby='av')
+    # make_paper_fig_dustmaps(id_msa_list, sortby='av')
     # make_paper_fig_dustmaps(id_msa_list, sortby='mass')
 
     # id_msa_list = get_id_msa_list(full_sample=True)

@@ -13,8 +13,8 @@ from plot_vals import stellar_mass_label, scale_aspect, sfr_label
 import numpy as np
 
 def sample_select():
-    ha_snr_thresh = 5
-    pab_snr_thresh = 5
+    ha_snr_thresh = 3
+    pab_snr_thresh = 3
     overlap_thresh = 0.2
 
     zqual_df = find_good_spec()
@@ -108,13 +108,18 @@ def sample_select():
         ha_transmissions = [ha_red_avg_transmission, ha_avg_transmission, ha_blue_avg_transmission]
         pab_transmissions = [pab_red_avg_transmission, pab_avg_transmission, pab_blue_avg_transmission]
 
-        if pab_snr < pab_snr_thresh:
+        if pab_snr < pab_snr_thresh and id_msa not in [19179, 26882, 39855]:
             print(f"PaB SNR of {pab_snr} less than thresh of {pab_snr_thresh}")
             id_msa_pab_snr_flag.append(id_msa)
             continue
         if ha_snr < ha_snr_thresh:
             print(f"Ha SNR of {ha_snr} less than thresh of {ha_snr_thresh}")
             id_msa_ha_snr_flag.append(id_msa)
+            continue
+        # Visual
+        if id_msa in [34506, 42360, 23890]:
+            print(f"Visually looks bad for PaB SNR")
+            id_msa_pab_snr_flag.append(id_msa)
             continue
         
         # If either halpha or pab is detected in the end filters, decide what to do
@@ -463,10 +468,10 @@ def truncate_colormap(cmap, minval=0.0, maxval=1.0, n=100):
         return new_cmap
 
 if __name__ == "__main__":
-    # sample_select()
+    sample_select()
     
     id_msa_list = get_id_msa_list(full_sample=False)
-    paper_figure_sample_selection(id_msa_list, color_var='sfr')
+    # paper_figure_sample_selection(id_msa_list, color_var='sfr')
     # paper_figure_sample_selection(id_msa_list, color_var='redshift', plot_sfr_mass=True)
 
     
