@@ -123,8 +123,6 @@ def match_supercat(id_msa):
     closest_object = supercat.iloc[closest_index]
     print("Separation:", separations[closest_index])
 
-    breakpoint()
-
 
 def make_pd_table_from_fits(file_loc):
     with fits.open(file_loc) as hdu:

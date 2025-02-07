@@ -817,7 +817,7 @@ if __name__ == "__main__":
     # fit_all_emission_uncover(id_msa_list)  
     # plot_mosaic(id_msa_list, line = 'ha_only')
     # plot_mosaic(id_msa_list, line = 'pab_only')
-    # plot_line_assessment(id_msa_list)
+    plot_line_assessment(id_msa_list)
 
-    plot_line_assessment([32111, 19896])
+    # plot_line_assessment([32111, 19896])
     pass

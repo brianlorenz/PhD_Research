@@ -30,6 +30,7 @@ from filter_integrals import integrate_filter, get_transmission_at_line, get_lin
 from uncover_prospector_seds import read_prospector
 from shutter_loc import plot_shutter_pos
 from copy import copy, deepcopy
+from uncover_cosmo import find_pix_per_kpc, pixel_scale
 
 ha_trasm_thresh = 0.8
 pab_trasm_thresh = 0.8
@@ -55,7 +56,8 @@ id_msa_image_size_dict = {
     39744:(50,50),
     39855:(50,50),
     42213:(50,50),
-    47875:(50,50) 
+    47875:(50,50),
+    50000:(50,50)
 }
 
 def make_dustmap_simple(id_msa, aper_size='None', axarr_final=[], ax_labels=False, label_str=''):
@@ -459,11 +461,19 @@ def make_dustmap_simple(id_msa, aper_size='None', axarr_final=[], ax_labels=Fals
         # Get 150 grayscale
         image_150m, wht_image_150m, photfnu_150m = get_cutout(obj_skycoord, 'f150w', size=image_size)
         
+       
         #Image plots
         ax_ha_image_paper.imshow(ha_image)
         ax_150_image_paper.imshow(image_150m.data, cmap='Greys_r')
         ax_ha_map_paper.imshow(ha_linemap_logscaled, cmap=cmap, norm=ha_linemap_norm)
         ax_pab_overlay_paper.imshow(ha_linemap_logscaled, cmap=cmap, norm=ha_linemap_norm)
+
+        # Get pixesl per 1 kpc for scale
+        pix_per_kpc = find_pix_per_kpc(redshift)
+        ax_ha_image_paper.plot([5,5+pix_per_kpc], [10,10], ls='-', color='white', lw=3)
+        ax_ha_image_paper.plot([5,5+(0.5/pixel_scale)], [15,15], ls='-', color='white', lw=3)
+        ax_ha_image_paper.text(5, 9, '1kpc', color='white')
+        ax_ha_image_paper.text(5, 14, '0.5"', color='white')
 
         # Add filters to HaImage
         text_height = 0.92
@@ -755,7 +765,8 @@ def plot_sed_around_line(ax, filters, sed_df, spec_df, redshift, line_index, tra
             boot_red_flux = np.random.normal(loc=red_flux, scale=err_red_flux, size=1)
             boot_green_flux = np.random.normal(loc=green_flux, scale=err_green_flux, size=1)
             boot_blue_flux = np.random.normal(loc=blue_flux, scale=err_blue_flux, size=1)
-            boot_line, boot_cont = compute_line(cont_percentile, boot_red_flux[0], boot_green_flux[0], boot_blue_flux[0], redshift, 0, filter_width, line_wave_rest)            
+            boot_cont_percentile = compute_cont_pct(blue_wave, green_wave, red_wave, boot_blue_flux, boot_red_flux)
+            boot_line, boot_cont = compute_line(boot_cont_percentile, boot_red_flux[0], boot_green_flux[0], boot_blue_flux[0], redshift, 0, filter_width, line_wave_rest)            
             if line_index == 0:
                 line_name = 'ha'
             else:
@@ -1042,7 +1053,7 @@ if __name__ == "__main__":
     # make_dustmap_simple(18471)
     id_msa_list = get_id_msa_list(full_sample=False)
     # breakpoint()
-    # print(id_msa_list)
+    # print(id_msa_list).
     make_all_dustmap(id_msa_list, full_sample=False)
     # copy_selected_sample_dustmaps(id_msa_list)
     # make_paper_fig_dustmaps(id_msa_list, sortby='av')

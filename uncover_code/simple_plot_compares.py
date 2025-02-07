@@ -58,7 +58,7 @@ def paper_plot_sed_emfit_accuracy(id_msa_list, color_var=''):
             rgba = cmap(norm(ha_snr))
             cbar_label = 'H$\\alpha$ SNR'
         if color_var == 'pab_snr':
-            norm = mpl.colors.Normalize(vmin=5, vmax=20) 
+            norm = mpl.colors.Normalize(vmin=3, vmax=20) 
             rgba = cmap(norm(pab_snr))
             cbar_label = 'Pa$\\beta$ SNR'
         elif color_var == 'metallicity':
@@ -98,16 +98,17 @@ def paper_plot_sed_emfit_accuracy(id_msa_list, color_var=''):
 
         # breakpoint()
         av_datapoint = (lineratio_data_row['emission_fit_lineratio'].iloc[0], lineratio_data_row['sed_lineratio'].iloc[0])
+        
         ax_av_sed_vs_emfit.errorbar(av_datapoint[0], av_datapoint[1], xerr=[[lineratio_data_row['err_emission_fit_lineratio_low'].iloc[0]], [lineratio_data_row['err_emission_fit_lineratio_high'].iloc[0]]], yerr=[[lineratio_data_row['err_sed_lineratio_low'].iloc[0]], [lineratio_data_row['err_sed_lineratio_high'].iloc[0]]], marker='o', color=rgba, ls='None', mec='black', ms=markersize, ecolor='black')
         ax_av_sed_vs_emfit.set_xlabel(f'(H$\\alpha$ / Pa$\\beta$) Spectrum', fontsize=fontsize)
         ax_av_sed_vs_emfit.set_ylabel(f'(H$\\alpha$ / Pa$\\beta$) Photometry', fontsize=fontsize)
         av_distances.append(get_distance(np.array(av_datapoint)))
     
-        add_text = 1
-        # if add_text:
-        #     ax_av_sed_vs_emfit.text(lineratio_data_row['emission_fit_av'], lineratio_data_row['sed_av'], f'{id_msa}')
-        #     ax_pab_sed_vs_emfit.text(fit_pab_flux, data_df_row['fe_cor_pab_sed_flux'], f'{id_msa}')
-        #     ax_ha_sed_vs_emfit.text(fit_nii_cor_ha_flux, data_df_row['nii_cor_ha_sed_flux'], f'{id_msa}')
+        add_text = 0
+        if add_text:
+            ax_av_sed_vs_emfit.text(av_datapoint[0], av_datapoint[1], f'{id_msa}')
+            ax_pab_sed_vs_emfit.text(pab_datapoint[0], pab_datapoint[1], f'{id_msa}')
+            ax_ha_sed_vs_emfit.text(ha_datapoint[0], ha_datapoint[1], f'{id_msa}')
 
     ha_distances = np.abs(ha_distances)
     pab_distances = np.abs(pab_distances)

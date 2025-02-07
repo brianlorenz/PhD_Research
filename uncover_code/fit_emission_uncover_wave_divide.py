@@ -44,7 +44,7 @@ def fit_emission_uncover(spectrum, save_name, bootstrap_num=-1):
     if bootstrap_num > -1:
         n_loops = 0
     else:
-        n_loops = 2
+        n_loops = 1000
     
 
 
@@ -792,9 +792,10 @@ if __name__ == "__main__":
     # fit_emission_uncover(spec_df, mock_name)
 
 
-    id_msa_list = get_id_msa_list(full_sample=True)
+    id_msa_list = get_id_msa_list(full_sample=False)
+    id_msa_list = id_msa_list[2:]
     
-    # fit_all_emission_uncover(id_msa_list)  
-    plot_mosaic(id_msa_list, line = 'ha_only')
-    plot_mosaic(id_msa_list, line = 'pab_only')
+    fit_all_emission_uncover(id_msa_list)  
+    # plot_mosaic(id_msa_list, line = 'ha_only')
+    # plot_mosaic(id_msa_list, line = 'pab_only')
     pass

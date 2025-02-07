@@ -108,7 +108,7 @@ def sample_select():
         ha_transmissions = [ha_red_avg_transmission, ha_avg_transmission, ha_blue_avg_transmission]
         pab_transmissions = [pab_red_avg_transmission, pab_avg_transmission, pab_blue_avg_transmission]
 
-        if pab_snr < pab_snr_thresh and id_msa not in [19179, 26882, 39855]:
+        if pab_snr < pab_snr_thresh and id_msa not in [19179, 39855]:
             print(f"PaB SNR of {pab_snr} less than thresh of {pab_snr_thresh}")
             id_msa_pab_snr_flag.append(id_msa)
             continue
@@ -117,7 +117,7 @@ def sample_select():
             id_msa_ha_snr_flag.append(id_msa)
             continue
         # Visual
-        if id_msa in [34506, 42360, 23890]:
+        if id_msa in [34506, 42360, 23890, 27862, 19981]:
             print(f"Visually looks bad for PaB SNR")
             id_msa_pab_snr_flag.append(id_msa)
             continue

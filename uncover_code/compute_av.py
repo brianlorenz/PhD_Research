@@ -16,6 +16,18 @@ def get_nii_correction(id_msa, sps_df = []):
     if len(sps_df) == 0:
         sps_df = read_SPS_cat()
     sps_row = sps_df[sps_df['id_msa'] == id_msa]
+    logmass = sps_row['mstar_50'].iloc[0]
+    logsfr = np.log10(sps_row['sfr100_50'].iloc[0])
+    predicted_metallicity = sanders_plane(logmass, logsfr)
+    nii6585_ha_rat = sanders_nii_ratio(predicted_metallicity) # Adjusted relation
+    niicombined_ha_rat = nii6585_ha_rat * 1.5 # From the other plot
+    nii_correction_factor = 1 / (1+niicombined_ha_rat)
+    return nii_correction_factor
+
+def get_nii_correction_formmet(id_msa, sps_df = []):
+    if len(sps_df) == 0:
+        sps_df = read_SPS_cat()
+    sps_row = sps_df[sps_df['id_msa'] == id_msa]
     metallicity = sps_row['met_50'].iloc[0]
     nii6585_ha_rat = sanders_nii_ratio(metallicity, linear_scale=0) # Adjusted relation
     niicombined_ha_rat = nii6585_ha_rat * 1.5 # From the other plot
@@ -111,7 +123,6 @@ def sanders_nii_ratio(met_12_log_OH, linear_scale = 8.69):
     log_nii_ratio = c0 + (c1*x) + (c2 * x**2) + (c3 * x**3)
     nii_ratio = 10**log_nii_ratio
     return nii_ratio
-
 
 
 # print(compute_ha_pab_av(1/16))
