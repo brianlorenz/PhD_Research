@@ -7,7 +7,7 @@ from astropy.convolution import Gaussian2DKernel, convolve
 from uncover_read_data import read_supercat, read_raw_spec, read_spec_cat, read_segmap, read_SPS_cat, read_aper_cat, read_fluxcal_spec, get_id_msa_list
 from uncover_make_sed import read_sed
 from uncover_sed_filters import unconver_read_filters
-from fit_emission_uncover_old import line_list
+from fit_emission_uncover_wave_divide import line_list
 from sedpy import observate
 import matplotlib.pyplot as plt
 from matplotlib.gridspec import GridSpec
@@ -543,12 +543,12 @@ def get_norm(image_map, scalea=1, lower_pct=10, upper_pct=99):
         norm = Normalize(vmin=np.percentile(imagemap_gt0,lower_pct), vmax=np.percentile(imagemap_gt0,upper_pct))
         return norm
 
-def make_3color(id_msa, line_index = 0, plot = False, image_size=(100,100)): 
+def make_3color(id_msa, line_index = 0, plot = False, image_size=(100,100), paalpha=False): 
     obj_skycoord = get_coords(id_msa)
 
     line_name = line_list[line_index][0]
 
-    filt_red, filt_green, filt_blue, all_filts = find_filters_around_line(id_msa, line_index)
+    filt_red, filt_green, filt_blue, all_filts = find_filters_around_line(id_msa, line_index, paalpha=paalpha)
     filters = [filt_red, filt_green, filt_blue]
 
 
@@ -626,7 +626,7 @@ def get_cutout_segmap(obj_skycoord, size = (100, 100)):
     segmap_cutout = Cutout2D(segmap, obj_skycoord, size, wcs=segmap_wcs)
     return segmap_cutout
 
-def find_filters_around_line(id_msa, line_number):
+def find_filters_around_line(id_msa, line_number, paalpha=False):
     """
     Parameters:
     id_msa (int):
@@ -636,7 +636,11 @@ def find_filters_around_line(id_msa, line_number):
     supercat_df = read_supercat()
     filt_names = get_filt_cols(supercat_df, skip_wide_bands=True)
     filt_names.sort()
-    zqual_detected_df = ascii.read('/Users/brianlorenz/uncover/zqual_df_simple.csv').to_pandas()
+    if paalpha == True:
+        paa_str = '_paa'
+    else:
+        paa_str = ''
+    zqual_detected_df = ascii.read(f'/Users/brianlorenz/uncover/zqual_df_simple{paa_str}.csv').to_pandas()
     zqual_row = zqual_detected_df[zqual_detected_df['id_msa'] == id_msa]
     detected_filt = zqual_row[f'line{line_number}_filt'].iloc[0]
     detected_index = [i for i in range(len(filt_names)) if filt_names[i] == detected_filt][0]
@@ -714,31 +718,45 @@ def plot_sed_around_line(ax, filters, sed_df, spec_df, redshift, line_index, tra
     ax.axvline(1.094*(1+redshift), ls='--', color='green') # Pa gamma
     # Can check lines here https://linelist.pa.uky.edu/atomic/query.cgi
     
+    def set_error_floor(flux, err_flux, floor_pct=0.05):
+        err_floor = flux*0.05
+        if err_flux < err_floor:
+            err_flux = err_floor
+        return err_flux
+
     # Plot the 3 SED points
     for i in range(len(filters)):
         sed_row = sed_df[sed_df['filter'] == filters[i]]
-        if plt_sed_points:
-            ax.errorbar(sed_row['eff_wavelength'], sed_row['flux'], yerr = sed_row['err_flux'], color=colors[i], marker='o')
+        
         
         if i == 0:
             red_wave = sed_row['eff_wavelength'].iloc[0]
             red_flux = sed_row['flux'].iloc[0]
             err_red_flux = sed_row['err_flux'].iloc[0]
+            err_red_flux = set_error_floor(red_flux, err_red_flux)
         if i == 1:
             green_wave = sed_row['eff_wavelength'].iloc[0]
             green_flux = sed_row['flux'].iloc[0]
             err_green_flux = sed_row['err_flux'].iloc[0]
+            err_green_flux = set_error_floor(green_flux, err_green_flux)
         if i == 2:
             blue_wave = sed_row['eff_wavelength'].iloc[0]
             blue_flux = sed_row['flux'].iloc[0]
             err_blue_flux = sed_row['err_flux'].iloc[0]
+            err_blue_flux = set_error_floor(blue_flux, err_blue_flux)
 
         # Read and plot each filter curve
         sedpy_name = filters[i].replace('f_', 'jwst_')
         sedpy_filt = observate.load_filters([sedpy_name])[0]
         if plt_filter_curves:
             ax.plot(sedpy_filt.wavelength/1e4, sedpy_filt.transmission/6e5, ls='-', marker='None', color=colors[i], lw=1)
-    
+
+    if plt_sed_points:
+        ax.errorbar(red_wave, red_flux, yerr = err_red_flux, color=colors[0], marker='o')
+        ax.errorbar(green_wave, green_flux, yerr = err_green_flux, color=colors[1], marker='o')
+        ax.errorbar(blue_wave, blue_flux, yerr = err_blue_flux, color=colors[2], marker='o')
+
+
     # Compute the percentile to use when combining the continuum
     connect_color = 'purple'
     

@@ -40,6 +40,8 @@ def paper_plot_sed_emfit_accuracy(id_msa_list, color_var=''):
     pab_distances = []
     av_distances = []
     for id_msa in id_msa_list:
+        if id_msa == 14880:
+            continue
         data_df_row = data_df[data_df['id_msa'] == id_msa]
         lineratio_data_row = lineratio_data_df[lineratio_data_df['id_msa'] == id_msa]
         sps_row = sps_df[sps_df['id_msa']==id_msa]
@@ -104,7 +106,7 @@ def paper_plot_sed_emfit_accuracy(id_msa_list, color_var=''):
         ax_av_sed_vs_emfit.set_ylabel(f'(H$\\alpha$ / Pa$\\beta$) Photometry', fontsize=fontsize)
         av_distances.append(get_distance(np.array(av_datapoint)))
     
-        add_text = 0
+        add_text = 1
         if add_text:
             ax_av_sed_vs_emfit.text(av_datapoint[0], av_datapoint[1], f'{id_msa}')
             ax_pab_sed_vs_emfit.text(pab_datapoint[0], pab_datapoint[1], f'{id_msa}')

@@ -4,7 +4,6 @@ from astropy.io import ascii
 from uncover_prospector_seds import make_all_prospector
 from simple_make_dustmap import make_3color, get_line_coverage, ha_trasm_thresh, pab_trasm_thresh
 from sedpy import observate
-from fit_emission_uncover_wave_divide import line_list
 import sys
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -12,23 +11,36 @@ import matplotlib as mpl
 from plot_vals import stellar_mass_label, scale_aspect, sfr_label
 import numpy as np
 
-def sample_select():
+def sample_select(paalpha=False):
+    if paalpha:
+        save_dir = '/Users/brianlorenz/uncover/Data/sample_selection_paa/'
+        paa_str = '_paa'
+        emfit_dir = 'emission_fitting_paalpha'
+        from fit_emission_uncover_paalpha import line_list
+        pab_snr_thresh = 1 # Actually Paalpha
+
+    else:
+        from fit_emission_uncover_wave_divide import line_list
+        save_dir = '/Users/brianlorenz/uncover/Data/sample_selection/'
+        paa_str = ''
+        emfit_dir = 'emission_fitting'
+        pab_snr_thresh = 2
+
     ha_snr_thresh = 3
-    pab_snr_thresh = 3
     overlap_thresh = 0.2
 
     zqual_df = find_good_spec()
-    zqual_df_covered = select_spectra(zqual_df)
+    zqual_df_covered = select_spectra(zqual_df, line_list)
     line_not_covered_id_msas = []
     for id_msa in zqual_df['id_msa']:
         if len(zqual_df_covered[zqual_df_covered['id_msa'] == id_msa]) == 0:
             line_not_covered_id_msas.append(id_msa)
     line_not_covered_id_msas_df = pd.DataFrame(line_not_covered_id_msas, columns=['id_msa'])
-    line_not_covered_id_msas_df.to_csv('/Users/brianlorenz/uncover/Data/sample_selection/line_not_in_filt.csv', index=False)
-    zqual_df_covered.to_csv('/Users/brianlorenz/uncover/zqual_df_simple.csv', index=False)
+    line_not_covered_id_msas_df.to_csv(save_dir + 'line_not_in_filt.csv', index=False)
+    zqual_df_covered.to_csv(f'/Users/brianlorenz/uncover/zqual_df_simple{paa_str}.csv', index=False)
     id_msa_list = zqual_df_covered['id_msa'].to_list()
     total_id_msa_list_df = pd.DataFrame(id_msa_list, columns=['id_msa'])
-    total_id_msa_list_df.to_csv('/Users/brianlorenz/uncover/Data/sample_selection/total_before_cuts.csv', index=False)
+    total_id_msa_list_df.to_csv(save_dir + 'total_before_cuts.csv', index=False)
     lines_df = read_lineflux_cat()
 
     # Run emission fits / sed+spec generation on this group, then:
@@ -59,8 +71,10 @@ def sample_select():
             #42041 - not in supercat
             #49991 - not in supercat
         # Read in the images
-        ha_filters, ha_images, wht_ha_images, obj_segmap, ha_photfnus, ha_all_filts = make_3color(id_msa, line_index=0, plot=False)
-        pab_filters, pab_images, wht_pab_images, obj_segmap, pab_photfnus, pab_all_filts = make_3color(id_msa, line_index=1, plot=False)
+        ha_filters, ha_images, wht_ha_images, obj_segmap, ha_photfnus, ha_all_filts = make_3color(id_msa, line_index=0, plot=False, paalpha=paalpha)
+        pab_filters, pab_images, wht_pab_images, obj_segmap, pab_photfnus, pab_all_filts = make_3color(id_msa, line_index=1, plot=False, paalpha=paalpha)
+        # paa_filters, paa_images, wht_paa_images, obj_segmap, paa_photfnus, paa_all_filts = make_3color(id_msa, line_index=2, plot=False)
+
         ha_sedpy_name = ha_filters[1].replace('f', 'jwst_f')
         ha_sedpy_filt = observate.load_filters([ha_sedpy_name])[0]
         ha_filter_width = ha_sedpy_filt.rectangular_width
@@ -84,7 +98,7 @@ def sample_select():
         
 
         # Emission fit properties
-        fit_df = ascii.read(f'/Users/brianlorenz/uncover/Data/emission_fitting/{id_msa}_emission_fits.csv').to_pandas()
+        fit_df = ascii.read(f'/Users/brianlorenz/uncover/Data/{emfit_dir}/{id_msa}_emission_fits.csv').to_pandas()
         ha_flux_fit = fit_df.iloc[0]['flux']
         pab_flux_fit = fit_df.iloc[1]['flux']
         ha_sigma = fit_df.iloc[0]['sigma'] # full width of the line
@@ -99,12 +113,12 @@ def sample_select():
         lines_df_pab_snr = lines_df_row['f_PaB'].iloc[0] / lines_df_row['e_PaB'].iloc[0]
 
         # Check the coverage fraction of the lines - we want it high in the line, but 0 int he continuum filters
-        ha_avg_transmission = get_line_coverage(id_msa, ha_sedpy_filt, redshift, line_name='ha')
-        pab_avg_transmission = get_line_coverage(id_msa, pab_sedpy_filt, redshift, line_name='pab')
-        ha_red_avg_transmission = get_line_coverage(id_msa, ha_red_sedpy_filt, redshift, line_name='ha')
-        pab_red_avg_transmission = get_line_coverage(id_msa, pab_red_sedpy_filt, redshift, line_name='pab')
-        ha_blue_avg_transmission = get_line_coverage(id_msa, ha_blue_sedpy_filt, redshift, line_name='ha')
-        pab_blue_avg_transmission = get_line_coverage(id_msa, pab_blue_sedpy_filt, redshift, line_name='pab')
+        ha_avg_transmission = get_line_coverage(id_msa, ha_sedpy_filt, redshift, line_name='ha', paalpha=paalpha)
+        pab_avg_transmission = get_line_coverage(id_msa, pab_sedpy_filt, redshift, line_name='pab', paalpha=paalpha)
+        ha_red_avg_transmission = get_line_coverage(id_msa, ha_red_sedpy_filt, redshift, line_name='ha', paalpha=paalpha)
+        pab_red_avg_transmission = get_line_coverage(id_msa, pab_red_sedpy_filt, redshift, line_name='pab', paalpha=paalpha)
+        ha_blue_avg_transmission = get_line_coverage(id_msa, ha_blue_sedpy_filt, redshift, line_name='ha', paalpha=paalpha)
+        pab_blue_avg_transmission = get_line_coverage(id_msa, pab_blue_sedpy_filt, redshift, line_name='pab', paalpha=paalpha)
         ha_transmissions = [ha_red_avg_transmission, ha_avg_transmission, ha_blue_avg_transmission]
         pab_transmissions = [pab_red_avg_transmission, pab_avg_transmission, pab_blue_avg_transmission]
 
@@ -177,13 +191,13 @@ def sample_select():
     id_msa_skipped_df = pd.DataFrame(id_msa_skipped, columns=['id_msa'])
 
     # Write the DataFrame to a text file using a space as a delimiter
-    good_df.to_csv('/Users/brianlorenz/uncover/Data/sample_selection/main_sample.csv', index=False)
-    line_notfullcover_df.to_csv('/Users/brianlorenz/uncover/Data/sample_selection/line_notfullcover_df.csv', index=False)
-    filt_edge_df.to_csv('/Users/brianlorenz/uncover/Data/sample_selection/filt_edge.csv', index=False)
-    ha_snr_flag_df.to_csv('/Users/brianlorenz/uncover/Data/sample_selection/ha_snr_flag.csv', index=False)
-    pab_snr_flag_df.to_csv('/Users/brianlorenz/uncover/Data/sample_selection/pab_snr_flag.csv', index=False)
-    id_msa_skipped_df.to_csv('/Users/brianlorenz/uncover/Data/sample_selection/id_msa_skipped.csv', index=False)
-    cont_overlap_df.to_csv('/Users/brianlorenz/uncover/Data/sample_selection/cont_overlap_line.csv', index=False)
+    good_df.to_csv(save_dir + 'main_sample.csv', index=False)
+    line_notfullcover_df.to_csv(save_dir + 'line_notfullcover_df.csv', index=False)
+    filt_edge_df.to_csv(save_dir + 'filt_edge.csv', index=False)
+    ha_snr_flag_df.to_csv(save_dir + 'ha_snr_flag.csv', index=False)
+    pab_snr_flag_df.to_csv(save_dir + 'pab_snr_flag.csv', index=False)
+    id_msa_skipped_df.to_csv(save_dir + 'id_msa_skipped.csv', index=False)
+    cont_overlap_df.to_csv(save_dir + 'cont_overlap_line.csv', index=False)
     return
 
 def find_good_spec():
@@ -193,7 +207,7 @@ def find_good_spec():
     zqual_df = zqual_df[zqual_df['flag_spec_qual'] == 0]
     return zqual_df
 
-def select_spectra(zqual_df):
+def select_spectra(zqual_df, line_list):
     """Checking that both target lines are covered in the photometry"""
     uncover_filt_dir, filters = unconver_read_filters()
     supercat_df = read_supercat()
@@ -201,19 +215,24 @@ def select_spectra(zqual_df):
     covered_idxs = []
     line0_filts = []
     line1_filts = []
+    # line2_filts = []
     for i in range(len(zqual_df)):
         redshift = zqual_df['z_spec'].iloc[i]
-        line1_cover, line0_filt_name = line_in_range(redshift, line_list[0][1], filt_cols, uncover_filt_dir)
-        line2_cover, line1_filt_name = line_in_range(redshift, line_list[1][1], filt_cols, uncover_filt_dir)
-        both_corered = line1_cover and line2_cover
+        line0_cover, line0_filt_name = line_in_range(redshift, line_list[0][1], filt_cols, uncover_filt_dir)
+        line1_cover, line1_filt_name = line_in_range(redshift, line_list[1][1], filt_cols, uncover_filt_dir)
+        # line2_cover, line2_filt_name = line_in_range(redshift, line_list[2][1], filt_cols, uncover_filt_dir)
+
+        both_corered = (line0_cover and line1_cover) #or (line0_cover and line2_cover)
         if both_corered == True:
             covered_idxs.append(i)
             line0_filts.append(line0_filt_name)
             line1_filts.append(line1_filt_name)
+            # line2_filts.append(line2_filt_name)
     zqual_df_covered = zqual_df.iloc[covered_idxs]
     zqual_df_covered = zqual_df_covered.reset_index()
     zqual_df_covered['line0_filt'] = line0_filts
     zqual_df_covered['line1_filt'] = line1_filts
+    # zqual_df_covered['line2_filt'] = line2_filts
     return zqual_df_covered
 
 def line_in_range(z, target_line, filt_cols, uncover_filt_dir):
@@ -468,9 +487,9 @@ def truncate_colormap(cmap, minval=0.0, maxval=1.0, n=100):
         return new_cmap
 
 if __name__ == "__main__":
-    sample_select()
+    sample_select(paalpha=False)
     
-    id_msa_list = get_id_msa_list(full_sample=False)
+    # id_msa_list = get_id_msa_list(full_sample=False)
     # paper_figure_sample_selection(id_msa_list, color_var='sfr')
     # paper_figure_sample_selection(id_msa_list, color_var='redshift', plot_sfr_mass=True)
 

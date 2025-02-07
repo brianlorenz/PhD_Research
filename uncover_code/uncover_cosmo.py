@@ -3,7 +3,7 @@ from astropy.cosmology import FlatLambdaCDM
 
 cosmo = FlatLambdaCDM(H0=70, Om0=0.3)
 
-pixel_scale = 0.031 #arcsec per pix
+pixel_scale = 0.04 #arcsec per pix
 
 def find_pix_per_kpc(redshift):
     kpc_per_arcsec = cosmo.angular_diameter_distance(redshift).to('kpc') / 206265  

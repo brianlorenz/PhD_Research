@@ -10,6 +10,7 @@ avneb_str = 'A$_{\\mathrm{V,neb}}$'
 ha_factor = 2.79
 hb_factor = 1
 pab_factor = 0.155
+paa_factor = 0.305
 
 # nii_correction_ha_flux = 0.75
 def get_nii_correction(id_msa, sps_df = []):
@@ -46,6 +47,7 @@ def get_fe_correction(id_msa, sps_df = []): # From fe_diagnostics.py
 
 ha_wave = line_list[0][1]/10000
 pab_wave = line_list[1][1]/10000
+paa_wave = 18750/10000
 hb_wave = 0.4861
 
 def calzetti_law(wavelength_um):
@@ -54,6 +56,14 @@ def calzetti_law(wavelength_um):
     if wavelength_um >= 0.1200  and wavelength_um < 0.6300:
         k_lambda = 2.659 * (-2.156 + 1.509 / wavelength_um - 0.198 / wavelength_um**2 + 0.011 / wavelength_um**3) + 4.05
     return k_lambda
+
+def compute_ha_paalpha_av(paalpha_ha_ratio):
+    """ PaB / Ha is the ratio you need, should be slightly greater than 1/20"""
+    R_V_value = 4.05
+    intrinsic_ratio = paa_factor / ha_factor
+    k_factor = 2.5/(calzetti_law(ha_wave) - calzetti_law(paa_wave))
+    A_V_value = R_V_value*k_factor*np.log10(paalpha_ha_ratio/intrinsic_ratio)
+    return A_V_value
 
 
 def compute_ha_pab_av(pab_ha_ratio):

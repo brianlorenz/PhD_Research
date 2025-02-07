@@ -13,20 +13,17 @@ import time
 from uncover_read_data import read_raw_spec, read_prism_lsf, read_fluxcal_spec, get_id_msa_list
 from astropy.convolution import convolve
 from scipy.interpolate import interp1d
-from compute_av import compute_ha_pab_av, get_nii_correction
+from compute_av import compute_ha_pab_av, get_nii_correction, compute_ha_paalpha_av
 from plot_vals import scale_aspect
 
-emission_fit_dir = '/Users/brianlorenz/uncover/Data/emission_fitting/'
+emission_fit_dir = '/Users/brianlorenz/uncover/Data/emission_fitting_paalpha/'
 
 line_list = [
     ('Halpha', 6564.6),
-    ('PaBeta', 12821.7)
+    ('PaAlpha', 18750)
 ]
-# line_list = [
-#     ('Halpha', 6564.6),
-#     ('PaBeta', 12821.7),
-#     ('PaAlpha', 18750)
-# ]
+
+
 lines_dict = {
     line_list[0][0]: line_list[0][1],
     line_list[1][0]: line_list[1][1]
@@ -34,7 +31,7 @@ lines_dict = {
 line_centers_rest = [line_list[i][1] for i in range(len(line_list))]
 
 ha_fit_range = (5500, 7700)
-pab_fit_range = (11800, 14200)
+pab_fit_range = (17000, 20000)
 
 
 def fit_emission_uncover(spectrum, save_name, bootstrap_num=-1):
@@ -49,7 +46,7 @@ def fit_emission_uncover(spectrum, save_name, bootstrap_num=-1):
     if bootstrap_num > -1:
         n_loops = 0
     else:
-        n_loops = 1000
+        n_loops = 100
     
 
 
@@ -94,11 +91,7 @@ def fit_emission_uncover(spectrum, save_name, bootstrap_num=-1):
             else:
                 guess.append(amp_guess) 
         if i == 1:
-            if save_name in guess_id_list:
-                pab_guess = guess_df[guess_df['id_msa'] == save_name]['pab_amp'].iloc[0]
-                guess.append(pab_guess) 
-            else:
-                guess.append(amp_guess/8)
+            guess.append(amp_guess/5)
         bounds_low.append(0.001)
         bounds_high.append(10000000)
     bounds = (np.array(bounds_low), np.array(bounds_high))
@@ -166,7 +159,7 @@ def fit_emission_uncover(spectrum, save_name, bootstrap_num=-1):
     err_fluxes = [i[1] for i in flux_tuples]
     ha_idx = [idx for idx, name in enumerate(
         line_names) if name == 'Halpha'][0]
-    pab_idx = [idx for idx, name in enumerate(line_names) if name == 'PaBeta'][0]
+    pab_idx = [idx for idx, name in enumerate(line_names) if name == 'PaAlpha'][0]
 
     # Apply nii correction to the halpha flux
     import copy
@@ -179,7 +172,7 @@ def fit_emission_uncover(spectrum, save_name, bootstrap_num=-1):
 
     ha_pab_ratio = [nii_cor_fluxes[ha_idx] / nii_cor_fluxes[pab_idx] for i in range(len(line_list))]
     eq_widths = [nii_cor_fluxes[i] / cont_values[i] for i in range(len(line_list))]
-    ha_pab_av = [compute_ha_pab_av(1/ha_pab_ratio[i]) for i in range(len(line_list))]
+    ha_pab_av = [compute_ha_paalpha_av(1/ha_pab_ratio[i]) for i in range(len(line_list))]
 
     
     def compute_percentile_errs_on_line(line_idx, measured_line_flux, nii_cor=False):
@@ -257,7 +250,7 @@ def fit_emission_uncover(spectrum, save_name, bootstrap_num=-1):
                               columns=['line_name', 'line_center_rest', 'z_offset', 'err_z_offset', 
                                        'velocity', 
                                        'err_fixed_velocity', 'err_fixed_velocity_low', 'err_fixed_velocity_high', 
-                                       'amplitude', 'err_amplitude', 'sigma', 'err_sigma', 'flux', 'err_flux', 'err_flux_low', 'err_flux_high', 'nii_cor_flux', 'err_nii_cor_flux', 'err_nii_cor_flux_low', 'err_nii_cor_flux_high', 'ha_pab_ratio', 'err_ha_pab_ratio_low', 'err_ha_pab_ratio_high', 'ha_pab_av', 'err_ha_pab_av_low', 'err_ha_pab_av_high', 'equivalent_width_aa'])
+                                       'amplitude', 'err_amplitude', 'sigma', 'err_sigma', 'flux', 'err_flux', 'err_flux_low', 'err_flux_high', 'nii_cor_flux', 'err_nii_cor_flux', 'err_nii_cor_flux_low', 'err_nii_cor_flux_high', 'ha_paa_ratio', 'err_ha_paa_ratio_low', 'err_ha_paa_ratio_high', 'ha_paa_av', 'err_ha_paa_av_low', 'err_ha_paa_av_high', 'equivalent_width_aa'])
     fit_df['signal_noise_ratio'] = fit_df['flux']/fit_df['err_flux']
 
     imd.check_and_make_dir(emission_fit_dir)
@@ -380,9 +373,9 @@ def plot_emission_fit(emission_fit_dir, save_name, total_spec_df, ax_plot='', pl
     set_plot_ranges(ax, ax_Hb, Hb_plot_range, Hb_zoom_box_color)
 
     ax_Ha.text(0.05, 0.93, f"Ha: {round(10**17*fit_df.iloc[0]['flux'], 4)}", transform=ax_Ha.transAxes)
-    ax_Hb.text(0.05, 0.93, f"PaB: {round(10**17*fit_df.iloc[1]['flux'], 4)}", transform=ax_Hb.transAxes)
-    ax_Ha.text(0.05, 0.83, f"Ratio: {round(fit_df.iloc[0]['ha_pab_ratio'], 4)}", transform=ax_Ha.transAxes)
-    ax_Hb.text(0.05, 0.83, f"Ratio: {round(fit_df.iloc[1]['ha_pab_ratio'], 4)}", transform=ax_Hb.transAxes)
+    ax_Hb.text(0.05, 0.93, f"PaA: {round(10**17*fit_df.iloc[1]['flux'], 4)}", transform=ax_Hb.transAxes)
+    ax_Ha.text(0.05, 0.83, f"Ratio: {round(fit_df.iloc[0]['ha_paa_ratio'], 4)}", transform=ax_Ha.transAxes)
+    ax_Hb.text(0.05, 0.83, f"Ratio: {round(fit_df.iloc[1]['ha_paa_ratio'], 4)}", transform=ax_Hb.transAxes)
     ax_Ha.text(0.95, 0.93, f"SNR: {round(fit_df.iloc[0]['signal_noise_ratio'], 4)}", transform=ax_Ha.transAxes, horizontalalignment='right')
     ax_Hb.text(0.95, 0.93, f"SNR: {round(fit_df.iloc[1]['signal_noise_ratio'], 4)}", transform=ax_Hb.transAxes, horizontalalignment='right')
 
@@ -454,7 +447,7 @@ def monte_carlo_fit(func, wavelength, continuum, y_data, y_err, guess, bounds, n
     #Fill over nan values with the median error * 3
     # y_err = y_err.fillna(5*y_err.median())
 
-    new_y_datas = [[np.random.normal(loc=y_data.iloc[j], scale=y_err.iloc[j]) for j in range(len(y_data))] for i in range(n_loops)]
+    new_y_datas = [[np.random.normal(loc=y_data.iloc[j], scale=np.abs(y_err.iloc[j])) for j in range(len(y_data))] for i in range(n_loops)]
     
     # Turn them into dataframes with matching indicies
     new_y_data_dfs = [pd.DataFrame(new_y, columns=['flux']).set_index(y_data.index)['flux'] for new_y in new_y_datas]
@@ -656,7 +649,7 @@ def fit_continuum(wavelength, flux, plot_cont=True, save_name=''):
         plot_cont_axis(ax_ha, ha_region)
         plot_cont_axis(ax_pab, pab_region)
         ax_ha.legend()
-        fig.savefig(f'/Users/brianlorenz/uncover/Data/emission_fitting/continuum/{save_name}_cont.pdf')
+        fig.savefig(emission_fit_dir + f'continuum/{save_name}_cont.pdf')
         plt.close()
     return continuum
 
@@ -750,9 +743,11 @@ def fit_all_emission_uncover(id_msa_list):
         if id_msa == 42041:
             continue
         spec_df = read_fluxcal_spec(id_msa)
-        print(np.max(spec_df.rest_wave_aa))
-        continue
+    
         print(f'Fitting emission for {id_msa}')
+        if np.max(spec_df.rest_wave_aa) < 19000:
+            print('cannot fit PaAlpha, redshift wrong')
+            continue
         fit_emission_uncover(spec_df, id_msa)
 
 
@@ -788,8 +783,8 @@ if __name__ == "__main__":
     # # (Currently using)
     # id_msa = 18471
     # id_msa = 19179
-    # id_msa = 14573
-    id_msa = 50000
+    id_msa = 46310
+    # id_msa = 50000
     spec_df = read_fluxcal_spec(id_msa)
     fit_emission_uncover(spec_df, id_msa)
 
