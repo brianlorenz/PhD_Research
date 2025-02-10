@@ -8,6 +8,7 @@ import pandas as pd
 from astropy.io import ascii
 from scipy.optimize import curve_fit
 from uncover_prospector_seds import read_prospector, get_prospect_df_loc
+from simple_sample_selection import find_good_spec
 
 def flux_calibrate_spectrum(id_msa):
     print(f'Flux calibration for {id_msa}')
@@ -78,9 +79,15 @@ def flux_calibrate_spectrum(id_msa):
     plt.close('all')
 
 if __name__ == "__main__":
-    flux_calibrate_spectrum(43497)
+    # flux_calibrate_spectrum(43497)
 
     # id_msa_list = get_id_msa_list(full_sample=True)
     # for id_msa in id_msa_list:
-    #     flux_calibrate_spectrum(id_msa)
-
+        # flux_calibrate_spectrum(id_msa)
+    
+    zqual_df = find_good_spec()
+    id_msa_list = zqual_df['id_msa'].to_list()
+    for id_msa in id_msa_list:
+        if id_msa<49992:
+            continue
+        flux_calibrate_spectrum(id_msa)

@@ -26,25 +26,25 @@ def plot_prop_vs_fe(id_msa_list, prop, color_var='he_snr', add_str=''):
     
 
     for id_msa in id_msa_list:
-        fe_df = ascii.read(f'/Users/brianlorenz/uncover/Data/emission_fitting/helium/{id_msa}_emission_fits_helium.csv').to_pandas()
-        emission_df = ascii.read(f'/Users/brianlorenz/uncover/Data/emission_fitting/{id_msa}_emission_fits.csv').to_pandas()
+        fe_df = ascii.read(f'/Users/brianlorenz/uncover/Data/emission_fitting_fe_only/{id_msa}_emission_fits.csv').to_pandas()
+        pab_em_df = ascii.read(f'/Users/brianlorenz/uncover/Data/emission_fitting_pabeta_only/{id_msa}_emission_fits.csv').to_pandas()
         lineratio_row = lineratio_df[lineratio_df['id_msa'] == id_msa]
         zqual_df_cont_covered_row = zqual_df_cont_covered[zqual_df_cont_covered['id_msa']==id_msa]
         sps_row = sps_df[sps_df['id_msa'] == id_msa]
 
-        ha_flux = emission_df.iloc[0]['flux']
-        pab_flux = emission_df.iloc[1]['flux']
-        fe_flux = fe_df.iloc[1]['flux']
+        pab_flux = pab_em_df.iloc[0]['flux']
+        fe_flux = fe_df.iloc[0]['flux']
+        redshift = fe_df.iloc[0]['redshift'] - 1
         fe_pab_ratio = fe_flux / pab_flux
         fe_pab_ratios.append(fe_pab_ratio)
 
-        he_sigma = fe_df.iloc[1]['sigma']
-        he_snr = fe_df.iloc[1]['signal_noise_ratio']
+        fe_sigma = fe_df.iloc[0]['sigma']
+        fe_snr = fe_df.iloc[0]['signal_noise_ratio']
 
-        if prop == 'he_snr':
+        if prop == 'fe_snr':
             ax_prop_fe.set_xlim(0, vmax=5) 
-            x_val = he_snr
-            prop_str = '_he_snr'
+            x_val = fe_snr
+            prop_str = '_fe_snr'
         elif prop == 'sed_ratio':
             ax_prop_fe.set_xlim(0, vmax=18) 
             print(lineratio_row['sed_lineratio'])
@@ -77,22 +77,20 @@ def plot_prop_vs_fe(id_msa_list, prop, color_var='he_snr', add_str=''):
         ax_prop_fe.set_xlabel('Mass', fontsize=fontsize)
         # ax_prop_fe.set_xlabel(prop_str, fontsize=fontsize)
 
-    
 
         ax_prop_fe.plot(x_val, fe_pab_ratio, marker='o', color=rgba, ls='None', mec='black')
-        # ax_prop_fe.text(x_/Users/brianlorenz/uncover/Figures/diagnostic_lineratio/he_plots/fe_vs_mass.pdfval, fe_pab_ratio, f'{id_msa}')
+        ax_prop_fe.text(x_val, fe_pab_ratio, f'{id_msa}')
+        # ax_prop_fe.text(x_val, fe_pab_ratio, f'{redshift:0.2f}')
 
     
     
     # ax_prop_fe.set_yscale('log')
     # ax_prop_fe.set_ylim(0.1e-19, 5e-17)
-    ax_prop_fe.set_ylim(0, 0.65)
+    ax_prop_fe.set_ylim(0, 0.75)
     # ax_prop_fe.legend(loc=2)
 
-
-
     y_int, slope = fit_fe_mass(fe_pab_ratios, mass_values)
-    masses = np.arange(7,12,0.1)
+    masses = np.arange(6.5,12,0.1)
     fe_pab_ratio_predicted = y_int+slope*masses
     ax_prop_fe.plot(masses, fe_pab_ratio_predicted, ls='--', color='red', label='best fit', marker='None')
     ax_prop_fe.legend()
@@ -121,12 +119,13 @@ def scale_aspect(ax):
     ax.set_aspect(xdiff/ydiff)
 
 if __name__ == "__main__":
-    id_msa_list = get_id_msa_list(full_sample=False)
-    id_msa_list = [14573, 18471, 19179, 25147, 32111, 38163, 39855, 42213, 47875]
-    plot_prop_vs_fe(id_msa_list, prop='mass')
+    # id_msa_list = get_id_msa_list(full_sample=False)
+    # id_msa_list = [14573, 18471, 19179, 25147, 32111, 38163, 39855, 42213, 47875]
+    # plot_prop_vs_fe(id_msa_list, prop='mass')
     
     
     
-    id_msa_list = [6291, 14573, 18471, 19179, 19981, 21834, 25147, 32111, 38163, 39855, 42213, 47875]
+    # id_msa_list = [6291, 14573, 18471, 19179, 19981, 21834, 25147, 32111, 38163, 39855, 42213, 47875]
+    id_msa_list = [6291, 18471, 21834, 22755, 25147, 32111, 35401, 42203, 42213, 47875]
     plot_prop_vs_fe(id_msa_list, prop='mass', add_str='_all')
     pass

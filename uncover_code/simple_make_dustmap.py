@@ -210,6 +210,8 @@ def make_dustmap_simple(id_msa, aper_size='None', axarr_final=[], ax_labels=Fals
     err_fe_cor_pab_sed_lineflux_low = fe_cor_pab_sed_lineflux - fe_cor_pab_sed_lineflux_16
     err_fe_cor_pab_sed_lineflux_high = fe_cor_pab_sed_lineflux_84 - fe_cor_pab_sed_lineflux
 
+    # Inflate errors by scatter of pab vs mass plot
+
     err_sed_linefluxes = [err_nii_cor_ha_sed_lineflux_low, err_nii_cor_ha_sed_lineflux_high, err_fe_cor_pab_sed_lineflux_low, err_fe_cor_pab_sed_lineflux_high, err_ha_sed_lineflux_low, err_ha_sed_lineflux_high]
 
     # Compute lineratios
@@ -463,17 +465,22 @@ def make_dustmap_simple(id_msa, aper_size='None', axarr_final=[], ax_labels=Fals
         
        
         #Image plots
+        cmap_paper = 'inferno'
         ax_ha_image_paper.imshow(ha_image)
         ax_150_image_paper.imshow(image_150m.data, cmap='Greys_r')
-        ax_ha_map_paper.imshow(ha_linemap_logscaled, cmap=cmap, norm=ha_linemap_norm)
-        ax_pab_overlay_paper.imshow(ha_linemap_logscaled, cmap=cmap, norm=ha_linemap_norm)
+        ax_ha_map_paper.imshow(ha_linemap_logscaled, cmap=cmap_paper, norm=ha_linemap_norm)
+        ax_pab_overlay_paper.imshow(ha_linemap_logscaled, cmap=cmap_paper, norm=ha_linemap_norm)
 
         # Get pixesl per 1 kpc for scale
         pix_per_kpc = find_pix_per_kpc(redshift)
-        ax_ha_image_paper.plot([5,5+pix_per_kpc], [10,10], ls='-', color='white', lw=3)
-        ax_ha_image_paper.plot([5,5+(0.5/pixel_scale)], [15,15], ls='-', color='white', lw=3)
-        ax_ha_image_paper.text(5, 9, '1kpc', color='white')
-        ax_ha_image_paper.text(5, 14, '0.5"', color='white')
+        # ax_ha_image_paper.plot([5,5+pix_per_kpc], [10,10], ls='-', color='white', lw=3)
+        axis_x = 0.05
+        axis_y = 0.05
+        axis_to_data = ax.transAxes + ax.transData.inverted()
+        data_x, data_y = axis_to_data.transform((axis_x, axis_y))
+        ax_ha_image_paper.plot([data_x,data_x+(0.5/pixel_scale)], [data_y,data_y], ls='-', color='white', lw=3)
+        # ax_ha_image_paper.text(5, 9, '1kpc', color='white')
+        ax_ha_image_paper.text(data_x, data_y-1, '0.5"', color='white')
 
         # Add filters to HaImage
         text_height = 0.92
@@ -483,6 +490,10 @@ def make_dustmap_simple(id_msa, aper_size='None', axarr_final=[], ax_labels=Fals
         ax_ha_image_paper.text(text_start, text_height, f'{ha_filters[2][2:].upper()}', fontsize=14, transform=ax_ha_image_paper.transAxes, color='blue', path_effects=[pe.withStroke(linewidth=3, foreground="white")])
         ax_ha_image_paper.text(text_start+text_sep, text_height, f'{ha_filters[1][2:].upper()}', fontsize=14, transform=ax_ha_image_paper.transAxes, color='green', path_effects=[pe.withStroke(linewidth=3, foreground="white")])
         ax_ha_image_paper.text(text_start+2*text_sep, text_height, f'{ha_filters[0][2:].upper()}', fontsize=14, transform=ax_ha_image_paper.transAxes, color='red', path_effects=[pe.withStroke(linewidth=3, foreground="white")])
+        ax_150_image_paper.text(text_start+text_sep, text_height, f'F150W', fontsize=14, transform=ax_150_image_paper.transAxes, color='white', path_effects=[pe.withStroke(linewidth=3, foreground="black")])
+        ax_ha_map_paper.text(text_start+text_sep, text_height, f'H$\\alpha$ Map', fontsize=14, transform=ax_ha_map_paper.transAxes, color='white', path_effects=[pe.withStroke(linewidth=3, foreground="black")])
+        ax_pab_overlay_paper.text(text_start+text_sep, text_height, f'H$\\alpha$ Map', fontsize=14, transform=ax_pab_overlay_paper.transAxes, color='white', path_effects=[pe.withStroke(linewidth=3, foreground="black")])
+
 
         # PaB Contours
         x = np.arange(pab_linemap.shape[1])
@@ -490,7 +501,7 @@ def make_dustmap_simple(id_msa, aper_size='None', axarr_final=[], ax_labels=Fals
         X_pab, Y_pab = np.meshgrid(x, y)
         # Make a copy of the snr map to be used for contouring
         pab_contour_map = deepcopy(pab_linemap_snr)
-        pab_contour_map[~combined_mask_segmap.mask] = 0
+        # pab_contour_map[~combined_mask_segmap.mask] = 0
         ax_pab_overlay_paper.contour(X_pab, Y_pab, pab_contour_map, levels=[1,2,3,4,5], cmap='Greys')
 
         # Ha Contours
@@ -498,34 +509,40 @@ def make_dustmap_simple(id_msa, aper_size='None', axarr_final=[], ax_labels=Fals
         y = np.arange(ha_linemap.shape[0])
         X_ha, Y_ha = np.meshgrid(x, y)
         ha_contour_map = deepcopy(ha_linemap_snr)
-        ha_contour_map[~combined_mask_segmap.mask] = 0
+        # ha_contour_map[~combined_mask_segmap.mask] = 0   # segmap masking
         
         def truncate_colormap(cmap, minval=0.0, maxval=1.0, n=100):
             new_cmap = mpl.colors.LinearSegmentedColormap.from_list(
             'trunc({n},{a:.2f},{b:.2f})'.format(n=cmap.name, a=minval, b=maxval),
             cmap(np.linspace(minval, maxval, n)))
             return new_cmap
-        cmap_ha = plt.get_cmap('inferno')
-        new_cmap_ha = truncate_colormap(cmap_ha, 0.2, 0.9)
+        cmap_ha = plt.get_cmap(cmap_paper)
+        new_cmap_ha = truncate_colormap(cmap_ha, 0.35, 0.9)
         ax_150_image_paper.contour(X_ha, Y_ha, ha_contour_map, levels=[1,2,3,4,5], cmap=new_cmap_ha)
 
         for ax in axarr_final:
             scale_aspect(ax)
             ax.set_xticks([]); ax.set_yticks([])
         
-        # ax_ha_image_paper.text(text_start, text_height+0.1, f'{id_msa}', color='black', fontsize=14, transform=ax_ha_image_paper.transAxes)
         ax_ha_image_paper.set_ylabel(label_str, fontsize=paper_font)
         # ax_ha_image_paper.set_xlabel(f'{id_msa}', fontsize=paper_font)
 
         if ax_labels:
-            # ax_ha_image_paper.text(text_start, text_height, f'H$\\alpha$ Image', color='black', fontsize=paper_font, transform=ax_ha_image_paper.transAxes)
-            # ax_pab_image_paper.text(text_start, text_height, f'Pa$\\beta$ Image', color='black', fontsize=paper_font, transform=ax_pab_image_paper.transAxes)
-            # ax_ha_map_paper.text(text_start, text_height, f'H$\\alpha$ Linemap', color='black', fontsize=paper_font, transform=ax_ha_map_paper.transAxes)
-            # ax_pab_overlay_paper.text(text_start, text_height, f'Pa$\\beta$ Contours', color='black', fontsize=paper_font, transform=ax_pab_overlay_paper.transAxes)
-            ax_ha_image_paper.set_title(f'H$\\alpha$ Image', fontsize=paper_font)
-            ax_150_image_paper.set_title(f'F150W', fontsize=paper_font)
-            ax_ha_map_paper.set_title(f'H$\\alpha$ Linemap', fontsize=paper_font)
-            ax_pab_overlay_paper.set_title(f'Pa$\\beta$ Contours', fontsize=paper_font)
+            pass
+            # ax_ha_image_paper.set_title(f'H$\\alpha$ Image', fontsize=paper_font)
+            # ax_150_image_paper.set_title(f'F150W', fontsize=paper_font)
+            # ax_ha_map_paper.set_title(f'H$\\alpha$ Linemap', fontsize=paper_font)
+            # ax_pab_overlay_paper.set_title(f'Pa$\\beta$ Contours', fontsize=paper_font)
+    
+    from matplotlib.lines import Line2D
+    line_ha_contour = Line2D([0, 1], [0, 1], color=new_cmap_ha(0.7), marker='None', ls='-')
+    line_pab_contour = Line2D([0, 1], [0, 1], color='grey', marker='None', ls='-')
+    custom_lines_ha = [line_ha_contour]
+    custom_labels_ha = ['H$\\alpha$ contour']
+    custom_lines_pab = [line_pab_contour]
+    custom_labels_pab = ['Pa$\\beta$ contour']
+    ax_150_image_paper.legend(custom_lines_ha, custom_labels_ha, loc=3)
+    ax_pab_overlay_paper.legend(custom_lines_pab, custom_labels_pab, loc=3)
 
 
     plt.close('all')
@@ -810,7 +827,7 @@ def plot_sed_around_line(ax, filters, sed_df, spec_df, redshift, line_index, tra
 
     # Plot the spectrum
     if plt_spectrum:
-        ax.plot(spec_df['wave'], spec_df['flux_calibrated_jy'], ls='-', marker='None', color='black', lw=1, label='Spectrum')
+        ax.step(spec_df['wave'], spec_df['flux_calibrated_jy'], ls='-', marker='None', color='black', lw=1, label='Spectrum')
 
     # # Plot the prospector spectrum
     # if plt_prospector:
@@ -1019,7 +1036,7 @@ def copy_selected_sample_dustmaps(id_msa_list):
 
 def make_paper_fig_dustmaps(id_msa_list, sortby = 'mass'):
     import math
-    rows_per_page = 3
+    rows_per_page = 6
     n_pages = math.ceil(len(id_msa_list) / rows_per_page)
     sps_df = read_SPS_cat()
     lineratio_df = ascii.read(f'/Users/brianlorenz/uncover/Data/generated_tables/lineratio_av_df.csv').to_pandas()
@@ -1032,6 +1049,7 @@ def make_paper_fig_dustmaps(id_msa_list, sortby = 'mass'):
         merged_df=merged_df.sort_values('sed_av')
         sort_name = 'av'
     merged_df=merged_df.reset_index(drop=True)
+
         
     # Need to sort the ids first
     for i in range(n_pages):
@@ -1042,7 +1060,7 @@ def make_paper_fig_dustmaps(id_msa_list, sortby = 'mass'):
             if rows_this_page == 0:
                 rows_this_page = rows_per_page
         fig, axarr = plt.subplots(rows_this_page, 4, figsize=(16,4*rows_this_page))
-        plt.subplots_adjust(wspace=0.1, hspace=0.15)
+        plt.subplots_adjust(wspace=0.1, hspace=0.1)
         
         for j in range(rows_this_page):
             index = i*rows_per_page+j
@@ -1072,9 +1090,9 @@ if __name__ == "__main__":
     id_msa_list = get_id_msa_list(full_sample=False)
     # breakpoint()
     # print(id_msa_list).
-    make_all_dustmap(id_msa_list, full_sample=False)
+    # make_all_dustmap(id_msa_list, full_sample=False)
     # copy_selected_sample_dustmaps(id_msa_list)
-    # make_paper_fig_dustmaps(id_msa_list, sortby='av')
+    make_paper_fig_dustmaps(id_msa_list, sortby='av')
     # make_paper_fig_dustmaps(id_msa_list, sortby='mass')
 
     # id_msa_list = get_id_msa_list(full_sample=True)

@@ -819,5 +819,5 @@ if __name__ == "__main__":
     # plot_mosaic(id_msa_list, line = 'pab_only')
     plot_line_assessment(id_msa_list)
 
-    # plot_line_assessment([32111, 19896])
+    # plot_line_assessment([18471])
     pass
