@@ -45,11 +45,13 @@ def get_line_coverage_old(sedpy_filt, line_wave_aa, line_width_aa):
         line_avg_transmission = 0
     return line_avg_transmission
 
-def get_line_coverage(id_msa, sedpy_filt, redshift, line_name, paalpha=False):
-    if paalpha == False:
-        paa_str = ''
-    else:   
+def get_line_coverage(id_msa, sedpy_filt, redshift, line_name, paalpha=False, paalpha_pabeta=False):
+    if paalpha == True:
         paa_str = '_paalpha'
+    elif paalpha_pabeta:
+        paa_str = '_paalpha_pabeta'
+    else:   
+        paa_str = ''
     fit_df = ascii.read(f'/Users/brianlorenz/uncover/Data/emission_fitting{paa_str}/{id_msa}_emission_fits.csv').to_pandas()
     if line_name == 'ha':
         line_wave = fit_df['line_center_rest'].iloc[0] + fit_df['z_offset'].iloc[0]

@@ -1,7 +1,7 @@
 import matplotlib.pyplot as plt
 import matplotlib as mpl
 from astropy.io import ascii
-from plot_vals import scale_aspect
+from plot_vals import scale_aspect, stellar_mass_label
 from uncover_read_data import read_lineflux_cat, get_id_msa_list, read_SPS_cat
 from compute_av import compute_ha_pab_av, avneb_str, compute_ratio_from_av
 import numpy as np
@@ -27,12 +27,11 @@ def paper_plot_sed_emfit_accuracy(id_msa_list, color_var=''):
 
     # line_p1 = np.array([-100, -100])
     # line_p2 = np.array([100, 100])
-    line_p1 = np.array([1e-20, 1e-20])
-    line_p2 = np.array([1e-15, 1e-15])
+    line_p1 = np.array([-20, -20])
+    line_p2 = np.array([-15, -15])
     def get_distance(datapoint):
         distance = np.cross(line_p2-line_p1,datapoint-line_p1)/np.linalg.norm(line_p2-line_p1)
-        distance_dex = np.cross(np.log10(line_p2)-np.log10(line_p1),np.log10(datapoint)-np.log10(line_p1))/np.linalg.norm(np.log10(line_p2)-np.log10(line_p1))
-        return distance_dex
+        return distance
 
     markersize=8
 
@@ -67,6 +66,10 @@ def paper_plot_sed_emfit_accuracy(id_msa_list, color_var=''):
             norm = mpl.colors.Normalize(vmin=-1.2, vmax=0.1) 
             rgba = cmap(norm(sps_row['met_50']))
             cbar_label = 'Prospector Metallicity'
+        elif color_var == 'mass':
+            norm = mpl.colors.Normalize(vmin=7, vmax=11) 
+            rgba = cmap(norm(sps_row['mstar_50']))
+            cbar_label = stellar_mass_label
         if color_var != 'None':
             color_str = f'_{color_var}'
         else:
@@ -86,29 +89,42 @@ def paper_plot_sed_emfit_accuracy(id_msa_list, color_var=''):
         err_sed_fe_cor_pab_flux_high = lineratio_data_row['err_fe_cor_sed_pab_lineflux_high'].iloc[0]
 
         ha_datapoint = (fit_ha_flux, data_df_row['ha_sed_flux'].iloc[0])
+        log_ha_datapoint = (np.log10(fit_ha_flux), np.log10(data_df_row['ha_sed_flux'].iloc[0]))
         ax_ha_sed_vs_emfit.errorbar(ha_datapoint[0], ha_datapoint[1], xerr=[[err_fit_ha_flux_low], [err_fit_ha_flux_high]], yerr=[[err_sed_ha_flux_low],[err_sed_ha_flux_high]], marker='o', color=rgba, ls='None', mec='black', ms=markersize, ecolor='black')
         ax_ha_sed_vs_emfit.set_xlabel('H$\\alpha$+NII Spectrum', fontsize=fontsize)
         ax_ha_sed_vs_emfit.set_ylabel('H$\\alpha$+NII Photometry', fontsize=fontsize)
-        ha_distances.append(get_distance(np.array(ha_datapoint)))
+        ha_distances.append(get_distance(np.array(log_ha_datapoint)))
 
         pab_datapoint = (fit_pab_flux, data_df_row['fe_cor_pab_sed_flux'].iloc[0])
+        log_pab_datapoint = (np.log10(fit_pab_flux), np.log10(data_df_row['fe_cor_pab_sed_flux'].iloc[0]))
         ax_pab_sed_vs_emfit.errorbar(pab_datapoint[0], pab_datapoint[1], xerr=[[err_fit_pab_flux_low], [err_fit_pab_flux_high]], yerr=[[err_sed_fe_cor_pab_flux_low],[err_sed_fe_cor_pab_flux_high]], marker='o', color=rgba, ls='None', mec='black', ms=markersize, ecolor='black')
         ax_pab_sed_vs_emfit.set_xlabel('Pa$\\beta$ Spectrum', fontsize=fontsize)
         ax_pab_sed_vs_emfit.set_ylabel('Pa$\\beta$ Photometry', fontsize=fontsize)
-        pab_distances.append(get_distance(np.array(pab_datapoint)))
+        pab_distances.append(get_distance(np.array(log_pab_datapoint)))
 
+        av_datapoint = np.array([lineratio_data_row['emission_fit_lineratio'].iloc[0], lineratio_data_row['sed_lineratio'].iloc[0]])
+        inverse_av_datapoint = 1/av_datapoint
+        av_datapoint_errs_low =np.array([lineratio_data_row['err_emission_fit_lineratio_low'].iloc[0], lineratio_data_row['err_sed_lineratio_low'].iloc[0]])
+        av_datapoint_errs_high =np.array([lineratio_data_row['err_emission_fit_lineratio_high'].iloc[0], lineratio_data_row['err_sed_lineratio_high'].iloc[0]])
+        inverse_av_datapoint_lows = 1/(av_datapoint-av_datapoint_errs_low)
+        inverse_av_datapoint_highs = 1/(av_datapoint+av_datapoint_errs_high)
+        err_inverse_av_datapoint_highs = np.abs(inverse_av_datapoint_lows - inverse_av_datapoint)
+        err_inverse_av_datapoint_lows = np.abs(inverse_av_datapoint - inverse_av_datapoint_highs)
+        # err_inverse_av_datapoint_highs = av_datapoint_errs_low / av_datapoint**2
+        # err_inverse_av_datapoint_lows = av_datapoint_errs_high / av_datapoint**2
 
-        # breakpoint()
-        av_datapoint = (lineratio_data_row['emission_fit_lineratio'].iloc[0], lineratio_data_row['sed_lineratio'].iloc[0])
+        # if id_msa ==  38163:
+        #     breakpoint()
         
-        ax_av_sed_vs_emfit.errorbar(av_datapoint[0], av_datapoint[1], xerr=[[lineratio_data_row['err_emission_fit_lineratio_low'].iloc[0]], [lineratio_data_row['err_emission_fit_lineratio_high'].iloc[0]]], yerr=[[lineratio_data_row['err_sed_lineratio_low'].iloc[0]], [lineratio_data_row['err_sed_lineratio_high'].iloc[0]]], marker='o', color=rgba, ls='None', mec='black', ms=markersize, ecolor='black')
-        ax_av_sed_vs_emfit.set_xlabel(f'(H$\\alpha$ / Pa$\\beta$) Spectrum', fontsize=fontsize)
-        ax_av_sed_vs_emfit.set_ylabel(f'(H$\\alpha$ / Pa$\\beta$) Photometry', fontsize=fontsize)
+
+        ax_av_sed_vs_emfit.errorbar(inverse_av_datapoint[0], inverse_av_datapoint[1], xerr=[[err_inverse_av_datapoint_lows[0]], [err_inverse_av_datapoint_highs[0]]], yerr=[[err_inverse_av_datapoint_lows[1]], [err_inverse_av_datapoint_highs[1]]], marker='o', color=rgba, ls='None', mec='black', ms=markersize, ecolor='black')
+        ax_av_sed_vs_emfit.set_xlabel(f'(Pa$\\beta$ / H$\\alpha$) Spectrum', fontsize=fontsize)
+        ax_av_sed_vs_emfit.set_ylabel(f'(Pa$\\beta$ / H$\\alpha$) Photometry', fontsize=fontsize)
         av_distances.append(get_distance(np.array(av_datapoint)))
-    
-        add_text = 1
+
+        add_text = 0
         if add_text:
-            ax_av_sed_vs_emfit.text(av_datapoint[0], av_datapoint[1], f'{id_msa}')
+            ax_av_sed_vs_emfit.text(inverse_av_datapoint[0], inverse_av_datapoint[1], f'{id_msa}')
             ax_pab_sed_vs_emfit.text(pab_datapoint[0], pab_datapoint[1], f'{id_msa}')
             ax_ha_sed_vs_emfit.text(ha_datapoint[0], ha_datapoint[1], f'{id_msa}')
 
@@ -116,6 +132,11 @@ def paper_plot_sed_emfit_accuracy(id_msa_list, color_var=''):
     pab_distances = np.abs(pab_distances)
     av_distances = np.abs(av_distances)
     median_ha_offset = np.median(ha_distances)
+    scatter_ha_offset = np.std(ha_distances)
+    median_pab_offset = np.median(pab_distances)
+    scatter_pab_offset = np.std(pab_distances)
+    median_av_offset = np.median(av_distances)
+    scatter_av_offset = np.std(av_distances)
     
 
     for ax in ax_list:
@@ -133,14 +154,16 @@ def paper_plot_sed_emfit_accuracy(id_msa_list, color_var=''):
     ax_av_sed_vs_emfit.tick_params(labelsize=labelsize)
     ax2.tick_params(labelsize=labelsize)
     ax_av_sed_vs_emfit.plot([-10, 100], [-10, 100], ls='--', color='red', marker='None')
-    ax_av_sed_vs_emfit.set_xlim([38, 1.5])
-    ax_av_sed_vs_emfit.set_ylim([38, 1.5])
+    # ax_av_sed_vs_emfit.set_xlim([38, 1.5])
+    # ax_av_sed_vs_emfit.set_ylim([38, 1.5])
+    ax_av_sed_vs_emfit.set_xlim([1/38, 1/1.5])
+    ax_av_sed_vs_emfit.set_ylim([1/38, 1/1.5])
     ax2.set_ylim([38, 1.5])
     ax_av_sed_vs_emfit.set_xscale('log')
     ax_av_sed_vs_emfit.set_yscale('log')
     ax2.set_yscale('log')
-    y_tick_locs = [35, 18, 10, 5, 2]
-    y_tick_labs = [str(loc) for loc in y_tick_locs]
+    y_tick_locs = [1/35, 1/18, 1/10, 1/5, 1/2]
+    y_tick_labs = ['1/35', '1/18', '1/10', '1/5', '1/2']
     ax_av_sed_vs_emfit.set_yticks(y_tick_locs)
     ax_av_sed_vs_emfit.set_yticklabels(y_tick_labs)
     ax_av_sed_vs_emfit.set_xticks(y_tick_locs)
@@ -167,10 +190,10 @@ def paper_plot_sed_emfit_accuracy(id_msa_list, color_var=''):
 
     # scale_aspect(ax_av_sed_vs_emfit)
 
-    cb_ax = fig.add_axes([.94, ax_start_height, .02, ax_height])
+    cb_ax = fig.add_axes([.93, ax_start_height, .02, ax_height])
     if color_var != 'None':
         sm =  mpl.cm.ScalarMappable(norm=norm, cmap=cmap)
-        cbar_ticks = [5, 10, 15, 20]
+        cbar_ticks = [7, 8, 9, 10, 11]
         cbar_ticklabels = [str(tick) for tick in cbar_ticks]
         cbar = fig.colorbar(sm, orientation='vertical', cax=cb_ax, ticks=cbar_ticks)
         cbar.ax.set_yticklabels(cbar_ticklabels)  
@@ -341,7 +364,7 @@ def plot_offsets(all=False):
 
 if __name__ == "__main__":
     id_msa_list = get_id_msa_list(full_sample=False)
-    paper_plot_sed_emfit_accuracy(id_msa_list, color_var='pab_snr')
+    paper_plot_sed_emfit_accuracy(id_msa_list, color_var='mass')
     # plot_simpletests(id_msa_list)
     # plot_offsets(all=True)
 

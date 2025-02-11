@@ -13,6 +13,7 @@ import matplotlib as mpl
 from plot_vals import scale_aspect, stellar_mass_label, sfr_label
 from matplotlib.colors import Normalize, LogNorm
 import math
+from compute_av import compute_paalpha_pabeta_av
 
 def plot_av_properties():
     fontsize = 14
@@ -100,7 +101,10 @@ def plot_av_properties():
 def compare_pab_paa_avs(id_msa_list):
     import os
 
-    fig, ax = plt.subplots(1,1,figsize=(6,6))
+    fig, axarr = plt.subplots(1,3,figsize=(18,6))
+    ax_hapaa_hapab = axarr[0]
+    ax_hapaa_paapab = axarr[1]
+    ax_paapab_hapab = axarr[2]
     for id_msa in id_msa_list:
         paa_fit_path = f'/Users/brianlorenz/uncover/Data/emission_fitting_paalpha/{id_msa}_emission_fits.csv'
         if os.path.exists(paa_fit_path):
@@ -124,19 +128,43 @@ def compare_pab_paa_avs(id_msa_list):
             err_ha_pab_av_high = np.abs(fit_df['err_ha_pab_av_high'].iloc[0])
             err_pab_av = [[err_ha_pab_av_low], [err_ha_pab_av_high]]
 
-            ax.errorbar(pab_av, paa_av, xerr=err_pab_av, yerr=err_paa_av, marker='o', color='black', ls='None', mec='black')
+            paa_flux = paa_fit_df['flux'].iloc[1]
+            err_paa_flux = paa_fit_df['err_flux'].iloc[1]
+            pab_flux = fit_df['flux'].iloc[1]
+            err_pab_flux = fit_df['err_flux'].iloc[1]
+            paa_pab_ratio = paa_flux/pab_flux
+            paa_err_pct = err_paa_flux/paa_flux
+            pab_err_pct = err_pab_flux/pab_flux
+            ratio_err_pct = np.sqrt(paa_err_pct**2 + pab_err_pct**2)
+            err_paa_pab_ratio = paa_pab_ratio*ratio_err_pct
+            paa_pab_av = compute_paalpha_pabeta_av(paa_pab_ratio)
+            paa_pab_av_low = compute_paalpha_pabeta_av(paa_pab_ratio-err_paa_pab_ratio)
+            paa_pab_av_high = compute_paalpha_pabeta_av(paa_pab_ratio+err_paa_pab_ratio)
+            err_paa_pab_av = [[paa_pab_av-paa_pab_av_low], [paa_pab_av_high-paa_pab_av]]
+
+
+            ax_hapaa_hapab.errorbar(pab_av, paa_av, xerr=err_pab_av, yerr=err_paa_av, marker='o', color='black', ls='None', mec='black')
+            ax_hapaa_paapab.errorbar(paa_pab_av, paa_av, xerr=err_paa_pab_av, yerr=err_paa_av, marker='o', color='black', ls='None', mec='black')
+            ax_paapab_hapab.errorbar(pab_av, paa_pab_av, xerr=err_pab_av, yerr=err_paa_pab_av, marker='o', color='black', ls='None', mec='black')
         
-    ax.set_xlabel('Spectroscopic Pa$\\beta$ AV', fontsize=14)
-    ax.set_ylabel('Spectroscopic Pa$\\alpha$ AV', fontsize=14)
-    ax.set_xlim(-3, 6)
-    ax.set_ylim(-3, 6)
-    ax.tick_params(labelsize=14)
-    ax.plot([-100, 10000], [-100, 10000], ls='--', color='red', marker='None')
-    fig.savefig('/Users/brianlorenz/uncover/Figures/av_plots/pab_paa_compare_spectra.pdf', bbox_inches='tight')
+    ax_hapaa_hapab.set_xlabel('Spectroscopic Pa$\\beta$/H$\\alpha$ AV', fontsize=14)
+    ax_hapaa_hapab.set_ylabel('Spectroscopic Pa$\\alpha$/H$\\alpha$ AV', fontsize=14)
+    
+    ax_hapaa_paapab.set_xlabel('Spectroscopic Pa$\\beta$/Pa$\\alpha$ AV', fontsize=14)
+    ax_hapaa_paapab.set_ylabel('Spectroscopic Pa$\\alpha/H$\\alpha$ AV', fontsize=14)
+
+    ax_paapab_hapab.set_xlabel('Spectroscopic Pa$\\beta$/H$\\alpha$ AV', fontsize=14)
+    ax_paapab_hapab.set_ylabel('Spectroscopic Pa$\\beta$/Pa$\\alpha$ AV', fontsize=14)
+    for ax in axarr:
+        ax.set_xlim(-3, 6)
+        ax.set_ylim(-3, 6)
+        ax.tick_params(labelsize=14)
+        ax.plot([-100, 10000], [-100, 10000], ls='--', color='red', marker='None')
+    fig.savefig('/Users/brianlorenz/uncover/Figures/av_plots/pab_paa_ha_compare_spectra.pdf', bbox_inches='tight')
 
             
 
 if __name__ == '__main__':
-    plot_av_properties()
-    # id_msa_list = get_id_msa_list(full_sample=True)
-    # compare_pab_paa_avs(id_msa_list)
+    # plot_av_properties()
+    id_msa_list = get_id_msa_list(full_sample=True)
+    compare_pab_paa_avs(id_msa_list)

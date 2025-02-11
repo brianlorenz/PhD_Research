@@ -211,6 +211,9 @@ def make_dustmap_simple(id_msa, aper_size='None', axarr_final=[], ax_labels=Fals
     err_fe_cor_pab_sed_lineflux_high = fe_cor_pab_sed_lineflux_84 - fe_cor_pab_sed_lineflux
 
     # Inflate errors by scatter of pab vs mass plot
+    fe_cor_df = ascii.read('/Users/brianlorenz/uncover/Data/generated_tables/fe_cor_df.csv').to_pandas()
+    fe_scatter = fe_cor_df['scatter'].iloc[0]
+    
 
     err_sed_linefluxes = [err_nii_cor_ha_sed_lineflux_low, err_nii_cor_ha_sed_lineflux_high, err_fe_cor_pab_sed_lineflux_low, err_fe_cor_pab_sed_lineflux_high, err_ha_sed_lineflux_low, err_ha_sed_lineflux_high]
 
@@ -460,6 +463,9 @@ def make_dustmap_simple(id_msa, aper_size='None', axarr_final=[], ax_labels=Fals
 
         obj_skycoord = get_coords(id_msa)
 
+        sps_df = read_SPS_cat()
+        id_dr3 = sps_df[sps_df['id_msa'] == id_msa]['id_DR3'].iloc[0]
+
         # Get 150 grayscale
         image_150m, wht_image_150m, photfnu_150m = get_cutout(obj_skycoord, 'f150w', size=image_size)
         
@@ -478,9 +484,11 @@ def make_dustmap_simple(id_msa, aper_size='None', axarr_final=[], ax_labels=Fals
         axis_y = 0.05
         axis_to_data = ax.transAxes + ax.transData.inverted()
         data_x, data_y = axis_to_data.transform((axis_x, axis_y))
+        data_x2, data_y2 = axis_to_data.transform((axis_x, axis_y+0.02))
         ax_ha_image_paper.plot([data_x,data_x+(0.5/pixel_scale)], [data_y,data_y], ls='-', color='white', lw=3)
         # ax_ha_image_paper.text(5, 9, '1kpc', color='white')
-        ax_ha_image_paper.text(data_x, data_y-1, '0.5"', color='white')
+        ax_ha_image_paper.text(data_x, data_y2, '0.5"', color='white')
+        ax_ha_image_paper.text(0.80, 0.04, f'{id_dr3}', fontsize=10, transform=ax_ha_image_paper.transAxes, color='white')
 
         # Add filters to HaImage
         text_height = 0.92
@@ -492,7 +500,7 @@ def make_dustmap_simple(id_msa, aper_size='None', axarr_final=[], ax_labels=Fals
         ax_ha_image_paper.text(text_start+2*text_sep, text_height, f'{ha_filters[0][2:].upper()}', fontsize=14, transform=ax_ha_image_paper.transAxes, color='red', path_effects=[pe.withStroke(linewidth=3, foreground="white")])
         ax_150_image_paper.text(text_start+text_sep, text_height, f'F150W', fontsize=14, transform=ax_150_image_paper.transAxes, color='white', path_effects=[pe.withStroke(linewidth=3, foreground="black")])
         ax_ha_map_paper.text(text_start+text_sep, text_height, f'H$\\alpha$ Map', fontsize=14, transform=ax_ha_map_paper.transAxes, color='white', path_effects=[pe.withStroke(linewidth=3, foreground="black")])
-        ax_pab_overlay_paper.text(text_start+text_sep, text_height, f'H$\\alpha$ Map', fontsize=14, transform=ax_pab_overlay_paper.transAxes, color='white', path_effects=[pe.withStroke(linewidth=3, foreground="black")])
+        ax_pab_overlay_paper.text(text_start+text_sep-0.15, text_height, f'H$\\alpha$ Map with Pa$\\beta$', fontsize=14, transform=ax_pab_overlay_paper.transAxes, color='white', path_effects=[pe.withStroke(linewidth=3, foreground="black")])
 
 
         # PaB Contours
@@ -560,12 +568,12 @@ def get_norm(image_map, scalea=1, lower_pct=10, upper_pct=99):
         norm = Normalize(vmin=np.percentile(imagemap_gt0,lower_pct), vmax=np.percentile(imagemap_gt0,upper_pct))
         return norm
 
-def make_3color(id_msa, line_index = 0, plot = False, image_size=(100,100), paalpha=False): 
+def make_3color(id_msa, line_index = 0, plot = False, image_size=(100,100), paalpha=False, paalpha_pabeta=False): 
     obj_skycoord = get_coords(id_msa)
 
     line_name = line_list[line_index][0]
 
-    filt_red, filt_green, filt_blue, all_filts = find_filters_around_line(id_msa, line_index, paalpha=paalpha)
+    filt_red, filt_green, filt_blue, all_filts = find_filters_around_line(id_msa, line_index, paalpha=paalpha, paalpha_pabeta=paalpha_pabeta)
     filters = [filt_red, filt_green, filt_blue]
 
 
@@ -643,7 +651,7 @@ def get_cutout_segmap(obj_skycoord, size = (100, 100)):
     segmap_cutout = Cutout2D(segmap, obj_skycoord, size, wcs=segmap_wcs)
     return segmap_cutout
 
-def find_filters_around_line(id_msa, line_number, paalpha=False):
+def find_filters_around_line(id_msa, line_number, paalpha=False, paalpha_pabeta=False):
     """
     Parameters:
     id_msa (int):
@@ -655,6 +663,8 @@ def find_filters_around_line(id_msa, line_number, paalpha=False):
     filt_names.sort()
     if paalpha == True:
         paa_str = '_paa'
+    if paalpha_pabeta == True:
+        paa_str = '_paa_pab'
     else:
         paa_str = ''
     zqual_detected_df = ascii.read(f'/Users/brianlorenz/uncover/zqual_df_simple{paa_str}.csv').to_pandas()

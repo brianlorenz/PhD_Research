@@ -11,13 +11,21 @@ import matplotlib as mpl
 from plot_vals import stellar_mass_label, scale_aspect, sfr_label
 import numpy as np
 
-def sample_select(paalpha=False):
+def sample_select(paalpha=False, paalpha_pabeta=False):
     if paalpha:
         save_dir = '/Users/brianlorenz/uncover/Data/sample_selection_paa/'
         paa_str = '_paa'
         emfit_dir = 'emission_fitting_paalpha'
         from fit_emission_uncover_paalpha import line_list
         pab_snr_thresh = 1 # Actually Paalpha
+
+    elif paalpha_pabeta:
+        save_dir = '/Users/brianlorenz/uncover/Data/sample_selection_paa_pab/'
+        paa_str = '_paa_pab'
+        emfit_dir = 'emission_fitting_paalpha_pabeta'
+        from fit_emission_uncover_paalpha_pabeta import line_list
+        ha_snr_thresh = 2
+        pab_snr_thresh = 2 
 
     else:
         from fit_emission_uncover_wave_divide import line_list
@@ -71,8 +79,8 @@ def sample_select(paalpha=False):
             #42041 - not in supercat
             #49991 - not in supercat
         # Read in the images
-        ha_filters, ha_images, wht_ha_images, obj_segmap, ha_photfnus, ha_all_filts = make_3color(id_msa, line_index=0, plot=False, paalpha=paalpha)
-        pab_filters, pab_images, wht_pab_images, obj_segmap, pab_photfnus, pab_all_filts = make_3color(id_msa, line_index=1, plot=False, paalpha=paalpha)
+        ha_filters, ha_images, wht_ha_images, obj_segmap, ha_photfnus, ha_all_filts = make_3color(id_msa, line_index=0, plot=False, paalpha=paalpha, paalpha_pabeta=paalpha_pabeta)
+        pab_filters, pab_images, wht_pab_images, obj_segmap, pab_photfnus, pab_all_filts = make_3color(id_msa, line_index=1, plot=False, paalpha=paalpha, paalpha_pabeta=paalpha_pabeta)
         # paa_filters, paa_images, wht_paa_images, obj_segmap, paa_photfnus, paa_all_filts = make_3color(id_msa, line_index=2, plot=False)
 
         ha_sedpy_name = ha_filters[1].replace('f', 'jwst_f')
@@ -113,12 +121,12 @@ def sample_select(paalpha=False):
         lines_df_pab_snr = lines_df_row['f_PaB'].iloc[0] / lines_df_row['e_PaB'].iloc[0]
 
         # Check the coverage fraction of the lines - we want it high in the line, but 0 int he continuum filters
-        ha_avg_transmission = get_line_coverage(id_msa, ha_sedpy_filt, redshift, line_name='ha', paalpha=paalpha)
-        pab_avg_transmission = get_line_coverage(id_msa, pab_sedpy_filt, redshift, line_name='pab', paalpha=paalpha)
-        ha_red_avg_transmission = get_line_coverage(id_msa, ha_red_sedpy_filt, redshift, line_name='ha', paalpha=paalpha)
-        pab_red_avg_transmission = get_line_coverage(id_msa, pab_red_sedpy_filt, redshift, line_name='pab', paalpha=paalpha)
-        ha_blue_avg_transmission = get_line_coverage(id_msa, ha_blue_sedpy_filt, redshift, line_name='ha', paalpha=paalpha)
-        pab_blue_avg_transmission = get_line_coverage(id_msa, pab_blue_sedpy_filt, redshift, line_name='pab', paalpha=paalpha)
+        ha_avg_transmission = get_line_coverage(id_msa, ha_sedpy_filt, redshift, line_name='ha', paalpha=paalpha, paalpha_pabeta=paalpha_pabeta)
+        pab_avg_transmission = get_line_coverage(id_msa, pab_sedpy_filt, redshift, line_name='pab', paalpha=paalpha, paalpha_pabeta=paalpha_pabeta)
+        ha_red_avg_transmission = get_line_coverage(id_msa, ha_red_sedpy_filt, redshift, line_name='ha', paalpha=paalpha, paalpha_pabeta=paalpha_pabeta)
+        pab_red_avg_transmission = get_line_coverage(id_msa, pab_red_sedpy_filt, redshift, line_name='pab', paalpha=paalpha, paalpha_pabeta=paalpha_pabeta)
+        ha_blue_avg_transmission = get_line_coverage(id_msa, ha_blue_sedpy_filt, redshift, line_name='ha', paalpha=paalpha, paalpha_pabeta=paalpha_pabeta)
+        pab_blue_avg_transmission = get_line_coverage(id_msa, pab_blue_sedpy_filt, redshift, line_name='pab', paalpha=paalpha, paalpha_pabeta=paalpha_pabeta)
         ha_transmissions = [ha_red_avg_transmission, ha_avg_transmission, ha_blue_avg_transmission]
         pab_transmissions = [pab_red_avg_transmission, pab_avg_transmission, pab_blue_avg_transmission]
 
@@ -399,7 +407,7 @@ def paper_figure_sample_selection(id_msa_list, color_var='None', plot_sfr_mass=F
         if color_var == 'sfr':
             norm = mpl.colors.LogNorm(vmin=0.1, vmax=50) 
             rgba = cmap(norm(sfr100_50))
-            cbar_label = 'Prospector SFR'
+            cbar_label = 'Prospector SFR (M$_\odot$ / yr)'
         if color_var != 'None':
             color_str = f'_{color_var}'
         else:
@@ -444,8 +452,11 @@ def paper_figure_sample_selection(id_msa_list, color_var='None', plot_sfr_mass=F
         cbar_label = 'Prospector SFR'
         color_str = '_sfr'
     if color_var != 'None':
+        cbar_ticks = [0.1, 1, 10]
+        cbar_ticklabels = [str(tick) for tick in cbar_ticks]
         sm =  mpl.cm.ScalarMappable(norm=norm, cmap=cmap)
-        cbar = fig.colorbar(sm, orientation='vertical', cax=cb_ax)
+        cbar = fig.colorbar(sm, orientation='vertical', cax=cb_ax, ticks=cbar_ticks)
+        cbar.ax.set_yticklabels(cbar_ticklabels)  
         cbar.set_label(cbar_label, fontsize=16)
         cbar.ax.tick_params(labelsize=16)
 
@@ -478,7 +489,7 @@ def paper_figure_sample_selection(id_msa_list, color_var='None', plot_sfr_mass=F
     else:
         save_loc = f'/Users/brianlorenz/uncover/Figures/paper_figures/sample_selection_sfrmass_{color_str}.pdf'
 
-    fig.savefig(save_loc)
+    fig.savefig(save_loc, bbox_inches='tight')
 
 def truncate_colormap(cmap, minval=0.0, maxval=1.0, n=100):
         new_cmap = mpl.colors.LinearSegmentedColormap.from_list(
@@ -487,10 +498,10 @@ def truncate_colormap(cmap, minval=0.0, maxval=1.0, n=100):
         return new_cmap
 
 if __name__ == "__main__":
-    sample_select(paalpha=False)
+    # sample_select(paalpha_pabeta=False)
     
-    # id_msa_list = get_id_msa_list(full_sample=False)
-    # paper_figure_sample_selection(id_msa_list, color_var='sfr')
+    id_msa_list = get_id_msa_list(full_sample=False)
+    paper_figure_sample_selection(id_msa_list, color_var='sfr')
     # paper_figure_sample_selection(id_msa_list, color_var='redshift', plot_sfr_mass=True)
 
     

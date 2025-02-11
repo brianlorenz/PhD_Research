@@ -59,7 +59,7 @@ def plot_prop_vs_fe(id_msa_list, prop, color_var='he_snr', add_str=''):
             x_val = sps_row['met_50']
             prop_str = '_metallicity'
         elif prop == 'mass':
-            ax_prop_fe.set_xlim(8, 11) 
+            ax_prop_fe.set_xlim(7.8, 11) 
             x_val = sps_row['mstar_50'].iloc[0]
             mass_values.append(x_val)
             prop_str = '_mass'
@@ -79,7 +79,7 @@ def plot_prop_vs_fe(id_msa_list, prop, color_var='he_snr', add_str=''):
 
 
         ax_prop_fe.plot(x_val, fe_pab_ratio, marker='o', color=rgba, ls='None', mec='black')
-        ax_prop_fe.text(x_val, fe_pab_ratio, f'{id_msa}')
+        # ax_prop_fe.text(x_val, fe_pab_ratio, f'{id_msa}')
         # ax_prop_fe.text(x_val, fe_pab_ratio, f'{redshift:0.2f}')
 
     
@@ -92,10 +92,28 @@ def plot_prop_vs_fe(id_msa_list, prop, color_var='he_snr', add_str=''):
     y_int, slope = fit_fe_mass(fe_pab_ratios, mass_values)
     masses = np.arange(6.5,12,0.1)
     fe_pab_ratio_predicted = y_int+slope*masses
-    ax_prop_fe.plot(masses, fe_pab_ratio_predicted, ls='--', color='red', label='best fit', marker='None')
-    ax_prop_fe.legend()
-    fe_cor_df = pd.DataFrame(zip([y_int], [slope]), columns=['y_int', 'slope'])
+    # ax_prop_fe.plot(masses, fe_pab_ratio_predicted, ls='--', color='red', label='best fit', marker='None')
+    # ax_prop_fe.legend()
+
+    line_p1 = np.array([masses[0], fe_pab_ratio_predicted[0]])
+    line_p2 = np.array([masses[-1], fe_pab_ratio_predicted[-1]])
+    def get_distance(datapoint):
+        distance = np.cross(line_p2-line_p1,datapoint-line_p1)/np.linalg.norm(line_p2-line_p1)
+        return distance
+    
+    distances = [get_distance(np.array([mass_values[i], fe_pab_ratios[i]])) for i in range(len(mass_values))]
+    scatter = np.median(np.abs(distances))
+    median_fe_pab_ratio = np.median(fe_pab_ratios)
+    median_fe_pab_ratios = [median_fe_pab_ratio for i in range(len(id_msa_list))]
+    print(f'median: {median_fe_pab_ratio}')
+
+
+    fe_cor_df = pd.DataFrame(zip([y_int], [slope], [scatter]), columns=['y_int', 'slope', 'scatter'])
     fe_cor_df.to_csv('/Users/brianlorenz/uncover/Data/generated_tables/fe_cor_df.csv', index=False)
+
+    fe_cor_df_indiv = pd.DataFrame(zip(id_msa_list, fe_pab_ratios, median_fe_pab_ratios), columns=['id_msa', 'fe_pab_ratio', 'median_fe_pab_ratios'])
+    fe_cor_df_indiv.to_csv('/Users/brianlorenz/uncover/Data/generated_tables/fe_cor_df_indiv.csv', index=False)
+
 
     scale_aspect(ax_prop_fe)
 
