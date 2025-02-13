@@ -122,8 +122,8 @@ def measure_lineflux(id_msa, sed_df, redshift, filters, scaled_transmission, raw
         line_name = 'ha'
     if line_wave > 8000:
         line_name = 'pab'
-    line_transmission = get_line_coverage(id_msa, line_filts[1], redshift=redshift, line_name=line_name)
-    line_flux = line_flux / line_transmission
+    # line_transmission = get_line_coverage(id_msa, line_filts[1], redshift=redshift, line_name=line_name)
+    # line_flux = line_flux 
     
 
     return line_flux

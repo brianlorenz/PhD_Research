@@ -34,6 +34,7 @@ def paper_plot_sed_emfit_accuracy(id_msa_list, color_var=''):
         return distance
 
     markersize=8
+    ecolor = 'gray'
 
     ha_distances = []
     pab_distances = []
@@ -90,14 +91,14 @@ def paper_plot_sed_emfit_accuracy(id_msa_list, color_var=''):
 
         ha_datapoint = (fit_ha_flux, data_df_row['ha_sed_flux'].iloc[0])
         log_ha_datapoint = (np.log10(fit_ha_flux), np.log10(data_df_row['ha_sed_flux'].iloc[0]))
-        ax_ha_sed_vs_emfit.errorbar(ha_datapoint[0], ha_datapoint[1], xerr=[[err_fit_ha_flux_low], [err_fit_ha_flux_high]], yerr=[[err_sed_ha_flux_low],[err_sed_ha_flux_high]], marker='o', color=rgba, ls='None', mec='black', ms=markersize, ecolor='black')
+        ax_ha_sed_vs_emfit.errorbar(ha_datapoint[0], ha_datapoint[1], xerr=[[err_fit_ha_flux_low], [err_fit_ha_flux_high]], yerr=[[err_sed_ha_flux_low],[err_sed_ha_flux_high]], marker='o', color=rgba, ls='None', mec='black', ms=markersize, ecolor=ecolor)
         ax_ha_sed_vs_emfit.set_xlabel('H$\\alpha$+NII Spectrum', fontsize=fontsize)
         ax_ha_sed_vs_emfit.set_ylabel('H$\\alpha$+NII Photometry', fontsize=fontsize)
         ha_distances.append(get_distance(np.array(log_ha_datapoint)))
 
         pab_datapoint = (fit_pab_flux, data_df_row['fe_cor_pab_sed_flux'].iloc[0])
         log_pab_datapoint = (np.log10(fit_pab_flux), np.log10(data_df_row['fe_cor_pab_sed_flux'].iloc[0]))
-        ax_pab_sed_vs_emfit.errorbar(pab_datapoint[0], pab_datapoint[1], xerr=[[err_fit_pab_flux_low], [err_fit_pab_flux_high]], yerr=[[err_sed_fe_cor_pab_flux_low],[err_sed_fe_cor_pab_flux_high]], marker='o', color=rgba, ls='None', mec='black', ms=markersize, ecolor='black')
+        ax_pab_sed_vs_emfit.errorbar(pab_datapoint[0], pab_datapoint[1], xerr=[[err_fit_pab_flux_low], [err_fit_pab_flux_high]], yerr=[[err_sed_fe_cor_pab_flux_low],[err_sed_fe_cor_pab_flux_high]], marker='o', color=rgba, ls='None', mec='black', ms=markersize, ecolor=ecolor)
         ax_pab_sed_vs_emfit.set_xlabel('Pa$\\beta$ Spectrum', fontsize=fontsize)
         ax_pab_sed_vs_emfit.set_ylabel('Pa$\\beta$ Photometry', fontsize=fontsize)
         pab_distances.append(get_distance(np.array(log_pab_datapoint)))
@@ -116,11 +117,20 @@ def paper_plot_sed_emfit_accuracy(id_msa_list, color_var=''):
         # if id_msa ==  38163:
         #     breakpoint()
         
+        if av_datapoint_errs_high[1] > 50:
+            av_marker=(3, 0, 180)
+            err_inverse_av_datapoint_lows[1] = 0
+            av_markersize=12
+        else:
+            av_marker='o'
+            av_markersize=8
 
-        ax_av_sed_vs_emfit.errorbar(inverse_av_datapoint[0], inverse_av_datapoint[1], xerr=[[err_inverse_av_datapoint_lows[0]], [err_inverse_av_datapoint_highs[0]]], yerr=[[err_inverse_av_datapoint_lows[1]], [err_inverse_av_datapoint_highs[1]]], marker='o', color=rgba, ls='None', mec='black', ms=markersize, ecolor='black')
+        ax_av_sed_vs_emfit.errorbar(inverse_av_datapoint[0], inverse_av_datapoint[1], xerr=[[err_inverse_av_datapoint_lows[0]], [err_inverse_av_datapoint_highs[0]]], yerr=[[err_inverse_av_datapoint_lows[1]], [err_inverse_av_datapoint_highs[1]]], marker=av_marker, color=rgba, ls='None', mec='black', ms=av_markersize, ecolor=ecolor)
         ax_av_sed_vs_emfit.set_xlabel(f'(Pa$\\beta$ / H$\\alpha$) Spectrum', fontsize=fontsize)
         ax_av_sed_vs_emfit.set_ylabel(f'(Pa$\\beta$ / H$\\alpha$) Photometry', fontsize=fontsize)
-        av_distances.append(get_distance(np.array(av_datapoint)))
+        
+        av_value_datapoint = np.array([lineratio_data_row['emission_fit_av'].iloc[0], lineratio_data_row['sed_av'].iloc[0]])
+        av_distances.append(get_distance(np.array(av_value_datapoint)))
 
         add_text = 0
         if add_text:
@@ -137,6 +147,19 @@ def paper_plot_sed_emfit_accuracy(id_msa_list, color_var=''):
     scatter_pab_offset = np.std(pab_distances)
     median_av_offset = np.median(av_distances)
     scatter_av_offset = np.std(av_distances)
+
+    start_scatter_text_x = 0.02
+    start_scatter_text_y = 0.94
+    scatter_text_sep = 0.07
+    ax_ha_sed_vs_emfit.text(start_scatter_text_x, start_scatter_text_y, f'Offset: {median_ha_offset:0.2f}', transform=ax_ha_sed_vs_emfit.transAxes, fontsize=12)
+    ax_ha_sed_vs_emfit.text(start_scatter_text_x, start_scatter_text_y-scatter_text_sep, f'Scatter: {scatter_ha_offset:0.2f}', transform=ax_ha_sed_vs_emfit.transAxes, fontsize=12)
+    ax_pab_sed_vs_emfit.text(start_scatter_text_x, start_scatter_text_y, f'Offset: {median_pab_offset:0.2f}', transform=ax_pab_sed_vs_emfit.transAxes, fontsize=12)
+    ax_pab_sed_vs_emfit.text(start_scatter_text_x, start_scatter_text_y-scatter_text_sep, f'Scatter: {scatter_pab_offset:0.2f}', transform=ax_pab_sed_vs_emfit.transAxes, fontsize=12)
+    ax_av_sed_vs_emfit.text(start_scatter_text_x, start_scatter_text_y, f'AV Offset: {median_av_offset:0.2f}', transform=ax_av_sed_vs_emfit.transAxes, fontsize=12)
+    ax_av_sed_vs_emfit.text(start_scatter_text_x, start_scatter_text_y-scatter_text_sep, f'Scatter: {scatter_av_offset:0.2f}', transform=ax_av_sed_vs_emfit.transAxes, fontsize=12)
+    # ax_av_sed_vs_emfit.text(inverse_av_datapoint[0], inverse_av_datapoint[1], f'{id_msa}')
+    # ax_pab_sed_vs_emfit.text(pab_datapoint[0], pab_datapoint[1], f'{id_msa}')
+    
     
 
     for ax in ax_list:
@@ -156,14 +179,14 @@ def paper_plot_sed_emfit_accuracy(id_msa_list, color_var=''):
     ax_av_sed_vs_emfit.plot([-10, 100], [-10, 100], ls='--', color='red', marker='None')
     # ax_av_sed_vs_emfit.set_xlim([38, 1.5])
     # ax_av_sed_vs_emfit.set_ylim([38, 1.5])
-    ax_av_sed_vs_emfit.set_xlim([1/38, 1/1.5])
-    ax_av_sed_vs_emfit.set_ylim([1/38, 1/1.5])
+    ax_av_sed_vs_emfit.set_xlim([1/40, 1/1.5])
+    ax_av_sed_vs_emfit.set_ylim([1/40, 1/1.5])
     ax2.set_ylim([38, 1.5])
     ax_av_sed_vs_emfit.set_xscale('log')
     ax_av_sed_vs_emfit.set_yscale('log')
     ax2.set_yscale('log')
-    y_tick_locs = [1/35, 1/18, 1/10, 1/5, 1/2]
-    y_tick_labs = ['1/35', '1/18', '1/10', '1/5', '1/2']
+    y_tick_locs = [0.03, 0.055, 1/10, 1/5, 1/2]
+    y_tick_labs = ['0.03', '0.055', '0.1', '0.2', '0.5']
     ax_av_sed_vs_emfit.set_yticks(y_tick_locs)
     ax_av_sed_vs_emfit.set_yticklabels(y_tick_labs)
     ax_av_sed_vs_emfit.set_xticks(y_tick_locs)
@@ -178,12 +201,6 @@ def paper_plot_sed_emfit_accuracy(id_msa_list, color_var=''):
     ax2.minorticks_off()
     ax_av_sed_vs_emfit.minorticks_off()
     # breakpoint()
-    
-
-    
-
-    # breakpoint()
-
     
     
 

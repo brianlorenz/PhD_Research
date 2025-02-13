@@ -812,12 +812,12 @@ if __name__ == "__main__":
     # sed_values_compare()
     # sed_values_compare(use_subsample=False)
 
-    id_msa_list = get_id_msa_list(full_sample=False)
+    # id_msa_list = get_id_msa_list(full_sample=False)
     
     # fit_all_emission_uncover(id_msa_list)  
     # plot_mosaic(id_msa_list, line = 'ha_only')
     # plot_mosaic(id_msa_list, line = 'pab_only')
-    plot_line_assessment(id_msa_list)
+    # plot_line_assessment(id_msa_list)
 
-    # plot_line_assessment([18471])
+    plot_line_assessment([14573])
     pass

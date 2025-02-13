@@ -26,9 +26,14 @@ def plot_av_properties():
     ax_av_mass = axarr[0]
     ax_av_sfr = axarr[1]
 
-    fig2, axarr2 = plt.subplots(1, 2, figsize=(13,6))
-    ax_prospect_sed = axarr2[0]
-    ax_prospect_spec = axarr2[1]
+    fig2, axarr2 = plt.subplots(2, 2, figsize=(13,13))
+    ax_prospect_sed = axarr2[0,0]
+    ax_prospect_spec = axarr2[0,1]
+    ax_combined_prospect_sed = axarr2[1,0]
+    ax_combined_prospect_spec = axarr2[1,1]
+    axarr2_list = [ax_prospect_sed, ax_prospect_spec, ax_combined_prospect_sed, ax_combined_prospect_spec]
+
+    prosp_offsets = []
 
     for i in range(len(lineratio_df)):
         merged_df_row = merged_df.iloc[i]
@@ -49,14 +54,24 @@ def plot_av_properties():
         err_prosp_av_50_high = (1.086 *merged_df_row['dust2_84']) - prosp_av_50
         prosp_av_err=[[err_prosp_av_50_low], [err_prosp_av_50_high]]
 
+        prosp_av_combined_50 =  1.086 * (merged_df_row['dust2_50']+merged_df_row['dust1_fraction_50']*merged_df_row['dust2_50'])
+        prosp_av_combined_16 =  1.086 * (merged_df_row['dust2_16']+merged_df_row['dust1_fraction_16']*merged_df_row['dust2_16'])
+        prosp_av_combined_84 =  1.086 * (merged_df_row['dust2_84']+merged_df_row['dust1_fraction_84']*merged_df_row['dust2_84'])
+
+        err_prosp_av_50_combined_low = prosp_av_combined_50 - prosp_av_combined_16
+        err_prosp_av_50_combined_high = prosp_av_combined_84  - prosp_av_combined_50
+        err_prosp_av_50_combined=[[err_prosp_av_50_combined_low], [err_prosp_av_50_combined_high]]
+
         sed_av = merged_df_row['sed_av']
         err_sed_av_low = merged_df_row['err_sed_av_low']
         err_sed_av_high = merged_df_row['err_sed_av_high']
-        if math.isnan(err_sed_av_low): 
+        # breakpoint()
+        if pd.isnull(err_sed_av_low): 
             err_sed_av_low = 0
-        if math.isnan(err_sed_av_high): 
+        if pd.isnull(err_sed_av_high): 
             err_sed_av_high = 0
         av_err=[[err_sed_av_low], [err_sed_av_high]]
+        
 
         emission_fit_av = merged_df_row['emission_fit_av']
         err_emission_fit_av_low = merged_df_row['err_emission_fit_av_low']
@@ -65,13 +80,31 @@ def plot_av_properties():
 
 
         rgba = 'black'
+        ecolor = 'gray'
         
-        ax_av_mass.errorbar(stellar_mass_50, sed_av, xerr=mass_err, yerr=av_err, marker='o', color=rgba, ls='None', mec='black')
-        ax_av_sfr.errorbar(log_sfr100_50, sed_av, xerr=log_sfr_err, yerr=av_err, marker='o', color=rgba, ls='None', mec='black')
+        ax_av_mass.errorbar(stellar_mass_50, sed_av, xerr=mass_err, yerr=av_err, marker='o', color=rgba, ls='None', mec='black', ecolor=ecolor)
+        ax_av_sfr.errorbar(log_sfr100_50, sed_av, xerr=log_sfr_err, yerr=av_err, marker='o', color=rgba, ls='None', mec='black', ecolor=ecolor)
 
-        ax_prospect_sed.errorbar(prosp_av_50, sed_av, xerr=prosp_av_err, yerr=av_err, marker='o', color=rgba, ls='None', mec='black')
-        ax_prospect_spec.errorbar(prosp_av_50, emission_fit_av, xerr=prosp_av_err, yerr=emission_fit_av_err, marker='o', color=rgba, ls='None', mec='black')
+        ax_prospect_sed.errorbar(prosp_av_50, sed_av, xerr=prosp_av_err, yerr=av_err, marker='o', color=rgba, ls='None', mec='black', ecolor=ecolor)
+        ax_prospect_spec.errorbar(prosp_av_50, emission_fit_av, xerr=prosp_av_err, yerr=emission_fit_av_err, marker='o', color=rgba, ls='None', mec='black', ecolor=ecolor)
+        ax_combined_prospect_sed.errorbar(prosp_av_combined_50, sed_av, xerr=err_prosp_av_50_combined, yerr=av_err, marker='o', color=rgba, ls='None', mec='black', ecolor=ecolor)
+        ax_combined_prospect_spec.errorbar(prosp_av_combined_50, emission_fit_av, xerr=err_prosp_av_50_combined, yerr=emission_fit_av_err, marker='o', color=rgba, ls='None', mec='black', ecolor=ecolor)
     
+        line_p1 = np.array([-10, -10])
+        line_p2 = np.array([10, 10])
+        def get_distance(datapoint):
+            distance = np.cross(line_p2-line_p1,datapoint-line_p1)/np.linalg.norm(line_p2-line_p1)
+            return distance
+        spec_datapoint = (prosp_av_combined_50, emission_fit_av)
+        prosp_offsets.append(get_distance(spec_datapoint))
+    
+    median_offset = np.median(prosp_offsets)
+    scatter_offset = np.std(prosp_offsets)
+    
+    ax_combined_prospect_spec.text(0.02, 0.93, f'Median Offset: {median_offset:0.2f}', transform=ax_combined_prospect_spec.transAxes, fontsize=14)
+    ax_combined_prospect_spec.text(0.02, 0.86, f'Scatter: {scatter_offset:0.2f}', transform=ax_combined_prospect_spec.transAxes, fontsize=14)
+    
+
     ax_av_mass.set_xlabel(stellar_mass_label, fontsize=fontsize)
     ax_av_sfr.set_xlabel(sfr_label, fontsize=fontsize)
     for ax in axarr:
@@ -84,15 +117,20 @@ def plot_av_properties():
     
     ax_prospect_sed.set_ylabel('Photometric A$_V$', fontsize=fontsize)
     ax_prospect_spec.set_ylabel('Spectroscopic A$_V$', fontsize=fontsize)
-    
+    ax_combined_prospect_sed.set_ylabel('Photometric A$_V$', fontsize=fontsize)
+    ax_combined_prospect_spec.set_ylabel('Spectroscopic A$_V$', fontsize=fontsize)
+    ax_prospect_sed.set_xlabel('Prospector A$_V$ dust2', fontsize=fontsize)
+    ax_prospect_spec.set_xlabel('Prospector A$_V$ dust2', fontsize=fontsize)
+    ax_combined_prospect_sed.set_xlabel('Prospector A$_V$ dust1+dust2', fontsize=fontsize)
+    ax_combined_prospect_spec.set_xlabel('Prospector A$_V$ dust1+dust2', fontsize=fontsize)
+
     # scale_aspect(ax_prospect)
-    for ax in axarr2:
+    for ax in axarr2_list:
         ax.tick_params(labelsize=fontsize)
-        ax.set_xlabel('Prospector A$_V$', fontsize=fontsize)
         ax.plot([-100, 10000], [-100, 10000], ls='--', color='red', marker='None')
         ax.set_xlim(-2, 5)
         ax.set_ylim(-2, 5)
-    fig2.savefig('/Users/brianlorenz/uncover/Figures/av_plots/av_prospector.pdf', bbox_inches='tight')
+    fig2.savefig('/Users/brianlorenz/uncover/Figures/av_plots/av_prospector_combined.pdf', bbox_inches='tight')
 
     
 
@@ -165,6 +203,6 @@ def compare_pab_paa_avs(id_msa_list):
             
 
 if __name__ == '__main__':
-    # plot_av_properties()
-    id_msa_list = get_id_msa_list(full_sample=True)
-    compare_pab_paa_avs(id_msa_list)
+    plot_av_properties()
+    # id_msa_list = get_id_msa_list(full_sample=True)
+    # compare_pab_paa_avs(id_msa_list)

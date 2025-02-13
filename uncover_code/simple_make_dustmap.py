@@ -193,8 +193,22 @@ def make_dustmap_simple(id_msa, aper_size='None', axarr_final=[], ax_labels=Fals
     nii_cor_ha_sed_lineflux = lineflux_row['nii_cor_ha_sed_flux'].iloc[0]
     fe_cor_pab_sed_lineflux = lineflux_row['fe_cor_pab_sed_flux'].iloc[0]
     nii_cor_ha_boot_lines = ha_boot_lines * get_nii_correction(id_msa)
-    fe_cor_pab_boot_lines = pab_boot_lines * get_fe_correction(id_msa)
+    fe_cor_pab_boot_lines = [pab_boot_lines[i] * get_fe_correction(id_msa, boot=True) for i in range(len(pab_boot_lines))] # Inflates errors be fecor scatter
+    # fe_cor_pab_boot_lines_old = pab_boot_lines * get_fe_correction(id_msa)
     
+
+
+    def set_negative_lineflux_to_lowerlim(boot_lines, original_flux):        
+        for i in range(len(boot_lines)):
+            line_flx = boot_lines[i]
+            if line_flx < 0:
+                boot_lines[i] = 1e-30
+        return boot_lines
+    
+    ha_boot_lines = set_negative_lineflux_to_lowerlim(ha_boot_lines, ha_sed_lineflux)
+    nii_cor_ha_boot_lines = set_negative_lineflux_to_lowerlim(nii_cor_ha_boot_lines, nii_cor_ha_sed_lineflux)
+    fe_cor_pab_boot_lines = set_negative_lineflux_to_lowerlim(fe_cor_pab_boot_lines, fe_cor_pab_sed_lineflux)
+
     nii_cor_ha_sed_lineflux_16 = np.percentile(nii_cor_ha_boot_lines, 16)
     nii_cor_ha_sed_lineflux_84 = np.percentile(nii_cor_ha_boot_lines, 84)
     err_nii_cor_ha_sed_lineflux_low = nii_cor_ha_sed_lineflux - nii_cor_ha_sed_lineflux_16
@@ -209,10 +223,6 @@ def make_dustmap_simple(id_msa, aper_size='None', axarr_final=[], ax_labels=Fals
     fe_cor_pab_sed_lineflux_84 = np.percentile(fe_cor_pab_boot_lines, 84)
     err_fe_cor_pab_sed_lineflux_low = fe_cor_pab_sed_lineflux - fe_cor_pab_sed_lineflux_16
     err_fe_cor_pab_sed_lineflux_high = fe_cor_pab_sed_lineflux_84 - fe_cor_pab_sed_lineflux
-
-    # Inflate errors by scatter of pab vs mass plot
-    fe_cor_df = ascii.read('/Users/brianlorenz/uncover/Data/generated_tables/fe_cor_df.csv').to_pandas()
-    fe_scatter = fe_cor_df['scatter'].iloc[0]
     
 
     err_sed_linefluxes = [err_nii_cor_ha_sed_lineflux_low, err_nii_cor_ha_sed_lineflux_high, err_fe_cor_pab_sed_lineflux_low, err_fe_cor_pab_sed_lineflux_high, err_ha_sed_lineflux_low, err_ha_sed_lineflux_high]
@@ -224,6 +234,9 @@ def make_dustmap_simple(id_msa, aper_size='None', axarr_final=[], ax_labels=Fals
     sed_lineratio_84 = np.percentile(boot_sed_lineratios, 84)
     err_sed_lineratio_low = sed_lineratio - sed_lineratio_16
     err_sed_lineratio_high = sed_lineratio_84 - sed_lineratio
+    if sed_lineratio_84 > 999:
+        sed_lineratio_84 = 99
+        err_sed_lineratio_high = 99
     sed_lineratio_pcts = [sed_lineratio_16, sed_lineratio_84]
     sed_lineratios = [sed_lineratio, err_sed_lineratio_low, err_sed_lineratio_high]
     # And emfit lineratios
@@ -238,6 +251,9 @@ def make_dustmap_simple(id_msa, aper_size='None', axarr_final=[], ax_labels=Fals
     sed_av_84 = np.percentile(boot_sed_avs, 84)
     err_sed_av_low = sed_av - sed_av_16
     err_sed_av_high = sed_av_84 - sed_av
+    if sed_lineratio_84 > 999:
+        sed_av_16 = -99
+        err_sed_av_low = -99
     sed_avs = [sed_av, err_sed_av_low, err_sed_av_high]
     #And emission fit av
     av_from_emission = fit_df["ha_pab_av"].iloc[0]
@@ -245,8 +261,6 @@ def make_dustmap_simple(id_msa, aper_size='None', axarr_final=[], ax_labels=Fals
     err_av_from_emission_high = fit_df["err_ha_pab_av_high"].iloc[0]
     emission_avs = [av_from_emission, err_av_from_emission_low, err_av_from_emission_high]
     
-
-
 
     # Make linemaps
     # Need to multiply the image fluxes by 1e-8 to turn them from 10nJy to Jy
@@ -453,6 +467,7 @@ def make_dustmap_simple(id_msa, aper_size='None', axarr_final=[], ax_labels=Fals
     fig.savefig(save_folder + f'/{id_msa}_dustmap{aper_add_str}.pdf')
     # plt.show()
 
+
     if len(axarr_final) > 0:
         paper_font = 24
         # Plot for paper
@@ -542,15 +557,15 @@ def make_dustmap_simple(id_msa, aper_size='None', axarr_final=[], ax_labels=Fals
             # ax_ha_map_paper.set_title(f'H$\\alpha$ Linemap', fontsize=paper_font)
             # ax_pab_overlay_paper.set_title(f'Pa$\\beta$ Contours', fontsize=paper_font)
     
-    from matplotlib.lines import Line2D
-    line_ha_contour = Line2D([0, 1], [0, 1], color=new_cmap_ha(0.7), marker='None', ls='-')
-    line_pab_contour = Line2D([0, 1], [0, 1], color='grey', marker='None', ls='-')
-    custom_lines_ha = [line_ha_contour]
-    custom_labels_ha = ['H$\\alpha$ contour']
-    custom_lines_pab = [line_pab_contour]
-    custom_labels_pab = ['Pa$\\beta$ contour']
-    ax_150_image_paper.legend(custom_lines_ha, custom_labels_ha, loc=3)
-    ax_pab_overlay_paper.legend(custom_lines_pab, custom_labels_pab, loc=3)
+        from matplotlib.lines import Line2D
+        line_ha_contour = Line2D([0, 1], [0, 1], color=new_cmap_ha(0.7), marker='None', ls='-')
+        line_pab_contour = Line2D([0, 1], [0, 1], color='grey', marker='None', ls='-')
+        custom_lines_ha = [line_ha_contour]
+        custom_labels_ha = ['H$\\alpha$ contour']
+        custom_lines_pab = [line_pab_contour]
+        custom_labels_pab = ['Pa$\\beta$ contour']
+        ax_150_image_paper.legend(custom_lines_ha, custom_labels_ha, loc=3)
+        ax_pab_overlay_paper.legend(custom_lines_pab, custom_labels_pab, loc=3)
 
 
     plt.close('all')
@@ -760,17 +775,31 @@ def plot_sed_around_line(ax, filters, sed_df, spec_df, redshift, line_index, tra
             red_wave = sed_row['eff_wavelength'].iloc[0]
             red_flux = sed_row['flux'].iloc[0]
             err_red_flux = sed_row['err_flux'].iloc[0]
-            err_red_flux = set_error_floor(red_flux, err_red_flux)
+            # err_red_flux = set_error_floor(red_flux, err_red_flux)
         if i == 1:
             green_wave = sed_row['eff_wavelength'].iloc[0]
             green_flux = sed_row['flux'].iloc[0]
             err_green_flux = sed_row['err_flux'].iloc[0]
-            err_green_flux = set_error_floor(green_flux, err_green_flux)
+            # err_green_flux = set_error_floor(green_flux, err_green_flux)
         if i == 2:
             blue_wave = sed_row['eff_wavelength'].iloc[0]
             blue_flux = sed_row['flux'].iloc[0]
             err_blue_flux = sed_row['err_flux'].iloc[0]
-            err_blue_flux = set_error_floor(blue_flux, err_blue_flux)
+            # err_blue_flux = set_error_floor(blue_flux, err_blue_flux)
+            # if id_msa == 14573 and line_index==1:
+            #     he1_fit_df = ascii.read(f'/Users/brianlorenz/uncover/Data/emission_fitting_he1_only/{id_msa}_emission_fits.csv').to_pandas()
+            #     he1_flux = he1_fit_df['flux'].iloc[0]
+            #     he1_wave = 10830
+            #     c = 299792458 # m/s
+            #     he1_flux_jy = he1_flux / (1e-23*1e10*c / ((he1_wave)**2))
+                
+            #     sedpy_blue_name = filters[2].replace('f_', 'jwst_')
+            #     sedpy_blue_filt = observate.load_filters([sedpy_blue_name])[0]
+            #     blue_filter_width = sedpy_blue_filt.rectangular_width
+
+            #     he1_flux_jy_dispersed = he1_flux_jy / blue_filter_width
+
+            #     blue_flux = blue_flux - he1_flux_jy_dispersed
 
         # Read and plot each filter curve
         sedpy_name = filters[i].replace('f_', 'jwst_')
@@ -817,7 +846,7 @@ def plot_sed_around_line(ax, filters, sed_df, spec_df, redshift, line_index, tra
             else:
                 line_name = 'pab'
             line_trasm = get_line_coverage(id_msa, sedpy_line_filt, redshift, line_name)
-            boot_line = boot_line / line_trasm
+            boot_line = boot_line 
             
             boot_lines.append(boot_line)
     boot_lines = np.array(boot_lines)
@@ -970,13 +999,13 @@ def make_all_dustmap(id_msa_list, full_sample=False):
     
     for id_msa in id_msa_list:
         print(f'Making dustmap for {id_msa}')
-        # sed_lineratios_grouped, emission_lineratios_grouped, sed_avs_grouped, emission_avs_grouped, err_sed_linefluxes_grouped = make_dustmap_simple(id_msa)
+        sed_lineratios_grouped, emission_lineratios_grouped, sed_avs_grouped, emission_avs_grouped, err_sed_linefluxes_grouped = make_dustmap_simple(id_msa)
         try:
             sed_lineratios_grouped, emission_lineratios_grouped, sed_avs_grouped, emission_avs_grouped, err_sed_linefluxes_grouped = make_dustmap_simple(id_msa)
         except Exception as error:
             print(error)
             print('ERROR')
-            print('ERROR')
+            print('ERROR - DID NOT COMPUTE - CHECK CODE')
             print('ERROR')
             print('ERROR')
             sed_lineratios_grouped = [-99,-99,-99]
@@ -1097,13 +1126,14 @@ if __name__ == "__main__":
     # lineflux_df = ascii.read(f'/Users/brianlorenz/uncover/Data/generated_tables/lineflux_df_all.csv').to_pandas()
     # breakpoint()
     # make_dustmap_simple(18471)
+    
     id_msa_list = get_id_msa_list(full_sample=False)
     # breakpoint()
-    # print(id_msa_list).
-    # make_all_dustmap(id_msa_list, full_sample=False)
-    # copy_selected_sample_dustmaps(id_msa_list)
-    make_paper_fig_dustmaps(id_msa_list, sortby='av')
+    make_all_dustmap(id_msa_list, full_sample=False)
+    # make_paper_fig_dustmaps(id_msa_list, sortby='av')
     # make_paper_fig_dustmaps(id_msa_list, sortby='mass')
 
     # id_msa_list = get_id_msa_list(full_sample=True)
     # make_all_dustmap(id_msa_list, full_sample=True)
+
+    # copy_selected_sample_dustmaps(id_msa_list)

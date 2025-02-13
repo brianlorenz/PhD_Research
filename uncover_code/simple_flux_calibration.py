@@ -25,14 +25,19 @@ def flux_calibrate_spectrum(id_msa):
     nan_indices = sed_df[sed_df.isna().any(axis=1)].index
     sed_df_nonan = sed_df.drop(nan_indices)
 
+    def poly8(x, a8, a7, a6, a5, a4, a3, a2, a1, a0):
+        return a8 * x**8 + a7 * x**7 + a6 * x**6 + a5 * x**5 + a4 * x**4 + a3 * x**3 + a2 * x**2 + a1 * x + a0
+
     
     # Polynomial correction
     def poly5(x, a5, a4, a3, a2, a1, a0):
         return a5 * x**5 + a4 * x**4 + a3 * x**3 + a2 * x**2 + a1 * x + a0
     guess = [0, 0, 0, 0, 2, 0]
-    popt, pcov = curve_fit(poly5, sed_df_nonan['eff_wavelength'], sed_df_nonan['flux'] / sed_df_nonan['int_spec_flux'], p0=guess)
+    guess8 = [0, 0, 0, 0, 0, 0, 0, 2, 0]
+    # popt, pcov = curve_fit(poly5, sed_df_nonan['eff_wavelength'], sed_df_nonan['flux'] / sed_df_nonan['int_spec_flux'], p0=guess)
+    popt, pcov = curve_fit(poly8, sed_df_nonan['eff_wavelength'], sed_df_nonan['flux'] / sed_df_nonan['int_spec_flux'], p0=guess8)
     def correct_flux(wavelengths, fluxes, popt):
-        correction_factor = poly5(wavelengths, popt[0], popt[1], popt[2], popt[3], popt[4], popt[5])
+        correction_factor = poly8(wavelengths, popt[0], popt[1], popt[2], popt[3], popt[4], popt[5], popt[6], popt[7], popt[8])
         return fluxes * correction_factor
     sed_df['int_spec_flux_calibrated'] = correct_flux(sed_df['eff_wavelength'], sed_df['int_spec_flux'], popt)
     spec_df['flux_calibrated_jy'] = correct_flux(spec_df['wave'], spec_df['flux'], popt)
@@ -79,15 +84,15 @@ def flux_calibrate_spectrum(id_msa):
     plt.close('all')
 
 if __name__ == "__main__":
-    # flux_calibrate_spectrum(43497)
+    flux_calibrate_spectrum(42213)
 
     # id_msa_list = get_id_msa_list(full_sample=True)
     # for id_msa in id_msa_list:
         # flux_calibrate_spectrum(id_msa)
     
-    zqual_df = find_good_spec()
-    id_msa_list = zqual_df['id_msa'].to_list()
-    for id_msa in id_msa_list:
-        if id_msa<49992:
-            continue
-        flux_calibrate_spectrum(id_msa)
+    # zqual_df = find_good_spec()
+    # id_msa_list = zqual_df['id_msa'].to_list()
+    # for id_msa in id_msa_list:
+    #     if id_msa<49992:
+    #         continue
+    #     flux_calibrate_spectrum(id_msa)

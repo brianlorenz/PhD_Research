@@ -35,7 +35,23 @@ def get_nii_correction_formmet(id_msa, sps_df = []):
     nii_correction_factor = 1 / (1+niicombined_ha_rat)
     return nii_correction_factor
 
-def get_fe_correction(id_msa, sps_df = []): # From fe_diagnostics.py
+def get_fe_correction(id_msa, boot=False): # From fe_diagnostics.py
+    fe_cor_df_indiv = ascii.read('/Users/brianlorenz/uncover/Data/generated_tables/fe_cor_df_indiv.csv').to_pandas()
+    fe_cor_df_row = fe_cor_df_indiv[fe_cor_df_indiv['id_msa'] == id_msa]
+    if len(fe_cor_df_row) == 0:
+        predicted_fe_pab_ratio = fe_cor_df_indiv['median_fe_pab_ratios'].iloc[0]
+    else:
+        predicted_fe_pab_ratio = fe_cor_df_row['fe_pab_ratio'].iloc[0]
+    if boot == True:
+        fe_scatter = np.std(fe_cor_df_indiv['fe_pab_ratio'])
+        predicted_fe_pab_ratio = predicted_fe_pab_ratio+np.random.normal(loc=0, scale=fe_scatter)
+    
+    if id_msa in [14573]:
+        predicted_fe_pab_ratio = 0
+    pab_correction_factor = 1 / (1+predicted_fe_pab_ratio)
+    return pab_correction_factor
+
+def get_fe_correction_bymass(id_msa, sps_df = []): # From fe_diagnostics.py
     if len(sps_df) == 0:
         sps_df = read_SPS_cat()
     sps_row = sps_df[sps_df['id_msa'] == id_msa]
@@ -144,3 +160,4 @@ def sanders_nii_ratio(met_12_log_OH, linear_scale = 8.69):
 
 
 # print(compute_ha_pab_av(1/16))
+# print(get_fe_correction(18471))
