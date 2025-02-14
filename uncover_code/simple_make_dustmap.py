@@ -775,17 +775,17 @@ def plot_sed_around_line(ax, filters, sed_df, spec_df, redshift, line_index, tra
             red_wave = sed_row['eff_wavelength'].iloc[0]
             red_flux = sed_row['flux'].iloc[0]
             err_red_flux = sed_row['err_flux'].iloc[0]
-            # err_red_flux = set_error_floor(red_flux, err_red_flux)
+            err_red_flux = set_error_floor(red_flux, err_red_flux)
         if i == 1:
             green_wave = sed_row['eff_wavelength'].iloc[0]
             green_flux = sed_row['flux'].iloc[0]
             err_green_flux = sed_row['err_flux'].iloc[0]
-            # err_green_flux = set_error_floor(green_flux, err_green_flux)
+            err_green_flux = set_error_floor(green_flux, err_green_flux)
         if i == 2:
             blue_wave = sed_row['eff_wavelength'].iloc[0]
             blue_flux = sed_row['flux'].iloc[0]
             err_blue_flux = sed_row['err_flux'].iloc[0]
-            # err_blue_flux = set_error_floor(blue_flux, err_blue_flux)
+            err_blue_flux = set_error_floor(blue_flux, err_blue_flux)
             # if id_msa == 14573 and line_index==1:
             #     he1_fit_df = ascii.read(f'/Users/brianlorenz/uncover/Data/emission_fitting_he1_only/{id_msa}_emission_fits.csv').to_pandas()
             #     he1_flux = he1_fit_df['flux'].iloc[0]
