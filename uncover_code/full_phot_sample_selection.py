@@ -6,18 +6,18 @@ import time
 
 save_loc = '/Users/brianlorenz/uncover/Data/generated_tables/phot_linecoverage.csv'
 
-line_list = [
-    ('Hbeta', 4861),
-    ('OIII', 5008),
-    ('Halpha', 6564.6),
-    ('PaBeta', 12821.7),
-    ('PaAlpha', 18750)
-]
-
 # line_list = [
+#     ('Hbeta', 4861),
+#     ('OIII', 5008),
 #     ('Halpha', 6564.6),
-#     ('PaBeta', 12821.7)
+#     ('PaBeta', 12821.7),
+#     ('PaAlpha', 18750)
 # ]
+
+line_list = [
+    ('Halpha', 6564.6),
+    ('PaBeta', 12821.7)
+]
 
 def full_phot_sample_select():
     supercat_df = read_supercat()
@@ -27,22 +27,25 @@ def full_phot_sample_select():
 
     id_DR3_list = supercat_df['id'].to_list()
     phot_sample_df = pd.DataFrame(zip(id_DR3_list), columns=['id'])
-    merged_df = phot_sample_df.merge(sps_df, on='id')
-    phot_sample_df['z_16'] = merged_df['z_16']
-    phot_sample_df['z_50'] = merged_df['z_50']
-    phot_sample_df['z_84'] = merged_df['z_84']
+    merged_df_sps = phot_sample_df.merge(sps_df, on='id')
+    merged_df_super = phot_sample_df.merge(supercat_df, on='id')
+    phot_sample_df['z_16'] = merged_df_sps['z_16']
+    phot_sample_df['z_50'] = merged_df_sps['z_50']
+    phot_sample_df['z_84'] = merged_df_sps['z_84']
+    phot_sample_df['use_phot'] = merged_df_super['use_phot']
+    phot_sample_df['flag_nearbcg'] = merged_df_super['flag_nearbcg']
     phot_sample_df = phot_sample_df.fillna(-99)
 
     # for line in line_list:
     #     add_line_columns(phot_sample_df, line[0])
    
     for line in line_list:
-        check_line_in_filters(phot_sample_df, line[0], line[1], uncover_filt_dict, filters, filt_colnames, sps_df)
+        check_line_in_filters(phot_sample_df, line[0], line[1], uncover_filt_dict, filters, filt_colnames, sps_df, supercat_df)
 
     phot_sample_df.to_csv(save_loc, index=False)
 
 
-def check_line_in_filters(dataframe, line_name, line_wave, uncover_filt_dict, filters, filt_colnames, sps_df):
+def check_line_in_filters(dataframe, line_name, line_wave, uncover_filt_dict, filters, filt_colnames, sps_df, supercat_df):
     """Checks if the listed line is within a filter. If so, record that filter, the nearby filters for continuum, and the redshift sigma to shift it out of the filter
     
     Parameters:
@@ -60,8 +63,14 @@ def check_line_in_filters(dataframe, line_name, line_wave, uncover_filt_dict, fi
     blue_filts = []
     red_filts = []
     redshift_sigs = []
+    all_detected = []
 
     for i in range(len(dataframe)):
+        if i%100==0:
+            print(i) # To show progress
+            assert len(all_detected) == len(obs_filts)
+            assert len(all_detected) == i
+
         id_dr3 = dataframe['id'].iloc[i]
         sps_row = sps_df[sps_df['id'] == id_dr3]
         
@@ -78,6 +87,7 @@ def check_line_in_filters(dataframe, line_name, line_wave, uncover_filt_dict, fi
             blue_filts.append(-99)
             red_filts.append(-99)
             redshift_sigs.append(-99)
+            all_detected.append(0)
             continue
         # Otherwise, continue and fill in the columns
         
@@ -94,12 +104,27 @@ def check_line_in_filters(dataframe, line_name, line_wave, uncover_filt_dict, fi
         red_filts.append(filt_cont_red_name)
         redshift_sigs.append(redshift_sigma)
 
-        if i%100==0:
-            print(i)
+        supercat_row = supercat_df[supercat_df['id']==id_dr3]
+        
+        if detected_filt_name == -99 or filt_cont_red_name == -99 or filt_cont_blue_name == -99:
+            all_detected.append(0)
+            continue
+
+        null_obs = pd.isnull(supercat_row[detected_filt_name].iloc[0])
+        null_red = pd.isnull(supercat_row[filt_cont_red_name].iloc[0])
+        null_blue = pd.isnull(supercat_row[filt_cont_blue_name].iloc[0])
+        
+        if null_obs + null_red + null_blue == 0:
+            all_detected.append(1)
+        else:
+            all_detected.append(0)
+
+        
     dataframe[f'{line_name}_filter_obs'] = obs_filts
     dataframe[f'{line_name}_filter_bluecont'] = blue_filts
     dataframe[f'{line_name}_filter_redcont'] = red_filts
     dataframe[f'{line_name}_redshift_sigma'] = redshift_sigs
+    dataframe[f'{line_name}_all_detected'] = all_detected
     return dataframe       
 
 
@@ -181,10 +206,10 @@ def find_nearby_filters(detected_filt, filt_names):
     subtract_index = 1
 
     if detected_filt in ['f_f335m', 'f_f410m']: # These have overlaps with the next reddest filter
-        add_filt = 2
+        add_index = 2
     filt_red = filt_names[detected_index+add_index]
     if detected_filt in ['f_f360m', 'f_f430m', 'f_f480m']: # These overlap with next bluest filter
-        subtract_filt = 2
+        subtract_index = 2
     filt_blue = filt_names[detected_index-subtract_index]
     return filt_blue, filt_red
 
@@ -195,6 +220,9 @@ def get_filt_cols(df, skip_wide_bands=False):
     if skip_wide_bands ==  True:
         filt_cols = [col for col in filt_cols if 'w' not in col]
     return filt_cols
+
+# Should add the check medium bands function into this code, and then ensure that there is mband data for each of the objects there
+# Merge in the use_phot and 
 
 if __name__ == "__main__":
     full_phot_sample_select()
