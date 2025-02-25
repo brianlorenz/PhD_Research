@@ -55,11 +55,13 @@ def get_line_coverage(id_msa, sedpy_filt, redshift, line_name, paalpha=False, pa
     fit_df = ascii.read(f'/Users/brianlorenz/uncover/Data/emission_fitting{paa_str}/{id_msa}_emission_fits.csv').to_pandas()
     if line_name == 'ha':
         line_wave = fit_df['line_center_rest'].iloc[0] + fit_df['z_offset'].iloc[0]
-        line_width = fit_df['sigma'].iloc[0]
+        # line_width = fit_df['sigma'].iloc[0] # This is actually prism broadened. Instead, we should use something like 10angstrom
+        line_width = 10
         line_amp = fit_df['amplitude'].iloc[0]
     if line_name == 'pab':
         line_wave = fit_df['line_center_rest'].iloc[1] + fit_df['z_offset'].iloc[1]
-        line_width = fit_df['sigma'].iloc[1]
+        # line_width = fit_df['sigma'].iloc[1] # See note above
+        line_width = 20
         line_amp = fit_df['amplitude'].iloc[1]
     wave_start = line_wave - 3*line_width
     wave_end = line_wave + 3*line_width

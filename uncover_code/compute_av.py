@@ -46,8 +46,8 @@ def get_fe_correction(id_msa, boot=False): # From fe_diagnostics.py
         fe_scatter = np.std(fe_cor_df_indiv['fe_pab_ratio'])
         predicted_fe_pab_ratio = predicted_fe_pab_ratio+np.random.normal(loc=0, scale=fe_scatter)
     
-    if id_msa in [14573]:
-        predicted_fe_pab_ratio = 0
+    # if id_msa in [14573]:
+    #     predicted_fe_pab_ratio = 0
     pab_correction_factor = 1 / (1+predicted_fe_pab_ratio)
     return pab_correction_factor
 

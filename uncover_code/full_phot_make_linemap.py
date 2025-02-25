@@ -17,6 +17,8 @@ from matplotlib.colors import Normalize
 from plot_log_linear_rgb import make_log_rgb
 import matplotlib.patheffects as pe
 from uncover_cosmo import find_pix_per_kpc, pixel_scale
+import initialize_mosdef_dirs as imd
+
 
 
 phot_df_loc = '/Users/brianlorenz/uncover/Data/generated_tables/phot_linecoverage_ha_pab.csv'
@@ -27,7 +29,7 @@ cmap='inferno'
 
 
 
-def make_linemap(id_dr3, line_name, phot_df, supercat_df, image_size=(100,100)):
+def make_linemap(id_dr3, line_name, phot_df, supercat_df, image_size=(100,100), snr_thresh=2):
     """Given a DR3 id and a line, make the linemap
     
     Parameters:
@@ -56,6 +58,12 @@ def make_linemap(id_dr3, line_name, phot_df, supercat_df, image_size=(100,100)):
     redshift = phot_df_row['z_50'].iloc[0]
 
     cont_percentile, line_flux, boot_lines, sed_fluxes, wave_pct, line_rest_wavelength = plot_sed_around_line(id_dr3, line_name, filters, redshift, bootstrap=1000)
+    flux_snr = line_flux / np.std(boot_lines)
+
+    snr_str = ''
+    if flux_snr < snr_thresh:
+        print(f'SNR < {snr_thresh}')
+        snr_str = '_low_snr/'
 
     # Make linemaps
     # Need to multiply the image fluxes by 1e-8 to turn them from 10nJy to Jy
@@ -128,8 +136,12 @@ def make_linemap(id_dr3, line_name, phot_df, supercat_df, image_size=(100,100)):
         scale_aspect(ax)
         ax.set_xticks([]); ax.set_yticks([])
 
-    fig.savefig(figure_save_loc+f'linemaps/{id_dr3}_linemap.pdf', bbox_inches='tight')
-
+    imd.check_and_make_dir(figure_save_loc)
+    imd.check_and_make_dir(figure_save_loc+'linemaps/')
+    imd.check_and_make_dir(figure_save_loc+f'linemaps/{line_name}_linemaps/')
+    imd.check_and_make_dir(figure_save_loc+f'linemaps/{line_name}_linemaps{snr_str}/')
+    fig.savefig(figure_save_loc+f'linemaps/{line_name}_linemaps{snr_str}/{id_dr3}_{line_name}_linemap.pdf', bbox_inches='tight')
+    plt.close('all')
 
 def get_norm(image_map, scalea=1, lower_pct=10, upper_pct=99):
         imagemap_gt0 = image_map[image_map>0.0001]
@@ -162,17 +174,17 @@ def plot_sed_around_line(id_dr3, line_name, filters, redshift, bootstrap=1000):
             red_wave = sed_row['eff_wavelength'].iloc[0]
             red_flux = sed_row['flux'].iloc[0]
             err_red_flux = sed_row['err_flux'].iloc[0]
-            err_red_flux = set_error_floor(red_flux, err_red_flux)
+            # err_red_flux = set_error_floor(red_flux, err_red_flux)
         if i == 1:
             green_wave = sed_row['eff_wavelength'].iloc[0]
             green_flux = sed_row['flux'].iloc[0]
             err_green_flux = sed_row['err_flux'].iloc[0]
-            err_green_flux = set_error_floor(green_flux, err_green_flux)
+            # err_green_flux = set_error_floor(green_flux, err_green_flux)
         if i == 2:
             blue_wave = sed_row['eff_wavelength'].iloc[0]
             blue_flux = sed_row['flux'].iloc[0]
             err_blue_flux = sed_row['err_flux'].iloc[0]
-            err_blue_flux = set_error_floor(blue_flux, err_blue_flux)
+            # err_blue_flux = set_error_floor(blue_flux, err_blue_flux)
 
         # Read and plot each filter curve
         sedpy_name = filters[i].replace('f_', 'jwst_')
@@ -222,7 +234,9 @@ def plot_sed_around_line(id_dr3, line_name, filters, redshift, bootstrap=1000):
     # ax.set_ylim(0, 1.2*np.max(spec_df['flux_calibrated_jy']))
     sed_fluxes = [red_flux, green_flux, blue_flux]
 
-    fig.savefig(figure_save_loc + f'sed_images/{id_dr3}_sed.pdf')
+    imd.check_and_make_dir(figure_save_loc + f'sed_images/')
+    imd.check_and_make_dir(figure_save_loc + f'sed_images/{line_name}_sed_images')
+    fig.savefig(figure_save_loc + f'sed_images/{line_name}_sed_images/{id_dr3}_{line_name}_sed.pdf')
 
     return cont_percentile, line_flux, boot_lines, sed_fluxes, wave_pct, line_wave_rest
 
@@ -393,9 +407,11 @@ def compute_line(cont_pct, red_flx, green_flx, blue_flx, redshift, raw_transmiss
 
 if __name__ == "__main__":
     line_name = 'Halpha'
+    snr_thresh = 2
     phot_sample_df = ascii.read(phot_df_loc).to_pandas()
     supercat_df = read_supercat()
-    # make_linemap(23287, 'Halpha', phot_sample_df, supercat_df, image_size=(200,200))
+    breakpoint()
+    # make_linemap(34730, 'Halpha', phot_sample_df, supercat_df, image_size=(200,200))
     
     
     phot_sample_df = phot_sample_df[phot_sample_df[f'{line_name}_redshift_sigma'] > 3] # Solid redshift
@@ -403,5 +419,15 @@ if __name__ == "__main__":
     phot_sample_df = phot_sample_df[phot_sample_df[f'{line_name}_all_detected'] == 1] # making sure all 3 lines are actually seen in m bands
 
     for id_dr3 in phot_sample_df['id'].to_list():
-        print(f'Making Halpha map for {id_dr3}')
-        make_linemap(id_dr3, line_name, phot_sample_df, supercat_df)
+        supercat_row = supercat_df[supercat_df['id']==id_dr3]
+        flags = []
+        flags.append(supercat_row['flag_nophot'].iloc[0])
+        flags.append(supercat_row['flag_lowsnr'].iloc[0])
+        flags.append(supercat_row['flag_star'].iloc[0])
+        flags.append(supercat_row['flag_artifact'].iloc[0])
+        flags.append(supercat_row['flag_nearbcg'].iloc[0])
+        if np.sum(flags) > 0:
+            print(f'Flag found for {id_dr3}')
+            continue
+        print(f'Making {line_name} map for {id_dr3}')
+        # make_linemap(id_dr3, line_name, phot_sample_df, supercat_df, snr_thresh=snr_thresh)

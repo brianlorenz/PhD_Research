@@ -71,7 +71,8 @@ def read_prism_lsf():
 def read_raw_spec(id_msa):
     spec_cat = read_spec_cat()
     redshift = spec_cat[spec_cat['id_msa']==id_msa]['z_spec'].iloc[0]
-    raw_spec_loc = f'/Users/brianlorenz/uncover/Catalogs/spectra/uncover-v2_prism-clear_2561_{id_msa}.spec.fits'
+    # raw_spec_loc = f'/Users/brianlorenz/uncover/Catalogs/spectra_old/uncover-v2_prism-clear_2561_{id_msa}.spec.fits'
+    raw_spec_loc = f'/Users/brianlorenz/uncover/Catalogs/DR4_spectra/uncover_DR4_prism-clear_2561_{id_msa}.spec.fits'
     spec_df = make_pd_table_from_fits(raw_spec_loc)
     spec_df['flux'] = spec_df['flux']*1e-6 # Convert uJy to Jy
     spec_df['err'] = spec_df['err']*1e-6
@@ -144,10 +145,10 @@ def get_id_msa_list(full_sample=False):
         id_msa_df = ascii.read('/Users/brianlorenz/uncover/Data/sample_selection/main_sample.csv').to_pandas()
         id_msa_list = id_msa_df['id_msa'].tolist()
         
-        # Adding in the ones where we correct for line not fully covered
-        id_msa_line_notfullcover_df = ascii.read('/Users/brianlorenz/uncover/Data/sample_selection/line_notfullcover_df.csv').to_pandas()
-        id_msa_line_notfullcover_list = id_msa_line_notfullcover_df['id_msa'].tolist()
-        id_msa_list = id_msa_list + id_msa_line_notfullcover_list
+        # # Adding in the ones where we correct for line not fully  - Now with stricter cuts, these are unusable
+        # id_msa_line_notfullcover_df = ascii.read('/Users/brianlorenz/uncover/Data/sample_selection/line_notfullcover_df.csv').to_pandas()
+        # id_msa_line_notfullcover_list = id_msa_line_notfullcover_df['id_msa'].tolist()
+        # id_msa_list = id_msa_list + id_msa_line_notfullcover_list
     return id_msa_list
 
 make_pd_table_from_fits('/Users/brianlorenz/uncover/Catalogs/uncover-msa-full_depth-default_drz-v0.8a-lines.fits')
@@ -168,5 +169,7 @@ if __name__ == "__main__":
     # spec_df = read_spec_cat()
     # aper_cat_df = read_aper_cat()
     # sps_cat = read_SPS2_cat()
-    breakpoint()
+    # spec_df = read_raw_spec(14087)
+    # breakpoint()
+
     pass

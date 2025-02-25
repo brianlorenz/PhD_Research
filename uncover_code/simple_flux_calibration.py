@@ -34,11 +34,11 @@ def flux_calibrate_spectrum(id_msa):
         return a5 * x**5 + a4 * x**4 + a3 * x**3 + a2 * x**2 + a1 * x + a0
     guess = [0, 0, 0, 0, 2, 0]
     guess8 = [0, 0, 0, 0, 0, 0, 0, 2, 0]
-    # popt, pcov = curve_fit(poly5, sed_df_nonan['eff_wavelength'], sed_df_nonan['flux'] / sed_df_nonan['int_spec_flux'], p0=guess)
-    popt, pcov = curve_fit(poly8, sed_df_nonan['eff_wavelength'], sed_df_nonan['flux'] / sed_df_nonan['int_spec_flux'], p0=guess8)
+    popt, pcov = curve_fit(poly5, sed_df_nonan['eff_wavelength'], sed_df_nonan['flux'] / sed_df_nonan['int_spec_flux'], p0=guess)
+    # popt, pcov = curve_fit(poly8, sed_df_nonan['eff_wavelength'], sed_df_nonan['flux'] / sed_df_nonan['int_spec_flux'], p0=guess8)
     def correct_flux(wavelengths, fluxes, popt):
-        correction_factor = poly8(wavelengths, popt[0], popt[1], popt[2], popt[3], popt[4], popt[5], popt[6], popt[7], popt[8])
-        return fluxes * correction_factor
+        correction_factor = poly5(wavelengths, popt[0], popt[1], popt[2], popt[3], popt[4], popt[5])#, popt[6], popt[7], popt[8])
+        return fluxes * np.abs(correction_factor)
     sed_df['int_spec_flux_calibrated'] = correct_flux(sed_df['eff_wavelength'], sed_df['int_spec_flux'], popt)
     spec_df['flux_calibrated_jy'] = correct_flux(spec_df['wave'], spec_df['flux'], popt)
     spec_df['err_flux_calibrated_jy'] = correct_flux(spec_df['wave'], spec_df['err'], popt)
@@ -54,6 +54,7 @@ def flux_calibrate_spectrum(id_msa):
     spec_df['rest_flux_calibrated_erg_aa'] = spec_df['flux_calibrated_erg_aa'] * (1+redshift)
 
     spec_df['err_rest_flux_calibrated_erg_aa'] = spec_df['err_flux_calibrated_jy'] * (1e-23*1e10*c / (spec_df['wave_aa']**2)) * (1+redshift)
+
 
     print(f'Saving flux calibration for {id_msa}')
     sed_df.to_csv(f'/Users/brianlorenz/uncover/Data/seds/{id_msa}_sed.csv', index=False)
@@ -84,11 +85,11 @@ def flux_calibrate_spectrum(id_msa):
     plt.close('all')
 
 if __name__ == "__main__":
-    flux_calibrate_spectrum(42213)
+    # flux_calibrate_spectrum(14087)
 
     # id_msa_list = get_id_msa_list(full_sample=True)
     # for id_msa in id_msa_list:
-        # flux_calibrate_spectrum(id_msa)
+    #     flux_calibrate_spectrum(id_msa)
     
     # zqual_df = find_good_spec()
     # id_msa_list = zqual_df['id_msa'].to_list()
@@ -96,3 +97,4 @@ if __name__ == "__main__":
     #     if id_msa<49992:
     #         continue
     #     flux_calibrate_spectrum(id_msa)
+    pass

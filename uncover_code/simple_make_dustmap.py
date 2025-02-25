@@ -28,14 +28,18 @@ from plot_log_linear_rgb import make_log_rgb
 from dust_equations_prospector import dust2_to_AV
 from filter_integrals import integrate_filter, get_transmission_at_line, get_line_coverage
 from uncover_prospector_seds import read_prospector
-from shutter_loc import plot_shutter_pos
+from shutter_loc import plot_shutter_pos, check_point_in_shutter
 from copy import copy, deepcopy
 from uncover_cosmo import find_pix_per_kpc, pixel_scale
+
+plt_aperture_paper = True
 
 ha_trasm_thresh = 0.8
 pab_trasm_thresh = 0.8
 
-show_aper_and_slit = False
+show_aper_and_slit = True # Leave this on
+
+add_vj_color = 1
 
 
 colors = ['red', 'green', 'blue']
@@ -69,6 +73,12 @@ def make_dustmap_simple(id_msa, aper_size='None', axarr_final=[], ax_labels=Fals
     else:
         image_size = (100, 100)
 
+    # Read in UVJ
+    supercat_df = read_supercat()
+    zqual_df = read_spec_cat()
+    redshift = zqual_df[zqual_df['id_msa']==id_msa]['z_spec'].iloc[0]
+
+    UVJ_filt_names, UVJ_images, wht_UVJ_images, UVJ_photfnus = get_uvj_images(supercat_df, redshift, id_msa, image_size=image_size)
 
     # Read in the images
     ha_filters, ha_images, wht_ha_images, obj_segmap, ha_photfnus, ha_all_filts = make_3color(id_msa, line_index=0, plot=False, image_size=image_size)
@@ -106,9 +116,7 @@ def make_dustmap_simple(id_msa, aper_size='None', axarr_final=[], ax_labels=Fals
     pab_filters = ['f_'+filt for filt in pab_filters]
     spec_df = read_fluxcal_spec(id_msa)
     sed_df = read_sed(id_msa, aper_size=aper_size)
-    zqual_df = read_spec_cat()
-    redshift = zqual_df[zqual_df['id_msa']==id_msa]['z_spec'].iloc[0]
-
+    
     
     # Make sure all of the deesignated filters have data
     confirm_filters_not_NaN(id_msa, sed_df, ha_filters, pab_filters)
@@ -139,7 +147,6 @@ def make_dustmap_simple(id_msa, aper_size='None', axarr_final=[], ax_labels=Fals
         # sys.exit("")
 
     # Segmap matching
-    supercat_df = read_supercat()
     supercat_row = supercat_df[supercat_df['id_msa']==id_msa]
     aperture = supercat_row['use_aper'].iloc[0] # arcsec
     if aper_size != 'None':
@@ -316,6 +323,10 @@ def make_dustmap_simple(id_msa, aper_size='None', axarr_final=[], ax_labels=Fals
     avg_ha_map = np.mean(ha_linemap[48:52,48:52])
     avg_pab_map = np.mean(pab_linemap[48:52,48:52])
 
+    # Make UVJ colormaps
+    vj_map = -2.5*np.log10(UVJ_images[1].data/UVJ_images[2].data)
+    vj_map = np.nan_to_num(vj_map, nan=-99)
+
 
     ### Modify the maps for visualization
     # Set values where both lines are good to 1, else 0
@@ -377,21 +388,20 @@ def make_dustmap_simple(id_msa, aper_size='None', axarr_final=[], ax_labels=Fals
 
     if show_aper_and_slit == True:
         # Plot the aperture
-        aperture_circle = plt.Circle((50, 50), aperture/0.04, edgecolor='green', facecolor='None', lw=3)
+        aperture_circle = plt.Circle((50, 50), aperture/pixel_scale, edgecolor='green', facecolor='None', lw=3)
         # ax_ha_linemap.add_patch(aperture_circle)
-        aperture_circle = plt.Circle((50, 50), aperture/0.04, edgecolor='green', facecolor='None', lw=3)
+        aperture_circle = plt.Circle((50, 50), aperture/pixel_scale, edgecolor='green', facecolor='None', lw=3)
         ax_ha_cont.add_patch(aperture_circle)
-        aperture_circle = plt.Circle((50, 50), aperture/0.04, edgecolor='green', facecolor='None', lw=3)
+        aperture_circle = plt.Circle((50, 50), aperture/pixel_scale, edgecolor='green', facecolor='None', lw=3)
         ax_pab_cont.add_patch(aperture_circle)
-        aperture_circle = plt.Circle((50, 50), aperture/0.04, edgecolor='green', facecolor='None', lw=3)
+        aperture_circle = plt.Circle((50, 50), aperture/pixel_scale, edgecolor='green', facecolor='None', lw=3)
         # ax_pab_linemap.add_patch(aperture_circle)
 
         # Plot the slits
-        plot_shutter_pos(ax_ha_cont, id_msa, ha_images[1].wcs)
+        vertices_list = plot_shutter_pos(ax_ha_cont, id_msa, ha_images[1].wcs)
         # plot_shutter_pos(ax_ha_linemap, id_msa, ha_images[1].wcs)
         plot_shutter_pos(ax_pab_cont, id_msa, ha_images[1].wcs)
         # plot_shutter_pos(ax_pab_linemap, id_msa, ha_images[1].wcs)
-
 
     # Dustmap Contours
     x = np.arange(pab_linemap.shape[1])
@@ -402,6 +412,24 @@ def make_dustmap_simple(id_msa, aper_size='None', axarr_final=[], ax_labels=Fals
     pab_linemap_snr_filt[~pab_snr_idxs] = 0
     dustmap_snr_filt = deepcopy(dustmap)
     dustmap_snr_filt[~snr_idx] = 0
+
+    # Shutter calcs - need to leave the shutter on
+    point_in_shutter_arr = np.full(image_size, False, dtype=bool)
+    for x in range(image_size[0]):
+        for y in range(image_size[1]):
+            point_in_shutter = False
+            for vertices in vertices_list:
+                if check_point_in_shutter(x, y, vertices):
+                    point_in_shutter = True
+            point_in_shutter_arr[y][x] = point_in_shutter
+    # point_in_shutter_arr = np.flip(point_in_shutter_arr, axis=0)
+    # point_in_shutter_arr = np.flip(point_in_shutter_arr, axis=1)
+    ha_in_shutter = np.sum(ha_linemap[point_in_shutter_arr])
+    pab_in_shutter = np.sum(pab_linemap[point_in_shutter_arr])
+    lineratio_in_shutter = pab_in_shutter/ha_in_shutter
+    av_in_shutter = compute_ha_pab_av(pab_in_shutter/ha_in_shutter)
+    shutter_calcs = [ha_in_shutter, pab_in_shutter, lineratio_in_shutter, av_in_shutter]
+    
     
 
     # Masked points in gray
@@ -475,6 +503,8 @@ def make_dustmap_simple(id_msa, aper_size='None', axarr_final=[], ax_labels=Fals
         ax_150_image_paper = axarr_final[1]
         ax_ha_map_paper = axarr_final[2]
         ax_pab_overlay_paper = axarr_final[3]
+        if add_vj_color:
+            ax_vj_color_paper = axarr_final[4]
 
         obj_skycoord = get_coords(id_msa)
 
@@ -483,40 +513,48 @@ def make_dustmap_simple(id_msa, aper_size='None', axarr_final=[], ax_labels=Fals
 
         # Get 150 grayscale
         image_150m, wht_image_150m, photfnu_150m = get_cutout(obj_skycoord, 'f150w', size=image_size)
+        # image_410m, wht_image_410m, photfnu_410m = get_cutout(obj_skycoord, 'f410m', size=image_size)
         
-       
+        import matplotlib.patheffects as pe
+
         #Image plots
         cmap_paper = 'inferno'
         ax_ha_image_paper.imshow(ha_image)
         ax_150_image_paper.imshow(image_150m.data, cmap='Greys_r')
+
         ax_ha_map_paper.imshow(ha_linemap_logscaled, cmap=cmap_paper, norm=ha_linemap_norm)
         ax_pab_overlay_paper.imshow(ha_linemap_logscaled, cmap=cmap_paper, norm=ha_linemap_norm)
+        vj_map_norm = Normalize(-0.5, 1.5)
+        if add_vj_color:
+            ax_vj_color_paper.imshow(vj_map, cmap='Greys_r', norm=vj_map_norm)
 
         # Get pixesl per 1 kpc for scale
         pix_per_kpc = find_pix_per_kpc(redshift)
-        # ax_ha_image_paper.plot([5,5+pix_per_kpc], [10,10], ls='-', color='white', lw=3)
+        
         axis_x = 0.05
         axis_y = 0.05
         axis_to_data = ax.transAxes + ax.transData.inverted()
         data_x, data_y = axis_to_data.transform((axis_x, axis_y))
         data_x2, data_y2 = axis_to_data.transform((axis_x, axis_y+0.02))
         ax_ha_image_paper.plot([data_x,data_x+(0.5/pixel_scale)], [data_y,data_y], ls='-', color='white', lw=3)
-        # ax_ha_image_paper.text(5, 9, '1kpc', color='white')
         ax_ha_image_paper.text(data_x, data_y2, '0.5"', color='white')
         ax_ha_image_paper.text(0.80, 0.04, f'{id_dr3}', fontsize=10, transform=ax_ha_image_paper.transAxes, color='white')
+
+        # Kpc scalebar
+        # ax_ha_image_paper.plot([5,5+pix_per_kpc], [10,10], ls='-', color='white', lw=3)
+        # ax_ha_image_paper.text(5, 9, '1kpc', color='white')
 
         # Add filters to HaImage
         text_height = 0.92
         text_start = 0.01
         text_sep = 0.37
-        import matplotlib.patheffects as pe
         ax_ha_image_paper.text(text_start, text_height, f'{ha_filters[2][2:].upper()}', fontsize=14, transform=ax_ha_image_paper.transAxes, color='blue', path_effects=[pe.withStroke(linewidth=3, foreground="white")])
         ax_ha_image_paper.text(text_start+text_sep, text_height, f'{ha_filters[1][2:].upper()}', fontsize=14, transform=ax_ha_image_paper.transAxes, color='green', path_effects=[pe.withStroke(linewidth=3, foreground="white")])
         ax_ha_image_paper.text(text_start+2*text_sep, text_height, f'{ha_filters[0][2:].upper()}', fontsize=14, transform=ax_ha_image_paper.transAxes, color='red', path_effects=[pe.withStroke(linewidth=3, foreground="white")])
         ax_150_image_paper.text(text_start+text_sep, text_height, f'F150W', fontsize=14, transform=ax_150_image_paper.transAxes, color='white', path_effects=[pe.withStroke(linewidth=3, foreground="black")])
         ax_ha_map_paper.text(text_start+text_sep, text_height, f'H$\\alpha$ Map', fontsize=14, transform=ax_ha_map_paper.transAxes, color='white', path_effects=[pe.withStroke(linewidth=3, foreground="black")])
         ax_pab_overlay_paper.text(text_start+text_sep-0.15, text_height, f'H$\\alpha$ Map with Pa$\\beta$', fontsize=14, transform=ax_pab_overlay_paper.transAxes, color='white', path_effects=[pe.withStroke(linewidth=3, foreground="black")])
-
+        
 
         # PaB Contours
         x = np.arange(pab_linemap.shape[1])
@@ -533,6 +571,11 @@ def make_dustmap_simple(id_msa, aper_size='None', axarr_final=[], ax_labels=Fals
         X_ha, Y_ha = np.meshgrid(x, y)
         ha_contour_map = deepcopy(ha_linemap_snr)
         # ha_contour_map[~combined_mask_segmap.mask] = 0   # segmap masking
+
+        if add_vj_color:
+            ax_vj_color_paper.text(text_start, text_height, f'{UVJ_filt_names[1].upper()}', fontsize=14, transform=ax_vj_color_paper.transAxes, color='black', path_effects=[pe.withStroke(linewidth=3, foreground="white")])
+            ax_vj_color_paper.text(text_start+2*text_sep, text_height, f'{UVJ_filt_names[2].upper()}', fontsize=14, transform=ax_vj_color_paper.transAxes, color='black', path_effects=[pe.withStroke(linewidth=3, foreground="white")])
+            ax_vj_color_paper.contour(X_pab, Y_pab, pab_contour_map, levels=[1,2,3,4,5], cmap='Greys')
         
         def truncate_colormap(cmap, minval=0.0, maxval=1.0, n=100):
             new_cmap = mpl.colors.LinearSegmentedColormap.from_list(
@@ -541,6 +584,7 @@ def make_dustmap_simple(id_msa, aper_size='None', axarr_final=[], ax_labels=Fals
             return new_cmap
         cmap_ha = plt.get_cmap(cmap_paper)
         new_cmap_ha = truncate_colormap(cmap_ha, 0.35, 0.9)
+        # if plt_aperture_paper == False: # Remove the contours when showing apertures
         ax_150_image_paper.contour(X_ha, Y_ha, ha_contour_map, levels=[1,2,3,4,5], cmap=new_cmap_ha)
 
         for ax in axarr_final:
@@ -549,6 +593,14 @@ def make_dustmap_simple(id_msa, aper_size='None', axarr_final=[], ax_labels=Fals
         
         ax_ha_image_paper.set_ylabel(label_str, fontsize=paper_font)
         # ax_ha_image_paper.set_xlabel(f'{id_msa}', fontsize=paper_font)
+
+        if plt_aperture_paper:
+            aperture_circle = plt.Circle((image_size[0]/2, image_size[1]/2), aperture/pixel_scale, edgecolor='green', facecolor='None', lw=3)
+            # ax_150_image_paper.add_patch(aperture_circle)
+            aperture_circle = plt.Circle((image_size[0]/2, image_size[1]/2), aperture/pixel_scale, edgecolor='green', facecolor='None', lw=3)
+            ax_pab_overlay_paper.add_patch(aperture_circle)
+            # plot_shutter_pos(ax_150_image_paper, id_msa, ha_images[1].wcs)
+            plot_shutter_pos(ax_pab_overlay_paper, id_msa, ha_images[1].wcs)
 
         if ax_labels:
             pass
@@ -567,10 +619,12 @@ def make_dustmap_simple(id_msa, aper_size='None', axarr_final=[], ax_labels=Fals
         ax_150_image_paper.legend(custom_lines_ha, custom_labels_ha, loc=3)
         ax_pab_overlay_paper.legend(custom_lines_pab, custom_labels_pab, loc=3)
 
+        # ax_150_image_paper.imshow(point_in_shutter_arr)
+
 
     plt.close('all')
 
-    return sed_lineratios, emission_lineratios, sed_avs, emission_avs, err_sed_linefluxes
+    return sed_lineratios, emission_lineratios, sed_avs, emission_avs, err_sed_linefluxes, shutter_calcs
 
 
 def get_norm(image_map, scalea=1, lower_pct=10, upper_pct=99):
@@ -620,6 +674,29 @@ def make_3color(id_msa, line_index = 0, plot = False, image_size=(100,100), paal
         plot_single_3color()
     
     return filters, images, wht_images, obj_segmap, photfnus, all_filts
+
+def get_uvj_images(supercat_df, redshift, id_msa, image_size=(100,100), use_mbands_only=True): # Should I allow wide bands? 
+    obj_skycoord = get_coords(id_msa)
+
+    rest_waves = [3650, 5510, 12200] # UVJ filters, angstroms
+    observed_waves = [rest_wave * (1+redshift) for rest_wave in rest_waves]
+
+    filt_cols = get_filt_cols(supercat_df)
+    uncover_filt_dict, sedpy_filts = unconver_read_filters()
+    if use_mbands_only:
+        filt_cols = [filt_col for filt_col in filt_cols if 'w' not in filt_col]
+    filter_centers = [uncover_filt_dict[filt+'_wave_eff'] for filt in filt_cols]
+    nearest_idxs = [min(range(len(filter_centers)), key=lambda i: abs(filter_centers[i]-obs_wave)) for obs_wave in observed_waves]
+    filt_names = [filt_cols[idx].split('_')[1] for idx in nearest_idxs]
+
+    image_U, wht_image_U, photfnu_U = get_cutout(obj_skycoord, filt_names[0], size=image_size)
+    image_V, wht_image_V, photfnu_V = get_cutout(obj_skycoord, filt_names[1], size=image_size)
+    image_J, wht_image_J, photfnu_J = get_cutout(obj_skycoord, filt_names[2], size=image_size)
+    images = [image_U, image_V, image_J]
+    wht_images = [wht_image_U, wht_image_V, wht_image_J]
+    photfnus = [photfnu_U, photfnu_V, photfnu_J]
+
+    return filt_names, images, wht_images, photfnus
 
 
 def get_coords(id_msa):
@@ -704,7 +781,7 @@ def find_filters_around_line(id_msa, line_number, paalpha=False, paalpha_pabeta=
     filt_red = filt_names[detected_index+1].split('_')[1]
     filt_green = filt_names[detected_index].split('_')[1]
     subtract_filt = 1
-    if id_msa in [14573, 19896, 32111, 35436] and line_number==1:
+    if id_msa in [14573, 19896, 24219, 25558, 32111, 35436] and line_number==1:
         subtract_filt = 2
     filt_blue = filt_names[detected_index-subtract_filt].split('_')[1]
     
@@ -775,17 +852,17 @@ def plot_sed_around_line(ax, filters, sed_df, spec_df, redshift, line_index, tra
             red_wave = sed_row['eff_wavelength'].iloc[0]
             red_flux = sed_row['flux'].iloc[0]
             err_red_flux = sed_row['err_flux'].iloc[0]
-            err_red_flux = set_error_floor(red_flux, err_red_flux)
+            # err_red_flux = set_error_floor(red_flux, err_red_flux)
         if i == 1:
             green_wave = sed_row['eff_wavelength'].iloc[0]
             green_flux = sed_row['flux'].iloc[0]
             err_green_flux = sed_row['err_flux'].iloc[0]
-            err_green_flux = set_error_floor(green_flux, err_green_flux)
+            # err_green_flux = set_error_floor(green_flux, err_green_flux)
         if i == 2:
             blue_wave = sed_row['eff_wavelength'].iloc[0]
             blue_flux = sed_row['flux'].iloc[0]
             err_blue_flux = sed_row['err_flux'].iloc[0]
-            err_blue_flux = set_error_floor(blue_flux, err_blue_flux)
+            # err_blue_flux = set_error_floor(blue_flux, err_blue_flux)
             # if id_msa == 14573 and line_index==1:
             #     he1_fit_df = ascii.read(f'/Users/brianlorenz/uncover/Data/emission_fitting_he1_only/{id_msa}_emission_fits.csv').to_pandas()
             #     he1_flux = he1_fit_df['flux'].iloc[0]
@@ -996,12 +1073,17 @@ def make_all_dustmap(id_msa_list, full_sample=False):
     err_fe_cor_sed_pab_lineflux_highs = []
     err_sed_ha_lineflux_lows = []
     err_sed_ha_lineflux_highs = []
+
+    ha_shutter_fluxs = []
+    pab_shutter_fluxs = []
+    lineratio_shutters = []
+    av_shutters = []
     
     for id_msa in id_msa_list:
         print(f'Making dustmap for {id_msa}')
-        sed_lineratios_grouped, emission_lineratios_grouped, sed_avs_grouped, emission_avs_grouped, err_sed_linefluxes_grouped = make_dustmap_simple(id_msa)
+        sed_lineratios_grouped, emission_lineratios_grouped, sed_avs_grouped, emission_avs_grouped, err_sed_linefluxes_grouped, shutter_calcs = make_dustmap_simple(id_msa)
         try:
-            sed_lineratios_grouped, emission_lineratios_grouped, sed_avs_grouped, emission_avs_grouped, err_sed_linefluxes_grouped = make_dustmap_simple(id_msa)
+            sed_lineratios_grouped, emission_lineratios_grouped, sed_avs_grouped, emission_avs_grouped, err_sed_linefluxes_grouped, shutter_calcs = make_dustmap_simple(id_msa)
         except Exception as error:
             print(error)
             print('ERROR')
@@ -1013,6 +1095,7 @@ def make_all_dustmap(id_msa_list, full_sample=False):
             sed_avs_grouped = [-99,-99,-99]
             emission_avs_grouped = [-99,-99,-99]
             err_sed_linefluxes_grouped = [-99, -99, -99, -99, -99, -99]
+            shutter_calcs = [-99, -99, -99, -99]
         sed_lineratios.append(sed_lineratios_grouped[0])
         sed_lineratios_low.append(sed_lineratios_grouped[1])
         sed_lineratios_high.append(sed_lineratios_grouped[2])
@@ -1032,13 +1115,23 @@ def make_all_dustmap(id_msa_list, full_sample=False):
         err_sed_ha_lineflux_lows.append(err_sed_linefluxes_grouped[4])
         err_sed_ha_lineflux_highs.append(err_sed_linefluxes_grouped[5])
 
+        ha_shutter_fluxs.append(shutter_calcs[0])
+        pab_shutter_fluxs.append(shutter_calcs[1])
+        lineratio_shutters.append(shutter_calcs[2])
+        av_shutters.append(shutter_calcs[3])
+
 
     dustmap_info_df = pd.DataFrame(zip(id_msa_list, sed_lineratios, sed_lineratios_low, sed_lineratios_high, sed_avs, sed_avs_low, sed_avs_high, emission_lineratios, emission_lineratios_low, emission_lineratios_high, emission_avs, emission_avs_low, emission_avs_high, err_nii_cor_sed_ha_lineflux_lows, err_nii_cor_sed_ha_lineflux_highs, err_fe_cor_sed_pab_lineflux_lows, err_fe_cor_sed_pab_lineflux_highs, err_sed_ha_lineflux_lows, err_sed_ha_lineflux_highs), columns=['id_msa', 'sed_lineratio', 'err_sed_lineratio_low', 'err_sed_lineratio_high', 'sed_av', 'err_sed_av_low', 'err_sed_av_high', 'emission_fit_lineratio', 'err_emission_fit_lineratio_low', 'err_emission_fit_lineratio_high', 'emission_fit_av', 'err_emission_fit_av_low', 'err_emission_fit_av_high', 'err_nii_cor_sed_ha_lineflux_low', 'err_nii_cor_sed_ha_lineflux_high', 'err_fe_cor_sed_pab_lineflux_low', 'err_fe_cor_sed_pab_lineflux_high', 'err_sed_ha_lineflux_low', 'err_sed_ha_lineflux_high'])
 
+    shutter_calc_df = pd.DataFrame(zip(id_msa_list, ha_shutter_fluxs, pab_shutter_fluxs, lineratio_shutters, av_shutters), columns=['id_msa', 'ha_shutter_flux', 'pab_shutter_flux', 'lineratio_shutter', 'av_shutter'])
+
+
     if full_sample:
         dustmap_info_df.to_csv('/Users/brianlorenz/uncover/Data/generated_tables/lineratio_av_df_all.csv', index=False)
+        shutter_calc_df.to_csv('/Users/brianlorenz/uncover/Data/generated_tables/shutter_calcs_all.csv', index=False)
     else:
         dustmap_info_df.to_csv('/Users/brianlorenz/uncover/Data/generated_tables/lineratio_av_df.csv', index=False)
+        shutter_calc_df.to_csv('/Users/brianlorenz/uncover/Data/generated_tables/shutter_calcs.csv', index=False)
 
 def copy_selected_sample_dustmaps(id_msa_list):
     # Copies all the dustmaps from the sample subset to a different folder
@@ -1075,7 +1168,7 @@ def copy_selected_sample_dustmaps(id_msa_list):
 
 def make_paper_fig_dustmaps(id_msa_list, sortby = 'mass'):
     import math
-    rows_per_page = 6
+    rows_per_page = 5
     n_pages = math.ceil(len(id_msa_list) / rows_per_page)
     sps_df = read_SPS_cat()
     lineratio_df = ascii.read(f'/Users/brianlorenz/uncover/Data/generated_tables/lineratio_av_df.csv').to_pandas()
@@ -1091,18 +1184,21 @@ def make_paper_fig_dustmaps(id_msa_list, sortby = 'mass'):
 
         
     # Need to sort the ids first
+    index = 0
     for i in range(n_pages):
-        if i < n_pages-1:
-            rows_this_page = rows_per_page
-        else:
+        if i == 0:
             rows_this_page = len(id_msa_list) % rows_per_page
             if rows_this_page == 0:
                 rows_this_page = rows_per_page
-        fig, axarr = plt.subplots(rows_this_page, 4, figsize=(16,4*rows_this_page))
+        else:
+            rows_this_page = rows_per_page
+        n_cols = 4
+        if add_vj_color:
+            n_cols = n_cols+1
+        fig, axarr = plt.subplots(rows_this_page, n_cols, figsize=(4*n_cols,4*rows_this_page))
         plt.subplots_adjust(wspace=0.1, hspace=0.1)
         
         for j in range(rows_this_page):
-            index = i*rows_per_page+j
             if index == len(id_msa_list):
                 for ax in axarr[j]:
                     ax.set_axis_off()
@@ -1118,6 +1214,7 @@ def make_paper_fig_dustmaps(id_msa_list, sortby = 'mass'):
                 label_str = f"Mass: {merged_df.iloc[index]['mstar_50']:.2f}"
             elif sortby == 'av':
                 label_str = f"A$_V$: {merged_df.iloc[index]['sed_av']:.2f}"
+            index = index+1
             make_dustmap_simple(id_msa, axarr_final=axarr_id_msa, ax_labels=ax_labels, label_str=label_str)
         fig.savefig(f'/Users/brianlorenz/uncover/Figures/paper_figures/dustmaps_{sort_name}_page{i}.pdf', bbox_inches='tight')
 
@@ -1125,10 +1222,9 @@ if __name__ == "__main__":
     # make_dustmap_simple(32111)
     # lineflux_df = ascii.read(f'/Users/brianlorenz/uncover/Data/generated_tables/lineflux_df_all.csv').to_pandas()
     # breakpoint()
-    # make_dustmap_simple(18471)
+    # make_dustmap_simple(39744)
     
     id_msa_list = get_id_msa_list(full_sample=False)
-    # breakpoint()
     make_all_dustmap(id_msa_list, full_sample=False)
     # make_paper_fig_dustmaps(id_msa_list, sortby='av')
     # make_paper_fig_dustmaps(id_msa_list, sortby='mass')

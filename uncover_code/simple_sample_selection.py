@@ -18,6 +18,8 @@ def sample_select(paalpha=False, paalpha_pabeta=False):
         emfit_dir = 'emission_fitting_paalpha'
         from fit_emission_uncover_paalpha import line_list
         pab_snr_thresh = 1 # Actually Paalpha
+        ha_snr_thresh = 3
+
 
     elif paalpha_pabeta:
         save_dir = '/Users/brianlorenz/uncover/Data/sample_selection_paa_pab/'
@@ -33,8 +35,9 @@ def sample_select(paalpha=False, paalpha_pabeta=False):
         paa_str = ''
         emfit_dir = 'emission_fitting'
         pab_snr_thresh = 2
+        ha_snr_thresh = 3
 
-    ha_snr_thresh = 3
+
     overlap_thresh = 0.2
 
     zqual_df = find_good_spec()
@@ -120,7 +123,7 @@ def sample_select(paalpha=False, paalpha_pabeta=False):
         lines_df_ha_snr = lines_df_row['f_Ha+NII'].iloc[0] / lines_df_row['e_Ha+NII'].iloc[0]
         lines_df_pab_snr = lines_df_row['f_PaB'].iloc[0] / lines_df_row['e_PaB'].iloc[0]
 
-        # Check the coverage fraction of the lines - we want it high in the line, but 0 int he continuum filters
+        # Check the coverage fraction of the lines - we want it high in the line, but 0 in the continuum filters
         ha_avg_transmission = get_line_coverage(id_msa, ha_sedpy_filt, redshift, line_name='ha', paalpha=paalpha, paalpha_pabeta=paalpha_pabeta)
         pab_avg_transmission = get_line_coverage(id_msa, pab_sedpy_filt, redshift, line_name='pab', paalpha=paalpha, paalpha_pabeta=paalpha_pabeta)
         ha_red_avg_transmission = get_line_coverage(id_msa, ha_red_sedpy_filt, redshift, line_name='ha', paalpha=paalpha, paalpha_pabeta=paalpha_pabeta)
@@ -139,7 +142,7 @@ def sample_select(paalpha=False, paalpha_pabeta=False):
             id_msa_ha_snr_flag.append(id_msa)
             continue
         # Visual
-        if id_msa in [34506, 42360, 23890, 27862, 19981]:
+        if id_msa in [24219, 34506, 42360, 23890, 27862, 19981]:
             print(f"Visually looks bad for PaB SNR")
             id_msa_pab_snr_flag.append(id_msa)
             continue
@@ -285,7 +288,7 @@ def paper_figure_sample_selection(id_msa_list, color_var='None', plot_sfr_mass=F
     id_msa_cont_overlap_line_df = ascii.read('/Users/brianlorenz/uncover/Data/sample_selection/cont_overlap_line.csv').to_pandas()
     id_msa_not_in_filt_df = ascii.read('/Users/brianlorenz/uncover/Data/sample_selection/line_not_in_filt.csv').to_pandas()
 
-    id_redshift_issue_list = filt_edge_df['id_msa'].append(id_msa_not_in_filt_df['id_msa']).append(id_msa_cont_overlap_line_df['id_msa']).to_list()
+    id_redshift_issue_list = filt_edge_df['id_msa'].append(id_msa_not_in_filt_df['id_msa']).append(id_msa_cont_overlap_line_df['id_msa']).append(line_notfullcover_df['id_msa']).to_list()
     id_pab_snr_list = pab_snr_flag_df['id_msa'].to_list()
     id_skip_list = id_msa_skipped_df['id_msa'].to_list()
 
@@ -351,6 +354,7 @@ def paper_figure_sample_selection(id_msa_list, color_var='None', plot_sfr_mass=F
         if show_sample == False:
             if id_msa in id_msa_list and id_msa not in id_pab_snr_list:
                 continue
+
 
         if plot_sfr_mass == False:
             ax.plot(redshift, stellar_mass_50, marker=marker, color='gray', ls='None', ms=gray_markersize, mec='black')
@@ -482,7 +486,7 @@ def paper_figure_sample_selection(id_msa_list, color_var='None', plot_sfr_mass=F
     if show_squares == False:
         custom_lines = [line for line in custom_lines if line != line_squares]
         custom_labels = [lab for lab in custom_labels if lab != 'Line not in Filter']
-    ax.legend(custom_lines, custom_labels, loc=3)
+    ax.legend(custom_lines, custom_labels, loc=3, fontsize=fontsize-2)
 
     if plot_sfr_mass == False:
         save_loc = f'/Users/brianlorenz/uncover/Figures/paper_figures/sample_selection{color_str}.pdf'
@@ -498,10 +502,10 @@ def truncate_colormap(cmap, minval=0.0, maxval=1.0, n=100):
         return new_cmap
 
 if __name__ == "__main__":
-    # sample_select(paalpha_pabeta=False)
+    sample_select()
     
-    id_msa_list = get_id_msa_list(full_sample=False)
-    paper_figure_sample_selection(id_msa_list, color_var='sfr')
+    # id_msa_list = get_id_msa_list(full_sample=False)
+    # paper_figure_sample_selection(id_msa_list, color_var='sfr')
     # paper_figure_sample_selection(id_msa_list, color_var='redshift', plot_sfr_mass=True)
 
     

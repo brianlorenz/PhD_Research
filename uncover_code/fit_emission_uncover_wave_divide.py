@@ -149,7 +149,6 @@ def fit_emission_uncover(spectrum, save_name, bootstrap_num=-1):
     line_names = [line_list[i][0] for i in range(len(line_list))]
     line_centers_rest = [line_list[i][1] for i in range(len(line_list))]
     z_offsets = [popt[0+i] for i in range(len(line_list))]
-    print(err_popt)
     err_z_offsets = [err_popt[0] for i in range(len(line_list))]
     velocities = [popt[2+i] for i in range(len(line_list))]
     err_velocities = [err_popt[2+i] for i in range(len(line_list))]
@@ -453,6 +452,9 @@ def monte_carlo_fit(func, wavelength, continuum, y_data, y_err, guess, bounds, n
 
     #Fill over nan values with the median error * 3
     # y_err = y_err.fillna(5*y_err.median())
+    if y_err.any() < 0:
+        print('ERROR NEGATIVE y_err')
+        y_err = np.abs(y_err)
 
     new_y_datas = [[np.random.normal(loc=y_data.iloc[j], scale=y_err.iloc[j]) for j in range(len(y_data))] for i in range(n_loops)]
     
@@ -632,8 +634,8 @@ def fit_continuum(wavelength, flux, plot_cont=True, save_name=''):
 
     # ha_eline_mask = clip_elines_findpeaks(flux[ha_region], wavelength[ha_region])
     # pab_eline_mask = clip_elines_findpeaks(flux[pab_region], wavelength[pab_region])
-    ha_eline_mask = mask_elines_known_lines(flux[ha_region], wavelength[ha_region])
-    pab_eline_mask = mask_elines_known_lines(flux[pab_region], wavelength[pab_region])
+    ha_eline_mask = mask_elines_known_lines(flux[ha_region], wavelength[ha_region], id_msa=save_name)
+    pab_eline_mask = mask_elines_known_lines(flux[pab_region], wavelength[pab_region], id_msa=save_name)
     combined_mask = ha_eline_mask + pab_eline_mask
     # combined_mask = mask_lines(combined_mask, wavelength, line_list)    
     
@@ -660,9 +662,13 @@ def fit_continuum(wavelength, flux, plot_cont=True, save_name=''):
         plt.close()
     return continuum
 
-def mask_elines_known_lines(flux, wavelength):
+def mask_elines_known_lines(flux, wavelength, id_msa=0):
     mask_ha = np.logical_or(wavelength < 6200, wavelength > 7000)
-    mask_pab = np.logical_or(wavelength < 12200, wavelength > 13400)
+    mask_pab = np.logical_or(wavelength < 12200, wavelength > 13100)
+    if id_msa == 34114:
+        mask_pab = np.logical_or(wavelength < 12600, wavelength > 12900)
+        mask_pab = np.logical_and(mask_pab, wavelength < 13100)
+    
     mask = np.logical_and(mask_ha, mask_pab)
     mask = mask.tolist()
     return mask 
@@ -750,8 +756,6 @@ def fit_all_emission_uncover(id_msa_list):
         if id_msa == 42041:
             continue
         spec_df = read_fluxcal_spec(id_msa)
-        print(np.max(spec_df.rest_wave_aa))
-        continue
         print(f'Fitting emission for {id_msa}')
         fit_emission_uncover(spec_df, id_msa)
 
@@ -788,10 +792,10 @@ if __name__ == "__main__":
     # # (Currently using)
     # id_msa = 18471
     # id_msa = 19179
-    # id_msa = 14573
-    id_msa = 39855
-    spec_df = read_fluxcal_spec(id_msa)
-    fit_emission_uncover(spec_df, id_msa)
+    # id_msa = 14087
+    # id_msa = 34114
+    # spec_df = read_fluxcal_spec(id_msa)
+    # fit_emission_uncover(spec_df, id_msa)
 
     # # Fitting the mock spectra
     # mock_name = 'mock_ratio_15_flat'
@@ -799,9 +803,9 @@ if __name__ == "__main__":
     # fit_emission_uncover(spec_df, mock_name)
 
 
-    # id_msa_list = get_id_msa_list(full_sample=True)
+    id_msa_list = get_id_msa_list(full_sample=False)
     
-    # fit_all_emission_uncover(id_msa_list)  
+    fit_all_emission_uncover(id_msa_list)  
     # plot_mosaic(id_msa_list, line = 'ha_only')
     # plot_mosaic(id_msa_list, line = 'pab_only')
     pass
