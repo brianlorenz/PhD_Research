@@ -68,11 +68,16 @@ def read_prism_lsf():
     lsf_df = make_pd_table_from_fits(lsf_loc)
     return lsf_df
 
-def read_raw_spec(id_msa):
+
+def read_raw_spec(id_msa, read_2d=False):
     spec_cat = read_spec_cat()
     redshift = spec_cat[spec_cat['id_msa']==id_msa]['z_spec'].iloc[0]
     # raw_spec_loc = f'/Users/brianlorenz/uncover/Catalogs/spectra_old/uncover-v2_prism-clear_2561_{id_msa}.spec.fits'
     raw_spec_loc = f'/Users/brianlorenz/uncover/Catalogs/DR4_spectra/uncover_DR4_prism-clear_2561_{id_msa}.spec.fits'
+    if read_2d:
+        with fits.open(raw_spec_loc) as hdu:
+            spec_2d = hdu[4].data
+            return spec_2d
     spec_df = make_pd_table_from_fits(raw_spec_loc)
     spec_df['flux'] = spec_df['flux']*1e-6 # Convert uJy to Jy
     spec_df['err'] = spec_df['err']*1e-6
@@ -169,7 +174,6 @@ if __name__ == "__main__":
     # spec_df = read_spec_cat()
     # aper_cat_df = read_aper_cat()
     # sps_cat = read_SPS2_cat()
-    # spec_df = read_raw_spec(14087)
-    # breakpoint()
+    
 
     pass

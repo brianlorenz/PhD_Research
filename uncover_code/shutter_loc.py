@@ -3,10 +3,17 @@ from astropy import units as u
 from astropy.coordinates import SkyCoord
 import matplotlib.pyplot as plt
 import matplotlib.patches as patches
+from astropy.io import ascii
 
 def plot_shutter_pos(ax, id_msa, wcs):
     slit_loc_df = read_slit_loc_cat()
     slit_loc_rows = slit_loc_df[slit_loc_df['id_msa']==id_msa]
+
+    extraction_df = ascii.read('/Users/brianlorenz/uncover/Data/generated_tables/extraction_df.csv').to_pandas()
+    extraction_row = extraction_df[extraction_df['id_msa'] == id_msa]
+    center = extraction_df['center']
+    fwhm = extraction_df['fwhm']
+
     vertices_list = []
     for i in range(len(slit_loc_rows)):
         row = slit_loc_rows.iloc[i]
@@ -28,7 +35,7 @@ def plot_shutter_pos(ax, id_msa, wcs):
 
             # Add the patch to the axes
             ax.add_patch(rect)
-
+        breakpoint()
     return vertices_list
 
 def check_point_in_shutter(x, y, vertices):
