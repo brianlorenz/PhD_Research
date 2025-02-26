@@ -6,16 +6,19 @@ from uncover_read_data import read_lineflux_cat, get_id_msa_list, read_SPS_cat, 
 from compute_av import compute_ha_pab_av, avneb_str, compute_ratio_from_av
 import numpy as np
 
-plot_shutter = False
-phot_categories = True
+plot_shutter = True
+phot_categories = False
 
 def paper_plot_sed_emfit_accuracy(id_msa_list, color_var=''):
-    full_data_df = ascii.read(f'/Users/brianlorenz/uncover/Data/generated_tables/lineflux_df.csv').to_pandas()
-    data_df = full_data_df[full_data_df['id_msa'].isin(id_msa_list)]
-    full_lineratio_data_df = ascii.read(f'/Users/brianlorenz/uncover/Data/generated_tables/lineratio_av_df.csv').to_pandas()
-    lineratio_data_df = full_lineratio_data_df[full_lineratio_data_df['id_msa'].isin(id_msa_list)]
+    fluxcal_str=''
     if plot_shutter:
-        shutter_df = ascii.read('/Users/brianlorenz/uncover/Data/generated_tables/shutter_calcs.csv').to_pandas()
+        fluxcal_str='_no_fluxcal'
+        shutter_df = ascii.read(f'/Users/brianlorenz/uncover/Data/generated_tables/shutter_calcs{fluxcal_str}.csv').to_pandas()
+    full_data_df = ascii.read(f'/Users/brianlorenz/uncover/Data/generated_tables/lineflux_df{fluxcal_str}.csv').to_pandas()
+    data_df = full_data_df[full_data_df['id_msa'].isin(id_msa_list)]
+    full_lineratio_data_df = ascii.read(f'/Users/brianlorenz/uncover/Data/generated_tables/lineratio_av_df{fluxcal_str}.csv').to_pandas()
+    lineratio_data_df = full_lineratio_data_df[full_lineratio_data_df['id_msa'].isin(id_msa_list)]
+    
     sps_df = read_SPS_cat()
     sps_all_df = read_SPS_cat_all()
 
@@ -53,7 +56,7 @@ def paper_plot_sed_emfit_accuracy(id_msa_list, color_var=''):
         sps_row = sps_df[sps_df['id_msa']==id_msa]
         sps_all_row = sps_all_df[sps_all_df['id_msa']==id_msa]
         id_dr3 = sps_all_row['id'].iloc[0]
-        fit_df = ascii.read(f'/Users/brianlorenz/uncover/Data/emission_fitting/{id_msa}_emission_fits.csv').to_pandas()
+        fit_df = ascii.read(f'/Users/brianlorenz/uncover/Data/emission_fitting{fluxcal_str}/{id_msa}_emission_fits.csv').to_pandas()
         ha_snr = fit_df['signal_noise_ratio'].iloc[0]
         pab_snr = fit_df['signal_noise_ratio'].iloc[1]
         print(f'id_msa: {id_msa}, id_dr3 {id_dr3}')
@@ -271,7 +274,7 @@ def paper_plot_sed_emfit_accuracy(id_msa_list, color_var=''):
         cbar.set_label(cbar_label, fontsize=fontsize, rotation=270, labelpad=18)
         cbar.ax.tick_params(labelsize=fontsize)
 
-    save_loc = f'/Users/brianlorenz/uncover/Figures/paper_figures/sed_vs_emfit{color_str}{add_str}.pdf'
+    save_loc = f'/Users/brianlorenz/uncover/Figures/paper_figures/sed_vs_emfit{color_str}{add_str}{fluxcal_str}.pdf'
     fig.savefig(save_loc, bbox_inches='tight')
 
 

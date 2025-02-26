@@ -16,7 +16,6 @@ from scipy.interpolate import interp1d
 from compute_av import compute_ha_pab_av, get_nii_correction
 from plot_vals import scale_aspect
 
-emission_fit_dir = '/Users/brianlorenz/uncover/Data/emission_fitting/'
 
 line_list = [
     ('Halpha', 6564.6),
@@ -37,7 +36,7 @@ ha_fit_range = (5500, 7700)
 pab_fit_range = (11800, 14200)
 
 
-def fit_emission_uncover(spectrum, save_name, bootstrap_num=-1):
+def fit_emission_uncover(spectrum, save_name, bootstrap_num=-1, fluxcal=True):
     """
     Parameters:
     bootstrap_num (int): Set to -1 to avoid bootstrap, set to the number to read in the corresponding spectrum and fit that
@@ -45,6 +44,8 @@ def fit_emission_uncover(spectrum, save_name, bootstrap_num=-1):
     Returns:
     Saves a csv of the fits for all of the lines
     """
+    emission_fit_dir = '/Users/brianlorenz/uncover/Data/emission_fitting/'
+
     # Number of loops in Monte Carlo
     if bootstrap_num > -1:
         n_loops = 0
@@ -105,8 +106,13 @@ def fit_emission_uncover(spectrum, save_name, bootstrap_num=-1):
 
     
     wavelength = spectrum['rest_wave_aa']
-    flux = spectrum['rest_flux_calibrated_erg_aa']
-    err_flux = spectrum['err_rest_flux_calibrated_erg_aa']
+    if fluxcal:
+        flux = spectrum['rest_flux_calibrated_erg_aa']
+        err_flux = spectrum['err_rest_flux_calibrated_erg_aa']
+    else: 
+        flux = spectrum['rest_flux_erg_aa']
+        err_flux = spectrum['err_rest_flux_erg_aa']
+        emission_fit_dir = emission_fit_dir.replace('/emission_fitting/', '/emission_fitting_no_fluxcal/')
     # Set Drop the nans, and set wavelength to cover it
     flux = flux.dropna()
     wavelength = wavelength[flux.index]
@@ -121,7 +127,7 @@ def fit_emission_uncover(spectrum, save_name, bootstrap_num=-1):
         continuum = cont_flux * (1e-23*1e10*c / (wavelength**2))
         continuum = pd.Series(continuum)
     else:
-        continuum = fit_continuum(wavelength, flux, save_name=save_name)
+        continuum = fit_continuum(wavelength, flux, emission_fit_dir, save_name=save_name)
 
     def get_cont_value_at_line(line_wave, continuum, wavelength):
         line_idx = np.argmin(np.abs(wavelength-line_wave))
@@ -617,15 +623,8 @@ def get_cuts(wavelength_cut_section, width=7):
     return cut
 
 
-# def fit_continuum(wavelength, flux):
-#     median_spectrum = np.median(flux)
-#     clipped_spec = flux < 2*np.median(flux)
-#     regress_res = linregress(wavelength[clipped_spec], flux[clipped_spec])
-#     x_regress = wavelength
-#     continuum = regress_res.intercept + regress_res.slope*x_regress
-#     return continuum
 
-def fit_continuum(wavelength, flux, plot_cont=True, save_name=''):
+def fit_continuum(wavelength, flux, emission_fit_dir, plot_cont=True, save_name=''):
     # combined_mask = clip_elines(flux, wavelength)
     ha_region = wavelength < 10000
     pab_region = ~ha_region
@@ -658,7 +657,7 @@ def fit_continuum(wavelength, flux, plot_cont=True, save_name=''):
         plot_cont_axis(ax_ha, ha_region)
         plot_cont_axis(ax_pab, pab_region)
         ax_ha.legend()
-        fig.savefig(f'/Users/brianlorenz/uncover/Data/emission_fitting/continuum/{save_name}_cont.pdf')
+        fig.savefig(emission_fit_dir + f'continuum/{save_name}_cont.pdf')
         plt.close()
     return continuum
 
@@ -751,13 +750,13 @@ def get_fit_range(wavelength):
 
 
 
-def fit_all_emission_uncover(id_msa_list):
+def fit_all_emission_uncover(id_msa_list, fluxcal=True):
     for id_msa in id_msa_list:
         if id_msa == 42041:
             continue
         spec_df = read_fluxcal_spec(id_msa)
         print(f'Fitting emission for {id_msa}')
-        fit_emission_uncover(spec_df, id_msa)
+        fit_emission_uncover(spec_df, id_msa, fluxcal=fluxcal)
 
 
 def plot_mosaic(id_msa_list, line = 'ha_only'):
@@ -805,7 +804,7 @@ if __name__ == "__main__":
 
     id_msa_list = get_id_msa_list(full_sample=False)
     
-    fit_all_emission_uncover(id_msa_list)  
+    fit_all_emission_uncover(id_msa_list, fluxcal=False)   
     # plot_mosaic(id_msa_list, line = 'ha_only')
     # plot_mosaic(id_msa_list, line = 'pab_only')
     pass

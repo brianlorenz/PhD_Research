@@ -11,8 +11,8 @@ def plot_shutter_pos(ax, id_msa, wcs):
 
     extraction_df = ascii.read('/Users/brianlorenz/uncover/Data/generated_tables/extraction_df.csv').to_pandas()
     extraction_row = extraction_df[extraction_df['id_msa'] == id_msa]
-    center = extraction_df['center']
-    fwhm = extraction_df['fwhm']
+    center = extraction_row['center'].iloc[0]
+    fwhm = extraction_row['fwhm'].iloc[0]
 
     vertices_list = []
     for i in range(len(slit_loc_rows)):
@@ -35,7 +35,6 @@ def plot_shutter_pos(ax, id_msa, wcs):
 
             # Add the patch to the axes
             ax.add_patch(rect)
-        breakpoint()
     return vertices_list
 
 def check_point_in_shutter(x, y, vertices):

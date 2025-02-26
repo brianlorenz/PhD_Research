@@ -10,7 +10,7 @@ import pandas as pd
 from compute_av import get_nii_correction, get_fe_correction
 from filter_integrals import get_line_coverage
 
-def calc_lineflux(id_msa):
+def calc_lineflux(id_msa, fluxcal_str=''):
     sed_df = read_sed(id_msa)
     mock_sed_df = ascii.read('/Users/brianlorenz/uncover/Data/integrated_specs/mock_ratio_15_flux_32_flat_shifted_47875.csv').to_pandas()
     sed_df = sed_df.join(mock_sed_df)
@@ -62,7 +62,7 @@ def calc_lineflux(id_msa):
     err_ha_flux_cat_erg_s_cm2 = lines_df_row['e_Ha+NII'].iloc[0] * 1e-20
     err_pab_flux_cat_erg_s_cm2 = lines_df_row['e_PaB'].iloc[0] * 1e-20
 
-    fit_df = ascii.read(f'/Users/brianlorenz/uncover/Data/emission_fitting/{id_msa}_emission_fits.csv').to_pandas()
+    fit_df = ascii.read(f'/Users/brianlorenz/uncover/Data/emission_fitting{fluxcal_str}/{id_msa}_emission_fits.csv').to_pandas()
     ha_flux_emission_fit = fit_df['flux'].iloc[0]
     pab_flux_emission_fit = fit_df['flux'].iloc[1]
     nii_cor_ha_flux_emission_fit = fit_df['nii_cor_flux'].iloc[0]
@@ -142,7 +142,12 @@ def compute_line_already_erg(cont_pct, red_flx, green_flx, blue_flx, redshift, s
 
 
 
-def calc_all_lineflux(id_msa_list, full_sample=False):
+def calc_all_lineflux(id_msa_list, full_sample=False, fluxcal=True):
+    if fluxcal:
+        fluxcal_str = ''
+    else:
+        fluxcal_str = '_no_fluxcal'
+
     ha_sed_fluxes = []
     pab_sed_fluxes = []
     ha_cat_fluxes = []
@@ -155,7 +160,7 @@ def calc_all_lineflux(id_msa_list, full_sample=False):
     nii_cor_ha_flux_erg_s_cm2s = []
     fe_cor_pab_flux_erg_s_cm2s = []
     for id_msa in id_msa_list:
-        ha_flux_erg_s_cm2, pab_flux_erg_s_cm2, ha_flux_cat_erg_s_cm2, err_ha_flux_cat_erg_s_cm2, pab_flux_cat_erg_s_cm2, err_pab_flux_cat_erg_s_cm2, ha_flux_emission_fit, nii_cor_ha_flux_emission_fit, pab_flux_emission_fit, nii_cor_ha_flux_erg_s_cm2, fe_cor_pab_flux_erg_s_cm2 = calc_lineflux(id_msa)
+        ha_flux_erg_s_cm2, pab_flux_erg_s_cm2, ha_flux_cat_erg_s_cm2, err_ha_flux_cat_erg_s_cm2, pab_flux_cat_erg_s_cm2, err_pab_flux_cat_erg_s_cm2, ha_flux_emission_fit, nii_cor_ha_flux_emission_fit, pab_flux_emission_fit, nii_cor_ha_flux_erg_s_cm2, fe_cor_pab_flux_erg_s_cm2 = calc_lineflux(id_msa, fluxcal_str=fluxcal_str)
         ha_sed_fluxes.append(ha_flux_erg_s_cm2)
         pab_sed_fluxes.append(pab_flux_erg_s_cm2)
         ha_cat_fluxes.append(ha_flux_cat_erg_s_cm2)
@@ -176,10 +181,11 @@ def calc_all_lineflux(id_msa_list, full_sample=False):
     emission_offset_df['pab_cat_div_emfit'] = emission_offset_df['pab_cat_flux'] / emission_offset_df['pab_emfit_flux']
     emission_offset_df['difference_in_offset_ratio_cat'] = emission_offset_df['pab_sed_div_cat'] / emission_offset_df['ha_sed_div_cat']
     emission_offset_df['difference_in_offset_ratio_emfit'] = emission_offset_df['pab_sed_div_emfit'] / emission_offset_df['ha_sed_div_emfit']
+    
     if full_sample == False:
-        emission_offset_df.to_csv(f'/Users/brianlorenz/uncover/Data/generated_tables/lineflux_df.csv', index=False)
+        emission_offset_df.to_csv(f'/Users/brianlorenz/uncover/Data/generated_tables/lineflux_df{fluxcal_str}.csv', index=False)
     if full_sample == True:
-        emission_offset_df.to_csv(f'/Users/brianlorenz/uncover/Data/generated_tables/lineflux_df_all.csv', index=False)
+        emission_offset_df.to_csv(f'/Users/brianlorenz/uncover/Data/generated_tables/lineflux_df_all.csv{fluxcal_str}', index=False)
     print(f'\n\n\n')
     print(f'median offset in Ha {np.median(emission_offset_df["ha_sed_div_emfit"])}')
     print(f'median offset in PaB {np.median(emission_offset_df["pab_sed_div_emfit"])}')
@@ -208,5 +214,5 @@ if __name__ == "__main__":
     # calc_all_lineflux(id_msa_list, full_sample=True)  
 
     id_msa_list = get_id_msa_list(full_sample=False)
-    calc_all_lineflux(id_msa_list, full_sample=False)  
+    calc_all_lineflux(id_msa_list, full_sample=False, fluxcal=False)  
     pass

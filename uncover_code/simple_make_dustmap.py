@@ -64,7 +64,7 @@ id_msa_image_size_dict = {
     50000:(50,50)
 }
 
-def make_dustmap_simple(id_msa, aper_size='None', axarr_final=[], ax_labels=False, label_str=''):
+def make_dustmap_simple(id_msa, aper_size='None', axarr_final=[], ax_labels=False, label_str='', fluxcal_str=''):
     ha_snr_cut = 0.5
     pab_snr_cut = 0.5
     
@@ -122,7 +122,7 @@ def make_dustmap_simple(id_msa, aper_size='None', axarr_final=[], ax_labels=Fals
     confirm_filters_not_NaN(id_msa, sed_df, ha_filters, pab_filters)
 
     # Emission fit prosperties
-    fit_df = ascii.read(f'/Users/brianlorenz/uncover/Data/emission_fitting/{id_msa}_emission_fits.csv').to_pandas()
+    fit_df = ascii.read(f'/Users/brianlorenz/uncover/Data/emission_fitting{fluxcal_str}/{id_msa}_emission_fits.csv').to_pandas()
     ha_flux_fit = fit_df.iloc[0]['flux']
     pab_flux_fit = fit_df.iloc[1]['flux']
     ha_sigma = fit_df.iloc[0]['sigma'] # full width of the line
@@ -130,12 +130,12 @@ def make_dustmap_simple(id_msa, aper_size='None', axarr_final=[], ax_labels=Fals
     
 
 
-    ha_avg_transmission = get_line_coverage(id_msa, ha_sedpy_filt, redshift, line_name='ha')
-    pab_avg_transmission = get_line_coverage(id_msa, pab_sedpy_filt, redshift, line_name='pab')
-    ha_red_avg_transmission = get_line_coverage(id_msa, ha_red_sedpy_filt, redshift, line_name='ha')
-    pab_red_avg_transmission = get_line_coverage(id_msa, pab_red_sedpy_filt, redshift, line_name='pab')
-    ha_blue_avg_transmission = get_line_coverage(id_msa, ha_blue_sedpy_filt, redshift, line_name='ha')
-    pab_blue_avg_transmission = get_line_coverage(id_msa, pab_blue_sedpy_filt, redshift, line_name='pab')
+    ha_avg_transmission = get_line_coverage(id_msa, ha_sedpy_filt, redshift, line_name='ha', fluxcal_str=fluxcal_str)
+    pab_avg_transmission = get_line_coverage(id_msa, pab_sedpy_filt, redshift, line_name='pab', fluxcal_str=fluxcal_str)
+    ha_red_avg_transmission = get_line_coverage(id_msa, ha_red_sedpy_filt, redshift, line_name='ha', fluxcal_str=fluxcal_str)
+    pab_red_avg_transmission = get_line_coverage(id_msa, pab_red_sedpy_filt, redshift, line_name='pab', fluxcal_str=fluxcal_str)
+    ha_blue_avg_transmission = get_line_coverage(id_msa, ha_blue_sedpy_filt, redshift, line_name='ha', fluxcal_str=fluxcal_str)
+    pab_blue_avg_transmission = get_line_coverage(id_msa, pab_blue_sedpy_filt, redshift, line_name='pab', fluxcal_str=fluxcal_str)
     ha_transmissions = [ha_red_avg_transmission, ha_avg_transmission, ha_blue_avg_transmission]
     pab_transmissions = [pab_red_avg_transmission, pab_avg_transmission, pab_blue_avg_transmission]
     print(f"Halpha: {ha_avg_transmission}, PaBeta: {pab_avg_transmission}")
@@ -190,11 +190,11 @@ def make_dustmap_simple(id_msa, aper_size='None', axarr_final=[], ax_labels=Fals
     dustmap_cax = fig.add_axes([0.955, 0.55, 0.015, 0.35])
 
 
-    ha_cont_pct, _, ha_trasm_flag, ha_boot_lines, ha_sed_fluxes, ha_wave_pct = plot_sed_around_line(ax_ha_sed, ha_filters, sed_df, spec_df, redshift, 0, ha_transmissions, id_msa)
-    pab_cont_pct, _, pab_trasm_flag, pab_boot_lines, pab_sed_fluxes, pab_wave_pct = plot_sed_around_line(ax_pab_sed, pab_filters, sed_df, spec_df, redshift, 1, pab_transmissions, id_msa)
+    ha_cont_pct, _, ha_trasm_flag, ha_boot_lines, ha_sed_fluxes, ha_wave_pct = plot_sed_around_line(ax_ha_sed, ha_filters, sed_df, spec_df, redshift, 0, ha_transmissions, id_msa, fluxcal_str=fluxcal_str)
+    pab_cont_pct, _, pab_trasm_flag, pab_boot_lines, pab_sed_fluxes, pab_wave_pct = plot_sed_around_line(ax_pab_sed, pab_filters, sed_df, spec_df, redshift, 1, pab_transmissions, id_msa, fluxcal_str=fluxcal_str)
 
     # Read in the linefluxes from lineflux_df, don't need to be double-computing here, and already corrected 
-    lineflux_df = ascii.read(f'/Users/brianlorenz/uncover/Data/generated_tables/lineflux_df.csv').to_pandas()
+    lineflux_df = ascii.read(f'/Users/brianlorenz/uncover/Data/generated_tables/lineflux_df{fluxcal_str}.csv').to_pandas()
     lineflux_row = lineflux_df[lineflux_df['id_msa'] == id_msa]
     ha_sed_lineflux = lineflux_row['ha_sed_flux'].iloc[0]
     nii_cor_ha_sed_lineflux = lineflux_row['nii_cor_ha_sed_flux'].iloc[0]
@@ -488,7 +488,7 @@ def make_dustmap_simple(id_msa, aper_size='None', axarr_final=[], ax_labels=Fals
     # Save
     for ax in ax_list:
         scale_aspect(ax)
-    save_folder = '/Users/brianlorenz/uncover/Figures/dust_maps'
+    save_folder = f'/Users/brianlorenz/uncover/Figures/dust_maps{fluxcal_str}'
     aper_add_str = ''
     if aper_size != 'None':
         aper_add_str = f'_aper{aper_size}'
@@ -820,7 +820,7 @@ def set_dustmap_av(dustmap, ha_linemap, ha_linemap_snr, pab_linemap, pab_linemap
     return dustmap
 
 
-def plot_sed_around_line(ax, filters, sed_df, spec_df, redshift, line_index, transmissions, id_msa, bootstrap=1000, plt_purple_merged_point=True, show_trasm=False):
+def plot_sed_around_line(ax, filters, sed_df, spec_df, redshift, line_index, transmissions, id_msa, bootstrap=1000, plt_purple_merged_point=True, show_trasm=False, fluxcal_str=''):
     # Controls for various elements on the plot
     plt_verbose_text = show_trasm
     plt_sed_points = 1
@@ -922,7 +922,7 @@ def plot_sed_around_line(ax, filters, sed_df, spec_df, redshift, line_index, tra
                 line_name = 'ha'
             else:
                 line_name = 'pab'
-            line_trasm = get_line_coverage(id_msa, sedpy_line_filt, redshift, line_name)
+            line_trasm = get_line_coverage(id_msa, sedpy_line_filt, redshift, line_name, fluxcal_str=fluxcal_str)
             boot_line = boot_line 
             
             boot_lines.append(boot_line)
@@ -1054,7 +1054,12 @@ def make_combined_mask(snr_binary_map, segmap_idxs):
         total_mask = np.ma.masked_where(combined_mask+1 > 1.5, combined_mask+1)
         return total_mask
 
-def make_all_dustmap(id_msa_list, full_sample=False):
+def make_all_dustmap(id_msa_list, full_sample=False, fluxcal=True):
+    if fluxcal:
+        fluxcal_str = ''
+    else:
+        fluxcal_str = '_no_fluxcal'
+
     sed_lineratios = []
     sed_lineratios_low = []
     sed_lineratios_high = []
@@ -1081,9 +1086,9 @@ def make_all_dustmap(id_msa_list, full_sample=False):
     
     for id_msa in id_msa_list:
         print(f'Making dustmap for {id_msa}')
-        sed_lineratios_grouped, emission_lineratios_grouped, sed_avs_grouped, emission_avs_grouped, err_sed_linefluxes_grouped, shutter_calcs = make_dustmap_simple(id_msa)
+        sed_lineratios_grouped, emission_lineratios_grouped, sed_avs_grouped, emission_avs_grouped, err_sed_linefluxes_grouped, shutter_calcs = make_dustmap_simple(id_msa, fluxcal_str=fluxcal_str)
         try:
-            sed_lineratios_grouped, emission_lineratios_grouped, sed_avs_grouped, emission_avs_grouped, err_sed_linefluxes_grouped, shutter_calcs = make_dustmap_simple(id_msa)
+            sed_lineratios_grouped, emission_lineratios_grouped, sed_avs_grouped, emission_avs_grouped, err_sed_linefluxes_grouped, shutter_calcs = make_dustmap_simple(id_msa, fluxcal_str=fluxcal_str)
         except Exception as error:
             print(error)
             print('ERROR')
@@ -1127,11 +1132,11 @@ def make_all_dustmap(id_msa_list, full_sample=False):
 
 
     if full_sample:
-        dustmap_info_df.to_csv('/Users/brianlorenz/uncover/Data/generated_tables/lineratio_av_df_all.csv', index=False)
-        shutter_calc_df.to_csv('/Users/brianlorenz/uncover/Data/generated_tables/shutter_calcs_all.csv', index=False)
+        dustmap_info_df.to_csv(f'/Users/brianlorenz/uncover/Data/generated_tables/lineratio_av_df_all{fluxcal_str}.csv', index=False)
+        shutter_calc_df.to_csv(f'/Users/brianlorenz/uncover/Data/generated_tables/shutter_calcs_all{fluxcal_str}.csv', index=False)
     else:
-        dustmap_info_df.to_csv('/Users/brianlorenz/uncover/Data/generated_tables/lineratio_av_df.csv', index=False)
-        shutter_calc_df.to_csv('/Users/brianlorenz/uncover/Data/generated_tables/shutter_calcs.csv', index=False)
+        dustmap_info_df.to_csv(f'/Users/brianlorenz/uncover/Data/generated_tables/lineratio_av_df{fluxcal_str}.csv', index=False)
+        shutter_calc_df.to_csv(f'/Users/brianlorenz/uncover/Data/generated_tables/shutter_calcs{fluxcal_str}.csv', index=False)
 
 def copy_selected_sample_dustmaps(id_msa_list):
     # Copies all the dustmaps from the sample subset to a different folder
@@ -1225,7 +1230,7 @@ if __name__ == "__main__":
     # make_dustmap_simple(39744)
     
     id_msa_list = get_id_msa_list(full_sample=False)
-    make_all_dustmap(id_msa_list, full_sample=False)
+    make_all_dustmap(id_msa_list, full_sample=False, fluxcal=False)
     # make_paper_fig_dustmaps(id_msa_list, sortby='av')
     # make_paper_fig_dustmaps(id_msa_list, sortby='mass')
 

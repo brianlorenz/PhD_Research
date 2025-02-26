@@ -1,4 +1,4 @@
-from uncover_read_data import read_raw_spec, get_id_msa_list
+from uncover_read_data import read_raw_spec, get_id_msa_list, read_supercat_newids, read_supercat
 import matplotlib.pyplot as plt
 import pandas as pd
 from scipy.optimize import curve_fit
@@ -12,6 +12,11 @@ def find_all_extraction_regions(id_msa_list):
     conts = []
     fwhms = []
     for id_msa in id_msa_list:
+        supercat_df = read_supercat()
+        supercat_new = read_supercat_newids()
+        id_dr3 = supercat_df[supercat_df['id_msa'] == id_msa]['id'].iloc[0]
+        id_redux = supercat_new[supercat_new['id_DR3']== id_dr3]['id_redux'].iloc[0]
+
         fit_center, fit_amp, fit_sig, fit_cont_height, fwhm_gaussian  = find_slit_extraction_region(id_msa)
         centers.append(fit_center) 
         amps.append(fit_amp)
@@ -21,9 +26,9 @@ def find_all_extraction_regions(id_msa_list):
     extraction_df = pd.DataFrame(zip(id_msa_list, centers, amps, sigs, conts, fwhms), columns=['id_msa', 'center', 'amp', 'sig', 'cont_level', 'fwhm']) 
     extraction_df.to_csv('/Users/brianlorenz/uncover/Data/generated_tables/extraction_df.csv', index=False)
 
-def find_slit_extraction_region(id_msa):
-    spec_2d = read_raw_spec(id_msa, read_2d=True)
-    spec_1d = read_raw_spec(id_msa)
+def find_slit_extraction_region(id_msa, id_redux=-1):
+    spec_2d = read_raw_spec(id_msa, read_2d=True, id_redux=id_redux)
+    spec_1d = read_raw_spec(id_msa, id_redux=id_redux)
 
     # Find the column corresponding to 4.4um, since everything is matched to f440m
     idx_4_4_um = np.argmin(np.abs(spec_1d['wave']-4.4))
@@ -74,6 +79,7 @@ def gaussian_func_with_cont(wavelength, peak_wavelength, amp, sig, cont_height):
 
 
 if __name__ == "__main__":
-    find_slit_extraction_region(35436)
-    # id_msa_list = get_id_msa_list(full_sample=False)
-    # find_all_extraction_regions(id_msa_list)
+    # find_slit_extraction_region(35436)
+    id_msa_list = get_id_msa_list(full_sample=False)
+
+    find_all_extraction_regions(id_msa_list)

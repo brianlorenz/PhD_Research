@@ -45,14 +45,14 @@ def get_line_coverage_old(sedpy_filt, line_wave_aa, line_width_aa):
         line_avg_transmission = 0
     return line_avg_transmission
 
-def get_line_coverage(id_msa, sedpy_filt, redshift, line_name, paalpha=False, paalpha_pabeta=False):
+def get_line_coverage(id_msa, sedpy_filt, redshift, line_name, paalpha=False, paalpha_pabeta=False, fluxcal_str=''):
     if paalpha == True:
         paa_str = '_paalpha'
     elif paalpha_pabeta:
         paa_str = '_paalpha_pabeta'
     else:   
         paa_str = ''
-    fit_df = ascii.read(f'/Users/brianlorenz/uncover/Data/emission_fitting{paa_str}/{id_msa}_emission_fits.csv').to_pandas()
+    fit_df = ascii.read(f'/Users/brianlorenz/uncover/Data/emission_fitting{paa_str}{fluxcal_str}/{id_msa}_emission_fits.csv').to_pandas()
     if line_name == 'ha':
         line_wave = fit_df['line_center_rest'].iloc[0] + fit_df['z_offset'].iloc[0]
         # line_width = fit_df['sigma'].iloc[0] # This is actually prism broadened. Instead, we should use something like 10angstrom
