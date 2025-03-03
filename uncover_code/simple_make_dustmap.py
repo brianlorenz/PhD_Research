@@ -28,7 +28,7 @@ from plot_log_linear_rgb import make_log_rgb
 from dust_equations_prospector import dust2_to_AV
 from filter_integrals import integrate_filter, get_transmission_at_line, get_line_coverage
 from uncover_prospector_seds import read_prospector
-from shutter_loc import plot_shutter_pos, check_point_in_shutter
+from shutter_loc import plot_shutter_pos, check_point_in_shutter, get_scale_factor
 from copy import copy, deepcopy
 from uncover_cosmo import find_pix_per_kpc, pixel_scale
 
@@ -39,7 +39,7 @@ pab_trasm_thresh = 0.8
 
 show_aper_and_slit = True # Leave this on
 
-add_vj_color = 1
+add_vj_color = 0
 
 
 colors = ['red', 'green', 'blue']
@@ -368,20 +368,20 @@ def make_dustmap_simple(id_msa, aper_size='None', axarr_final=[], ax_labels=Fals
     # Display the images
     # ax_segmap.imshow(ha_linemap_snr_old)
 
-    ax_ha_image.imshow(ha_image)
-    ax_pab_image.imshow(pab_image)
-    ax_segmap.imshow(pab_image)
+    ax_ha_image.imshow(ha_image, origin='lower')
+    ax_pab_image.imshow(pab_image, origin='lower')
+    ax_segmap.imshow(pab_image, origin='lower')
     
 
-    ax_ha_cont.imshow(ha_contmap_logscaled, cmap=cmap, norm=ha_contmap_norm)
-    ax_pab_cont.imshow(pab_contmap_logscaled, cmap=cmap, norm=pab_contmap_norm)
+    ax_ha_cont.imshow(ha_contmap_logscaled, cmap=cmap, norm=ha_contmap_norm, origin='lower')
+    ax_pab_cont.imshow(pab_contmap_logscaled, cmap=cmap, norm=pab_contmap_norm, origin='lower')
 
-    ax_ha_linemap.imshow(ha_linemap_logscaled, cmap=cmap, norm=ha_linemap_norm)
-    ax_pab_linemap.imshow(pab_linemap_logscaled,cmap=cmap, norm=pab_linemap_norm)
-    ax_ha_snr.imshow(ha_linemap_logscaled, cmap=cmap, norm=ha_linemap_norm)
-    ax_pab_snr.imshow(pab_linemap_logscaled,cmap=cmap, norm=pab_linemap_norm)
+    ax_ha_linemap.imshow(ha_linemap_logscaled, cmap=cmap, norm=ha_linemap_norm, origin='lower')
+    ax_pab_linemap.imshow(pab_linemap_logscaled,cmap=cmap, norm=pab_linemap_norm, origin='lower')
+    ax_ha_snr.imshow(ha_linemap_logscaled, cmap=cmap, norm=ha_linemap_norm, origin='lower')
+    ax_pab_snr.imshow(pab_linemap_logscaled,cmap=cmap, norm=pab_linemap_norm, origin='lower')
 
-    dustmap_imshow = ax_dustmap.imshow(dustmap, cmap=cmap, norm=dustmap_norm)
+    dustmap_imshow = ax_dustmap.imshow(dustmap, cmap=cmap, norm=dustmap_norm, origin='lower')
     dustmap_cbar = fig.colorbar(dustmap_imshow, cax=dustmap_cax)
     dustmap_cbar.set_label('Dustmap AV', fontsize=14)
     dustmap_cbar.ax.tick_params(labelsize=14)
@@ -398,7 +398,11 @@ def make_dustmap_simple(id_msa, aper_size='None', axarr_final=[], ax_labels=Fals
         # ax_pab_linemap.add_patch(aperture_circle)
 
         # Plot the slits
-        vertices_list = plot_shutter_pos(ax_ha_cont, id_msa, ha_images[1].wcs)
+        vertices_list, cropped_vertices_list, gauss_info = plot_shutter_pos(ax_ha_cont, id_msa, ha_images[1].wcs)
+        gauss_x_pixels  = gauss_info[0]
+        gauss_y_vals  = gauss_info[1]
+        central_vertex_1  = gauss_info[2]
+        central_vertex_2  = gauss_info[3]
         # plot_shutter_pos(ax_ha_linemap, id_msa, ha_images[1].wcs)
         plot_shutter_pos(ax_pab_cont, id_msa, ha_images[1].wcs)
         # plot_shutter_pos(ax_pab_linemap, id_msa, ha_images[1].wcs)
@@ -415,17 +419,21 @@ def make_dustmap_simple(id_msa, aper_size='None', axarr_final=[], ax_labels=Fals
 
     # Shutter calcs - need to leave the shutter on
     point_in_shutter_arr = np.full(image_size, False, dtype=bool)
+    shutter_scale_vals = np.full(image_size, 0, dtype=float)
     for x in range(image_size[0]):
         for y in range(image_size[1]):
             point_in_shutter = False
             for vertices in vertices_list:
                 if check_point_in_shutter(x, y, vertices):
                     point_in_shutter = True
+            point = np.array([x,y])
+            shutter_scale_vals[y][x] = get_scale_factor(point, gauss_x_pixels, gauss_y_vals, central_vertex_1, central_vertex_2)
             point_in_shutter_arr[y][x] = point_in_shutter
+            combined_shutter_arr = point_in_shutter_arr*shutter_scale_vals
     # point_in_shutter_arr = np.flip(point_in_shutter_arr, axis=0)
     # point_in_shutter_arr = np.flip(point_in_shutter_arr, axis=1)
-    ha_in_shutter = np.sum(ha_linemap[point_in_shutter_arr])
-    pab_in_shutter = np.sum(pab_linemap[point_in_shutter_arr])
+    ha_in_shutter = np.sum(ha_linemap * combined_shutter_arr)
+    pab_in_shutter = np.sum(pab_linemap * combined_shutter_arr)
     lineratio_in_shutter = pab_in_shutter/ha_in_shutter
     av_in_shutter = compute_ha_pab_av(pab_in_shutter/ha_in_shutter)
     shutter_calcs = [ha_in_shutter, pab_in_shutter, lineratio_in_shutter, av_in_shutter]
@@ -446,10 +454,10 @@ def make_dustmap_simple(id_msa, aper_size='None', axarr_final=[], ax_labels=Fals
     
     from matplotlib import colors
     cmap_gray = colors.ListedColormap(['gray'])
-    ax_dustmap.imshow(combined_mask_both, cmap=cmap_gray)
-    ax_ha_snr.imshow(combined_mask_ha, cmap=cmap_gray)
-    ax_pab_snr.imshow(combined_mask_pab, cmap=cmap_gray)
-    ax_segmap.imshow(combined_mask_segmap, cmap=cmap_gray)
+    ax_dustmap.imshow(combined_mask_both, cmap=cmap_gray, origin='lower')
+    ax_ha_snr.imshow(combined_mask_ha, cmap=cmap_gray, origin='lower')
+    ax_pab_snr.imshow(combined_mask_pab, cmap=cmap_gray, origin='lower')
+    ax_segmap.imshow(combined_mask_segmap, cmap=cmap_gray, origin='lower')
 
     # Labels and such 
     text_height = 1.02
@@ -519,14 +527,14 @@ def make_dustmap_simple(id_msa, aper_size='None', axarr_final=[], ax_labels=Fals
 
         #Image plots
         cmap_paper = 'inferno'
-        ax_ha_image_paper.imshow(ha_image)
-        ax_150_image_paper.imshow(image_150m.data, cmap='Greys_r')
+        ax_ha_image_paper.imshow(ha_image, origin='lower')
+        ax_150_image_paper.imshow(image_150m.data, cmap='Greys_r', origin='lower')
 
-        ax_ha_map_paper.imshow(ha_linemap_logscaled, cmap=cmap_paper, norm=ha_linemap_norm)
-        ax_pab_overlay_paper.imshow(ha_linemap_logscaled, cmap=cmap_paper, norm=ha_linemap_norm)
+        ax_ha_map_paper.imshow(ha_linemap_logscaled, cmap=cmap_paper, norm=ha_linemap_norm, origin='lower')
+        ax_pab_overlay_paper.imshow(ha_linemap_logscaled, cmap=cmap_paper, norm=ha_linemap_norm, origin='lower')
         vj_map_norm = Normalize(-0.5, 1.5)
         if add_vj_color:
-            ax_vj_color_paper.imshow(vj_map, cmap='Greys_r', norm=vj_map_norm)
+            ax_vj_color_paper.imshow(vj_map, cmap='Greys_r', norm=vj_map_norm, origin='lower')
 
         # Get pixesl per 1 kpc for scale
         pix_per_kpc = find_pix_per_kpc(redshift)
@@ -584,8 +592,8 @@ def make_dustmap_simple(id_msa, aper_size='None', axarr_final=[], ax_labels=Fals
             return new_cmap
         cmap_ha = plt.get_cmap(cmap_paper)
         new_cmap_ha = truncate_colormap(cmap_ha, 0.35, 0.9)
-        # if plt_aperture_paper == False: # Remove the contours when showing apertures
-        ax_150_image_paper.contour(X_ha, Y_ha, ha_contour_map, levels=[1,2,3,4,5], cmap=new_cmap_ha)
+        if plt_aperture_paper == False: # Remove the contours when showing apertures
+            ax_150_image_paper.contour(X_ha, Y_ha, ha_contour_map, levels=[1,2,3,4,5], cmap=new_cmap_ha)
 
         for ax in axarr_final:
             scale_aspect(ax)
@@ -598,7 +606,7 @@ def make_dustmap_simple(id_msa, aper_size='None', axarr_final=[], ax_labels=Fals
             aperture_circle = plt.Circle((image_size[0]/2, image_size[1]/2), aperture/pixel_scale, edgecolor='green', facecolor='None', lw=3)
             # ax_150_image_paper.add_patch(aperture_circle)
             aperture_circle = plt.Circle((image_size[0]/2, image_size[1]/2), aperture/pixel_scale, edgecolor='green', facecolor='None', lw=3)
-            ax_pab_overlay_paper.add_patch(aperture_circle)
+            # ax_pab_overlay_paper.add_patch(aperture_circle)
             # plot_shutter_pos(ax_150_image_paper, id_msa, ha_images[1].wcs)
             plot_shutter_pos(ax_pab_overlay_paper, id_msa, ha_images[1].wcs)
 
@@ -619,7 +627,9 @@ def make_dustmap_simple(id_msa, aper_size='None', axarr_final=[], ax_labels=Fals
         ax_150_image_paper.legend(custom_lines_ha, custom_labels_ha, loc=3)
         ax_pab_overlay_paper.legend(custom_lines_pab, custom_labels_pab, loc=3)
 
-        # ax_150_image_paper.imshow(point_in_shutter_arr)
+        if plt_aperture_paper:
+            masked_shutter_arr = np.ma.masked_where(combined_shutter_arr < 0.1, combined_shutter_arr)
+            ax_150_image_paper.imshow(masked_shutter_arr, origin='lower')
 
 
     plt.close('all')
@@ -660,7 +670,7 @@ def make_3color(id_msa, line_index = 0, plot = False, image_size=(100,100), paal
         save_folder = '/Users/brianlorenz/uncover/Figures/three_colors'
         fig, ax = plt.subplots(figsize = (6,6))
         image = make_lupton_rgb(image_red.data, image_green.data, image_blue.data, stretch=0.5)
-        ax.imshow(image)
+        ax.imshow(image, origin='lower')
         text_height = 1.02
         text_start = 0.01
         text_sep = 0.2
@@ -1230,8 +1240,8 @@ if __name__ == "__main__":
     # make_dustmap_simple(39744)
     
     id_msa_list = get_id_msa_list(full_sample=False)
-    make_all_dustmap(id_msa_list, full_sample=False, fluxcal=False)
-    # make_paper_fig_dustmaps(id_msa_list, sortby='av')
+    # make_all_dustmap(id_msa_list, full_sample=False, fluxcal=True)
+    make_paper_fig_dustmaps(id_msa_list, sortby='av')
     # make_paper_fig_dustmaps(id_msa_list, sortby='mass')
 
     # id_msa_list = get_id_msa_list(full_sample=True)

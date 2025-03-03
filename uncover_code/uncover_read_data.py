@@ -73,8 +73,23 @@ def read_prism_lsf():
     lsf_df = make_pd_table_from_fits(lsf_loc)
     return lsf_df
 
+def read_bcg_surface_brightness():
+    bcg_surface_brightness_loc = '/Users/brianlorenz/uncover/Data/generated_tables/bcg_surface_brightness.csv'
+    bcg_surface_brightness_df = ascii.read(bcg_surface_brightness_loc).to_pandas()
+    return bcg_surface_brightness_df
 
-def read_raw_spec(id_msa, read_2d=False, id_redux = -1):
+
+def read_raw_spec(id_msa, read_2d=-1, id_redux = -1):
+    """
+    read_2d options:
+        1 - SPEC1D - 1D Spectrum (this is what we normally read)
+        2 - SCI - 2D Spectrum, uJy
+        3 - WHT - 2D weights, 1/uJy^2
+        4 - PROFILE - 2D Profile
+        5 - PROF1D - 1D profile, binary table   
+        6 - BACKGROUND - 2D Background
+        7 - SLITS - Slit information, binary table
+    """
     spec_cat = read_spec_cat()
     redshift = spec_cat[spec_cat['id_msa']==id_msa]['z_spec'].iloc[0]
     # raw_spec_loc = f'/Users/brianlorenz/uncover/Catalogs/spectra_old/uncover-v2_prism-clear_2561_{id_msa}.spec.fits'
@@ -82,9 +97,9 @@ def read_raw_spec(id_msa, read_2d=False, id_redux = -1):
     if id_redux > -1:
         print(f'reading with id_redux = {id_redux}')
         raw_spec_loc = f'/Users/brianlorenz/uncover/Catalogs/v1.1_specs/SUPER/uncover_prism-clear_2561_{id_redux}.spec.fits'
-    if read_2d:
+    if read_2d > -1:
         with fits.open(raw_spec_loc) as hdu:            
-            spec_2d = hdu[4].data
+            spec_2d = hdu[read_2d].data
             return spec_2d
     spec_df = make_pd_table_from_fits(raw_spec_loc)
     spec_df['flux'] = spec_df['flux']*1e-6 # Convert uJy to Jy
@@ -183,5 +198,6 @@ if __name__ == "__main__":
     # aper_cat_df = read_aper_cat()
     # sps_cat = read_SPS2_cat()
     # read_raw_spec(47875, read_2d=True, id_redux=1000000304)
-
+    supercat = read_supercat_newids()
+    breakpoint()
     pass

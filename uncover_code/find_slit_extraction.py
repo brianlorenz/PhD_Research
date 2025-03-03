@@ -3,6 +3,8 @@ import matplotlib.pyplot as plt
 import pandas as pd
 from scipy.optimize import curve_fit
 import numpy as np
+from matplotlib.colors import Normalize, LogNorm
+from astropy.io import ascii
 
 
 def find_all_extraction_regions(id_msa_list):
@@ -27,8 +29,20 @@ def find_all_extraction_regions(id_msa_list):
     extraction_df.to_csv('/Users/brianlorenz/uncover/Data/generated_tables/extraction_df.csv', index=False)
 
 def find_slit_extraction_region(id_msa, id_redux=-1):
-    spec_2d = read_raw_spec(id_msa, read_2d=True, id_redux=id_redux)
+    spec_2d = read_raw_spec(id_msa, read_2d=4, id_redux=id_redux) 
     spec_1d = read_raw_spec(id_msa, id_redux=id_redux)
+
+    spec_sci = read_raw_spec(id_msa, read_2d=2, id_redux=id_redux) 
+    spec_wht = read_raw_spec(id_msa, read_2d=3, id_redux=id_redux) 
+    sci_mid = spec_sci[0:27,100:300]
+    wht_mid = spec_wht[0:27,100:300]
+    sci_mid = np.nan_to_num(sci_mid, nan=-1)
+    wht_mid = np.nan_to_num(wht_mid, nan=-1)
+    frame_concat = np.concatenate((sci_mid*10, wht_mid/np.median(wht_mid)), axis=1)
+    fig, ax = plt.subplots()
+    ax.imshow(frame_concat, cmap='Greys_r')
+    fig.savefig(f'/Users/brianlorenz/uncover/Figures/slit_extraction/sci_wht/{id_msa}_sci_wht.pdf')
+    plt.close('all')
 
     # Find the column corresponding to 4.4um, since everything is matched to f440m
     idx_4_4_um = np.argmin(np.abs(spec_1d['wave']-4.4))
@@ -78,8 +92,18 @@ def gaussian_func_with_cont(wavelength, peak_wavelength, amp, sig, cont_height):
     return amp * np.exp(-(wavelength - peak_wavelength)**2 / (2 * sig**2)) + cont_height
 
 
+def add_extraction_offsets():
+    offsets = [0, -0.3, 0, 2, -1, 0, 0, -2.5, -2, 0, 1, 0, -1, 1]
+    extraction_df = ascii.read('/Users/brianlorenz/uncover/Data/generated_tables/extraction_df.csv').to_pandas()
+    extraction_df['offset'] = offsets
+    extraction_df.to_csv('/Users/brianlorenz/uncover/Data/generated_tables/extraction_df.csv', index=False)
+
+
+
 if __name__ == "__main__":
     # find_slit_extraction_region(35436)
-    id_msa_list = get_id_msa_list(full_sample=False)
 
-    find_all_extraction_regions(id_msa_list)
+    # id_msa_list = get_id_msa_list(full_sample=False)
+    # find_all_extraction_regions(id_msa_list)
+
+    add_extraction_offsets()

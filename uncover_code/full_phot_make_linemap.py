@@ -3,7 +3,7 @@ from astropy.wcs import WCS
 from astropy.io import fits, ascii
 from astropy import units as u
 from astropy.nddata import Cutout2D
-from uncover_read_data import read_supercat, read_segmap
+from uncover_read_data import read_supercat, read_segmap, read_bcg_surface_brightness
 from uncover_make_sed import make_full_phot_sed
 from full_phot_sample_selection import line_list
 from sedpy import observate
@@ -18,7 +18,8 @@ from plot_log_linear_rgb import make_log_rgb
 import matplotlib.patheffects as pe
 from uncover_cosmo import find_pix_per_kpc, pixel_scale
 import initialize_mosdef_dirs as imd
-
+import shutil
+import pandas as pd
 
 
 phot_df_loc = '/Users/brianlorenz/uncover/Data/generated_tables/phot_linecoverage_ha_pab.csv'
@@ -29,7 +30,7 @@ cmap='inferno'
 
 
 
-def make_linemap(id_dr3, line_name, phot_df, supercat_df, image_size=(100,100), snr_thresh=2):
+def make_linemap(id_dr3, line_name, phot_df, supercat_df, image_size=(100,100), snr_thresh=2, bcg_flag=0):
     """Given a DR3 id and a line, make the linemap
     
     Parameters:
@@ -58,12 +59,18 @@ def make_linemap(id_dr3, line_name, phot_df, supercat_df, image_size=(100,100), 
     redshift = phot_df_row['z_50'].iloc[0]
 
     cont_percentile, line_flux, boot_lines, sed_fluxes, wave_pct, line_rest_wavelength = plot_sed_around_line(id_dr3, line_name, filters, redshift, bootstrap=1000)
+    err_lineflux_low = np.percentile(boot_lines, 16)
+    err_lineflux_high = np.percentile(boot_lines, 86)
     flux_snr = line_flux / np.std(boot_lines)
+    lineflux_info = [line_flux, err_lineflux_low, err_lineflux_high, flux_snr]
 
-    snr_str = ''
+    subdir_str = '' # Will save to a different folder than the main one
     if flux_snr < snr_thresh:
         print(f'SNR < {snr_thresh}')
-        snr_str = '_low_snr/'
+        subdir_str = '_low_snr/'
+    if bcg_flag > 0:
+        print(f'Too close to bcg')
+        subdir_str = '_bcg_flag/'
 
     # Make linemaps
     # Need to multiply the image fluxes by 1e-8 to turn them from 10nJy to Jy
@@ -139,9 +146,10 @@ def make_linemap(id_dr3, line_name, phot_df, supercat_df, image_size=(100,100), 
     imd.check_and_make_dir(figure_save_loc)
     imd.check_and_make_dir(figure_save_loc+'linemaps/')
     imd.check_and_make_dir(figure_save_loc+f'linemaps/{line_name}_linemaps/')
-    imd.check_and_make_dir(figure_save_loc+f'linemaps/{line_name}_linemaps{snr_str}/')
-    fig.savefig(figure_save_loc+f'linemaps/{line_name}_linemaps{snr_str}/{id_dr3}_{line_name}_linemap.pdf', bbox_inches='tight')
+    imd.check_and_make_dir(figure_save_loc+f'linemaps/{line_name}_linemaps{subdir_str}/')
+    fig.savefig(figure_save_loc+f'linemaps/{line_name}_linemaps{subdir_str}/{id_dr3}_{line_name}_linemap.pdf', bbox_inches='tight')
     plt.close('all')
+    return lineflux_info, subdir_str
 
 def get_norm(image_map, scalea=1, lower_pct=10, upper_pct=99):
         imagemap_gt0 = image_map[image_map>0.0001]
@@ -405,19 +413,20 @@ def compute_line(cont_pct, red_flx, green_flx, blue_flx, redshift, raw_transmiss
 
         return line_value, cont_value
 
-if __name__ == "__main__":
-    line_name = 'Halpha'
-    snr_thresh = 2
+def make_all_phot_linemaps(line_name):
+    snr_thresh = 1
+    bcg_thresh = 0.04
+
     phot_sample_df = ascii.read(phot_df_loc).to_pandas()
     supercat_df = read_supercat()
-    breakpoint()
-    # make_linemap(34730, 'Halpha', phot_sample_df, supercat_df, image_size=(200,200))
+    bcg_df = read_bcg_surface_brightness()
     
     
     phot_sample_df = phot_sample_df[phot_sample_df[f'{line_name}_redshift_sigma'] > 3] # Solid redshift
     phot_sample_df = phot_sample_df[phot_sample_df['use_phot'] == 1] # use_phot 1
     phot_sample_df = phot_sample_df[phot_sample_df[f'{line_name}_all_detected'] == 1] # making sure all 3 lines are actually seen in m bands
 
+    pandas_rows = []
     for id_dr3 in phot_sample_df['id'].to_list():
         supercat_row = supercat_df[supercat_df['id']==id_dr3]
         flags = []
@@ -429,5 +438,35 @@ if __name__ == "__main__":
         if np.sum(flags) > 0:
             print(f'Flag found for {id_dr3}')
             continue
+
+        # Check the bcg flag
+        if bcg_df[bcg_df['id_dr3'] == id_dr3]['bcg_surface_brightness'].iloc[0] > bcg_thresh:
+            print(f'Too close to bcg')
+            bcg_flag = 1
+            # image_dir = '/Users/brianlorenz/uncover/Figures/PHOT_sample/first_run/'
+            # shutil.copy(image_dir+f'linemaps_first/{id_dr3}_linemap.pdf', image_dir+f'bcg_flag/{id_dr3}_linemap.pdf')
+        else:
+            bcg_flag = 0
+
         print(f'Making {line_name} map for {id_dr3}')
-        # make_linemap(id_dr3, line_name, phot_sample_df, supercat_df, snr_thresh=snr_thresh)
+        #pandas row contains the lineflux
+        pandas_row, subdir_str = make_linemap(id_dr3, line_name, phot_sample_df, supercat_df, snr_thresh=snr_thresh, bcg_flag=bcg_flag)
+        pandas_row.insert(0, id_dr3)
+        if subdir_str == '':
+            subdir_str = 'no_flag'
+            use_flag = 1
+        else:
+            use_flag = 0
+        pandas_row.append(use_flag)
+        pandas_row.append(subdir_str)
+        pandas_rows.append(pandas_row)
+    lineflux_df = pd.DataFrame(pandas_rows, columns=['id_dr3', f'{line_name}_flux', f'err_{line_name}_flux_low', f'err_{line_name}_flux_high', f'{line_name}_snr', f'use_flag_{line_name}', f'flag_reason_{line_name}'])
+    lineflux_df.to_csv(f'/Users/brianlorenz/uncover/Data/generated_tables/phot_lineflux_{line_name}.csv', index=False)
+
+if __name__ == "__main__":
+    # make_linemap(34730, 'Halpha', phot_sample_df, supercat_df, image_size=(200,200))
+
+    # make_all_phot_linemaps('Halpha')
+    # make_all_phot_linemaps('PaBeta')
+    # make_all_phot_linemaps('Paalpha')
+    pass

@@ -6,7 +6,7 @@ from uncover_read_data import read_lineflux_cat, get_id_msa_list, read_SPS_cat, 
 from compute_av import compute_ha_pab_av, avneb_str, compute_ratio_from_av
 import numpy as np
 
-plot_shutter = True
+plot_shutter = False
 phot_categories = False
 
 def paper_plot_sed_emfit_accuracy(id_msa_list, color_var=''):
