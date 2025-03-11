@@ -22,7 +22,7 @@ import shutil
 import pandas as pd
 
 
-phot_df_loc = '/Users/brianlorenz/uncover/Data/generated_tables/phot_linecoverage_ha_pab.csv'
+phot_df_loc = '/Users/brianlorenz/uncover/Data/generated_tables/phot_linecoverage_ha_pab_paa.csv'
 figure_save_loc = '/Users/brianlorenz/uncover/Figures/PHOT_sample/'
 
 colors = ['red', 'green', 'blue']
@@ -422,7 +422,7 @@ def make_all_phot_linemaps(line_name):
     bcg_df = read_bcg_surface_brightness()
     
     
-    phot_sample_df = phot_sample_df[phot_sample_df[f'{line_name}_redshift_sigma'] > 3] # Solid redshift
+    phot_sample_df = phot_sample_df[phot_sample_df[f'{line_name}_redshift_sigma'] > 2] # Solid redshift
     phot_sample_df = phot_sample_df[phot_sample_df['use_phot'] == 1] # use_phot 1
     phot_sample_df = phot_sample_df[phot_sample_df[f'{line_name}_all_detected'] == 1] # making sure all 3 lines are actually seen in m bands
 
@@ -466,7 +466,7 @@ def make_all_phot_linemaps(line_name):
 if __name__ == "__main__":
     # make_linemap(34730, 'Halpha', phot_sample_df, supercat_df, image_size=(200,200))
 
-    # make_all_phot_linemaps('Halpha')
-    # make_all_phot_linemaps('PaBeta')
-    # make_all_phot_linemaps('Paalpha')
+    make_all_phot_linemaps('Halpha')
+    make_all_phot_linemaps('PaBeta')
+    make_all_phot_linemaps('Paalpha')
     pass

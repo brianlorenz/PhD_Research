@@ -14,9 +14,15 @@ save_loc = '/Users/brianlorenz/uncover/Data/generated_tables/phot_linecoverage.c
 #     ('PaAlpha', 18750)
 # ]
 
+# line_list = [
+#     ('Halpha', 6564.6),
+#     ('PaBeta', 12821.7)
+# ]
+
 line_list = [
     ('Halpha', 6564.6),
-    ('PaBeta', 12821.7)
+    ('PaBeta', 12821.7),
+    ('PaAlpha', 18750)
 ]
 
 def full_phot_sample_select():
@@ -41,7 +47,6 @@ def full_phot_sample_select():
    
     for line in line_list:
         check_line_in_filters(phot_sample_df, line[0], line[1], uncover_filt_dict, filters, filt_colnames, sps_df, supercat_df)
-
     phot_sample_df.to_csv(save_loc, index=False)
 
 
@@ -164,8 +169,8 @@ def line_in_range(z50, z16, z84, line_wave, filt_cols, uncover_filt_dict, wavele
     covered = False
     filt_name = ''
     for filt in filt_cols:
-        filt_lower_edge = uncover_filt_dict[filt+'_blue']+wavelength_pad
-        filt_upper_edge = uncover_filt_dict[filt+'_red']-wavelength_pad
+        filt_lower_edge = uncover_filt_dict[filt+'_lower_20pct_wave']
+        filt_upper_edge = uncover_filt_dict[filt+'_upper_20pct_wave']
         if z_line>filt_lower_edge and z_line<filt_upper_edge:
             covered = True
             filt_name = filt

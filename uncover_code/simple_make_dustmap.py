@@ -1240,8 +1240,8 @@ if __name__ == "__main__":
     # make_dustmap_simple(39744)
     
     id_msa_list = get_id_msa_list(full_sample=False)
-    # make_all_dustmap(id_msa_list, full_sample=False, fluxcal=True)
-    make_paper_fig_dustmaps(id_msa_list, sortby='av')
+    make_all_dustmap(id_msa_list, full_sample=False, fluxcal=False)
+    # make_paper_fig_dustmaps(id_msa_list, sortby='av')
     # make_paper_fig_dustmaps(id_msa_list, sortby='mass')
 
     # id_msa_list = get_id_msa_list(full_sample=True)

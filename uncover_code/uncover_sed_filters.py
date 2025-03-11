@@ -1,5 +1,6 @@
 from sedpy import observate 
 from uncover_read_data import read_supercat
+import numpy as np
 # jwst_filters = ['f070w', 'f090w', 'f115w', 'f150w', 'f200w', 'f277w', 'f356w', 'f444w', 'f140m', 'f162m', 'f182m', 'f210m', 'f250m', 'f300m', 'f335m']
 
 def unconver_read_filters():
@@ -24,6 +25,17 @@ def unconver_read_filters():
         uncover_filt_dir[filtname+'_wave_eff'] = sedpy_filt[0].wave_effective
         uncover_filt_dir[filtname+'_width_eff'] = sedpy_filt[0].effective_width
         uncover_filt_dir[filtname+'_width_rect'] = sedpy_filt[0].rectangular_width
+
+        scaled_trasm = sedpy_filt[0].transmission / np.max(sedpy_filt[0].transmission)
+        trasm_low = scaled_trasm<0.2
+        idx_lows = [i for i, x in enumerate(trasm_low) if x]
+        idx_lows = np.array(idx_lows)
+        max_idx = np.argmax(sedpy_filt[0].transmission)
+        lower_cutoff_idx = np.max(idx_lows[idx_lows<max_idx])
+        upper_cutoff_idx = np.min(idx_lows[idx_lows>max_idx])
+        uncover_filt_dir[filtname+'_lower_20pct_wave'] = sedpy_filt[0].wavelength[lower_cutoff_idx]
+        uncover_filt_dir[filtname+'_upper_20pct_wave'] = sedpy_filt[0].wavelength[upper_cutoff_idx]
+
         sedpy_filts.append(sedpy_filt[0])
     
     return uncover_filt_dir, sedpy_filts
