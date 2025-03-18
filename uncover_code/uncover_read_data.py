@@ -74,7 +74,7 @@ def read_prism_lsf():
     return lsf_df
 
 def read_bcg_surface_brightness():
-    bcg_surface_brightness_loc = '/Users/brianlorenz/uncover/Data/generated_tables/bcg_surface_brightness.csv'
+    bcg_surface_brightness_loc = '/Users/brianlorenz/uncover/Data/generated_tables/phot_calcs/bcg_surface_brightness.csv'
     bcg_surface_brightness_df = ascii.read(bcg_surface_brightness_loc).to_pandas()
     return bcg_surface_brightness_df
 

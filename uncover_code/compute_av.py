@@ -90,6 +90,15 @@ def compute_paalpha_pabeta_av(paalpha_pabeta_ratio):
     return A_V_value
 
 
+def compute_pab_paa_av(paa_pab_ratio):
+    """ PaA / PaB is the ratio you need"""
+    R_V_value = 4.05
+    intrinsic_ratio = paa_factor / pab_factor
+    k_factor = 2.5/(calzetti_law(pab_wave) - calzetti_law(paa_wave))
+    A_V_value = R_V_value*k_factor*np.log10(paa_pab_ratio/intrinsic_ratio)
+    return A_V_value
+
+
 def compute_ha_pab_av(pab_ha_ratio):
     """ PaB / Ha is the ratio you need, should be slightly greater than 1/20"""
     R_V_value = 4.05

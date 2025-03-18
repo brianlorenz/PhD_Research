@@ -59,4 +59,7 @@ def read_bcg_model():
 if __name__ == "__main__":
     # find_all_bcg_brightnesses() #Will take most of day to run
 
-    create_bcg_brightness_flag()
+    # create_bcg_brightness_flag()
+
+    bcg_df = read_bcg_surface_brightness() 
+    breakpoint()

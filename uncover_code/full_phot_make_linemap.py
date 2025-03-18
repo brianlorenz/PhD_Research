@@ -22,7 +22,7 @@ import shutil
 import pandas as pd
 
 
-phot_df_loc = '/Users/brianlorenz/uncover/Data/generated_tables/phot_linecoverage_ha_pab_paa.csv'
+phot_df_loc = '/Users/brianlorenz/uncover/Data/generated_tables/phot_calcs/phot_linecoverage_ha_pab_paa.csv'
 figure_save_loc = '/Users/brianlorenz/uncover/Figures/PHOT_sample/'
 
 colors = ['red', 'green', 'blue']
@@ -422,12 +422,14 @@ def make_all_phot_linemaps(line_name):
     bcg_df = read_bcg_surface_brightness()
     
     
-    phot_sample_df = phot_sample_df[phot_sample_df[f'{line_name}_redshift_sigma'] > 2] # Solid redshift
+    phot_sample_df = phot_sample_df[phot_sample_df[f'{line_name}_redshift_sigma'] > 1] # Reasonable redshift
     phot_sample_df = phot_sample_df[phot_sample_df['use_phot'] == 1] # use_phot 1
     phot_sample_df = phot_sample_df[phot_sample_df[f'{line_name}_all_detected'] == 1] # making sure all 3 lines are actually seen in m bands
 
     pandas_rows = []
     for id_dr3 in phot_sample_df['id'].to_list():
+        phot_sample_row = phot_sample_df[phot_sample_df['id'] == id_dr3]
+        redshift_sigma = phot_sample_row[f'{line_name}_redshift_sigma'].iloc[0]
         supercat_row = supercat_df[supercat_df['id']==id_dr3]
         flags = []
         flags.append(supercat_row['flag_nophot'].iloc[0])
@@ -459,14 +461,15 @@ def make_all_phot_linemaps(line_name):
             use_flag = 0
         pandas_row.append(use_flag)
         pandas_row.append(subdir_str)
+        pandas_row.append(redshift_sigma)
         pandas_rows.append(pandas_row)
-    lineflux_df = pd.DataFrame(pandas_rows, columns=['id_dr3', f'{line_name}_flux', f'err_{line_name}_flux_low', f'err_{line_name}_flux_high', f'{line_name}_snr', f'use_flag_{line_name}', f'flag_reason_{line_name}'])
-    lineflux_df.to_csv(f'/Users/brianlorenz/uncover/Data/generated_tables/phot_lineflux_{line_name}.csv', index=False)
+    lineflux_df = pd.DataFrame(pandas_rows, columns=['id_dr3', f'{line_name}_flux', f'err_{line_name}_flux_low', f'err_{line_name}_flux_high', f'{line_name}_snr', f'use_flag_{line_name}', f'flag_reason_{line_name}', f'{line_name}_redshift_sigma'])
+    lineflux_df.to_csv(f'/Users/brianlorenz/uncover/Data/generated_tables/phot_calcs/phot_lineflux_{line_name}.csv', index=False)
 
 if __name__ == "__main__":
     # make_linemap(34730, 'Halpha', phot_sample_df, supercat_df, image_size=(200,200))
 
-    make_all_phot_linemaps('Halpha')
-    make_all_phot_linemaps('PaBeta')
-    make_all_phot_linemaps('Paalpha')
+    # make_all_phot_linemaps('Halpha')
+    # make_all_phot_linemaps('PaBeta')
+    # make_all_phot_linemaps('PaAlpha')
     pass
