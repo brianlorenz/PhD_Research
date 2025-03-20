@@ -198,7 +198,7 @@ def plot_sed_around_line(id_dr3, line_name, filters, redshift, bootstrap=1000):
         sedpy_name = filters[i].replace('f_', 'jwst_')
         sedpy_filt = observate.load_filters([sedpy_name])[0]
         ax.plot(sedpy_filt.wavelength/1e4, sedpy_filt.transmission/6e5, ls='-', marker='None', color=colors[i], lw=1)
-
+    
     
     ax.errorbar(red_wave, red_flux, yerr = err_red_flux, color='red', marker='o')
     ax.errorbar(green_wave, green_flux, yerr = err_green_flux, color='green', marker='o')

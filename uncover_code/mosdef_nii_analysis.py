@@ -67,7 +67,9 @@ def mosdef_nii(linemeas_df, mosdef_df):
     ax.plot(linemeas_df['NII6585_FLUX'], linemeas_df['nii_combined_flux'], color='black', marker='o', ls='None')
     x_vals = np.arange(0,2e-16,1e-18)
     y_vals = 1.5*x_vals
+    y_vals2 = 4/3*x_vals
     ax.plot(x_vals, y_vals, color='red', marker='None', ls='--', label='y=1.5*x')
+    ax.plot(x_vals, y_vals2, color='blue', marker='None', ls='--', label='y=4/3*x')
     ax.plot(x_vals, x_vals, color='green', marker='None', ls='--', label='y=x')
     ax.set_xlabel('NII6585 Flux')
     ax.set_ylabel('NII Combined Flux')

@@ -9,12 +9,10 @@ import numpy as np
 import pandas as pd
 from astropy.io import ascii
 from read_data import mosdef_df
-from mosdef_obj_data_funcs import read_sed, read_mock_sed
 from cross_correlate import get_cross_cor
 import matplotlib.pyplot as plt
 from filter_response import lines, overview, get_index, get_filter_response
 from scipy import interpolate
-from mosdef_obj_data_funcs import read_composite_sed
 import initialize_mosdef_dirs as imd
 from plot_vals import *
 
@@ -52,6 +50,10 @@ def get_normalized_sed(target_field, target_v4id, field, v4id):
     return sed
 
 
+def normalize_by_cont_value(id_dr3_list):
+    """Scales the galaxies to the same continuum value of the primary line (halpha or Paa)"""
+    phot_sample_df = read_full_phot_sed
+
 def get_composite_sed(groupID, run_filters=True):
     """Given the ID assigned to a group, create the composite SED for that group
 
@@ -82,6 +84,15 @@ def get_composite_sed(groupID, run_filters=True):
         else:
             total_sed = pd.concat([total_sed, sed])
         sed.to_csv(imd.norm_sed_csvs_dir + f'/{field}_{v4id}_norm.csv', index=False)
+
+    # Save the total SED
+    imd.check_and_make_dir(imd.total_sed_csvs_dir)
+    total_sed.to_csv(imd.total_sed_csvs_dir + f'/{groupID}_total_sed.csv', index=False)
+
+
+    # BEFORE MERGING, WE WANT TO SEE HOW THE TOTAL SEDS LOOK FOR VARIOUS GROUPINGS AND NORMS
+
+
 
     # Now we have total_seds, which is a huge dataframe that combines the seds
     # of all of the individual objects
@@ -158,9 +169,7 @@ def get_composite_sed(groupID, run_filters=True):
     composite_sed.to_csv(
         imd.composite_sed_csvs_dir + f'/{groupID}_sed.csv', index=False)
 
-    # Save the total SED
-    imd.check_and_make_dir(imd.total_sed_csvs_dir)
-    total_sed.to_csv(imd.total_sed_csvs_dir + f'/{groupID}_total_sed.csv', index=False)
+    
     
 
     # Copmosite filters already saved elsewhere

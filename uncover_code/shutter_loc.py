@@ -9,7 +9,7 @@ import numpy as np
 from find_slit_extraction import gaussian_func_with_cont
 
 
-def plot_shutter_pos(ax, id_msa, wcs):
+def plot_shutter_pos(ax, id_msa, wcs, paper=False):
     slit_loc_df = read_slit_loc_cat()
     slit_loc_rows = slit_loc_df[slit_loc_df['id_msa']==id_msa]
 
@@ -86,7 +86,10 @@ def plot_shutter_pos(ax, id_msa, wcs):
             possible_vertices = [vertex for vertex in possible_vertices if vertex != mid_vertex_index]
             
             # Create a Polygon patch
-            rect = patches.Polygon([(x1, y1), (x2, y2), (x3, y3), (x4, y4)], closed=True, fill=False, color='cyan')
+            patch_color = 'cyan'
+            if paper:
+                patch_color = 'whitesmoke'
+            rect = patches.Polygon([(x1, y1), (x2, y2), (x3, y3), (x4, y4)], closed=True, fill=False, color=patch_color)
 
             # Add the patch to the axes
             ax.add_patch(rect)
@@ -98,12 +101,14 @@ def plot_shutter_pos(ax, id_msa, wcs):
                 new_vertex_2_start, new_vertex_2_end = get_fraction_up_line(vertices_list[region_num][possible_vertices[0]], vertices_list[region_num][possible_vertices[1]], frac_start=frac_start, frac_end=frac_end)
                 new_vertices_list = [new_vertex_1_start, new_vertex_2_start, new_vertex_2_end, new_vertex_1_end]
                 rect2 = patches.Polygon(new_vertices_list, closed=True, fill=True, color='black', alpha=0.5)
-                ax.add_patch(rect2)
+                if paper == False:
+                    ax.add_patch(rect2)
                 if region_num == frac_dict[f'center_region']:
                     center_frac = frac_dict[f'center_frac']
                     center_vertex_1, _ = get_fraction_up_line(vertices_list[region_num][0], vertices_list[region_num][mid_vertex_index], frac_start=center_frac, frac_end=frac_end)
                     center_vertex_2, _ = get_fraction_up_line(vertices_list[region_num][possible_vertices[0]], vertices_list[region_num][possible_vertices[1]], frac_start=center_frac, frac_end=frac_end)
-                    ax.plot([center_vertex_1[0], center_vertex_2[0]], [center_vertex_1[1], center_vertex_2[1]], marker='o', ls='-', color='cyan')
+                    if paper == False:
+                        ax.plot([center_vertex_1[0], center_vertex_2[0]], [center_vertex_1[1], center_vertex_2[1]], marker='o', ls='-', color='cyan')
             else:
                 new_vertices_list = [(-99, -99), (-99, -99), (-99, -99), (-99, -99)]
             new_vertices_all_lists.append(new_vertices_list)

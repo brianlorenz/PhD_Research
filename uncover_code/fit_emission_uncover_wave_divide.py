@@ -804,7 +804,7 @@ if __name__ == "__main__":
 
     id_msa_list = get_id_msa_list(full_sample=False)
     
-    fit_all_emission_uncover(id_msa_list, fluxcal=False)   
+    fit_all_emission_uncover(id_msa_list, fluxcal=True)   
     # plot_mosaic(id_msa_list, line = 'ha_only')
     # plot_mosaic(id_msa_list, line = 'pab_only')
     pass

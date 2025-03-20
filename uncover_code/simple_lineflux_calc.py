@@ -214,5 +214,5 @@ if __name__ == "__main__":
     # calc_all_lineflux(id_msa_list, full_sample=True)  
 
     id_msa_list = get_id_msa_list(full_sample=False)
-    calc_all_lineflux(id_msa_list, full_sample=False, fluxcal=False)  
+    calc_all_lineflux(id_msa_list, full_sample=False, fluxcal=True)  
     pass

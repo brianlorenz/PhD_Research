@@ -27,11 +27,16 @@ def make_aper_seds(id_msa_list, aper_size='048'):
         sed_df = get_sed(id_msa, aper_size=aper_size)
         sed_df.to_csv(f'/Users/brianlorenz/uncover/Data/seds/aper{aper_size}/{id_msa}_sed_aper{aper_size}.csv', index=False)
 
-def get_sed(id_msa, aper_size = 'None'):
+def get_sed(id_msa, aper_size = 'None', use_id_dr3=False):
     supercat_df = read_supercat()
     if aper_size != 'None':
         supercat_df = read_aper_cat(aper_size=aper_size)
-    row = supercat_df[supercat_df['id_msa'] == id_msa]
+
+    if id_dr3 == True:
+        id_col = 'id'
+    else:
+        id_col = 'id_msa'
+    row = supercat_df[supercat_df[id_col] == id_msa]
     if id_msa == 42041:
         row = supercat_df[supercat_df['id'] == 54635]
     filt_dir, filters = unconver_read_filters()
@@ -120,4 +125,6 @@ if __name__ == "__main__":
     # main(9457)
     # make_seds_full_phot()
     # make_full_phot_sed(1441)
+    # sed_df = get_sed(1, id_dr3=True)
+    # breakpoint()
     pass
