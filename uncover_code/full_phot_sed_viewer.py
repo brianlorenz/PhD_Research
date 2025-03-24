@@ -3,6 +3,7 @@ from astropy.io import ascii
 import matplotlib.pyplot as plt
 from matplotlib.lines import Line2D
 from full_phot_read_data import read_merged_lineflux_cat
+from uncover_prospector_seds import read_prospector
 
 
 phot_df_loc = '/Users/brianlorenz/uncover/Data/generated_tables/phot_calcs/phot_linecoverage_ha_pab_paa.csv'
@@ -11,6 +12,8 @@ colors = ['red', 'mediumseagreen']
 def plot_sed(id_dr3, phot_sample_df, ha_pab=False, pab_paa=False):
     sed_df = read_full_phot_sed(id_dr3)
     lineflux_df = read_merged_lineflux_cat()
+    prospector_spec_df, prospector_sed_df = read_prospector(id_msa)
+
     phot_sample_row = phot_sample_df[phot_sample_df['id'] == id_dr3]
     lineflux_row = lineflux_df[lineflux_df['id_dr3']==id_dr3]
     ha_snr = lineflux_row['Halpha_snr'].iloc[0]

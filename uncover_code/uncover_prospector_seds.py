@@ -11,14 +11,17 @@ from uncover_read_data import read_supercat, read_raw_spec, read_spec_cat, read_
 from astropy.io import ascii
 from uncover_make_sed import get_sed
 
-def get_prospect_df_loc(id_msa):
+def get_prospect_df_loc(id_msa, id_dr3=False):
     loc_prospector_spec_df = f'/Users/brianlorenz/uncover/Data/prospector_spec/{id_msa}_prospector_spec_df.csv'
     loc_prospector_sed_df = f'/Users/brianlorenz/uncover/Data/prospector_spec/{id_msa}_prospector_sed_df.csv'
+    if id_dr3:
+        loc_prospector_spec_df = f'/Users/brianlorenz/uncover/Data/prospector_spec_dr3/{id_msa}_prospector_spec_df.csv'
+        loc_prospector_sed_df = f'/Users/brianlorenz/uncover/Data/prospector_spec_dr3/{id_msa}_prospector_sed_df.csv'
     return loc_prospector_spec_df, loc_prospector_sed_df
 
-def make_prospector(id_msa, plt_jy=True):
+def make_prospector(id_msa, plt_jy=True, id_dr3=False):
     objid = id_msa
-    loc_prospector_spec_df, loc_prospector_sed_df = get_prospect_df_loc(id_msa)
+    loc_prospector_spec_df, loc_prospector_sed_df = get_prospect_df_loc(id_msa, id_dr3=id_dr3)
 
     folder = '/Users/brianlorenz/uncover/Data/latest_zspec/'
 
@@ -106,7 +109,7 @@ def make_all_prospector(id_msa_list):
         make_prospector(id_msa, plt_jy=True)
 
 if __name__ == "__main__":
-    # id_msa = 47875
+    id_msa = 47875
     # zqual_df = read_spec_cat()
     # redshift = zqual_df[zqual_df['id_msa']==id_msa]['z_spec'].iloc[0]
     # prospector_spec_df, prospector_sed_df = read_prospector(id_msa)
@@ -114,7 +117,7 @@ if __name__ == "__main__":
     # plt.plot(prospector_spec_df[pab_region]['wave_um']/(1+redshift), prospector_spec_df[pab_region]['flux_jy']*(1+redshift))
     # breakpoint()
     # plot_prospector_vs_sed(id_msa)
-    # make_prospector(id_msa, plt_jy=True)
+    make_prospector(id_msa, plt_jy=True)
 
             
     # zqual_detected_df = ascii.read('/Users/brianlorenz/uncover/zqual_detected.csv').to_pandas()

@@ -58,11 +58,11 @@ def make_linemap(id_dr3, line_name, phot_df, supercat_df, image_size=(100,100), 
 
     redshift = phot_df_row['z_50'].iloc[0]
 
-    cont_percentile, line_flux, boot_lines, sed_fluxes, wave_pct, line_rest_wavelength = plot_sed_around_line(id_dr3, line_name, filters, redshift, bootstrap=1000)
+    cont_percentile, line_flux, boot_lines, sed_fluxes, wave_pct, line_rest_wavelength, cont_value = plot_sed_around_line(id_dr3, line_name, filters, redshift, bootstrap=1000)
     err_lineflux_low = np.percentile(boot_lines, 16)
     err_lineflux_high = np.percentile(boot_lines, 86)
     flux_snr = line_flux / np.std(boot_lines)
-    lineflux_info = [line_flux, err_lineflux_low, err_lineflux_high, flux_snr]
+    lineflux_info = [line_flux, err_lineflux_low, err_lineflux_high, flux_snr, cont_value]
 
     subdir_str = '' # Will save to a different folder than the main one
     if flux_snr < snr_thresh:
@@ -246,7 +246,7 @@ def plot_sed_around_line(id_dr3, line_name, filters, redshift, bootstrap=1000):
     imd.check_and_make_dir(figure_save_loc + f'sed_images/{line_name}_sed_images')
     fig.savefig(figure_save_loc + f'sed_images/{line_name}_sed_images/{id_dr3}_{line_name}_sed.pdf')
 
-    return cont_percentile, line_flux, boot_lines, sed_fluxes, wave_pct, line_wave_rest
+    return cont_percentile, line_flux, boot_lines, sed_fluxes, wave_pct, line_wave_rest, cont_value
 
 
 
@@ -463,7 +463,7 @@ def make_all_phot_linemaps(line_name):
         pandas_row.append(subdir_str)
         pandas_row.append(redshift_sigma)
         pandas_rows.append(pandas_row)
-    lineflux_df = pd.DataFrame(pandas_rows, columns=['id_dr3', f'{line_name}_flux', f'err_{line_name}_flux_low', f'err_{line_name}_flux_high', f'{line_name}_snr', f'use_flag_{line_name}', f'flag_reason_{line_name}', f'{line_name}_redshift_sigma'])
+    lineflux_df = pd.DataFrame(pandas_rows, columns=['id_dr3', f'{line_name}_flux', f'err_{line_name}_flux_low', f'err_{line_name}_flux_high', f'{line_name}_snr', f'{line_name}_cont_value', f'use_flag_{line_name}', f'flag_reason_{line_name}', f'{line_name}_redshift_sigma'])
     lineflux_df.to_csv(f'/Users/brianlorenz/uncover/Data/generated_tables/phot_calcs/phot_lineflux_{line_name}.csv', index=False)
 
 if __name__ == "__main__":

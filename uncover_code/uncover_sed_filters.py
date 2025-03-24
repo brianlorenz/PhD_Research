@@ -1,9 +1,12 @@
 from sedpy import observate 
 from uncover_read_data import read_supercat
 import numpy as np
+import pandas as pd
 # jwst_filters = ['f070w', 'f090w', 'f115w', 'f150w', 'f200w', 'f277w', 'f356w', 'f444w', 'f140m', 'f162m', 'f182m', 'f210m', 'f250m', 'f300m', 'f335m']
 
-def unconver_read_filters():
+filter_save_dir = '/Users/brianlorenz/uncover/Data/filter_curves/'
+
+def unconver_read_filters(save_filts=False):
     supercat_df = read_supercat()
     filt_cols = get_filt_cols(supercat_df)
     sedpy_filts = []
@@ -37,6 +40,10 @@ def unconver_read_filters():
         uncover_filt_dir[filtname+'_upper_20pct_wave'] = sedpy_filt[0].wavelength[upper_cutoff_idx]
 
         sedpy_filts.append(sedpy_filt[0])
+
+        if save_filts:
+            filt_df = pd.DataFrame(zip(sedpy_filt[0].wavelength, sedpy_filt[0].transmission, scaled_trasm), columns=['wavelength', 'transmission', 'scaled_transmission'])
+            filt_df.to_csv(filter_save_dir+f'{filtname}_filter_curve.csv', index=False)
     
     return uncover_filt_dir, sedpy_filts
 
@@ -47,5 +54,5 @@ def get_filt_cols(df, skip_wide_bands=False):
         filt_cols = [col for col in filt_cols if 'w' not in col]
     return filt_cols
 
-# uncover_filt_dir, sedpy_filts = unconver_read_filters()
+# uncover_filt_dir, sedpy_filts = unconver_read_filters(save_filts=True)
 # breakpoint()
