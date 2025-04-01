@@ -12,3 +12,4 @@ def find_pix_per_kpc(redshift):
 
     return pixels_for_1kpc
 
+breakpoint()

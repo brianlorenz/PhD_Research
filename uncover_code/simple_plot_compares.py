@@ -5,6 +5,9 @@ from plot_vals import scale_aspect, stellar_mass_label
 from uncover_read_data import read_lineflux_cat, get_id_msa_list, read_SPS_cat, read_SPS_cat_all
 from compute_av import compute_ha_pab_av, avneb_str, compute_ratio_from_av
 import numpy as np
+from matplotlib.cm import ScalarMappable
+from simple_sample_selection import truncate_colormap
+
 
 plot_shutter = False
 phot_categories = False
@@ -61,7 +64,8 @@ def paper_plot_sed_emfit_accuracy(id_msa_list, color_var=''):
         pab_snr = fit_df['signal_noise_ratio'].iloc[1]
         print(f'id_msa: {id_msa}, id_dr3 {id_dr3}')
         
-        cmap = mpl.cm.inferno
+        cmap = mpl.cm.inferno_r
+        cmap = truncate_colormap(cmap, 0, 0.8)
         
         if color_var == 'sed_av':
             norm = mpl.colors.Normalize(vmin=0, vmax=3) 
@@ -80,7 +84,7 @@ def paper_plot_sed_emfit_accuracy(id_msa_list, color_var=''):
             rgba = cmap(norm(sps_row['met_50']))
             cbar_label = 'Prospector Metallicity'
         elif color_var == 'mass':
-            norm = mpl.colors.Normalize(vmin=7, vmax=10) 
+            norm = mpl.colors.Normalize(vmin=7.5, vmax=10) 
             rgba = cmap(norm(sps_row['mstar_50']))
             cbar_label = stellar_mass_label
         if color_var != 'None':
@@ -409,7 +413,7 @@ def plot_offsets(all=False):
     if all:
         data_df = ascii.read(f'/Users/brianlorenz/uncover/Data/generated_tables/lineflux_df.csv')
 
-    fig, ax = plt.subplots(1,1,figsize=(6,6))
+    fig, ax = plt.subplots(1,1,figsize=(4,4))
    
     # sed_label = 'SED method'
     # cat_label = 'UNCOVER Catalog'
@@ -437,6 +441,139 @@ def plot_offsets(all=False):
         save_loc = '/Users/brianlorenz/uncover/Data/generated_tables/lineflux_df.pdf'
     fig.savefig(save_loc)
 
+def r_value_vs_props(snr_map_thresh, y_var='r', pabsnrcut=0):
+    """
+    Options for y_var: 'r', 'cc', 'sim'
+    """
+    # ha vs cont
+    compare_values = 'hacont_haline'
+    r_value_df = ascii.read(f'/Users/brianlorenz/uncover/Data/generated_tables/r_values/{compare_values}_r_values_OR_snr{snr_map_thresh}_segmap.csv').to_pandas()
+    
+    # compare_values = 'f150w_haline'
+    if pabsnrcut == 1:
+        compare_values = 'pabline_haline'
+        r_value_df = ascii.read(f'/Users/brianlorenz/uncover/Data/generated_tables/r_values/{compare_values}_r_values_snr{snr_map_thresh}_onlypabpixels.csv').to_pandas()
+        compare_values = 'pabline_haline_onlypabpixels'
+    elif pabsnrcut == 2:
+        compare_values = 'pabline_haline'
+        r_value_df = ascii.read(f'/Users/brianlorenz/uncover/Data/generated_tables/r_values/{compare_values}_r_values_snr{snr_map_thresh}_snrcut_onlypabpixels.csv').to_pandas()
+        compare_values = 'pabline_snrcut_haline_onlypabpixels'
+    if pabsnrcut == 3:
+        compare_values = 'pabline_pabcont'
+        r_value_df = ascii.read(f'/Users/brianlorenz/uncover/Data/generated_tables/r_values/{compare_values}_r_values_snr{snr_map_thresh}.csv').to_pandas()
+    elif pabsnrcut == 4:
+        compare_values = 'pabline_pabcont'
+        r_value_df = ascii.read(f'/Users/brianlorenz/uncover/Data/generated_tables/r_values/{compare_values}_r_values_snr{snr_map_thresh}_snrcut.csv').to_pandas()
+        compare_values = 'pabline_pabcont_snrcut'
+
+    # breakpoint()
+
+    sim_values_df = ascii.read(f'/Users/brianlorenz/uncover/Data/generated_tables/r_values/hacont_haline_sim_values.csv').to_pandas()
+    sps_df = read_SPS_cat()
+    lineratio_data_df = ascii.read(f'/Users/brianlorenz/uncover/Data/generated_tables/lineratio_av_df.csv').to_pandas()
+
+    fig, axarr = plt.subplots(2, 2, figsize=(8,8))
+    ax_mass = axarr[0, 0]
+    ax_phot_av = axarr[1, 0]
+    ax_spec_av = axarr[1, 1]
+    ax_sfr = axarr[0, 1]
+    axarr_list = [ax_mass, ax_phot_av, ax_spec_av, ax_sfr]
+
+    # Paper figure
+    fig_paper, ax_paper = plt.subplots(figsize=(6,6))
+
+    id_msa_list = r_value_df['id_msa']
+    for id_msa in id_msa_list:
+        r_value_row = r_value_df[r_value_df['id_msa']==id_msa]
+        sim_values_row = sim_values_df[sim_values_df['id_msa']==id_msa]
+        sps_row = sps_df[sps_df['id_msa']==id_msa]
+        lineratio_data_row = lineratio_data_df[lineratio_data_df['id_msa']==id_msa]
+
+        stellar_mass = sps_row['mstar_50'].iloc[0]
+        sfr = sps_row['sfr100_50'].iloc[0]
+        phot_av = lineratio_data_row['sed_av'].iloc[0]
+        err_phot_av_low = lineratio_data_row['err_sed_av_low'].iloc[0]
+        err_phot_av_high = lineratio_data_row['err_sed_av_high'].iloc[0]
+        spec_av = lineratio_data_row['emission_fit_av'].iloc[0]
+
+        r_value = r_value_row['r_value'].iloc[0]
+        id_dr3 = r_value_row['id_dr3'].iloc[0]
+        r_value_boot_16 = r_value_row['r_value_16_boot'].iloc[0]
+        r_value_boot_84 = r_value_row['r_value_84_boot'].iloc[0]
+
+        cross_cor_value = sim_values_row['cross_cor_val'].iloc[0]
+        sim_index_val = sim_values_row['sim_index_val'].iloc[0]
+
+        if y_var == 'r':
+            y_plot = r_value
+            y_label = 'Correlation between H$\\alpha$ and Continuum'
+            y_err = np.array([[r_value-r_value_boot_16, r_value_boot_84-r_value]]).T
+        if y_var == 'cc':
+            y_plot = 1-cross_cor_value
+            y_label = 'Cross Correlation'
+        if y_var == 'sim':
+            y_plot = sim_index_val
+            y_label = 'Sum of Squared Residuals'
+            
+        if r_value == -99:
+            continue
+        
+        if id_dr3 in [54625, 44283, 31608, 30052]:
+            color = 'red'
+        else:
+            color='black'
+        color='black'
+
+        ax_mass.plot(stellar_mass, y_plot, color=color, marker='o', ls='None')
+        ax_phot_av.plot(phot_av, y_plot, color=color, marker='o', ls='None')
+        # ax_phot_av.text(phot_av, y_plot, f'{id_dr3}')
+        ax_spec_av.plot(spec_av, y_plot, color=color, marker='o', ls='None')
+        ax_sfr.plot(sfr, y_plot, color=color, marker='o', ls='None')
+        # ax_sfr.text(sfr, y_plot, f'{id_dr3}')
+
+
+        # Paper axes
+        cmap = mpl.cm.inferno_r
+        cmap = truncate_colormap(cmap, 0, 0.8)
+        norm = mpl.colors.Normalize(vmin=7.5, vmax=10) 
+        rgba = cmap(norm(stellar_mass))
+        ax_paper.errorbar(phot_av, y_plot, xerr=np.array([[err_phot_av_low, err_phot_av_high]]).T, yerr=y_err, color=rgba, ecolor='lightgray', marker='o', ls='None', mec='black', markersize = 10)
+
+    
+    for ax in axarr_list:
+        ax.tick_params(labelsize=14)
+        ax.set_ylabel(f'{y_var} value', fontsize=14)
+        scale_aspect(ax)
+    
+    ax_mass.set_xlabel(stellar_mass_label, fontsize=14)
+    ax_phot_av.set_xlabel('Phot AV', fontsize=14)
+    ax_spec_av.set_xlabel('Spec AV', fontsize=14)
+    ax_sfr.set_xlabel('SFR', fontsize=14)
+    plt.tight_layout()
+    fig.savefig(f'/Users/brianlorenz/uncover/Figures/dust_map_correlations/vs_props/{y_var}_vs_props_{compare_values}_snr{snr_map_thresh}.pdf')
+
+
+    # Paper cleanup
+    ax_paper.set_xlabel('Inferred Photometric A$_V$', fontsize=14)
+    ax_paper.set_ylabel(y_label, fontsize=14)
+    ax_paper.tick_params(labelsize=14)
+    ax_paper.set_xlim(0, 4)
+    sm =  ScalarMappable(norm=norm, cmap=cmap)
+    cbar_ticks = [8,9,10]
+    cbar_ticklabels = [str(tick) for tick in cbar_ticks]
+    cbar = fig.colorbar(sm, ax=ax_paper, ticks=cbar_ticks, fraction=0.046, pad=0.04)
+    cbar.set_label(stellar_mass_label, fontsize=14)
+    cbar.ax.tick_params(labelsize=14)
+    cbar.ax.set_yticklabels(cbar_ticklabels) 
+    scale_aspect(ax_paper)
+    # fig_paper.savefig(f'/Users/brianlorenz/uncover/Figures/paper_figures/offset_{y_var}.pdf', bbox_inches='tight')
+    fig_paper.savefig(f'/Users/brianlorenz/uncover/Figures/paper_figures/offset_{y_var}_{compare_values}.pdf', bbox_inches='tight')
+
+
+
+
+
+
 if __name__ == "__main__":
     id_msa_list = get_id_msa_list(full_sample=False)
     paper_plot_sed_emfit_accuracy(id_msa_list, color_var='mass')
@@ -446,3 +583,11 @@ if __name__ == "__main__":
     # id_msa_list = get_id_msa_list(full_sample=True)
 
     # plot_snr_compare(id_msa_list)
+
+    r_value_vs_props(0, y_var='r')
+    # r_value_vs_props(3, y_var='cc')
+    # r_value_vs_props(3, y_var='sim')
+    # r_value_vs_props(0, y_var='r', pabsnrcut=1)
+    # r_value_vs_props(0, y_var='r', pabsnrcut=2)
+    # r_value_vs_props(0, y_var='r', pabsnrcut=3)
+    # r_value_vs_props(0, y_var='r', pabsnrcut=4)

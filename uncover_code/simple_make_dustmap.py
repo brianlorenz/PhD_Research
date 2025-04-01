@@ -31,6 +31,9 @@ from uncover_prospector_seds import read_prospector
 from shutter_loc import plot_shutter_pos, check_point_in_shutter, get_scale_factor
 from copy import copy, deepcopy
 from uncover_cosmo import find_pix_per_kpc, pixel_scale
+from scipy.stats import pearsonr
+import random
+
 
 plt_aperture_paper = True
 
@@ -289,7 +292,7 @@ def make_dustmap_simple(id_msa, aper_size='None', axarr_final=[], ax_labels=Fals
     pab_blue_image_noise = jy_convert_factor*(1/np.sqrt(wht_pab_images[2].data))
     pab_image_noises = [pab_red_image_noise, pab_green_image_noise, pab_blue_image_noise]
     # Get the bootstrapped images
-    bootstrap=10
+    bootstrap=1000
     ha_red_image_boots = [np.random.normal(loc=ha_red_image_data, scale=ha_red_image_noise) for i in range(bootstrap)]
     ha_green_image_boots = [np.random.normal(loc=ha_green_image_data, scale=ha_green_image_noise) for i in range(bootstrap)]
     ha_blue_image_boots = [np.random.normal(loc=ha_blue_image_data, scale=ha_blue_image_noise) for i in range(bootstrap)]
@@ -304,11 +307,14 @@ def make_dustmap_simple(id_msa, aper_size='None', axarr_final=[], ax_labels=Fals
     # Bootstrap to compute SNR
     ha_linemap_boots = []
     pab_linemap_boots = []
+    ha_contmap_boots = []
     for i in range(bootstrap):
         ha_linemap_boot, ha_contmap_boot, _ = compute_line(ha_cont_pct, ha_red_image_boots[i], ha_green_image_boots[i], ha_blue_image_boots[i], redshift, 0, ha_filter_width, ha_rest_wavelength, images=True, image_noises=ha_image_noises, wave_pct=ha_wave_pct) 
         pab_linemap_boot, pab_contmap_boot, _ = compute_line(pab_cont_pct, pab_red_image_boots[i], pab_green_image_boots[i], pab_blue_image_boots[i], redshift, 0, pab_filter_width, pab_rest_wavelength, images=True, image_noises=pab_image_noises, wave_pct=pab_wave_pct)
         ha_linemap_boots.append(ha_linemap_boot)
         pab_linemap_boots.append(pab_linemap_boot)
+        ha_contmap_boots.append(ha_contmap_boot)
+    ha_linemap_boots_from_err = [np.random.normal(loc=ha_linemap, scale=err_ha_linemap) for i in range(bootstrap)]
     ha_linemap_boot_noise = np.std(ha_linemap_boots, axis=0)
     pab_linemap_boot_noise = np.std(pab_linemap_boots, axis=0)
     ha_linemap_snr = ha_linemap / err_ha_linemap
@@ -327,6 +333,53 @@ def make_dustmap_simple(id_msa, aper_size='None', axarr_final=[], ax_labels=Fals
     vj_map = -2.5*np.log10(UVJ_images[1].data/UVJ_images[2].data)
     vj_map = np.nan_to_num(vj_map, nan=-99)
 
+
+    # Measure the offsets with Wren's method
+    snr_thresh_map = 0
+    obj_skycoord = get_coords(id_msa)
+    image_150w, wht_image_150w, photfnu_150w = get_cutout(obj_skycoord, 'f150w', size=image_size)
+
+    ha_contmap_highsnr_idx = find_pixels_above_sky_noise(ha_contmap, segmap_idxs, snr_thresh_map=snr_thresh_map)
+    ha_linemap_highsnr_idx = find_pixels_above_sky_noise(ha_linemap, segmap_idxs, snr_thresh_map=snr_thresh_map)
+    f150w_highsnr_idx = find_pixels_above_sky_noise(image_150w.data, segmap_idxs, snr_thresh_map=snr_thresh_map)
+    pab_contmap_highsnr_idx = find_pixels_above_sky_noise(pab_contmap, segmap_idxs, snr_thresh_map=snr_thresh_map)
+    pab_linemap_highsnr_idx = find_pixels_above_sky_noise(pab_linemap, segmap_idxs, snr_thresh_map=snr_thresh_map)
+    pab_linemap_segmap_snrcut_idx = np.logical_and(pab_snr_idxs,pab_linemap_highsnr_idx)
+
+    r_value_info_haline_hacont = plot_and_correlate_highsnr_pix(id_dr3, ha_contmap, ha_contmap_highsnr_idx, 'Ha_cont', ha_linemap, ha_linemap_highsnr_idx, 'Ha_line', snr_thresh_map, bootstrap=bootstrap)
+    r_value_info_haline_f150w = plot_and_correlate_highsnr_pix(id_dr3, image_150w.data, f150w_highsnr_idx, 'F150W', ha_linemap, ha_linemap_highsnr_idx, 'Ha_line', snr_thresh_map)
+    r_value_info_haline_pabline = plot_and_correlate_highsnr_pix(id_dr3, pab_linemap, pab_linemap_highsnr_idx, 'PaB_line', ha_linemap, ha_linemap_highsnr_idx, 'Ha_line', snr_thresh_map)
+    r_value_info_haline_pabline_snrcut = plot_and_correlate_highsnr_pix(id_dr3, pab_linemap, pab_linemap_segmap_snrcut_idx, 'PaB_line', ha_linemap, ha_linemap_highsnr_idx, 'Ha_line', snr_thresh_map)
+
+    r_value_info_pabcont_pabline = plot_and_correlate_highsnr_pix(id_dr3, pab_linemap, pab_linemap_highsnr_idx, 'PaB_line', pab_contmap, pab_contmap_highsnr_idx, 'PaB_continuum', snr_thresh_map)
+    r_value_info_pabcont_pabline_snrcut = plot_and_correlate_highsnr_pix(id_dr3, pab_linemap, pab_linemap_segmap_snrcut_idx, 'PaB_line', pab_contmap, pab_contmap_highsnr_idx, 'PaB_continuum', snr_thresh_map)
+
+    r_value_info = r_value_info_haline_hacont
+    if bootstrap > 0:
+        boot_rs = r_value_info[-1]
+        r_value_info = r_value_info[:-1]
+        r_val_16_boot = np.percentile(boot_rs, 16)
+        r_val_84_boot = np.percentile(boot_rs, 84)
+        r_value_info.append(r_val_16_boot)
+        r_value_info.append(r_val_84_boot)
+
+    r_values = []
+    for i in range(bootstrap):
+        id_dr3, r_value, _, _, _ = plot_and_correlate_highsnr_pix(id_dr3, ha_contmap, ha_contmap_highsnr_idx, 'Ha_cont', ha_linemap_boots_from_err[i], ha_linemap_highsnr_idx, 'Ha_line', snr_thresh_map, plot=False)
+        r_values.append(r_value)
+    r_val_16_mc = np.percentile(r_values, 16)
+    r_val_84_mc = np.percentile(r_values, 84)
+    r_value_info.append(r_val_16_mc)
+    r_value_info.append(r_val_84_mc)
+
+    
+
+
+
+    # Now try Mariska's method
+    ha_linemap_scaled_to_cont, map_scale_factor, cc_similarity = scale_linemap_to_other(ha_linemap, ha_contmap, segmap_idxs)
+    sim_index = compute_similarity_linemaps(ha_linemap_scaled_to_cont, ha_contmap, segmap_idxs)
+    sim_index_values = [cc_similarity, sim_index]
 
     ### Modify the maps for visualization
     # Set values where both lines are good to 1, else 0
@@ -545,8 +598,8 @@ def make_dustmap_simple(id_msa, aper_size='None', axarr_final=[], ax_labels=Fals
         data_x, data_y = axis_to_data.transform((axis_x, axis_y))
         data_x2, data_y2 = axis_to_data.transform((axis_x, axis_y+0.02))
         ax_ha_image_paper.plot([data_x,data_x+(0.5/pixel_scale)], [data_y,data_y], ls='-', color='white', lw=3)
-        ax_ha_image_paper.text(data_x, data_y2, '0.5"', color='white')
-        ax_ha_image_paper.text(0.80, 0.04, f'{id_dr3}', fontsize=10, transform=ax_ha_image_paper.transAxes, color='white')
+        ax_ha_image_paper.text(data_x, data_y2, '0.5"', color='white', fontsize=14)
+        ax_ha_image_paper.text(0.76, 0.04, f'{id_dr3}', fontsize=14, transform=ax_ha_image_paper.transAxes, color='white')
 
         # Kpc scalebar
         # ax_ha_image_paper.plot([5,5+pix_per_kpc], [10,10], ls='-', color='white', lw=3)
@@ -554,11 +607,11 @@ def make_dustmap_simple(id_msa, aper_size='None', axarr_final=[], ax_labels=Fals
 
         # Add filters to HaImage
         text_height = 0.92
-        text_start = 0.01
-        text_sep = 0.37
-        ax_ha_image_paper.text(text_start, text_height, f'{ha_filters[2][2:].upper()}', fontsize=14, transform=ax_ha_image_paper.transAxes, color='blue', path_effects=[pe.withStroke(linewidth=3, foreground="white")])
-        ax_ha_image_paper.text(text_start+text_sep, text_height, f'{ha_filters[1][2:].upper()}', fontsize=14, transform=ax_ha_image_paper.transAxes, color='green', path_effects=[pe.withStroke(linewidth=3, foreground="white")])
-        ax_ha_image_paper.text(text_start+2*text_sep, text_height, f'{ha_filters[0][2:].upper()}', fontsize=14, transform=ax_ha_image_paper.transAxes, color='red', path_effects=[pe.withStroke(linewidth=3, foreground="white")])
+        text_start = 0.03
+        text_sep = 0.35
+        ax_ha_image_paper.text(text_start, text_height, f'{ha_filters[2][2:].upper()}', fontsize=14, transform=ax_ha_image_paper.transAxes, color='blue', bbox=dict(facecolor='white', alpha=0.8, boxstyle='round'))
+        ax_ha_image_paper.text(text_start+text_sep, text_height, f'{ha_filters[1][2:].upper()}', fontsize=14, transform=ax_ha_image_paper.transAxes, color='green', bbox=dict(facecolor='white', alpha=0.8, boxstyle='round'))
+        ax_ha_image_paper.text(text_start+2*text_sep, text_height, f'{ha_filters[0][2:].upper()}', fontsize=14, transform=ax_ha_image_paper.transAxes, color='red', bbox=dict(facecolor='white', alpha=0.8, boxstyle='round'))
         ax_150_image_paper.text(text_start+text_sep, text_height, f'F150W', fontsize=14, transform=ax_150_image_paper.transAxes, color='white', path_effects=[pe.withStroke(linewidth=3, foreground="black")])
         ax_ha_map_paper.text(text_start+text_sep, text_height, f'H$\\alpha$ Map', fontsize=14, transform=ax_ha_map_paper.transAxes, color='white', path_effects=[pe.withStroke(linewidth=3, foreground="black")])
         ax_pab_overlay_paper.text(text_start+text_sep-0.15, text_height, f'H$\\alpha$ Map with Pa$\\beta$', fontsize=14, transform=ax_pab_overlay_paper.transAxes, color='white', path_effects=[pe.withStroke(linewidth=3, foreground="black")])
@@ -621,11 +674,11 @@ def make_dustmap_simple(id_msa, aper_size='None', axarr_final=[], ax_labels=Fals
         line_ha_contour = Line2D([0, 1], [0, 1], color=new_cmap_ha(0.7), marker='None', ls='-')
         line_pab_contour = Line2D([0, 1], [0, 1], color='grey', marker='None', ls='-')
         custom_lines_ha = [line_ha_contour]
-        custom_labels_ha = ['H$\\alpha$ contour']
+        custom_labels_ha = ['H$\\alpha$']
         custom_lines_pab = [line_pab_contour]
-        custom_labels_pab = ['Pa$\\beta$ contour']
-        ax_150_image_paper.legend(custom_lines_ha, custom_labels_ha, loc=3)
-        ax_pab_overlay_paper.legend(custom_lines_pab, custom_labels_pab, loc=3)
+        custom_labels_pab = ['Pa$\\beta$']
+        ax_150_image_paper.legend(custom_lines_ha, custom_labels_ha, loc=3, fontsize=14)
+        ax_pab_overlay_paper.legend(custom_lines_pab, custom_labels_pab, loc=3, fontsize=14)
 
         if plt_aperture_paper:
             # masked_shutter_arr = np.ma.masked_where(combined_shutter_arr < 0.1, combined_shutter_arr)
@@ -635,7 +688,7 @@ def make_dustmap_simple(id_msa, aper_size='None', axarr_final=[], ax_labels=Fals
 
     plt.close('all')
 
-    return sed_lineratios, emission_lineratios, sed_avs, emission_avs, err_sed_linefluxes, shutter_calcs
+    return sed_lineratios, emission_lineratios, sed_avs, emission_avs, err_sed_linefluxes, shutter_calcs, r_value_info, sim_index_values, r_value_info_pabcont_pabline, r_value_info_pabcont_pabline_snrcut
 
 
 def get_norm(image_map, scalea=1, lower_pct=10, upper_pct=99):
@@ -737,6 +790,7 @@ def load_image(filt):
         photflam = hdu[0].header['PHOTFLAM']
         photplam = hdu[0].header['PHOTPLAM']
         photfnu = hdu[0].header['PHOTFNU']
+        
     with fits.open(wht_image_str) as hdu_wht:
         wht_image = hdu_wht[0].data
         wht_wcs = WCS(hdu_wht[0].header)  
@@ -753,6 +807,86 @@ def get_cutout_segmap(obj_skycoord, size = (100, 100)):
     segmap, segmap_wcs = read_segmap()
     segmap_cutout = Cutout2D(segmap, obj_skycoord, size, wcs=segmap_wcs)
     return segmap_cutout
+
+
+def find_pixels_above_sky_noise(map, segmap_idx, snr_thresh_map=3):
+    """Measures sky outside of segmap, then finds the pixels at high enough SNR above it"""
+    # Currently removing snr cut
+    # sky_pixels = map[~segmap_idx]
+    # noise = np.std(sky_pixels)
+    # map_highsnr_idxs = map>(snr_thresh_map*noise)
+    
+    # Make sure it's in the segmap
+    map_highsnr_idxs = np.logical_and(map, segmap_idx)
+    # map_highsnr_idxs = np.logical_and(map_highsnr_idxs, segmap_idx)
+    return map_highsnr_idxs
+
+def plot_and_correlate_highsnr_pix(id_dr3, map1, map_highsnr_idx1, map1_name, map2, map_highsnr_idx2, map2_name, snr_thresh_map, plot=True, bootstrap=0):
+    map_both_idxs = np.logical_or(map_highsnr_idx1, map_highsnr_idx2) # can set to OR or AND
+    # map_both_idxs = np.logical_or(map_highsnr_idx1, map_highsnr_idx2)
+    map1_pixels = map1[map_both_idxs]
+    map2_pixels = map2[map_both_idxs]
+    if plot:
+        fig, ax = plt.subplots(figsize=(6,6))
+        ax.plot(map2_pixels, map1_pixels, marker='o', ls='None', color='black')
+        ax.set_xscale('log')
+        ax.set_yscale('log')
+    if len(map1_pixels) < 2 or len(map2_pixels) < 2:
+        r_value = -99
+        p_value = -99
+    else:
+        r_value, p_value = pearsonr(map1_pixels, map2_pixels)
+    if bootstrap > 0:
+        boot_rs = []
+        for i in range(bootstrap):
+            indices = [random.choice(np.arange(len(map1_pixels))) for k in range(len(map1_pixels))]
+            map1_pix_boot = [map1_pixels[k] for k in indices]
+            map2_pix_boot = [map2_pixels[k] for k in indices]
+            boot_r_value, boot_p_value = pearsonr(map1_pix_boot, map2_pix_boot)
+            boot_rs.append(boot_r_value)
+    
+    n_pixels = len(map1_pixels)
+    if plot:
+        ax.set_ylabel(map1_name)
+        ax.set_xlabel(map2_name)
+        ax.set_title(f'r_value = {r_value:0.3f}, p_value = {p_value:0.2e}')
+        fig.savefig(f'/Users/brianlorenz/uncover/Figures/dust_map_correlations/{id_dr3}_{map1_name}_{map2_name}_correlation_snr{snr_thresh_map}_OR.pdf', bbox_inches='tight')
+    # file = open("/Users/brianlorenz/uncover/Data/generated_tables/r_values.txt", "a")
+    # file.write(f"{id_dr3} {r_value} {p_value} {snr_thresh_map}\n")
+    # file.close()
+    r_value_info = [id_dr3, r_value, p_value, n_pixels, snr_thresh_map]
+    if bootstrap > 0:
+        r_value_info = [id_dr3, r_value, p_value, n_pixels, snr_thresh_map, boot_rs]
+    return r_value_info
+
+
+def scale_linemap_to_other(map1, map2, segmap_idxs):
+    map1_arr = map1[segmap_idxs]
+    map2_arr = map2[segmap_idxs]
+    
+    # Need a filter here? I think we just scale everything though
+
+    a21 = np.sum(map2_arr * map1_arr) / np.sum(map1_arr**2)
+    b21 = np.sqrt(np.sum((map2_arr - a21 * map1_arr)**2) / np.sum(map2_arr**2))
+    
+    map1_scaled = map1*a21
+
+    return map1_scaled, a21, b21
+
+def compute_similarity_linemaps(map1_scaled, map2, segmap_idxs):
+    map1_arr = map1_scaled[segmap_idxs]
+    map2_arr = map2[segmap_idxs]
+
+    residuals = map1_arr - map2_arr
+    squared_res_total = np.sum(residuals**2)
+
+    n_pix = len(map1_arr)
+    total_flux = np.sum(map2_arr)
+
+    sim_index = squared_res_total / (n_pix*total_flux)
+
+    return sim_index
+
 
 def find_filters_around_line(id_msa, line_number, paalpha=False, paalpha_pabeta=False):
     """
@@ -1090,16 +1224,45 @@ def make_all_dustmap(id_msa_list, full_sample=False, fluxcal=True):
     err_sed_ha_lineflux_lows = []
     err_sed_ha_lineflux_highs = []
 
+    # Shutter calsc
     ha_shutter_fluxs = []
     pab_shutter_fluxs = []
     lineratio_shutters = []
     av_shutters = []
+
+    # R_vales
+    id_dr3s = []
+    r_values = []
+    p_values = []
+    n_pixels = []
+    snr_thresh_maps = []
+    r_value_16_boots = []
+    r_value_84_boots = []
+    r_value_16_mcs = []
+    r_value_84_mcs = []
+    
+    # Sim index
+    cross_cor_vals = []
+    sim_index_vals = []
+
+    # R_vales_pab
+    id_dr3s_pab = []
+    r_values_pab = []
+    p_values_pab = []
+    n_pixels_pab = []
+    snr_thresh_maps_pab = []
+    # R_vales_pab_snr
+    id_dr3s_pab_snrcut = []
+    r_values_pab_snrcut = []
+    p_values_pab_snrcut = []
+    n_pixels_pab_snrcut = []
+    snr_thresh_maps_pab_snrcut = []
     
     for id_msa in id_msa_list:
         print(f'Making dustmap for {id_msa}')
-        sed_lineratios_grouped, emission_lineratios_grouped, sed_avs_grouped, emission_avs_grouped, err_sed_linefluxes_grouped, shutter_calcs = make_dustmap_simple(id_msa, fluxcal_str=fluxcal_str)
+        # sed_lineratios_grouped, emission_lineratios_grouped, sed_avs_grouped, emission_avs_grouped, err_sed_linefluxes_grouped, shutter_calcs, r_value_info = make_dustmap_simple(id_msa, fluxcal_str=fluxcal_str)
         try:
-            sed_lineratios_grouped, emission_lineratios_grouped, sed_avs_grouped, emission_avs_grouped, err_sed_linefluxes_grouped, shutter_calcs = make_dustmap_simple(id_msa, fluxcal_str=fluxcal_str)
+            sed_lineratios_grouped, emission_lineratios_grouped, sed_avs_grouped, emission_avs_grouped, err_sed_linefluxes_grouped, shutter_calcs, r_value_info, sim_index_values, r_value_info_pabcont_pabline, r_value_info_pabcont_pabline_snrcut = make_dustmap_simple(id_msa, fluxcal_str=fluxcal_str)
         except Exception as error:
             print(error)
             print('ERROR')
@@ -1112,6 +1275,10 @@ def make_all_dustmap(id_msa_list, full_sample=False, fluxcal=True):
             emission_avs_grouped = [-99,-99,-99]
             err_sed_linefluxes_grouped = [-99, -99, -99, -99, -99, -99]
             shutter_calcs = [-99, -99, -99, -99]
+            r_value_info = [-99, -99, -99, -99, -99, -99, -99, -99, -99]
+            sim_index_values = [-99, -99]
+            r_value_info_haline_pabline = [-99, -99, -99, -99, -99]
+            r_value_info_haline_pabline_snrcut = [-99, -99, -99, -99, -99]
         sed_lineratios.append(sed_lineratios_grouped[0])
         sed_lineratios_low.append(sed_lineratios_grouped[1])
         sed_lineratios_high.append(sed_lineratios_grouped[2])
@@ -1136,18 +1303,62 @@ def make_all_dustmap(id_msa_list, full_sample=False, fluxcal=True):
         lineratio_shutters.append(shutter_calcs[2])
         av_shutters.append(shutter_calcs[3])
 
+        id_dr3s.append(r_value_info[0])
+        r_values.append(r_value_info[1])
+        p_values.append(r_value_info[2])
+        n_pixels.append(r_value_info[3])
+        snr_thresh_maps.append(r_value_info[4])
+        r_value_16_boots.append(r_value_info[5])
+        r_value_84_boots.append(r_value_info[6])
+        r_value_16_mcs.append(r_value_info[7])
+        r_value_84_mcs.append(r_value_info[8])
+
+        cross_cor_vals.append(sim_index_values[0])
+        sim_index_vals.append(sim_index_values[1])
+
+        id_dr3s_pab.append(r_value_info_pabcont_pabline[0])
+        r_values_pab.append(r_value_info_pabcont_pabline[1])
+        p_values_pab.append(r_value_info_pabcont_pabline[2])
+        n_pixels_pab.append(r_value_info_pabcont_pabline[3])
+        snr_thresh_maps_pab.append(r_value_info_pabcont_pabline[4])
+        # R_vales_pab_snr
+        id_dr3s_pab_snrcut.append(r_value_info_pabcont_pabline_snrcut[0])
+        r_values_pab_snrcut.append(r_value_info_pabcont_pabline_snrcut[1])
+        p_values_pab_snrcut.append(r_value_info_pabcont_pabline_snrcut[2])
+        n_pixels_pab_snrcut.append(r_value_info_pabcont_pabline_snrcut[3])
+        snr_thresh_maps_pab_snrcut.append(r_value_info_pabcont_pabline_snrcut[4])
+
+
+
+
 
     dustmap_info_df = pd.DataFrame(zip(id_msa_list, sed_lineratios, sed_lineratios_low, sed_lineratios_high, sed_avs, sed_avs_low, sed_avs_high, emission_lineratios, emission_lineratios_low, emission_lineratios_high, emission_avs, emission_avs_low, emission_avs_high, err_nii_cor_sed_ha_lineflux_lows, err_nii_cor_sed_ha_lineflux_highs, err_fe_cor_sed_pab_lineflux_lows, err_fe_cor_sed_pab_lineflux_highs, err_sed_ha_lineflux_lows, err_sed_ha_lineflux_highs), columns=['id_msa', 'sed_lineratio', 'err_sed_lineratio_low', 'err_sed_lineratio_high', 'sed_av', 'err_sed_av_low', 'err_sed_av_high', 'emission_fit_lineratio', 'err_emission_fit_lineratio_low', 'err_emission_fit_lineratio_high', 'emission_fit_av', 'err_emission_fit_av_low', 'err_emission_fit_av_high', 'err_nii_cor_sed_ha_lineflux_low', 'err_nii_cor_sed_ha_lineflux_high', 'err_fe_cor_sed_pab_lineflux_low', 'err_fe_cor_sed_pab_lineflux_high', 'err_sed_ha_lineflux_low', 'err_sed_ha_lineflux_high'])
 
     shutter_calc_df = pd.DataFrame(zip(id_msa_list, ha_shutter_fluxs, pab_shutter_fluxs, lineratio_shutters, av_shutters), columns=['id_msa', 'ha_shutter_flux', 'pab_shutter_flux', 'lineratio_shutter', 'av_shutter'])
 
+    r_value_df = pd.DataFrame(zip(id_msa_list, id_dr3s, r_values, p_values, n_pixels, snr_thresh_maps, r_value_16_mcs, r_value_84_mcs, r_value_16_boots, r_value_84_boots), columns=['id_msa', 'id_dr3', 'r_value', 'p_value', 'n_pixels', 'snr_thresh_map', 'r_value_16_mc', 'r_value_84_mc', 'r_value_16_boot', 'r_value_84_boot'])
+    r_value_df['standard_error'] = (1-r_value_df['r_value']**2) / np.sqrt(r_value_df['n_pixels']-3)
+
+    sim_value_df = pd.DataFrame(zip(id_msa_list, id_dr3s, cross_cor_vals, sim_index_vals), columns=['id_msa', 'id_dr3', 'cross_cor_val', 'sim_index_val'])
+
+    r_value_df_pab = pd.DataFrame(zip(id_msa_list, id_dr3s_pab, r_values_pab, p_values_pab, n_pixels_pab, snr_thresh_maps_pab), columns=['id_msa', 'id_dr3', 'r_value', 'p_value', 'n_pixels', 'snr_thresh_map'])
+
+    r_value_df_pab_snrcut = pd.DataFrame(zip(id_msa_list, id_dr3s_pab_snrcut, r_values_pab_snrcut, p_values_pab_snrcut, n_pixels_pab_snrcut, snr_thresh_maps_pab_snrcut), columns=['id_msa', 'id_dr3', 'r_value', 'p_value', 'n_pixels', 'snr_thresh_map'])
 
     if full_sample:
         dustmap_info_df.to_csv(f'/Users/brianlorenz/uncover/Data/generated_tables/lineratio_av_df_all{fluxcal_str}.csv', index=False)
         shutter_calc_df.to_csv(f'/Users/brianlorenz/uncover/Data/generated_tables/shutter_calcs_all{fluxcal_str}.csv', index=False)
+        r_value_df.to_csv(f'/Users/brianlorenz/uncover/Data/generated_tables/r_values/hacont_haline_r_values_all{fluxcal_str}_snr{int(r_value_df.iloc[0]["snr_thresh_map"])}.csv', index=False)
+        sim_value_df.to_csv(f'/Users/brianlorenz/uncover/Data/generated_tables/r_values/hacont_haline_sim_values_all.csv', index=False)
+        r_value_df_pab.to_csv(f'/Users/brianlorenz/uncover/Data/generated_tables/r_values/pabline_pabcont_r_values_all{fluxcal_str}_snr{int(r_value_df.iloc[0]["snr_thresh_map"])}.csv', index=False)
+        r_value_df_pab_snrcut.to_csv(f'/Users/brianlorenz/uncover/Data/generated_tables/r_values/pabline_pabcont_r_values_all{fluxcal_str}_snr{int(r_value_df.iloc[0]["snr_thresh_map"])}_snrcut.csv', index=False)
     else:
         dustmap_info_df.to_csv(f'/Users/brianlorenz/uncover/Data/generated_tables/lineratio_av_df{fluxcal_str}.csv', index=False)
         shutter_calc_df.to_csv(f'/Users/brianlorenz/uncover/Data/generated_tables/shutter_calcs{fluxcal_str}.csv', index=False)
+        r_value_df.to_csv(f'/Users/brianlorenz/uncover/Data/generated_tables/r_values/hacont_haline_r_values{fluxcal_str}_snr{int(r_value_df.iloc[0]["snr_thresh_map"])}.csv', index=False)
+        sim_value_df.to_csv(f'/Users/brianlorenz/uncover/Data/generated_tables/r_values/hacont_haline_sim_values.csv', index=False)
+        r_value_df_pab.to_csv(f'/Users/brianlorenz/uncover/Data/generated_tables/r_values/pabline_pabcont_r_values{fluxcal_str}_snr{int(r_value_df.iloc[0]["snr_thresh_map"])}.csv', index=False)
+        r_value_df_pab_snrcut.to_csv(f'/Users/brianlorenz/uncover/Data/generated_tables/r_values/pabline_pabcont_r_values{fluxcal_str}_snr{int(r_value_df.iloc[0]["snr_thresh_map"])}_snrcut.csv', index=False)
 
 def copy_selected_sample_dustmaps(id_msa_list):
     # Copies all the dustmaps from the sample subset to a different folder
@@ -1238,7 +1449,7 @@ if __name__ == "__main__":
     # make_dustmap_simple(32111)
     # lineflux_df = ascii.read(f'/Users/brianlorenz/uncover/Data/generated_tables/lineflux_df_all.csv').to_pandas()
     # breakpoint()
-    # make_dustmap_simple(39744)
+    # make_dustmap_simple(47875)
     
     id_msa_list = get_id_msa_list(full_sample=False)
     make_all_dustmap(id_msa_list, full_sample=False, fluxcal=True)

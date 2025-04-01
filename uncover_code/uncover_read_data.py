@@ -198,6 +198,7 @@ if __name__ == "__main__":
     # aper_cat_df = read_aper_cat()
     # sps_cat = read_SPS2_cat()
     # read_raw_spec(47875, read_2d=True, id_redux=1000000304)
-    supercat = read_supercat_newids()
+    # supercat_newspec = read_supercat_newids()
+    sps_df = read_SPS_cat_all()
     breakpoint()
     pass

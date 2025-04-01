@@ -390,8 +390,8 @@ def paper_figure_sample_selection(id_msa_list, color_var='None', plot_sfr_mass=F
         # ha_snr = fit_df['signal_noise_ratio'].iloc[0]
         pab_snr = fit_df['signal_noise_ratio'].iloc[0]
         
-        cmap = mpl.cm.inferno
-        cmap = truncate_colormap(cmap, 0.15, 1.0)
+        cmap = mpl.cm.viridis
+        # cmap = truncate_colormap(cmap, 0.15, 1.0)
 
         
         if color_var == 'sed_av':
@@ -409,7 +409,7 @@ def paper_figure_sample_selection(id_msa_list, color_var='None', plot_sfr_mass=F
             rgba = cmap(norm(dust2_50))
             cbar_label = 'Prospector dust2_50'
         if color_var == 'sfr':
-            norm = mpl.colors.LogNorm(vmin=0.1, vmax=50) 
+            norm = mpl.colors.LogNorm(vmin=0.1, vmax=10) 
             rgba = cmap(norm(sfr100_50))
             cbar_label = 'Prospector SFR (M$_\odot$ / yr)'
         if color_var != 'None':
@@ -502,10 +502,10 @@ def truncate_colormap(cmap, minval=0.0, maxval=1.0, n=100):
         return new_cmap
 
 if __name__ == "__main__":
-    sample_select()
+    # sample_select()
     
-    # id_msa_list = get_id_msa_list(full_sample=False)
-    # paper_figure_sample_selection(id_msa_list, color_var='sfr')
+    id_msa_list = get_id_msa_list(full_sample=False)
+    paper_figure_sample_selection(id_msa_list, color_var='sfr')
     # paper_figure_sample_selection(id_msa_list, color_var='redshift', plot_sfr_mass=True)
 
     

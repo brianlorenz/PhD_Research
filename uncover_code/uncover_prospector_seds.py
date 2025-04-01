@@ -68,6 +68,7 @@ def make_prospector(id_msa, plt_jy=True, id_dr3=False):
         modmags *= 3631
         modspec *= 3631
 
+    breakpoint()
     # phot.errorbar(weff, modmags, fmt='o', color='firebrick', label='model photometry', zorder=100,
     #             elinewidth=1, mec='k', mew=0.2)
 
