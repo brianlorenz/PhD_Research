@@ -35,6 +35,8 @@ line_centers_rest = [line_list[i][1] for i in range(len(line_list))]
 ha_fit_range = (5500, 7700)
 pab_fit_range = (11800, 14200)
 
+ha_inner_range = (6300, 7000)
+pab_inner_range = (12700, 13000)
 
 def fit_emission_uncover(spectrum, save_name, bootstrap_num=-1, fluxcal=True):
     """
@@ -137,6 +139,15 @@ def fit_emission_uncover(spectrum, save_name, bootstrap_num=-1, fluxcal=True):
     pab_cont_value = get_cont_value_at_line(line_list[1][1], continuum, wavelength)
     cont_values = [ha_cont_value, pab_cont_value]
 
+    def measure_ew(wave, flux, cont, inner_mask):
+        ew_flux = (cont-flux) / cont
+        ew_measure = np.trapz(ew_flux[~inner_mask], wave[~inner_mask])
+        return ew_measure, ew_flux
+    inner_mask_ha = np.logical_or(wavelength < ha_inner_range[0], wavelength > ha_inner_range[1])
+    inner_mask_pab = np.logical_or(wavelength < pab_inner_range[0], wavelength > pab_inner_range[1])
+    ha_ew,_ = measure_ew(wavelength, flux, continuum, inner_mask_ha)
+    pab_ew,_ = measure_ew(wavelength, flux, continuum, inner_mask_pab)
+    
     popt, arr_popt, y_data_cont_sub = monte_carlo_fit(multi_gaussian, wavelength, scale_factor * continuum, scale_factor * flux, scale_factor * err_flux, np.array(guess), bounds, n_loops)
     err_popt = np.std(arr_popt, axis=0)
     
@@ -184,6 +195,7 @@ def fit_emission_uncover(spectrum, save_name, bootstrap_num=-1, fluxcal=True):
 
     ha_pab_ratio = [nii_cor_fluxes[ha_idx] / nii_cor_fluxes[pab_idx] for i in range(len(line_list))]
     eq_widths = [nii_cor_fluxes[i] / cont_values[i] for i in range(len(line_list))]
+    eq_widths_recalc = [ha_ew, pab_ew]
     ha_pab_av = [compute_ha_pab_av(1/ha_pab_ratio[i]) for i in range(len(line_list))]
 
     
@@ -258,11 +270,11 @@ def fit_emission_uncover(spectrum, save_name, bootstrap_num=-1, fluxcal=True):
     fit_df = pd.DataFrame(zip(line_names, line_centers_rest,
                               z_offsets, err_z_offsets, velocities, err_velocity, 
                               err_velocity_low, err_velocity_high, amps, err_amps, 
-                              sigs, err_sigs, fluxes, err_fluxes, err_fluxes_low, err_fluxes_high, nii_cor_fluxes, nii_cor_err_fluxes, nii_cor_err_fluxes_low, nii_cor_err_fluxes_high, ha_pab_ratio, err_ha_pab_ratio_low, err_ha_pab_ratio_high, ha_pab_av, err_av_low, err_av_high, eq_widths), 
+                              sigs, err_sigs, fluxes, err_fluxes, err_fluxes_low, err_fluxes_high, nii_cor_fluxes, nii_cor_err_fluxes, nii_cor_err_fluxes_low, nii_cor_err_fluxes_high, ha_pab_ratio, err_ha_pab_ratio_low, err_ha_pab_ratio_high, ha_pab_av, err_av_low, err_av_high, eq_widths, eq_widths_recalc), 
                               columns=['line_name', 'line_center_rest', 'z_offset', 'err_z_offset', 
                                        'velocity', 
                                        'err_fixed_velocity', 'err_fixed_velocity_low', 'err_fixed_velocity_high', 
-                                       'amplitude', 'err_amplitude', 'sigma', 'err_sigma', 'flux', 'err_flux', 'err_flux_low', 'err_flux_high', 'nii_cor_flux', 'err_nii_cor_flux', 'err_nii_cor_flux_low', 'err_nii_cor_flux_high', 'ha_pab_ratio', 'err_ha_pab_ratio_low', 'err_ha_pab_ratio_high', 'ha_pab_av', 'err_ha_pab_av_low', 'err_ha_pab_av_high', 'equivalent_width_aa'])
+                                       'amplitude', 'err_amplitude', 'sigma', 'err_sigma', 'flux', 'err_flux', 'err_flux_low', 'err_flux_high', 'nii_cor_flux', 'err_nii_cor_flux', 'err_nii_cor_flux_low', 'err_nii_cor_flux_high', 'ha_pab_ratio', 'err_ha_pab_ratio_low', 'err_ha_pab_ratio_high', 'ha_pab_av', 'err_ha_pab_av_low', 'err_ha_pab_av_high', 'equivalent_width_aa_old', 'equivalent_width_aa'])
     fit_df['signal_noise_ratio'] = fit_df['flux']/fit_df['err_flux']
 
     imd.check_and_make_dir(emission_fit_dir)

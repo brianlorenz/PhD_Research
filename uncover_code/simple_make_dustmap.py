@@ -45,6 +45,8 @@ show_aper_and_slit = True # Leave this on
 add_vj_color = 0
 
 
+
+
 colors = ['red', 'green', 'blue']
 connect_color = 'green'
 
@@ -130,6 +132,8 @@ def make_dustmap_simple(id_msa, aper_size='None', axarr_final=[], ax_labels=Fals
     pab_flux_fit = fit_df.iloc[1]['flux']
     ha_sigma = fit_df.iloc[0]['sigma'] # full width of the line
     pab_sigma = fit_df.iloc[1]['sigma'] # full width of the line
+    ha_eqw_fit = fit_df.iloc[0]['equivalent_width_aa']
+    pab_eqw_fit = fit_df.iloc[1]['equivalent_width_aa']
     
 
 
@@ -238,8 +242,21 @@ def make_dustmap_simple(id_msa, aper_size='None', axarr_final=[], ax_labels=Fals
     err_sed_linefluxes = [err_nii_cor_ha_sed_lineflux_low, err_nii_cor_ha_sed_lineflux_high, err_fe_cor_pab_sed_lineflux_low, err_fe_cor_pab_sed_lineflux_high, err_ha_sed_lineflux_low, err_ha_sed_lineflux_high]
 
     # Compute lineratios
-    sed_lineratio = compute_lineratio(nii_cor_ha_sed_lineflux, fe_cor_pab_sed_lineflux)
-    boot_sed_lineratios = compute_lineratio(nii_cor_ha_boot_lines, fe_cor_pab_boot_lines)
+    # Need absorption corrections
+    mosdef_eqw_df = ascii.read('/Users/brianlorenz/uncover/Data/ha_pab_ews_mosdef/ews_simple.csv').to_pandas()
+    mosdef_eqw_df = mosdef_eqw_df[mosdef_eqw_df['ha_eq_width']>0] # Filters out the -99
+    median_ha_eqw = np.median(mosdef_eqw_df['ha_eq_width'])
+    median_pab_eqw = np.median(mosdef_eqw_df['pab_eq_width'])
+    sed_lineratio = compute_lineratio(nii_cor_ha_sed_lineflux, fe_cor_pab_sed_lineflux, ha_eqw_fit, pab_eqw_fit, median_ha_eqw, median_pab_eqw)
+    # Monte Carlo draw for the absorption line strengths
+    boot_sed_lineratios = []
+    for i in range(len(nii_cor_ha_boot_lines)):
+        idx_mosdef = np.random.randint(len(mosdef_eqw_df))
+        ha_eqw_monte_carlo = mosdef_eqw_df.iloc[idx_mosdef]['ha_eq_width']
+        pab_eqw_monte_carlo = mosdef_eqw_df.iloc[idx_mosdef]['pab_eq_width']
+        boot_sed_lineratio = compute_lineratio(nii_cor_ha_boot_lines[i], fe_cor_pab_boot_lines[i], ha_eqw_fit, pab_eqw_fit, ha_eqw_monte_carlo, pab_eqw_monte_carlo)
+        boot_sed_lineratios.append(boot_sed_lineratio)
+    boot_sed_lineratios = np.array(boot_sed_lineratios)
     sed_lineratio_16 = np.percentile(boot_sed_lineratios, 16)
     sed_lineratio_84 = np.percentile(boot_sed_lineratios, 84)
     err_sed_lineratio_low = sed_lineratio - sed_lineratio_16
@@ -1185,8 +1202,13 @@ def flux_erg_to_jy(line_flux_erg, line_wave):
     line_flux_jy = line_flux_erg / (1e-23*1e10*c / ((line_wave)**2))
     return line_flux_jy
 
-def compute_lineratio(ha_flux, pab_flux):
-    lineratio = ha_flux / pab_flux
+def compute_lineratio(ha_flux, pab_flux, ha_eqw_fit, pab_eqw_fit, absorption_ha_eqw, absorption_pab_eqw):
+    # Eq width corrections for absorption
+    ha_cor_frac = absorption_ha_eqw / ha_eqw_fit
+    ha_flux_cor = ha_flux * (1-ha_cor_frac)
+    pab_cor_frac = absorption_pab_eqw / pab_eqw_fit
+    pab_flux_cor = pab_flux * (1-pab_cor_frac)
+    lineratio = ha_flux_cor / pab_flux_cor
     return lineratio
 
 def get_snr_cut(linemap_snr, snr_thresh=2):
@@ -1260,7 +1282,7 @@ def make_all_dustmap(id_msa_list, full_sample=False, fluxcal=True):
     
     for id_msa in id_msa_list:
         print(f'Making dustmap for {id_msa}')
-        # sed_lineratios_grouped, emission_lineratios_grouped, sed_avs_grouped, emission_avs_grouped, err_sed_linefluxes_grouped, shutter_calcs, r_value_info = make_dustmap_simple(id_msa, fluxcal_str=fluxcal_str)
+        # sed_lineratios_grouped, emission_lineratios_grouped, sed_avs_grouped, emission_avs_grouped, err_sed_linefluxes_grouped, shutter_calcs, r_value_info, sim_index_values, r_value_info_pabcont_pabline, r_value_info_pabcont_pabline_snrcut = make_dustmap_simple(id_msa, fluxcal_str=fluxcal_str)
         try:
             sed_lineratios_grouped, emission_lineratios_grouped, sed_avs_grouped, emission_avs_grouped, err_sed_linefluxes_grouped, shutter_calcs, r_value_info, sim_index_values, r_value_info_pabcont_pabline, r_value_info_pabcont_pabline_snrcut = make_dustmap_simple(id_msa, fluxcal_str=fluxcal_str)
         except Exception as error:
@@ -1450,7 +1472,7 @@ if __name__ == "__main__":
     # lineflux_df = ascii.read(f'/Users/brianlorenz/uncover/Data/generated_tables/lineflux_df_all.csv').to_pandas()
     # breakpoint()
     # make_dustmap_simple(47875)
-    
+   
     id_msa_list = get_id_msa_list(full_sample=False)
     make_all_dustmap(id_msa_list, full_sample=False, fluxcal=True)
     # make_paper_fig_dustmaps(id_msa_list, sortby='av')

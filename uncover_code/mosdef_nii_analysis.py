@@ -147,4 +147,4 @@ def check_sanders_plane(merged_linemeas_df, sfrs_df, change_offset=False):
     fig.savefig(f'/Users/brianlorenz/uncover/Figures/diagnostic_lineratio/nii_relations/MOSDEF_calibration{add_str}.pdf')
 
 merged_linemeas_df = mosdef_nii(linemeas_df, mosdef_df)
-check_sanders_plane(merged_linemeas_df, sfrs_df, change_offset=False)
+# check_sanders_plane(merged_linemeas_df, sfrs_df, change_offset=False)
