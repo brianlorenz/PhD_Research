@@ -10,12 +10,13 @@ import initialize_mosdef_dirs as imd
 from axis_group_metallicities import compute_err_and_logerr, compute_O3N2_metallicity
 import matplotlib.patches as patches
 import time
-from uncover_read_data import read_raw_spec, read_prism_lsf, read_fluxcal_spec, get_id_msa_list
+from uncover_read_data import read_raw_spec, read_prism_lsf, read_fluxcal_spec, get_id_msa_list, read_supercat
 from astropy.convolution import convolve
 from scipy.interpolate import interp1d
 from compute_av import compute_ha_pab_av, get_nii_correction
 from plot_vals import scale_aspect
-
+from simple_compute_lineratio import compute_lineratio
+from simple_abs_line_correction import fit_absorption_lines
 
 line_list = [
     ('Halpha', 6564.6),
@@ -147,6 +148,10 @@ def fit_emission_uncover(spectrum, save_name, bootstrap_num=-1, fluxcal=True):
     inner_mask_pab = np.logical_or(wavelength < pab_inner_range[0], wavelength > pab_inner_range[1])
     ha_ew,_ = measure_ew(wavelength, flux, continuum, inner_mask_ha)
     pab_ew,_ = measure_ew(wavelength, flux, continuum, inner_mask_pab)
+
+    supercat_df = read_supercat()
+    id_dr3 = supercat_df[supercat_df['id_msa']==save_name]['id'].iloc[0]
+    ha_absorp_eqw_fit, pab_absorp_eqw_fit = fit_absorption_lines(id_dr3)
     
     popt, arr_popt, y_data_cont_sub = monte_carlo_fit(multi_gaussian, wavelength, scale_factor * continuum, scale_factor * flux, scale_factor * err_flux, np.array(guess), bounds, n_loops)
     err_popt = np.std(arr_popt, axis=0)
@@ -193,9 +198,10 @@ def fit_emission_uncover(spectrum, save_name, bootstrap_num=-1, fluxcal=True):
     nii_cor_err_fluxes[ha_idx] = nii_cor_err_fluxes[ha_idx] * nii_correction_factor
 
 
-    ha_pab_ratio = [nii_cor_fluxes[ha_idx] / nii_cor_fluxes[pab_idx] for i in range(len(line_list))]
     eq_widths = [nii_cor_fluxes[i] / cont_values[i] for i in range(len(line_list))]
     eq_widths_recalc = [ha_ew, pab_ew]
+    # ha_pab_ratio = [nii_cor_fluxes[ha_idx] / nii_cor_fluxes[pab_idx] for i in range(len(line_list))]
+    ha_pab_ratio = [compute_lineratio(nii_cor_fluxes[ha_idx], nii_cor_fluxes[pab_idx], ha_ew, pab_ew, ha_absorp_eqw_fit, pab_absorp_eqw_fit) for i in range(len(line_list))]
     ha_pab_av = [compute_ha_pab_av(1/ha_pab_ratio[i]) for i in range(len(line_list))]
 
     
@@ -234,7 +240,7 @@ def fit_emission_uncover(spectrum, save_name, bootstrap_num=-1, fluxcal=True):
         all_ha_fluxes, hg_errs_low_high = compute_percentile_errs_on_line(ha_idx, fluxes[ha_idx])
         all_nii_cor_ha_fluxes, nii_cor_hg_errs_low_high = compute_percentile_errs_on_line(ha_idx, nii_cor_fluxes[ha_idx], nii_cor=True)
         all_pab_fluxes, hd_errs_low_high = compute_percentile_errs_on_line(pab_idx, fluxes[pab_idx])
-        all_ha_pab_ratios = [all_nii_cor_ha_fluxes[i]/all_pab_fluxes[i] for i in range(len(arr_popt))]
+        all_ha_pab_ratios = [compute_lineratio(all_nii_cor_ha_fluxes[i], all_pab_fluxes[i], ha_ew, pab_ew, ha_absorp_eqw_fit, pab_absorp_eqw_fit) for i in range(len(arr_popt))]
         all_avs = [compute_ha_pab_av(1/all_ha_pab_ratios[i]) for i in range(len(arr_popt))]
 
         velocity_monte_carlo = [arr_popt[i][2] for i in range(len(arr_popt))]

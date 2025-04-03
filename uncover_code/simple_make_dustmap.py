@@ -33,6 +33,8 @@ from copy import copy, deepcopy
 from uncover_cosmo import find_pix_per_kpc, pixel_scale
 from scipy.stats import pearsonr
 import random
+from simple_compute_lineratio import compute_lineratio
+from simple_abs_line_correction import fit_absorption_lines
 
 
 plt_aperture_paper = True
@@ -243,18 +245,12 @@ def make_dustmap_simple(id_msa, aper_size='None', axarr_final=[], ax_labels=Fals
 
     # Compute lineratios
     # Need absorption corrections
-    mosdef_eqw_df = ascii.read('/Users/brianlorenz/uncover/Data/ha_pab_ews_mosdef/ews_simple.csv').to_pandas()
-    mosdef_eqw_df = mosdef_eqw_df[mosdef_eqw_df['ha_eq_width']>0] # Filters out the -99
-    median_ha_eqw = np.median(mosdef_eqw_df['ha_eq_width'])
-    median_pab_eqw = np.median(mosdef_eqw_df['pab_eq_width'])
-    sed_lineratio = compute_lineratio(nii_cor_ha_sed_lineflux, fe_cor_pab_sed_lineflux, ha_eqw_fit, pab_eqw_fit, median_ha_eqw, median_pab_eqw)
+    ha_absorp_eqw_fit, pab_absorp_eqw_fit = fit_absorption_lines(id_dr3)
+    sed_lineratio = compute_lineratio(nii_cor_ha_sed_lineflux, fe_cor_pab_sed_lineflux, ha_eqw_fit, pab_eqw_fit, ha_absorp_eqw_fit, pab_absorp_eqw_fit)
     # Monte Carlo draw for the absorption line strengths
     boot_sed_lineratios = []
     for i in range(len(nii_cor_ha_boot_lines)):
-        idx_mosdef = np.random.randint(len(mosdef_eqw_df))
-        ha_eqw_monte_carlo = mosdef_eqw_df.iloc[idx_mosdef]['ha_eq_width']
-        pab_eqw_monte_carlo = mosdef_eqw_df.iloc[idx_mosdef]['pab_eq_width']
-        boot_sed_lineratio = compute_lineratio(nii_cor_ha_boot_lines[i], fe_cor_pab_boot_lines[i], ha_eqw_fit, pab_eqw_fit, ha_eqw_monte_carlo, pab_eqw_monte_carlo)
+        boot_sed_lineratio = compute_lineratio(nii_cor_ha_boot_lines[i], fe_cor_pab_boot_lines[i], ha_eqw_fit, pab_eqw_fit, ha_absorp_eqw_fit, pab_absorp_eqw_fit)
         boot_sed_lineratios.append(boot_sed_lineratio)
     boot_sed_lineratios = np.array(boot_sed_lineratios)
     sed_lineratio_16 = np.percentile(boot_sed_lineratios, 16)
@@ -1201,15 +1197,6 @@ def flux_erg_to_jy(line_flux_erg, line_wave):
     c = 299792458 # m/s
     line_flux_jy = line_flux_erg / (1e-23*1e10*c / ((line_wave)**2))
     return line_flux_jy
-
-def compute_lineratio(ha_flux, pab_flux, ha_eqw_fit, pab_eqw_fit, absorption_ha_eqw, absorption_pab_eqw):
-    # Eq width corrections for absorption
-    ha_cor_frac = absorption_ha_eqw / ha_eqw_fit
-    ha_flux_cor = ha_flux * (1-ha_cor_frac)
-    pab_cor_frac = absorption_pab_eqw / pab_eqw_fit
-    pab_flux_cor = pab_flux * (1-pab_cor_frac)
-    lineratio = ha_flux_cor / pab_flux_cor
-    return lineratio
 
 def get_snr_cut(linemap_snr, snr_thresh=2):
     snr_thresh_line = snr_thresh

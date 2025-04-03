@@ -62,10 +62,10 @@ def paper_plot_sed_emfit_accuracy(id_msa_list, color_var=''):
         fit_df = ascii.read(f'/Users/brianlorenz/uncover/Data/emission_fitting{fluxcal_str}/{id_msa}_emission_fits.csv').to_pandas()
         ha_snr = fit_df['signal_noise_ratio'].iloc[0]
         pab_snr = fit_df['signal_noise_ratio'].iloc[1]
-        # print(f'id_msa: {id_msa}, id_dr3 {id_dr3}')
+        print(f'id_msa: {id_msa}, id_dr3 {id_dr3}')
         ha_eqw = fit_df['equivalent_width_aa'].iloc[0]
         pab_eqw = fit_df['equivalent_width_aa'].iloc[1]
-        print(f'id_msa: {id_msa}, eqw_ha {ha_eqw}, eqw_pab {pab_eqw}')
+        # print(f'id_msa: {id_msa}, eqw_ha {ha_eqw}, eqw_pab {pab_eqw}')
         
         cmap = mpl.cm.inferno_r
         cmap = truncate_colormap(cmap, 0, 0.8)
