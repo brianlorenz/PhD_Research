@@ -9,7 +9,7 @@ from scipy.interpolate import interp1d
 def integrate_filter(sedpy_filt):
     transmission = sedpy_filt.transmission
     wavelength_aa = sedpy_filt.wavelength
-    scale_factor = integrate.trapz(transmission, wavelength_aa)
+    scale_factor = integrate.trapezoid(transmission, wavelength_aa)
     scaled_transmission = transmission/scale_factor
     return scaled_transmission
 
@@ -69,12 +69,12 @@ def get_line_coverage(id_msa, sedpy_filt, redshift, line_name, paalpha=False, pa
     waves_obs = waves_rest * (1+redshift)
     gauss_ys_full = gaussian_func(waves_rest, line_wave, line_amp, line_width)
     gauss_ys_full_obs = gauss_ys_full / (1+redshift)
-    int_flux = integrate.trapz(gauss_ys_full_obs, waves_obs)
+    int_flux = integrate.trapezoid(gauss_ys_full_obs, waves_obs)
     scaled_trasms = sedpy_filt.transmission / np.max(sedpy_filt.transmission)
     interp_trasm_func = interp1d(sedpy_filt.wavelength, scaled_trasms, kind='linear', fill_value=0, bounds_error=False)
     interp_trasms = interp_trasm_func(waves_obs)
     gauss_ys_trasm = gauss_ys_full_obs * interp_trasms
-    int_flux_trasm_scaled = integrate.trapz(gauss_ys_trasm, waves_obs)
+    int_flux_trasm_scaled = integrate.trapezoid(gauss_ys_trasm, waves_obs)
     line_coverage = int_flux_trasm_scaled / int_flux
     return line_coverage
     

@@ -1269,7 +1269,7 @@ def make_all_dustmap(id_msa_list, full_sample=False, fluxcal=True):
     
     for id_msa in id_msa_list:
         print(f'Making dustmap for {id_msa}')
-        # sed_lineratios_grouped, emission_lineratios_grouped, sed_avs_grouped, emission_avs_grouped, err_sed_linefluxes_grouped, shutter_calcs, r_value_info, sim_index_values, r_value_info_pabcont_pabline, r_value_info_pabcont_pabline_snrcut = make_dustmap_simple(id_msa, fluxcal_str=fluxcal_str)
+        sed_lineratios_grouped, emission_lineratios_grouped, sed_avs_grouped, emission_avs_grouped, err_sed_linefluxes_grouped, shutter_calcs, r_value_info, sim_index_values, r_value_info_pabcont_pabline, r_value_info_pabcont_pabline_snrcut = make_dustmap_simple(id_msa, fluxcal_str=fluxcal_str)
         try:
             sed_lineratios_grouped, emission_lineratios_grouped, sed_avs_grouped, emission_avs_grouped, err_sed_linefluxes_grouped, shutter_calcs, r_value_info, sim_index_values, r_value_info_pabcont_pabline, r_value_info_pabcont_pabline_snrcut = make_dustmap_simple(id_msa, fluxcal_str=fluxcal_str)
         except Exception as error:
@@ -1461,8 +1461,8 @@ if __name__ == "__main__":
     # make_dustmap_simple(47875)
    
     id_msa_list = get_id_msa_list(full_sample=False)
-    make_all_dustmap(id_msa_list, full_sample=False, fluxcal=True)
-    # make_paper_fig_dustmaps(id_msa_list, sortby='av')
+    # make_all_dustmap(id_msa_list, full_sample=False, fluxcal=True)
+    make_paper_fig_dustmaps(id_msa_list, sortby='av')
     # make_paper_fig_dustmaps(id_msa_list, sortby='mass')
 
     # id_msa_list = get_id_msa_list(full_sample=True)

@@ -450,7 +450,7 @@ def r_value_vs_props(snr_map_thresh, y_var='r', pabsnrcut=0):
     """
     # ha vs cont
     compare_values = 'hacont_haline'
-    r_value_df = ascii.read(f'/Users/brianlorenz/uncover/Data/generated_tables/r_values/{compare_values}_r_values_OR_snr{snr_map_thresh}_segmap.csv').to_pandas()
+    r_value_df = ascii.read(f'/Users/brianlorenz/uncover/Data/generated_tables/r_values/{compare_values}_r_values_snr{snr_map_thresh}.csv').to_pandas()
     
     # compare_values = 'f150w_haline'
     if pabsnrcut == 1:

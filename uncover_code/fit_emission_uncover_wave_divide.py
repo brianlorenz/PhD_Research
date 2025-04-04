@@ -770,8 +770,6 @@ def get_fit_range(wavelength):
 
 def fit_all_emission_uncover(id_msa_list, fluxcal=True):
     for id_msa in id_msa_list:
-        if id_msa == 42041:
-            continue
         spec_df = read_fluxcal_spec(id_msa)
         print(f'Fitting emission for {id_msa}')
         fit_emission_uncover(spec_df, id_msa, fluxcal=fluxcal)
@@ -810,7 +808,7 @@ if __name__ == "__main__":
     # id_msa = 18471
     # id_msa = 19179
     # id_msa = 14087
-    # id_msa = 34114
+    # id_msa = 50000
     # spec_df = read_fluxcal_spec(id_msa)
     # fit_emission_uncover(spec_df, id_msa)
 

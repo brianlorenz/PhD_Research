@@ -122,13 +122,17 @@ def fit_absorption_lines(id_dr3, plot='None'):
     ha_ew_value, ha_ew_flux = measure_ew(wave, ha_flux, ha_cont, ha_inner_mask)
 
     inner_region_pab = [12700, 12900]
-    # outer_region_pab = [12500, 13100]
-    outer_region_pab = [6200, 14000]
+    outer_region_pab = [12500, 13100]
+    if id_dr3 == 62937:
+        inner_region_pab = [12750, 12900]
+        outer_region_pab = [12600, 13000]
+    if plot != 'None':
+        # outer_region_pab = [6200, 14000] # Messes up the value, but lets us see apb more clearly
+        pass
     pab_mask, pab_inner_mask, pab_outer_mask = mask_waves(wave, inner_region_pab, outer_region_pab)
     pab_cont = fit_continuum(wave, pab_flux, pab_mask)
     pab_ew_value, pab_ew_flux = measure_ew(wave, pab_flux, pab_cont, pab_inner_mask)
-    if id_dr3 == 62937:
-        pab_ew_value = 0 # Change this if we fix this object, currently just not trusting the pab measurement
+    
 
     
     if plot != 'None':
@@ -145,8 +149,10 @@ def fit_absorption_lines(id_dr3, plot='None'):
             ew_flux = pab_ew_flux
             flux = pab_flux
         fig, axarr = plt.subplots(1, 2, figsize=(12,6))
+        # axarr[0].step(wave[outer_mask], cont_df['rest_full_model'][outer_mask], label='Prospector Emission', color='black')
+        # axarr[0].step(wave[outer_mask], cont_df['rest_absorp_model_maggies'][outer_mask], label='Prospector Continuum', color='red')
         axarr[0].step(wave[outer_mask], flux[outer_mask], label='Prospector Continuum', color='black')
-        # axarr[0].step(wave[outer_mask], cont[outer_mask], label='linear continuum')
+        axarr[0].step(wave[outer_mask], cont[outer_mask], label='linear continuum')
         axarr[0].axvline(x=6565, color='r', linestyle='--', alpha=0.5)
         axarr[0].axvline(x=12820, color='r', linestyle='--', alpha=0.5)
         sed_df = read_full_phot_sed(id_dr3)
@@ -158,6 +164,7 @@ def fit_absorption_lines(id_dr3, plot='None'):
         axarr[1].step(wave[~inner_mask], ew_flux[~inner_mask])
         axarr[0].legend()
         axarr[0].set_xlim(outer_region_pab)
+        
         plt.show()
         plt.close('all')
 
@@ -243,7 +250,7 @@ def plot_ews(cvar='mass'):
 
          
 if __name__ == "__main__":
-    # print(fit_absorption_lines(62937))
+    # print(fit_absorption_lines(62937, plot='pab'))
 
 
     

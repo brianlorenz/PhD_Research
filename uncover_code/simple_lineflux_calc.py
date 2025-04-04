@@ -8,7 +8,6 @@ from astropy.io import ascii
 import numpy as np
 import pandas as pd
 from compute_av import get_nii_correction, get_fe_correction
-from filter_integrals import get_line_coverage
 
 def calc_lineflux(id_msa, fluxcal_str=''):
     sed_df = read_sed(id_msa)
