@@ -7,10 +7,13 @@ from compute_av import compute_ha_pab_av, avneb_str, compute_ratio_from_av
 import numpy as np
 from matplotlib.cm import ScalarMappable
 from simple_sample_selection import truncate_colormap
+from compute_av import get_nii_correction, get_fe_correction
+
 
 
 plot_shutter = False
 phot_categories = False
+plot_eqw = True
 
 def paper_plot_sed_emfit_accuracy(id_msa_list, color_var=''):
     fluxcal_str=''
@@ -21,7 +24,7 @@ def paper_plot_sed_emfit_accuracy(id_msa_list, color_var=''):
     data_df = full_data_df[full_data_df['id_msa'].isin(id_msa_list)]
     full_lineratio_data_df = ascii.read(f'/Users/brianlorenz/uncover/Data/generated_tables/lineratio_av_df{fluxcal_str}.csv').to_pandas()
     lineratio_data_df = full_lineratio_data_df[full_lineratio_data_df['id_msa'].isin(id_msa_list)]
-    
+
     sps_df = read_SPS_cat()
     sps_all_df = read_SPS_cat_all()
 
@@ -65,6 +68,7 @@ def paper_plot_sed_emfit_accuracy(id_msa_list, color_var=''):
         print(f'id_msa: {id_msa}, id_dr3 {id_dr3}')
         ha_eqw = fit_df['equivalent_width_aa'].iloc[0]
         pab_eqw = fit_df['equivalent_width_aa'].iloc[1]
+        ha_eqw = ha_eqw * get_nii_correction(id_msa)
         # print(f'id_msa: {id_msa}, eqw_ha {ha_eqw}, eqw_pab {pab_eqw}')
         
         cmap = mpl.cm.inferno_r
@@ -130,18 +134,24 @@ def paper_plot_sed_emfit_accuracy(id_msa_list, color_var=''):
         err_sed_fe_cor_pab_flux_low = lineratio_data_row['err_fe_cor_sed_pab_lineflux_low'].iloc[0]
         err_sed_fe_cor_pab_flux_high = lineratio_data_row['err_fe_cor_sed_pab_lineflux_high'].iloc[0]
 
-        ha_datapoint = (fit_ha_flux, data_df_row['ha_sed_flux'].iloc[0])
-        log_ha_datapoint = (np.log10(fit_ha_flux), np.log10(data_df_row['ha_sed_flux'].iloc[0]))
+        if plot_eqw:
+            ha_datapoint = (np.abs(ha_eqw), data_df_row['ha_phot_eq_width'].iloc[0])
+        else:    
+            ha_datapoint = (fit_ha_flux, data_df_row['ha_sed_flux'].iloc[0])
+        log_ha_datapoint = (np.log10(ha_datapoint[0]), np.log10(ha_datapoint[1]))
         ax_ha_sed_vs_emfit.errorbar(ha_datapoint[0], ha_datapoint[1], xerr=[[err_fit_ha_flux_low], [err_fit_ha_flux_high]], yerr=[[err_sed_ha_flux_low],[err_sed_ha_flux_high]], marker=marker, color=rgba, ls='None', mec='black', ms=markersize, ecolor=ecolor)
-        ax_ha_sed_vs_emfit.set_xlabel('H$\\alpha$+NII Spectrum', fontsize=fontsize)
-        ax_ha_sed_vs_emfit.set_ylabel('H$\\alpha$+NII Photometry', fontsize=fontsize)
+        ax_ha_sed_vs_emfit.set_xlabel('H$\\alpha$+NII Flux Spectrum', fontsize=fontsize)
+        ax_ha_sed_vs_emfit.set_ylabel('H$\\alpha$+NII Flux Photometry', fontsize=fontsize)
         ha_distances.append(get_distance(np.array(log_ha_datapoint)))
 
-        pab_datapoint = (fit_pab_flux, data_df_row['fe_cor_pab_sed_flux'].iloc[0])
-        log_pab_datapoint = (np.log10(fit_pab_flux), np.log10(data_df_row['fe_cor_pab_sed_flux'].iloc[0]))
+        if plot_eqw:
+            pab_datapoint = (np.abs(pab_eqw), data_df_row['pab_phot_eq_width'].iloc[0])
+        else:    
+            pab_datapoint = (fit_pab_flux, data_df_row['fe_cor_pab_sed_flux'].iloc[0])
+        log_pab_datapoint = (np.log10(pab_datapoint[0]), np.log10(pab_datapoint[1]))
         ax_pab_sed_vs_emfit.errorbar(pab_datapoint[0], pab_datapoint[1], xerr=[[err_fit_pab_flux_low], [err_fit_pab_flux_high]], yerr=[[err_sed_fe_cor_pab_flux_low],[err_sed_fe_cor_pab_flux_high]], marker=marker, color=rgba, ls='None', mec='black', ms=markersize, ecolor=ecolor)
-        ax_pab_sed_vs_emfit.set_xlabel('Pa$\\beta$ Spectrum', fontsize=fontsize)
-        ax_pab_sed_vs_emfit.set_ylabel('Pa$\\beta$ Photometry', fontsize=fontsize)
+        ax_pab_sed_vs_emfit.set_xlabel('Pa$\\beta$ Flux Spectrum', fontsize=fontsize)
+        ax_pab_sed_vs_emfit.set_ylabel('Pa$\\beta$ Flux Photometry', fontsize=fontsize)
         pab_distances.append(get_distance(np.array(log_pab_datapoint)))
 
         av_datapoint = np.array([lineratio_data_row['emission_fit_lineratio'].iloc[0], lineratio_data_row['sed_lineratio'].iloc[0]])
@@ -230,9 +240,14 @@ def paper_plot_sed_emfit_accuracy(id_msa_list, color_var=''):
         ax.set_xscale('log')
         ax.set_yscale('log')
         ax.tick_params(labelsize=labelsize)
-        ax.plot([1e-20, 1e-14], [1e-20, 1e-14], ls='--', color='red', marker='None')
-        ax.set_xlim([5e-19, 1e-15])
-        ax.set_ylim([5e-19, 1e-15])
+        if plot_eqw:
+            ax.plot([-10, 1e6], [-10, 1e6], ls='--', color='red', marker='None')
+            ax.set_xlim([1, 5000])
+            ax.set_ylim([1, 5000])
+        else:
+            ax.plot([1e-20, 1e-14], [1e-20, 1e-14], ls='--', color='red', marker='None')
+            ax.set_xlim([5e-19, 1e-15])
+            ax.set_ylim([5e-19, 1e-15])
         # scale_aspect(ax)
 
     # Duplicating y axis
@@ -533,7 +548,6 @@ def r_value_vs_props(snr_map_thresh, y_var='r', pabsnrcut=0):
         ax_spec_av.plot(spec_av, y_plot, color=color, marker='o', ls='None')
         ax_sfr.plot(sfr, y_plot, color=color, marker='o', ls='None')
         # ax_sfr.text(sfr, y_plot, f'{id_dr3}')
-
 
         # Paper axes
         cmap = mpl.cm.inferno_r

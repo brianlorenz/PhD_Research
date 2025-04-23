@@ -1154,7 +1154,7 @@ def compute_wavelength_pct(blue_wave, green_wave, red_wave):
     return wave_pct
 
 
-def compute_line(cont_pct, red_flx, green_flx, blue_flx, redshift, raw_transmission, filter_width, line_rest_wave, images=False, image_noises=[], wave_pct=50):
+def compute_line(cont_pct, red_flx, green_flx, blue_flx, redshift, raw_transmission, filter_width, line_rest_wave, images=False, image_noises=[], wave_pct=50, calc_eq_width=False):
         """
         Fluxes in Jy
         Line rest wave in angstroms
@@ -1191,6 +1191,17 @@ def compute_line(cont_pct, red_flx, green_flx, blue_flx, redshift, raw_transmiss
 
         #Scale by transmission
         # line_value = line_value / scaled_transmission
+        if calc_eq_width:
+            # Put in erg/s/cm2/Hz
+            green_flx_erg_hz = green_flx * 1e-23
+            cont_value_erg_hz = cont_value * 1e-23
+            # # Convert from f_nu to f_lambda
+            c = 299792458 # m/s
+            observed_wave = line_rest_wave * (1+redshift)
+            cont_flux_erg_s_cm2_aa = cont_value_erg_hz * ((c*1e10) / (observed_wave)**2) # erg/s/cm2/angstrom
+            green_flx_erg_s_cm2_aa = green_flx_erg_hz * ((c*1e10) / (observed_wave)**2) # erg/s/cm2/angstrom
+            return line_value, cont_value, cont_flux_erg_s_cm2_aa, green_flx_erg_s_cm2_aa, filter_width
+        
         return line_value, cont_value
 
 def flux_erg_to_jy(line_flux_erg, line_wave):

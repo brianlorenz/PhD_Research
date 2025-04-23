@@ -3,6 +3,8 @@ from fit_emission_uncover_old import line_list
 from uncover_read_data import read_SPS_cat
 from dust_equations_prospector import dust2_to_AV
 from astropy.io import ascii
+# from uncover_read_data import read_raw_spec, read_lineflux_cat, get_id_msa_list, read_fluxcal_spec
+
 
 avneb_str = 'A$_{\\mathrm{V,neb}}$'
 
@@ -21,6 +23,7 @@ def get_nii_correction(id_msa, sps_df = []):
     logsfr = np.log10(sps_row['sfr100_50'].iloc[0])
     predicted_metallicity = sanders_plane(logmass, logsfr)
     nii6585_ha_rat = sanders_nii_ratio(predicted_metallicity) # Adjusted relation
+    # print(f'id: {id_msa}, niiha ratio: {nii6585_ha_rat}')
     niicombined_ha_rat = nii6585_ha_rat * (4/3) # From theory
     nii_correction_factor = 1 / (1+niicombined_ha_rat)
     return nii_correction_factor
@@ -167,6 +170,11 @@ def sanders_nii_ratio(met_12_log_OH, linear_scale = 8.69):
     nii_ratio = 10**log_nii_ratio
     return nii_ratio
 
-
+# id_msa_list = get_id_msa_list(full_sample=False)
+# rats = []
+# for id_msa in id_msa_list:
+#     rat = get_nii_correction(id_msa, sps_df = [])
+#     rats.append(rat)
+# breakpoint()
 # print(compute_ha_pab_av(1/16))
 # print(get_fe_correction(18471))

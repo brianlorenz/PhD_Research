@@ -10,6 +10,8 @@ import matplotlib.pyplot as plt
 import matplotlib as mpl
 from plot_vals import stellar_mass_label, scale_aspect, sfr_label
 import numpy as np
+from uncover_make_sed import read_sed
+
 
 def sample_select(paalpha=False, paalpha_pabeta=False):
     if paalpha:
@@ -257,7 +259,7 @@ def line_in_range(z, target_line, filt_cols, uncover_filt_dir):
     return covered, filt_name
 
 
-def paper_figure_sample_selection(id_msa_list, color_var='None', plot_sfr_mass=False):
+def paper_figure_sample_selection(id_msa_list, color_var='None', plot_sfr_mass=False, plot_mags=False):
     show_squares = True
     show_low_snr = True
     show_sample = True
@@ -277,8 +279,9 @@ def paper_figure_sample_selection(id_msa_list, color_var='None', plot_sfr_mass=F
     zqual_df = read_spec_cat()
     sps_df = read_SPS_cat()
     sps_all_df = read_SPS_cat_all()
-    # supercat_df = read_supercat()
+    supercat_df = read_supercat()
     lineratio_data_df = ascii.read(f'/Users/brianlorenz/uncover/Data/generated_tables/lineratio_av_df_all.csv').to_pandas()
+
 
     line_notfullcover_df = ascii.read('/Users/brianlorenz/uncover/Data/sample_selection/line_notfullcover_df.csv').to_pandas()
     filt_edge_df = ascii.read('/Users/brianlorenz/uncover/Data/sample_selection/filt_edge.csv').to_pandas()
@@ -305,13 +308,22 @@ def paper_figure_sample_selection(id_msa_list, color_var='None', plot_sfr_mass=F
     good_redshift_idx = np.logical_and(all_redshifts > 1.3, all_redshifts < 2.5)
     good_mass_idx = np.logical_and(all_masses > 5, all_masses < 11)
     good_sfr_idx = np.logical_and(all_log_sfr100s > -2.5, all_log_sfr100s < 2)
+
     
     
     if show_hexes:
-        if plot_sfr_mass == False:
+        if plot_sfr_mass == False and plot_mags == False:
             hexbin_norm = mpl.colors.Normalize(vmin=1, vmax=200) 
             good_both_idx = np.logical_and(good_redshift_idx, good_mass_idx)
+            
             ax.hexbin(all_redshifts[good_both_idx], all_masses[good_both_idx], gridsize=15, cmap=new_cmap, norm=hexbin_norm, label='Full Photometric Sample')
+        elif plot_mags:
+            hexbin_norm = mpl.colors.Normalize(vmin=1, vmax=200) 
+            f444w_fluxes = supercat_df['f_f444w'] * 1e-8
+            f444w_mags = -2.5 * np.log10(f444w_fluxes) + 8.9
+            good_mag_idx = np.logical_and(f444w_mags>18, f444w_mags<35)
+            good_both_idx = np.logical_and(good_redshift_idx, good_mag_idx)
+            ax.hexbin(all_redshifts[good_both_idx], f444w_mags[good_both_idx], gridsize=15, cmap=new_cmap, norm=hexbin_norm, label='Full Photometric Sample')
         else:
             # hexbin_norm = mpl.colors.LogNorm(vmin=1, vmax=5000) 
             hexbin_norm = mpl.colors.Normalize(vmin=1, vmax=500) 
@@ -321,6 +333,8 @@ def paper_figure_sample_selection(id_msa_list, color_var='None', plot_sfr_mass=F
     # Gray high quality points
     for id_msa in zqual_df['id_msa']:
         if id_msa in id_skip_list or id_msa == 42041:
+            continue
+        if id_msa in id_msa_list:
             continue
 
         marker = 'o'
@@ -334,7 +348,7 @@ def paper_figure_sample_selection(id_msa_list, color_var='None', plot_sfr_mass=F
             marker = 's'
             if show_squares == False:
                 continue
-        elif id_msa in id_pab_snr_list:
+        elif id_msa in id_pab_snr_list or id_msa==32575:
             marker = 'o'
             if show_low_snr == False:
                 continue
@@ -356,9 +370,14 @@ def paper_figure_sample_selection(id_msa_list, color_var='None', plot_sfr_mass=F
                 continue
 
 
-        if plot_sfr_mass == False:
+        if plot_mags:
+            detected_apparent_mag_hafilt, err_detected_apparent_mag_hafilt_u, err_detected_apparent_mag_hafilt_d = get_mags_info(id_msa, detected='F444W')
+
+        if plot_sfr_mass == False and plot_mags==False:
             ax.plot(redshift, stellar_mass_50, marker=marker, color='gray', ls='None', ms=gray_markersize, mec='black')
             # ax.text(redshift, stellar_mass_50, f'{id_msa}')
+        elif plot_mags:
+            ax.plot(redshift, detected_apparent_mag_hafilt, marker=marker, color='gray', ls='None', ms=gray_markersize, mec='black')
         else:
             ax.plot(stellar_mass_50, log_sfr100_50, marker=marker, color='gray', ls='None', ms=gray_markersize, mec='black')
 
@@ -389,10 +408,15 @@ def paper_figure_sample_selection(id_msa_list, color_var='None', plot_sfr_mass=F
         fit_df = ascii.read(f'/Users/brianlorenz/uncover/Data/emission_fitting/{id_msa}_emission_fits.csv').to_pandas()
         # ha_snr = fit_df['signal_noise_ratio'].iloc[0]
         pab_snr = fit_df['signal_noise_ratio'].iloc[0]
+        ha_eqw = fit_df['equivalent_width_aa'].iloc[0]
+        pab_eqw = fit_df['equivalent_width_aa'].iloc[1]
         
         cmap = mpl.cm.viridis
         # cmap = truncate_colormap(cmap, 0.15, 1.0)
 
+        if plot_mags:
+            detected_apparent_mag_hafilt, err_detected_apparent_mag_hafilt_u, err_detected_apparent_mag_hafilt_d = get_mags_info(id_msa, detected='F444W')
+            
         
         if color_var == 'sed_av':
             norm = mpl.colors.Normalize(vmin=0, vmax=3) 
@@ -412,6 +436,10 @@ def paper_figure_sample_selection(id_msa_list, color_var='None', plot_sfr_mass=F
             norm = mpl.colors.LogNorm(vmin=0.1, vmax=10) 
             rgba = cmap(norm(sfr100_50))
             cbar_label = 'Prospector SFR (M$_\odot$ / yr)'
+        if color_var == 'ha_eqw':
+            norm = mpl.colors.LogNorm(vmin=10, vmax=1000) 
+            rgba = cmap(norm(np.abs(ha_eqw)))
+            cbar_label = 'H$\\alpha$ Equivalent Width'
         if color_var != 'None':
             color_str = f'_{color_var}'
         else:
@@ -426,20 +454,37 @@ def paper_figure_sample_selection(id_msa_list, color_var='None', plot_sfr_mass=F
             markersize = normal_markersize
             if show_sample == False:
                 continue
+        
+        if id_msa in id_msa_list:
+            print(f'{id_msa}, mass {stellar_mass_50.iloc[0]}, ha_eqw {ha_eqw}, pab_eqw {pab_eqw}')
 
-        print(id_msa)
+            # SFMS location:
+            measured_log_sfr = np.log10(sfr100_50.iloc[0])
+            sfms_log_sfr = whitaker_sfms(stellar_mass_50.iloc[0])
+            offset_below_sfms = sfms_log_sfr - measured_log_sfr # positive means below sfms, negative means above
+            # print(f'id_msa: {id_msa}, sfms_offset = {offset_below_sfms}')
+        
 
-        if plot_sfr_mass == False:
+        if plot_sfr_mass == False and plot_mags == False:
             ax.errorbar(redshift, stellar_mass_50, yerr=[err_stellar_mass_low, err_stellar_mass_high], marker='o', color=rgba, ls='None', mec='black', ms=markersize)
             # ax.text(redshift, stellar_mass_50.iloc[0], f'{id_msa}')
+        elif plot_mags:
+            ax.errorbar(redshift, detected_apparent_mag_hafilt, yerr=np.array([[err_detected_apparent_mag_hafilt_d, err_detected_apparent_mag_hafilt_u]]).T, marker='o', color=rgba, ls='None', mec='black', ms=markersize)
         else:
             ax.errorbar(stellar_mass_50, log_sfr100_50, xerr=[err_stellar_mass_low, err_stellar_mass_high], yerr=[err_sfr100_50_low, err_sfr100_50_high], marker='o', color=rgba, ls='None', mec='black', ms=markersize)
     
-    if plot_sfr_mass == False:
+    if plot_sfr_mass == False and plot_mags == False:
         ax.set_ylabel('Prospector '+stellar_mass_label, fontsize=fontsize)
         ax.set_xlabel('Redshift', fontsize=fontsize) 
         ax.set_xlim([1.3, 2.5])
         ax.set_ylim([5, 11])
+        scale_aspect(ax)
+    elif plot_mags:
+        ax.set_ylabel('Apparent Magnitude', fontsize=fontsize)
+        ax.set_xlabel('Redshift', fontsize=fontsize) 
+        ax.set_xlim([1.3, 2.5])
+        ax.set_ylim([18, 35])
+        ax.invert_yaxis()
         scale_aspect(ax)
     else:
         ax.set_xlabel('Prospector '+ stellar_mass_label, fontsize=fontsize)
@@ -456,20 +501,35 @@ def paper_figure_sample_selection(id_msa_list, color_var='None', plot_sfr_mass=F
         cbar_label = 'Prospector SFR'
         color_str = '_sfr'
     if color_var != 'None':
-        cbar_ticks = [0.1, 1, 10]
-        cbar_ticklabels = [str(tick) for tick in cbar_ticks]
+        if color_var == 'sfr':
+            cbar_ticks = [0.1, 1, 10]
+            cbar_ticklabels = [str(tick) for tick in cbar_ticks]
+        if color_var == 'ha_eqw':
+            cbar_ticks = [10, 100, 1000]
+            cbar_ticklabels = [str(tick) for tick in cbar_ticks]
+        if color_var == 'redshift':
+            cbar_ticks = [1.5, 2, 2.5]
+            cbar_ticklabels = [str(tick) for tick in cbar_ticks]
         sm =  mpl.cm.ScalarMappable(norm=norm, cmap=cmap)
         cbar = fig.colorbar(sm, orientation='vertical', cax=cb_ax, ticks=cbar_ticks)
         cbar.ax.set_yticklabels(cbar_ticklabels)  
         cbar.set_label(cbar_label, fontsize=16)
         cbar.ax.tick_params(labelsize=16)
 
+    # SFMS
+    if plot_sfr_mass == True:
+        masses = np.arange(6,11,0.1)
+        # predicted_log_sfrs = check_sfms(masses, 0.5)
+        predicted_log_sfrs = whitaker_sfms(masses)
+        ax.plot(masses, predicted_log_sfrs, color='red', ls='--', marker='None', label='SFMS, z=2')
+        smfs_offsets = [0.1020446252898145,0.18283711116867318, -0.2375098376696847, 0.7051415256536799,0.6706993379653309, -0.18537210751204647, 0.22890526287538182, -0.2798992695970548, -0.773697743192055,0.3767266122566961,0.6676142678869769,-0.3323495130454126,0.308414353592555,-0.876565275930646]   
+        # breakpoint()
     # Legend
     from matplotlib.lines import Line2D
     from matplotlib.patches import RegularPolygon
 
-    line_sample = Line2D([0], [0], color='orange', marker='o', markersize=8, ls='None', mec='black')
-    line_snr = Line2D([0], [0], color='orange', marker='o', markersize=4, ls='None', mec='black')
+    line_sample = Line2D([0], [0], color=cmap(norm(3)), marker='o', markersize=8, ls='None', mec='black')
+    line_snr = Line2D([0], [0], color=cmap(norm(3)), marker='o', markersize=4, ls='None', mec='black')
     line_squares = Line2D([0], [0], color='grey', marker='s', markersize=4, ls='None', mec='black')
     line_hexes = Line2D([0], [0], color='grey', marker='h', markersize=12, ls='None')
     custom_lines = [line_sample, line_snr, line_squares, line_hexes]
@@ -501,11 +561,50 @@ def truncate_colormap(cmap, minval=0.0, maxval=1.0, n=100):
         cmap(np.linspace(minval, maxval, n)))
         return new_cmap
 
+def get_mags_info(id_msa, detected='True'):
+    if detected == 'True':
+        ha_filters, ha_images, wht_ha_images, obj_segmap, ha_photfnus, ha_all_filts = make_3color(id_msa, line_index=0, plot=False)
+    elif detected == 'F444W':
+        ha_filters = ['_', 'f444w']
+    else:
+        ha_filters = ['_', 'f150w']
+    sed_df = read_sed(id_msa)
+    detected_hafilt_flux_jy = sed_df[sed_df['filter']==f'f_{ha_filters[1]}']['flux'].iloc[0]
+    err_flux_jy = sed_df[sed_df['filter']==f'f_{ha_filters[1]}']['err_flux'].iloc[0]
+    detected_apparent_mag_hafilt = -2.5 * np.log10(detected_hafilt_flux_jy) + 8.9
+    detected_apparent_mag_hafilt_u = -2.5 * np.log10(detected_hafilt_flux_jy-err_flux_jy) + 8.9
+    detected_apparent_mag_hafilt_d = -2.5 * np.log10(detected_hafilt_flux_jy+err_flux_jy) + 8.9
+    err_detected_apparent_mag_hafilt_u = detected_apparent_mag_hafilt_u - detected_apparent_mag_hafilt
+    err_detected_apparent_mag_hafilt_d = detected_apparent_mag_hafilt - detected_apparent_mag_hafilt_d
+    return detected_apparent_mag_hafilt, err_detected_apparent_mag_hafilt_u, err_detected_apparent_mag_hafilt_d
+
+
+def check_sfms(log_mass, redshift):
+    a_coeff = 0.7-0.13*redshift
+    b_coeff = 0.38+1.14*redshift-0.19*redshift**2
+    log_sfr = a_coeff*(log_mass-10.5) + b_coeff
+    return log_sfr
+
+
+def whitaker_sfms(mass):
+    # a = -24.0415
+    # b = 4.1693
+    # c = -0.1638
+
+    a = -19.99
+    b = 3.44
+    c = -0.13
+    sfms = a + b*mass + c*mass**2
+    return sfms
+
 if __name__ == "__main__":
     # sample_select()
     
     id_msa_list = get_id_msa_list(full_sample=False)
-    paper_figure_sample_selection(id_msa_list, color_var='sfr')
+    # paper_figure_sample_selection(id_msa_list, color_var='sfr')
+    paper_figure_sample_selection(id_msa_list, color_var='ha_eqw', plot_mags=True)
+
+
     # paper_figure_sample_selection(id_msa_list, color_var='redshift', plot_sfr_mass=True)
 
     
