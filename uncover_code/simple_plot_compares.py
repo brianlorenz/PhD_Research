@@ -135,23 +135,33 @@ def paper_plot_sed_emfit_accuracy(id_msa_list, color_var=''):
         err_sed_fe_cor_pab_flux_high = lineratio_data_row['err_fe_cor_sed_pab_lineflux_high'].iloc[0]
 
         if plot_eqw:
-            ha_datapoint = (np.abs(ha_eqw), data_df_row['ha_phot_eq_width'].iloc[0])
+            ha_datapoint = (np.abs(ha_eqw), lineratio_data_row['ha_eqw'].iloc[0])
+            ha_xerr = [[err_fit_ha_flux_low], [err_fit_ha_flux_high]]
+            ha_yerr = [[lineratio_data_row['err_ha_eqw_low'].iloc[0]],[lineratio_data_row['err_ha_eqw_high'].iloc[0]]]
+            flux_or_ew = 'EqWidth'
         else:    
-            ha_datapoint = (fit_ha_flux, data_df_row['ha_sed_flux'].iloc[0])
+            ha_datapoint = (fit_ha_flux, lineratio_data_row['ha_sed_flux'].iloc[0]) # rightmost variable may be wrong
+            ha_xerr = [[err_fit_ha_flux_low], [err_fit_ha_flux_high]]
+            ha_yerr = [[err_sed_ha_flux_low],[err_sed_ha_flux_high]]
+            flux_or_ew = 'Flux'
         log_ha_datapoint = (np.log10(ha_datapoint[0]), np.log10(ha_datapoint[1]))
-        ax_ha_sed_vs_emfit.errorbar(ha_datapoint[0], ha_datapoint[1], xerr=[[err_fit_ha_flux_low], [err_fit_ha_flux_high]], yerr=[[err_sed_ha_flux_low],[err_sed_ha_flux_high]], marker=marker, color=rgba, ls='None', mec='black', ms=markersize, ecolor=ecolor)
-        ax_ha_sed_vs_emfit.set_xlabel('H$\\alpha$+NII Flux Spectrum', fontsize=fontsize)
-        ax_ha_sed_vs_emfit.set_ylabel('H$\\alpha$+NII Flux Photometry', fontsize=fontsize)
+        ax_ha_sed_vs_emfit.errorbar(ha_datapoint[0], ha_datapoint[1], xerr=ha_xerr, yerr=ha_yerr, marker=marker, color=rgba, ls='None', mec='black', ms=markersize, ecolor=ecolor)
+        ax_ha_sed_vs_emfit.set_xlabel(f'H$\\alpha$+NII {flux_or_ew} Spectrum', fontsize=fontsize)
+        ax_ha_sed_vs_emfit.set_ylabel(f'H$\\alpha$+NII {flux_or_ew} Photometry', fontsize=fontsize)
         ha_distances.append(get_distance(np.array(log_ha_datapoint)))
 
         if plot_eqw:
             pab_datapoint = (np.abs(pab_eqw), data_df_row['pab_phot_eq_width'].iloc[0])
+            pab_xerr = [[err_fit_pab_flux_low],[err_fit_pab_flux_high]]
+            pab_yerr = [[lineratio_data_df['err_pab_eqw_low'].iloc[0]],[lineratio_data_df['err_pab_eqw_high'].iloc[0]]]
         else:    
             pab_datapoint = (fit_pab_flux, data_df_row['fe_cor_pab_sed_flux'].iloc[0])
+            pab_xerr = [[err_fit_pab_flux_low], [err_fit_pab_flux_high]]
+            pab_yerr = [[err_sed_fe_cor_pab_flux_low],[err_sed_fe_cor_pab_flux_high]]
         log_pab_datapoint = (np.log10(pab_datapoint[0]), np.log10(pab_datapoint[1]))
-        ax_pab_sed_vs_emfit.errorbar(pab_datapoint[0], pab_datapoint[1], xerr=[[err_fit_pab_flux_low], [err_fit_pab_flux_high]], yerr=[[err_sed_fe_cor_pab_flux_low],[err_sed_fe_cor_pab_flux_high]], marker=marker, color=rgba, ls='None', mec='black', ms=markersize, ecolor=ecolor)
-        ax_pab_sed_vs_emfit.set_xlabel('Pa$\\beta$ Flux Spectrum', fontsize=fontsize)
-        ax_pab_sed_vs_emfit.set_ylabel('Pa$\\beta$ Flux Photometry', fontsize=fontsize)
+        ax_pab_sed_vs_emfit.errorbar(pab_datapoint[0], pab_datapoint[1], xerr=pab_xerr, yerr=pab_yerr, marker=marker, color=rgba, ls='None', mec='black', ms=markersize, ecolor=ecolor)
+        ax_pab_sed_vs_emfit.set_xlabel(f'Pa$\\beta$ {flux_or_ew} Spectrum', fontsize=fontsize)
+        ax_pab_sed_vs_emfit.set_ylabel(f'Pa$\\beta$ {flux_or_ew} Photometry', fontsize=fontsize)
         pab_distances.append(get_distance(np.array(log_pab_datapoint)))
 
         av_datapoint = np.array([lineratio_data_row['emission_fit_lineratio'].iloc[0], lineratio_data_row['sed_lineratio'].iloc[0]])
@@ -242,8 +252,8 @@ def paper_plot_sed_emfit_accuracy(id_msa_list, color_var=''):
         ax.tick_params(labelsize=labelsize)
         if plot_eqw:
             ax.plot([-10, 1e6], [-10, 1e6], ls='--', color='red', marker='None')
-            ax.set_xlim([1, 5000])
-            ax.set_ylim([1, 5000])
+            ax.set_xlim([5, 3000])
+            ax.set_ylim([5, 3000])
         else:
             ax.plot([1e-20, 1e-14], [1e-20, 1e-14], ls='--', color='red', marker='None')
             ax.set_xlim([5e-19, 1e-15])
@@ -296,6 +306,8 @@ def paper_plot_sed_emfit_accuracy(id_msa_list, color_var=''):
         cbar.set_label(cbar_label, fontsize=fontsize, rotation=270, labelpad=18)
         cbar.ax.tick_params(labelsize=fontsize)
 
+    if plot_eqw:
+        add_str = '_eqwidth'
     save_loc = f'/Users/brianlorenz/uncover/Figures/paper_figures/sed_vs_emfit{color_str}{add_str}{fluxcal_str}.pdf'
     fig.savefig(save_loc, bbox_inches='tight')
 

@@ -39,6 +39,8 @@ pab_fit_range = (11800, 14200)
 ha_inner_range = (6300, 7000)
 pab_inner_range = (12700, 13000)
 
+emission_fit_dir = '/Users/brianlorenz/uncover/Data/emission_fitting/'
+
 def fit_emission_uncover(spectrum, save_name, bootstrap_num=-1, fluxcal=True):
     """
     Parameters:
@@ -47,7 +49,7 @@ def fit_emission_uncover(spectrum, save_name, bootstrap_num=-1, fluxcal=True):
     Returns:
     Saves a csv of the fits for all of the lines
     """
-    emission_fit_dir = '/Users/brianlorenz/uncover/Data/emission_fitting/'
+    
 
     # Number of loops in Monte Carlo
     if bootstrap_num > -1:

@@ -199,8 +199,8 @@ def make_dustmap_simple(id_msa, aper_size='None', axarr_final=[], ax_labels=Fals
     dustmap_cax = fig.add_axes([0.955, 0.55, 0.015, 0.35])
 
 
-    ha_cont_pct, _, ha_trasm_flag, ha_boot_lines, ha_sed_fluxes, ha_wave_pct = plot_sed_around_line(ax_ha_sed, ha_filters, sed_df, spec_df, redshift, 0, ha_transmissions, id_msa, fluxcal_str=fluxcal_str)
-    pab_cont_pct, _, pab_trasm_flag, pab_boot_lines, pab_sed_fluxes, pab_wave_pct = plot_sed_around_line(ax_pab_sed, pab_filters, sed_df, spec_df, redshift, 1, pab_transmissions, id_msa, fluxcal_str=fluxcal_str)
+    ha_cont_pct, _, ha_trasm_flag, ha_boot_lines, ha_sed_fluxes, ha_wave_pct, ha_cont_flux_erg_cm2_s, ha_boot_cont_fluxes = plot_sed_around_line(ax_ha_sed, ha_filters, sed_df, spec_df, redshift, 0, ha_transmissions, id_msa, fluxcal_str=fluxcal_str)
+    pab_cont_pct, _, pab_trasm_flag, pab_boot_lines, pab_sed_fluxes, pab_wave_pct, pab_cont_flux_erg_cm2_s, pab_boot_cont_fluxes = plot_sed_around_line(ax_pab_sed, pab_filters, sed_df, spec_df, redshift, 1, pab_transmissions, id_msa, fluxcal_str=fluxcal_str)
 
     # Read in the linefluxes from lineflux_df, don't need to be double-computing here, and already corrected 
     lineflux_df = ascii.read(f'/Users/brianlorenz/uncover/Data/generated_tables/lineflux_df{fluxcal_str}.csv').to_pandas()
@@ -208,11 +208,25 @@ def make_dustmap_simple(id_msa, aper_size='None', axarr_final=[], ax_labels=Fals
     ha_sed_lineflux = lineflux_row['ha_sed_flux'].iloc[0]
     nii_cor_ha_sed_lineflux = lineflux_row['nii_cor_ha_sed_flux'].iloc[0]
     fe_cor_pab_sed_lineflux = lineflux_row['fe_cor_pab_sed_flux'].iloc[0]
+    nii_cor_ha_sed_eq_width = nii_cor_ha_sed_lineflux / ha_cont_flux_erg_cm2_s
+    fe_cor_pab_sed_eq_width = fe_cor_pab_sed_lineflux / pab_cont_flux_erg_cm2_s
+    fe_cor_pab_sed_lineflux = lineflux_row['fe_cor_pab_sed_flux'].iloc[0]
     nii_cor_ha_boot_lines = ha_boot_lines * get_nii_correction(id_msa)
     fe_cor_pab_boot_lines = [pab_boot_lines[i] * get_fe_correction(id_msa, boot=True) for i in range(len(pab_boot_lines))] # Inflates errors be fecor scatter
     # fe_cor_pab_boot_lines_old = pab_boot_lines * get_fe_correction(id_msa)
+    nii_cor_ha_boot_eq_widths = [nii_cor_ha_boot_lines[i] / ha_boot_cont_fluxes[i] for i in range(len(nii_cor_ha_boot_lines))]
+    fe_cor_pab_boot_eq_widths = [fe_cor_pab_boot_lines[i] / pab_boot_cont_fluxes[i] for i in range(len(fe_cor_pab_boot_lines))]
     
+    ha_sed_eqw_16 = np.percentile(nii_cor_ha_boot_eq_widths, 16)
+    ha_sed_eqw_84 = np.percentile(nii_cor_ha_boot_eq_widths, 84)
+    err_ha_sed_eqw_low = nii_cor_ha_sed_eq_width - ha_sed_eqw_16
+    err_ha_sed_eqw_high = ha_sed_eqw_84 - nii_cor_ha_sed_eq_width
 
+    pab_sed_eqw_16 = np.percentile(fe_cor_pab_boot_eq_widths, 16)
+    pab_sed_eqw_84 = np.percentile(fe_cor_pab_boot_eq_widths, 84)
+    err_pab_sed_eqw_low = fe_cor_pab_sed_eq_width - pab_sed_eqw_16
+    err_pab_sed_eqw_high = pab_sed_eqw_84 - fe_cor_pab_sed_eq_width
+    eq_widths = [nii_cor_ha_sed_eq_width, fe_cor_pab_sed_eq_width, err_ha_sed_eqw_low, err_ha_sed_eqw_high, err_pab_sed_eqw_low, err_pab_sed_eqw_high]
 
     def set_negative_lineflux_to_lowerlim(boot_lines, original_flux):        
         for i in range(len(boot_lines)):
@@ -701,7 +715,7 @@ def make_dustmap_simple(id_msa, aper_size='None', axarr_final=[], ax_labels=Fals
 
     plt.close('all')
 
-    return sed_lineratios, emission_lineratios, sed_avs, emission_avs, err_sed_linefluxes, shutter_calcs, r_value_info, sim_index_values, r_value_info_pabcont_pabline, r_value_info_pabcont_pabline_snrcut
+    return sed_lineratios, emission_lineratios, sed_avs, emission_avs, err_sed_linefluxes, shutter_calcs, r_value_info, sim_index_values, r_value_info_pabcont_pabline, r_value_info_pabcont_pabline_snrcut, eq_widths
 
 
 def get_norm(image_map, scalea=1, lower_pct=10, upper_pct=99):
@@ -1056,9 +1070,10 @@ def plot_sed_around_line(ax, filters, sed_df, spec_df, redshift, line_index, tra
     sedpy_name = filters[1].replace('f_', 'jwst_')
     sedpy_line_filt = observate.load_filters([sedpy_name])[0]
     filter_width = sedpy_line_filt.rectangular_width
-    line_flux, cont_value = compute_line(cont_percentile, red_flux, green_flux, blue_flux, redshift, 0, filter_width, line_wave_rest)
+    line_flux, cont_value, cont_flux_erg_s_cm2_aa = compute_line(cont_percentile, red_flux, green_flux, blue_flux, redshift, 0, filter_width, line_wave_rest, calc_eq_width=True)
 
     boot_lines = []
+    boot_cont_fluxes = []
     if bootstrap > 0:
         for i in range(bootstrap):
             # Remake fluxes:
@@ -1075,16 +1090,18 @@ def plot_sed_around_line(ax, filters, sed_df, spec_df, redshift, line_index, tra
             boot_green_flux = np.random.normal(loc=green_flux, scale=err_green_flux, size=1)
             boot_blue_flux = np.random.normal(loc=blue_flux, scale=err_blue_flux, size=1)
             boot_cont_percentile = compute_cont_pct(blue_wave, green_wave, red_wave, boot_blue_flux, boot_red_flux)
-            boot_line, boot_cont = compute_line(boot_cont_percentile, boot_red_flux[0], boot_green_flux[0], boot_blue_flux[0], redshift, 0, filter_width, line_wave_rest)            
+            boot_line, boot_cont, boot_cont_flux_erg_s_cm2_aa = compute_line(boot_cont_percentile, boot_red_flux[0], boot_green_flux[0], boot_blue_flux[0], redshift, 0, filter_width, line_wave_rest, calc_eq_width=True)            
             if line_index == 0:
                 line_name = 'ha'
             else:
                 line_name = 'pab'
             line_trasm = get_line_coverage(id_msa, sedpy_line_filt, redshift, line_name, fluxcal_str=fluxcal_str)
             boot_line = boot_line 
-            
+
+            boot_cont_fluxes.append(boot_cont_flux_erg_s_cm2_aa)
             boot_lines.append(boot_line)
     boot_lines = np.array(boot_lines)
+    boot_cont_fluxes = np.array(boot_cont_fluxes)
 
     if plt_purple_merged_point:
         ax.plot([red_wave, blue_wave], [red_flux, blue_flux], marker='None', ls='--', color=connect_color)
@@ -1136,7 +1153,7 @@ def plot_sed_around_line(ax, filters, sed_df, spec_df, redshift, line_index, tra
     ax.set_xlim(0.8*line_wave_obs, 1.2*line_wave_obs)
     ax.set_ylim(0, 1.2*np.max(spec_df['flux_calibrated_jy']))
     sed_fluxes = [red_flux, green_flux, blue_flux]
-    return cont_percentile, line_flux, trasm_flag, boot_lines, sed_fluxes, wave_pct
+    return cont_percentile, line_flux, trasm_flag, boot_lines, sed_fluxes, wave_pct, cont_flux_erg_s_cm2_aa, boot_cont_fluxes
 
 
 def compute_cont_pct(blue_wave, green_wave, red_wave, blue_flux, red_flux):
@@ -1198,9 +1215,9 @@ def compute_line(cont_pct, red_flx, green_flx, blue_flx, redshift, raw_transmiss
             # # Convert from f_nu to f_lambda
             c = 299792458 # m/s
             observed_wave = line_rest_wave * (1+redshift)
-            cont_flux_erg_s_cm2_aa = cont_value_erg_hz * ((c*1e10) / (observed_wave)**2) # erg/s/cm2/angstrom
-            green_flx_erg_s_cm2_aa = green_flx_erg_hz * ((c*1e10) / (observed_wave)**2) # erg/s/cm2/angstrom
-            return line_value, cont_value, cont_flux_erg_s_cm2_aa, green_flx_erg_s_cm2_aa, filter_width
+            cont_flux_erg_s_cm2_aa = (1+redshift) * cont_value_erg_hz * ((c*1e10) / (observed_wave)**2) # erg/s/cm2/angstrom
+            # green_flx_erg_s_cm2_aa = green_flx_erg_hz * ((c*1e10) / (observed_wave)**2) # erg/s/cm2/angstrom
+            return line_value, cont_value, cont_flux_erg_s_cm2_aa
         
         return line_value, cont_value
 
@@ -1277,12 +1294,21 @@ def make_all_dustmap(id_msa_list, full_sample=False, fluxcal=True):
     p_values_pab_snrcut = []
     n_pixels_pab_snrcut = []
     snr_thresh_maps_pab_snrcut = []
+
+    # Eq widths
+    ha_eqwidths = []
+    pab_eqwidths = []
+    err_ha_eqwidths_low = []
+    err_ha_eqwidths_high = []
+    err_pab_eqwidths_low = []
+    err_pab_eqwidths_high = []
+
     
     for id_msa in id_msa_list:
         print(f'Making dustmap for {id_msa}')
-        sed_lineratios_grouped, emission_lineratios_grouped, sed_avs_grouped, emission_avs_grouped, err_sed_linefluxes_grouped, shutter_calcs, r_value_info, sim_index_values, r_value_info_pabcont_pabline, r_value_info_pabcont_pabline_snrcut = make_dustmap_simple(id_msa, fluxcal_str=fluxcal_str)
+        sed_lineratios_grouped, emission_lineratios_grouped, sed_avs_grouped, emission_avs_grouped, err_sed_linefluxes_grouped, shutter_calcs, r_value_info, sim_index_values, r_value_info_pabcont_pabline, r_value_info_pabcont_pabline_snrcut, eq_widths = make_dustmap_simple(id_msa, fluxcal_str=fluxcal_str)
         try:
-            sed_lineratios_grouped, emission_lineratios_grouped, sed_avs_grouped, emission_avs_grouped, err_sed_linefluxes_grouped, shutter_calcs, r_value_info, sim_index_values, r_value_info_pabcont_pabline, r_value_info_pabcont_pabline_snrcut = make_dustmap_simple(id_msa, fluxcal_str=fluxcal_str)
+            sed_lineratios_grouped, emission_lineratios_grouped, sed_avs_grouped, emission_avs_grouped, err_sed_linefluxes_grouped, shutter_calcs, r_value_info, sim_index_values, r_value_info_pabcont_pabline, r_value_info_pabcont_pabline_snrcut, eq_widths = make_dustmap_simple(id_msa, fluxcal_str=fluxcal_str)
         except Exception as error:
             print(error)
             print('ERROR')
@@ -1299,6 +1325,7 @@ def make_all_dustmap(id_msa_list, full_sample=False, fluxcal=True):
             sim_index_values = [-99, -99]
             r_value_info_haline_pabline = [-99, -99, -99, -99, -99]
             r_value_info_haline_pabline_snrcut = [-99, -99, -99, -99, -99]
+            eq_widths = [-99, -99, -99, -99, -99, -99]
         sed_lineratios.append(sed_lineratios_grouped[0])
         sed_lineratios_low.append(sed_lineratios_grouped[1])
         sed_lineratios_high.append(sed_lineratios_grouped[2])
@@ -1348,11 +1375,19 @@ def make_all_dustmap(id_msa_list, full_sample=False, fluxcal=True):
         n_pixels_pab_snrcut.append(r_value_info_pabcont_pabline_snrcut[3])
         snr_thresh_maps_pab_snrcut.append(r_value_info_pabcont_pabline_snrcut[4])
 
+        ha_eqwidths.append(eq_widths[0])
+        pab_eqwidths.append(eq_widths[1])
+        err_ha_eqwidths_low.append(eq_widths[2])
+        err_ha_eqwidths_high.append(eq_widths[3])
+        err_pab_eqwidths_low.append(eq_widths[4])
+        err_pab_eqwidths_high.append(eq_widths[5])
+        
 
 
 
 
-    dustmap_info_df = pd.DataFrame(zip(id_msa_list, sed_lineratios, sed_lineratios_low, sed_lineratios_high, sed_avs, sed_avs_low, sed_avs_high, emission_lineratios, emission_lineratios_low, emission_lineratios_high, emission_avs, emission_avs_low, emission_avs_high, err_nii_cor_sed_ha_lineflux_lows, err_nii_cor_sed_ha_lineflux_highs, err_fe_cor_sed_pab_lineflux_lows, err_fe_cor_sed_pab_lineflux_highs, err_sed_ha_lineflux_lows, err_sed_ha_lineflux_highs), columns=['id_msa', 'sed_lineratio', 'err_sed_lineratio_low', 'err_sed_lineratio_high', 'sed_av', 'err_sed_av_low', 'err_sed_av_high', 'emission_fit_lineratio', 'err_emission_fit_lineratio_low', 'err_emission_fit_lineratio_high', 'emission_fit_av', 'err_emission_fit_av_low', 'err_emission_fit_av_high', 'err_nii_cor_sed_ha_lineflux_low', 'err_nii_cor_sed_ha_lineflux_high', 'err_fe_cor_sed_pab_lineflux_low', 'err_fe_cor_sed_pab_lineflux_high', 'err_sed_ha_lineflux_low', 'err_sed_ha_lineflux_high'])
+
+    dustmap_info_df = pd.DataFrame(zip(id_msa_list, sed_lineratios, sed_lineratios_low, sed_lineratios_high, sed_avs, sed_avs_low, sed_avs_high, emission_lineratios, emission_lineratios_low, emission_lineratios_high, emission_avs, emission_avs_low, emission_avs_high, err_nii_cor_sed_ha_lineflux_lows, err_nii_cor_sed_ha_lineflux_highs, err_fe_cor_sed_pab_lineflux_lows, err_fe_cor_sed_pab_lineflux_highs, err_sed_ha_lineflux_lows, err_sed_ha_lineflux_highs, ha_eqwidths, pab_eqwidths, err_ha_eqwidths_low, err_ha_eqwidths_high, err_pab_eqwidths_low, err_pab_eqwidths_high), columns=['id_msa', 'sed_lineratio', 'err_sed_lineratio_low', 'err_sed_lineratio_high', 'sed_av', 'err_sed_av_low', 'err_sed_av_high', 'emission_fit_lineratio', 'err_emission_fit_lineratio_low', 'err_emission_fit_lineratio_high', 'emission_fit_av', 'err_emission_fit_av_low', 'err_emission_fit_av_high', 'err_nii_cor_sed_ha_lineflux_low', 'err_nii_cor_sed_ha_lineflux_high', 'err_fe_cor_sed_pab_lineflux_low', 'err_fe_cor_sed_pab_lineflux_high', 'err_sed_ha_lineflux_low', 'err_sed_ha_lineflux_high', 'ha_eqw', 'pab_eqw', 'err_ha_eqw_low', 'err_ha_eqw_high', 'err_pab_eqw_low', 'err_pab_eqw_high'])
 
     shutter_calc_df = pd.DataFrame(zip(id_msa_list, ha_shutter_fluxs, pab_shutter_fluxs, lineratio_shutters, av_shutters), columns=['id_msa', 'ha_shutter_flux', 'pab_shutter_flux', 'lineratio_shutter', 'av_shutter'])
 
@@ -1472,8 +1507,8 @@ if __name__ == "__main__":
     # make_dustmap_simple(47875)
    
     id_msa_list = get_id_msa_list(full_sample=False)
-    # make_all_dustmap(id_msa_list, full_sample=False, fluxcal=True)
-    make_paper_fig_dustmaps(id_msa_list, sortby='av')
+    make_all_dustmap(id_msa_list, full_sample=False, fluxcal=True)
+    # make_paper_fig_dustmaps(id_msa_list, sortby='av')
     # make_paper_fig_dustmaps(id_msa_list, sortby='mass')
 
     # id_msa_list = get_id_msa_list(full_sample=True)

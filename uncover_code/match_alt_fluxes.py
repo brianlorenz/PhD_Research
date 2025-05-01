@@ -57,6 +57,8 @@ def alt_cross_match_sources():
         
         closest_object = closest_object.fillna(-99)
 
+        if closest_object['Ha_flux'] > 0:
+            breakpoint()
         ha_fluxes.append(closest_object['Ha_flux'])
         err_ha_fluxes.append(closest_object['Ha_flux_err'])
         ha_snrs.append(closest_object['Ha_snr'])
@@ -72,22 +74,27 @@ def read_alt_cat():
     alt_df = ascii.read('/Users/brianlorenz/uncover/Data/generated_tables/alt_match_catalog.csv').to_pandas()
     return alt_df
 
-def plot_alt_vs_uncover():
+def plot_alt_vs_uncover(fluxcal=True):
     alt_df = read_alt_cat()
     lineflux_df = ascii.read(f'/Users/brianlorenz/uncover/Data/generated_tables/lineflux_df.csv').to_pandas()
     lineflux_df = lineflux_df.merge(alt_df, on='id_msa') # add in the ALT info
 
     fig, axarr = plt.subplots(2,2, figsize=(12,12))
     ax_ha_spec = axarr[0, 0]
-    ax_pab_spec = axarr[0, 1]
-    ax_ha_sed= axarr[1, 0]
+    ax_ha_sed= axarr[0, 1]
+    ax_pab_spec = axarr[1, 0]
     ax_pab_sed = axarr[1, 1]
 
     ax_list = [ax_ha_spec, ax_pab_spec, ax_ha_sed, ax_pab_sed]
 
     for i in range(len(lineflux_df)):
         id_msa=lineflux_df['id_msa'].iloc[i]
-        fit_df = ascii.read(f'/Users/brianlorenz/uncover/Data/emission_fitting/{id_msa}_emission_fits.csv').to_pandas()
+        if fluxcal == False:
+            fit_df = ascii.read(f'/Users/brianlorenz/uncover/Data/emission_fitting_no_fluxcal/{id_msa}_emission_fits.csv').to_pandas()
+            save_str='_no_fluxcal'
+        else:
+            fit_df = ascii.read(f'/Users/brianlorenz/uncover/Data/emission_fitting/{id_msa}_emission_fits.csv').to_pandas()
+            save_str=''
 
         # Emission fit data
         fit_ha_flux = fit_df['flux'].iloc[0]
@@ -97,7 +104,7 @@ def plot_alt_vs_uncover():
         err_fit_pab_flux_low = fit_df['err_flux_low'].iloc[1]
         err_fit_pab_flux_high = fit_df['err_flux_high'].iloc[1]
         fit_err_ha = [[err_fit_ha_flux_low], [err_fit_ha_flux_high]]
-        fit_err_pab = [[err_fit_ha_flux_low], [err_fit_ha_flux_high]]
+        fit_err_pab = [[err_fit_pab_flux_low], [err_fit_pab_flux_high]]
 
         # breakpoint()
 
@@ -108,7 +115,8 @@ def plot_alt_vs_uncover():
             ax_pab_sed.errorbar(lineflux_df['alt_pab_flux'].iloc[i], lineflux_df['pab_sed_flux'].iloc[i], xerr=lineflux_df['alt_err_pab_flux'].iloc[i], marker='o', color='black', ls='None')
             ax_pab_spec.errorbar(lineflux_df['alt_pab_flux'].iloc[i], fit_pab_flux, xerr=lineflux_df['alt_err_pab_flux'].iloc[i], yerr=fit_err_pab, marker='o', color='black', ls='None')
         # ax_pab.plot(lineflux_df['int_spec_pab_fecor'], lineflux_df['pab_sed_flux'], marker='o', color='black', ls='None')
-        
+    
+    
     ax_ha_sed.set_ylabel('Photometric Ha flux', fontsize=14)
     ax_ha_sed.set_xlabel('ALT Ha flux', fontsize=14)
     ax_ha_spec.set_ylabel('Emission Fit Ha flux', fontsize=14)
@@ -117,6 +125,9 @@ def plot_alt_vs_uncover():
     ax_pab_sed.set_xlabel('ALT PaB flux', fontsize=14)
     ax_pab_spec.set_ylabel('Emission Fit PaB flux', fontsize=14)
     ax_pab_spec.set_xlabel('ALT PaB flux', fontsize=14)
+    if fluxcal==False:
+        ax_ha_spec.set_ylabel('Emission Fit Ha flux no aper cor', fontsize=14)
+        ax_pab_spec.set_ylabel('Emission Fit PaB flux no aper cor', fontsize=14)
     
     # line_p1 = np.array([-20, -20])
     # line_p2 = np.array([-15, -15])
@@ -154,16 +165,18 @@ def plot_alt_vs_uncover():
         ax.set_yscale('log')
         ax.tick_params(labelsize=14)
         ax.plot([1e-20, 1e-14], [1e-20, 1e-14], ls='--', color='red', marker='None')
-        ax.set_xlim([5e-19, 1e-15])
-        ax.set_ylim([5e-19, 1e-15])
+        ax.set_xlim([3e-19, 1e-15])
+        ax.set_ylim([3e-19, 1e-15])
         scale_aspect(ax)
+    plt.tight_layout()
         
-    fig.savefig('/Users/brianlorenz/uncover/Figures/ALT_compare/alt_compare_flux.pdf', bbox_inches='tight')
+    fig.savefig(f'/Users/brianlorenz/uncover/Figures/ALT_compare/alt_compare_flux{save_str}.pdf', bbox_inches='tight')
 
 
 if __name__ == '__main__':
-    # alt_cross_match_sources()
+    alt_cross_match_sources()
     # alt_df = read_alt_cat()
     plot_alt_vs_uncover()
+    plot_alt_vs_uncover(fluxcal=False)
     # breakpoint()
     pass

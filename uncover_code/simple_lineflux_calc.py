@@ -1,16 +1,24 @@
 from uncover_make_sed import read_sed
 from simple_make_dustmap import make_3color, compute_cont_pct, compute_line
 from filter_integrals import get_transmission_at_line
-from uncover_read_data import read_spec_cat, read_lineflux_cat, get_id_msa_list, read_fluxcal_spec
+from uncover_read_data import read_spec_cat, read_lineflux_cat, get_id_msa_list, read_fluxcal_spec, read_supercat
 from sedpy import observate
 from fit_emission_uncover_old import line_list
 from astropy.io import ascii
+from simple_compute_lineratio import compute_lineratio
 import numpy as np
 import pandas as pd
 from compute_av import get_nii_correction, get_fe_correction
 from uncover_sed_filters import unconver_read_filters
 import matplotlib.pyplot as plt
 from plot_vals import *
+import matplotlib as mpl
+from matplotlib.cm import ScalarMappable
+from matplotlib.lines import Line2D
+import math
+from simple_abs_line_correction import fit_absorption_lines
+from diagnostic_plots import plot_line_assessment
+
 
 
 def calc_lineflux(id_msa, fluxcal_str=''):
@@ -52,18 +60,15 @@ def calc_lineflux(id_msa, fluxcal_str=''):
     ha_line_scaled_transmission = get_transmission_at_line(ha_sedpy_filt, line_list[0][1] * (1+redshift))
     pab_line_scaled_transmission = get_transmission_at_line(pab_sedpy_filt, line_list[1][1] * (1+redshift))
 
-    ha_flux_erg_s_cm2, ha_cont_flux_erg_s_cm2_aa, ha_green_flx_erg_s_cm2_aa, ha_filter_width = measure_lineflux(id_msa, sed_df, redshift, ha_filters, ha_line_scaled_transmission, ha_sedpy_transmission, line_list[0][1], ha_sedpy_width, ha_sedpy_wave, ha_sedpy_filts)
-    pab_flux_erg_s_cm2, pab_cont_flux_erg_s_cm2_aa, pab_green_flx_erg_s_cm2_aa, pab_filter_width = measure_lineflux(id_msa, sed_df, redshift, pab_filters, pab_line_scaled_transmission, pab_sedpy_transmission, line_list[1][1], pab_sedpy_width, pab_sedpy_wave, pab_sedpy_filts)
+    ha_flux_erg_s_cm2, ha_cont_flux_erg_s_cm2_aa = measure_lineflux(id_msa, sed_df, redshift, ha_filters, ha_line_scaled_transmission, ha_sedpy_transmission, line_list[0][1], ha_sedpy_width, ha_sedpy_wave, ha_sedpy_filts)
+    pab_flux_erg_s_cm2, pab_cont_flux_erg_s_cm2_aa = measure_lineflux(id_msa, sed_df, redshift, pab_filters, pab_line_scaled_transmission, pab_sedpy_transmission, line_list[1][1], pab_sedpy_width, pab_sedpy_wave, pab_sedpy_filts)
     # Line flux corrections
     nii_cor_ha_flux_erg_s_cm2 = ha_flux_erg_s_cm2*get_nii_correction(id_msa)
     fe_cor_pab_flux_erg_s_cm2 = pab_flux_erg_s_cm2*get_fe_correction(id_msa)
+
     # Phot equivalent widths
-    ha_green_flx_erg_s_cm2_aa_nii_cor = ha_green_flx_erg_s_cm2_aa*get_nii_correction(id_msa)
-    pab_green_flx_erg_s_cm2_aa_nii_cor = pab_green_flx_erg_s_cm2_aa*get_fe_correction(id_msa)
-    ha_phot_eq_width = (ha_green_flx_erg_s_cm2_aa_nii_cor - ha_cont_flux_erg_s_cm2_aa) / ha_cont_flux_erg_s_cm2_aa
-    pab_phot_eq_width = (pab_green_flx_erg_s_cm2_aa_nii_cor-pab_cont_flux_erg_s_cm2_aa) / pab_cont_flux_erg_s_cm2_aa
-    ha_phot_eq_width = ha_phot_eq_width*ha_filter_width
-    pab_phot_eq_width = pab_phot_eq_width*pab_filter_width
+    ha_phot_eq_width = nii_cor_ha_flux_erg_s_cm2 / ha_cont_flux_erg_s_cm2_aa
+    pab_phot_eq_width = fe_cor_pab_flux_erg_s_cm2 / pab_cont_flux_erg_s_cm2_aa
 
     # Integrated spectra
     spec_df = read_fluxcal_spec(id_msa)
@@ -73,7 +78,7 @@ def calc_lineflux(id_msa, fluxcal_str=''):
     pab_wave = np.logical_and(spec_df['rest_wave_aa'] > 12700, spec_df['rest_wave_aa'] < 13100) 
     ha_factor = spec_df['flux_calibrated_jy'][ha_wave].iloc[0] / spec_df['flux'][ha_wave].iloc[0]
     pab_factor = spec_df['flux_calibrated_jy'][pab_wave].iloc[0] / spec_df['flux'][pab_wave].iloc[0]
-    print(f'ha scale {ha_factor}, pab_scale {pab_factor}')
+    # print(f'ha scale {ha_factor}, pab_scale {pab_factor}')
 
     wavelength = spec_df['wave_aa'].to_numpy()
     f_lambda = spec_df['flux_calibrated_erg_aa'].to_numpy()
@@ -84,8 +89,10 @@ def calc_lineflux(id_msa, fluxcal_str=''):
     effective_waves_aa = sed_df['eff_wavelength']*10000
     int_spec_df = pd.DataFrame(zip(effective_waves_aa/10000, integrated_sed_jy), columns=['eff_wavelength', 'flux'])
     int_spec_df['filter'] = sed_df['filter']
-    int_spec_ha_flux_erg_s_cm2, _, _, _ = measure_lineflux(id_msa, int_spec_df, redshift, ha_filters, ha_line_scaled_transmission, ha_sedpy_transmission, line_list[0][1], ha_sedpy_width, ha_sedpy_wave, ha_sedpy_filts)
-    int_spec_pab_flux_erg_s_cm2, _, _, _ = measure_lineflux(id_msa, int_spec_df, redshift, pab_filters, pab_line_scaled_transmission, pab_sedpy_transmission, line_list[1][1], pab_sedpy_width, pab_sedpy_wave, pab_sedpy_filts)
+    int_spec_df['err_flux'] = int_spec_df['flux']*0.01 # placehold for plot
+    plot_line_assessment([id_msa], int_spec_df=int_spec_df)
+    int_spec_ha_flux_erg_s_cm2, _ = measure_lineflux(id_msa, int_spec_df, redshift, ha_filters, ha_line_scaled_transmission, ha_sedpy_transmission, line_list[0][1], ha_sedpy_width, ha_sedpy_wave, ha_sedpy_filts)
+    int_spec_pab_flux_erg_s_cm2, _ = measure_lineflux(id_msa, int_spec_df, redshift, pab_filters, pab_line_scaled_transmission, pab_sedpy_transmission, line_list[1][1], pab_sedpy_width, pab_sedpy_wave, pab_sedpy_filts)
     fe_cor_int_spec_pab_flux_erg_s_cm2 = int_spec_pab_flux_erg_s_cm2 * get_fe_correction(id_msa)
     nii_cor_int_spec_ha_flux_erg_s_cm2 = int_spec_ha_flux_erg_s_cm2 * get_nii_correction(id_msa)
 
@@ -112,7 +119,7 @@ def calc_lineflux(id_msa, fluxcal_str=''):
     # print(f'PaB flux corrected for Fe: {fe_cor_pab_flux_erg_s_cm2}')
     # print(f'PaB flux fit compare: {pab_offset_factor}')
 
-    return ha_flux_erg_s_cm2, pab_flux_erg_s_cm2, ha_flux_cat_erg_s_cm2, err_ha_flux_cat_erg_s_cm2, pab_flux_cat_erg_s_cm2, err_pab_flux_cat_erg_s_cm2, ha_flux_emission_fit, nii_cor_ha_flux_emission_fit, pab_flux_emission_fit, nii_cor_ha_flux_erg_s_cm2, fe_cor_pab_flux_erg_s_cm2, int_spec_ha_flux_erg_s_cm2, fe_cor_int_spec_pab_flux_erg_s_cm2, nii_cor_int_spec_ha_flux_erg_s_cm2, ha_phot_eq_width, pab_phot_eq_width
+    return ha_flux_erg_s_cm2, pab_flux_erg_s_cm2, ha_flux_cat_erg_s_cm2, err_ha_flux_cat_erg_s_cm2, pab_flux_cat_erg_s_cm2, err_pab_flux_cat_erg_s_cm2, ha_flux_emission_fit, nii_cor_ha_flux_emission_fit, pab_flux_emission_fit, nii_cor_ha_flux_erg_s_cm2, fe_cor_pab_flux_erg_s_cm2, int_spec_ha_flux_erg_s_cm2, int_spec_pab_flux_erg_s_cm2, fe_cor_int_spec_pab_flux_erg_s_cm2, nii_cor_int_spec_ha_flux_erg_s_cm2, ha_phot_eq_width, pab_phot_eq_width
 
     # print(f'Ha/PaB: {(ha_flux/pab_flux) / (line_list[0][1]/line_list[1][1])**2}')
     # print(f'Cat Ha/PaB: {(ha_flux_cat_jy/pab_flux_cat_jy)}')
@@ -151,7 +158,7 @@ def measure_lineflux(id_msa, sed_df, redshift, filters, scaled_transmission, raw
     # print(green_flux)
     # print(red_flux)
     # cont_percentile2 = compute_cont_pct(blue_wave, green_wave, red_wave, blue_flux_erg_s_cm2, red_flux_erg_s_cm2)
-    line_flux, cont_value, cont_flux_erg_s_cm2_aa, green_flx_erg_s_cm2_aa, filter_width = compute_line(cont_percentile, red_flux, green_flux, blue_flux, redshift, raw_transmission, filter_width, line_wave, calc_eq_width=True)
+    line_flux, cont_value, cont_flux_erg_s_cm2_aa = compute_line(cont_percentile, red_flux, green_flux, blue_flux, redshift, raw_transmission, filter_width, line_wave, calc_eq_width=True)
     if line_wave < 8000:
         line_name = 'ha'
     if line_wave > 8000:
@@ -159,7 +166,7 @@ def measure_lineflux(id_msa, sed_df, redshift, filters, scaled_transmission, raw
     # line_transmission = get_line_coverage(id_msa, line_filts[1], redshift=redshift, line_name=line_name)
     # line_flux = line_flux 
         
-    return line_flux, cont_flux_erg_s_cm2_aa, green_flx_erg_s_cm2_aa, filter_width
+    return line_flux, cont_flux_erg_s_cm2_aa
 
 
 def compute_line_already_erg(cont_pct, red_flx, green_flx, blue_flx, redshift, scaled_transmission, raw_transmission, filter_width, filter_wave, line_wave):
@@ -193,12 +200,13 @@ def calc_all_lineflux(id_msa_list, full_sample=False, fluxcal=True):
     nii_cor_ha_flux_erg_s_cm2s = []
     fe_cor_pab_flux_erg_s_cm2s = []
     int_spec_ha_nocors = []
+    int_spec_pab_nocors = []
     int_spec_pab_fecors = []
     int_spec_ha_niicors = []
     ha_phot_eq_widths = []
     pab_phot_eq_widths = []
     for id_msa in id_msa_list:
-        ha_flux_erg_s_cm2, pab_flux_erg_s_cm2, ha_flux_cat_erg_s_cm2, err_ha_flux_cat_erg_s_cm2, pab_flux_cat_erg_s_cm2, err_pab_flux_cat_erg_s_cm2, ha_flux_emission_fit, nii_cor_ha_flux_emission_fit, pab_flux_emission_fit, nii_cor_ha_flux_erg_s_cm2, fe_cor_pab_flux_erg_s_cm2, int_spec_ha_nocor, int_spec_pab_fecor, int_spec_ha_niicor, ha_phot_eq_width, pab_phot_eq_width = calc_lineflux(id_msa, fluxcal_str=fluxcal_str)
+        ha_flux_erg_s_cm2, pab_flux_erg_s_cm2, ha_flux_cat_erg_s_cm2, err_ha_flux_cat_erg_s_cm2, pab_flux_cat_erg_s_cm2, err_pab_flux_cat_erg_s_cm2, ha_flux_emission_fit, nii_cor_ha_flux_emission_fit, pab_flux_emission_fit, nii_cor_ha_flux_erg_s_cm2, fe_cor_pab_flux_erg_s_cm2, int_spec_ha_nocor, int_spec_pab_nocor, int_spec_pab_fecor, int_spec_ha_niicor, ha_phot_eq_width, pab_phot_eq_width = calc_lineflux(id_msa, fluxcal_str=fluxcal_str)
         ha_sed_fluxes.append(ha_flux_erg_s_cm2)
         pab_sed_fluxes.append(pab_flux_erg_s_cm2)
         ha_cat_fluxes.append(ha_flux_cat_erg_s_cm2)
@@ -211,11 +219,12 @@ def calc_all_lineflux(id_msa_list, full_sample=False, fluxcal=True):
         nii_cor_ha_flux_erg_s_cm2s.append(nii_cor_ha_flux_erg_s_cm2)
         fe_cor_pab_flux_erg_s_cm2s.append(fe_cor_pab_flux_erg_s_cm2)
         int_spec_ha_nocors.append(int_spec_ha_nocor)
+        int_spec_pab_nocors.append(int_spec_pab_nocor)
         int_spec_pab_fecors.append(int_spec_pab_fecor)
         int_spec_ha_niicors.append(int_spec_ha_niicor)
         ha_phot_eq_widths.append(ha_phot_eq_width)
         pab_phot_eq_widths.append(pab_phot_eq_width)
-    emission_offset_df = pd.DataFrame(zip(id_msa_list, ha_sed_fluxes, pab_sed_fluxes, nii_cor_ha_flux_erg_s_cm2s, fe_cor_pab_flux_erg_s_cm2s, ha_cat_fluxes, err_ha_cat_fluxes, pab_cat_fluxes, err_pab_cat_fluxes, ha_emission_fits, nii_cor_ha_flux_emission_fits, pab_emission_fits, int_spec_ha_nocors, int_spec_pab_fecors, int_spec_ha_niicors, ha_phot_eq_widths, pab_phot_eq_widths), columns=['id_msa', 'ha_sed_flux', 'pab_sed_flux', 'nii_cor_ha_sed_flux', 'fe_cor_pab_sed_flux', 'ha_cat_flux', 'err_ha_cat_flux', 'pab_cat_flux', 'err_pab_cat_flux', 'ha_emfit_flux', 'nii_cor_ha_emfit_flux', 'pab_emfit_flux', 'int_spec_ha_nocor', 'int_spec_pab_fecor', 'int_spec_ha_niicor', 'ha_phot_eq_width', 'pab_phot_eq_width'])
+    emission_offset_df = pd.DataFrame(zip(id_msa_list, ha_sed_fluxes, pab_sed_fluxes, nii_cor_ha_flux_erg_s_cm2s, fe_cor_pab_flux_erg_s_cm2s, ha_cat_fluxes, err_ha_cat_fluxes, pab_cat_fluxes, err_pab_cat_fluxes, ha_emission_fits, nii_cor_ha_flux_emission_fits, pab_emission_fits, int_spec_ha_nocors, int_spec_pab_nocors, int_spec_pab_fecors, int_spec_ha_niicors, ha_phot_eq_widths, pab_phot_eq_widths), columns=['id_msa', 'ha_sed_flux', 'pab_sed_flux', 'nii_cor_ha_sed_flux', 'fe_cor_pab_sed_flux', 'ha_cat_flux', 'err_ha_cat_flux', 'pab_cat_flux', 'err_pab_cat_flux', 'ha_emfit_flux', 'nii_cor_ha_emfit_flux', 'pab_emfit_flux', 'int_spec_ha_nocor', 'int_spec_pab_nocor', 'int_spec_pab_fecor', 'int_spec_ha_niicor', 'ha_phot_eq_width', 'pab_phot_eq_width'])
     emission_offset_df['ha_sed_div_cat'] = emission_offset_df['ha_sed_flux'] / emission_offset_df['ha_cat_flux']
     emission_offset_df['pab_sed_div_cat'] = emission_offset_df['fe_cor_pab_sed_flux'] / emission_offset_df['pab_cat_flux']
     emission_offset_df['ha_sed_div_emfit'] = emission_offset_df['nii_cor_ha_sed_flux'] / emission_offset_df['nii_cor_ha_emfit_flux']
@@ -300,13 +309,16 @@ def plot_sed_vs_intspec():
         ax.set_ylim([5e-19, 1e-15])
     fig.savefig('/Users/brianlorenz/uncover/Figures/paper_figures/sed_vs_emfit_zcompare_intspec.pdf', bbox_inches='tight')
 
-def plot_spec_vs_intspec():
+def plot_spec_vs_intspec(color='', full_sample=False):
     lineflux_df = ascii.read(f'/Users/brianlorenz/uncover/Data/generated_tables/lineflux_df.csv').to_pandas()
     full_lineratio_data_df = ascii.read(f'/Users/brianlorenz/uncover/Data/generated_tables/lineratio_av_df.csv').to_pandas()
+    supercat_df = read_supercat()
     id_msa_list = get_id_msa_list()
     lineratio_data_df = full_lineratio_data_df[full_lineratio_data_df['id_msa'].isin(id_msa_list)]
-
-
+    save_str = ''
+    if full_sample == True:
+        lineflux_df = ascii.read(f'/Users/brianlorenz/uncover/Data/generated_tables/lineflux_df_all.csv').to_pandas()
+        save_str = '_all'
 
     fig, axarr = plt.subplots(1,3, figsize=(21.5,6))
     ax_ha = axarr[0]
@@ -317,11 +329,13 @@ def plot_spec_vs_intspec():
     
     ax_ha.set_xlabel('Emission Fit Ha+NII flux', fontsize=14)
     ax_ha.set_ylabel('Integrated Spectrum Ha+NII flux', fontsize=14)
-    ax_pab.set_xlabel('Emission Fit PaB flux', fontsize=14)
-    ax_pab.set_ylabel('Integrated Spectrum PaB flux', fontsize=14)
+    ax_pab.set_xlabel('Emission Fit PaB+FeII flux', fontsize=14)
+    ax_pab.set_ylabel('Integrated Spectrum PaB+FeII flux', fontsize=14)
     ax_av.set_xlabel('Emission Fit lineratio', fontsize=14)
     ax_av.set_ylabel('Integrated Spectrum lineratio', fontsize=14)
 
+    cmap = mpl.cm.inferno
+            
     line_p1 = np.array([-20, -20])
     line_p2 = np.array([-15, -15])
     def get_distance(datapoint):
@@ -334,27 +348,81 @@ def plot_spec_vs_intspec():
         lineratio_data_row = lineratio_data_df[lineratio_data_df['id_msa'] == id_msa]
         fit_df = ascii.read(f'/Users/brianlorenz/uncover/Data/emission_fitting/{id_msa}_emission_fits.csv').to_pandas()
         fit_ha_flux = fit_df['flux'].iloc[0]
-        fit_pab_flux = fit_df['flux'].iloc[1]
-        fit_lineratio = 1/lineratio_data_row['emission_fit_lineratio'].iloc[0]
-        int_spec_lineratio = lineflux_df['int_spec_pab_fecor'].iloc[i] / lineflux_df['int_spec_ha_niicor'].iloc[i]
+        ha_snr = fit_df['signal_noise_ratio'].iloc[0]
+        pab_snr = fit_df['signal_noise_ratio'].iloc[1]
+        ha_eqw_fit = fit_df.iloc[0]['equivalent_width_aa']
+        pab_eqw_fit = fit_df.iloc[1]['equivalent_width_aa']
+        fe_cor_df_indiv = ascii.read('/Users/brianlorenz/uncover/Data/generated_tables/fe_cor_df_indiv.csv').to_pandas()
+        fe_cor_df_row = fe_cor_df_indiv[fe_cor_df_indiv['id_msa'] == id_msa]
+        if len(fe_cor_df_row) == 0:
+            fit_pab_flux = fit_df['flux'].iloc[1]
+            only_pab=True
+        else:
+            fe_df = ascii.read(f'/Users/brianlorenz/uncover/Data/emission_fitting_fe_only/{id_msa}_emission_fits.csv').to_pandas()
+            fe_flux = fe_df['flux'].iloc[0]
+            fit_pab_flux = fit_df['flux'].iloc[1] + fe_flux
+            only_pab=False
 
-        ax_ha.plot(fit_ha_flux, lineflux_df['int_spec_ha_nocor'].iloc[i], marker='o', color='black', ls='None')
-        ax_pab.plot(fit_pab_flux, lineflux_df['int_spec_pab_fecor'].iloc[i], marker='o', color='black', ls='None')
-        ax_av.plot(fit_lineratio, int_spec_lineratio, marker='o', color='black', ls='None')
-        print([fit_lineratio, int_spec_lineratio])
-        # ax_pab.text(fit_pab_flux, lineflux_df['int_spec_pab_fecor'].iloc[i], f'{id_msa}')
+        if len(lineratio_data_row) == 0:
+            fit_lineratio = -99
+            int_spec_lineratio = -99
+        else:
+            fit_lineratio = 1/lineratio_data_row['emission_fit_lineratio'].iloc[0]
+            # int_spec_lineratio = lineflux_df['int_spec_pab_fecor'].iloc[i] / lineflux_df['int_spec_ha_niicor'].iloc[i]
+            supercat_row = supercat_df[supercat_df['id_msa']==id_msa]
+            id_dr3 = supercat_row['id'].iloc[0]
+            ha_absorp_eqw_fit, pab_absorp_eqw_fit = fit_absorption_lines(id_dr3)
+            pab_cor_flux = lineflux_df['int_spec_pab_fecor'].iloc[i]
+            int_spec_lineratio = 1/compute_lineratio(lineflux_df['int_spec_ha_niicor'].iloc[i], pab_cor_flux, ha_eqw_fit, pab_eqw_fit, ha_absorp_eqw_fit, pab_absorp_eqw_fit)
+        
+        if color == 'pab_snr':
+            norm = mpl.colors.LogNorm(vmin=1, vmax=60) 
+            rgba_ha = cmap(norm(pab_snr))
+            rgba_pab = cmap(norm(pab_snr))
+            rgba_av = cmap(norm(pab_snr))
+            label='PaB SNR'
+        if color == 'line_snr':
+            norm = mpl.colors.LogNorm(vmin=1, vmax=100) 
+            # print(ha_snr)
+            rgba_ha = cmap(norm(ha_snr))
+            rgba_pab = cmap(norm(pab_snr))
+            print(pab_snr)
+            print(' ')
+            rgba_av = 'black'
+            label='Line SNR'
+        if color == 'fe_or_not':
+            rgba_ha = 'black'
+            rgba_pab='black'
+            rgba_av='black'
+            if only_pab == True:
+                rgba_pab='red'
+                rgba_av='red'
+
+        # if ha_snr > 30:
+        #     continue
+        
+        ax_ha.plot(fit_ha_flux, lineflux_df['int_spec_ha_nocor'].iloc[i], marker='o', color=rgba_ha, ls='None', mec='black')
+        ax_pab.plot(fit_pab_flux, pab_cor_flux, marker='o', color=rgba_pab, ls='None', mec='black')
+        ax_av.plot(fit_lineratio, int_spec_lineratio, marker='o', color=rgba_av, ls='None', mec='black')
+    
+        # print([fit_lineratio, int_spec_lineratio])
+        # if lineflux_df['int_spec_pab_nocor'].iloc[i] > 1e-25:
+        if int_spec_lineratio > 0.1:
+            ax_ha.text(fit_ha_flux, lineflux_df['int_spec_ha_nocor'].iloc[i], f'{id_msa}')
+            ax_pab.text(fit_pab_flux, lineflux_df['int_spec_pab_fecor'].iloc[i], f'{id_msa}')
+            ax_av.text(fit_lineratio, int_spec_lineratio, f'{id_msa}')
 
         log_ha_datapoint = (np.log10(fit_ha_flux), np.log10(lineflux_df['int_spec_ha_nocor'].iloc[i]))
         log_pab_datapoint = (np.log10(fit_pab_flux), np.log10(lineflux_df['int_spec_pab_fecor'].iloc[i]))
         log_av_datapoint = (np.log10(fit_lineratio), np.log10(int_spec_lineratio))
+
         ha_distances.append(get_distance(np.array(log_ha_datapoint)))
         pab_dist = get_distance(np.array(log_pab_datapoint))
         av_dist = get_distance(np.array(log_av_datapoint))
-        if pd.isnull(pab_dist):
-            continue
         pab_distances.append(pab_dist)
     ha_distances = np.abs(ha_distances)
     pab_distances = np.abs(pab_distances)
+    ha_distances = [x for x in ha_distances if not math.isnan(x)]
     median_ha_offset = np.median(ha_distances)
     scatter_ha_offset = np.std(ha_distances)
     median_pab_offset = np.median(pab_distances)
@@ -368,7 +436,18 @@ def plot_spec_vs_intspec():
     ax_pab.text(start_scatter_text_x, start_scatter_text_y, f'Offset: {median_pab_offset:0.2f}', transform=ax_pab.transAxes, fontsize=12)
     ax_pab.text(start_scatter_text_x, start_scatter_text_y-scatter_text_sep, f'Scatter: {scatter_pab_offset:0.2f}', transform=ax_pab.transAxes, fontsize=12)
     
-
+    if color != 'fe_or_not':
+        sm =  ScalarMappable(norm=norm, cmap=cmap)
+        cbar = fig.colorbar(sm, ax=ax_av)
+        cbar.set_label(label, fontsize=14)
+        cbar.ax.tick_params(labelsize=14)
+    else:
+        line_cor = Line2D([0], [0], color='black', marker='o', markersize=6, ls='None', mec='black')
+        line_nocor = Line2D([0], [0], color='red', marker='o', markersize=6, ls='None', mec='black')
+        custom_lines = [line_cor, line_nocor]
+        custom_labels = ['Fe detected in spec', 'Fe not in spec']
+        ax_pab.legend(custom_lines, custom_labels, loc=4, fontsize=12)
+    
     for ax in axarr:
         ax.set_xscale('log')
         ax.set_yscale('log')
@@ -389,7 +468,7 @@ def plot_spec_vs_intspec():
     for ax in axarr:
         scale_aspect(ax)
 
-    fig.savefig('/Users/brianlorenz/uncover/Figures/paper_figures/sed_vs_emfit_zcompare_intspec2.pdf', bbox_inches='tight')
+    fig.savefig(f'/Users/brianlorenz/uncover/Figures/paper_figures/sed_vs_emfit_zcompare_intspec3_{color}{save_str}.pdf', bbox_inches='tight')
 
 
 
@@ -399,14 +478,16 @@ if __name__ == "__main__":
     # calc_lineflux(25774)
     # calc_lineflux(39855)
     
-    # id_msa_list = get_id_msa_list(full_sample=True)
-    # calc_all_lineflux(id_msa_list, full_sample=True)  
+    id_msa_list = get_id_msa_list(full_sample=False)
+    calc_all_lineflux(id_msa_list, full_sample=False)  
 
     # plot_sed_vs_intspec()
-    # plot_spec_vs_intspec()
-    # import sys
-    # sys.exit()
+    # plot_spec_vs_intspec('pab_snr')
+    plot_spec_vs_intspec('line_snr', full_sample=False)
+    # plot_spec_vs_intspec('fe_or_not')
+    import sys
+    sys.exit()
 
     id_msa_list = get_id_msa_list(full_sample=False)
     calc_all_lineflux(id_msa_list, full_sample=False, fluxcal=True)  
-    pass
+    pass 

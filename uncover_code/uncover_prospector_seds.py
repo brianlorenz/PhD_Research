@@ -10,6 +10,7 @@ import pandas as pd
 from uncover_read_data import read_supercat, read_raw_spec, read_spec_cat, read_segmap, read_SPS_cat
 from astropy.io import ascii
 from uncover_make_sed import get_sed
+import os
 
 def get_prospect_df_loc(id_msa, id_dr3=False):
     loc_prospector_spec_df = f'/Users/brianlorenz/uncover/Data/prospector_spec/{id_msa}_prospector_spec_df.csv'
@@ -23,9 +24,12 @@ def make_prospector(id_msa, plt_jy=True, id_dr3=False):
     objid = id_msa
     loc_prospector_spec_df, loc_prospector_sed_df = get_prospect_df_loc(id_msa, id_dr3=id_dr3)
 
-    folder = '/Users/brianlorenz/uncover/Data/latest_zspec/'
-
-    fver = 'zspec_dr4_v5.2.0_LW_SUPER_spsv0.2' # DR 4 zspec
+    if id_dr3 == False:
+        folder = '/Users/brianlorenz/uncover/Data/latest_zspec/'
+        fver = 'zspec_dr4_v5.2.0_LW_SUPER_spsv0.2' # DR 4 zspec
+    if id_dr3 == True:
+        folder = '/Users/brianlorenz/uncover/Catalogs/sps_files/'
+        fver = 'v5.3.0_LW_SUPER_spsv1.0'
 
     ffsed = folder + 'ancillaries/seds_map_{}.npz'.format(fver)
     ffsfh = folder + 'ancillaries/sfhs_{}.npz'.format(fver)
@@ -68,7 +72,6 @@ def make_prospector(id_msa, plt_jy=True, id_dr3=False):
         modmags *= 3631
         modspec *= 3631
 
-    breakpoint()
     # phot.errorbar(weff, modmags, fmt='o', color='firebrick', label='model photometry', zorder=100,
     #             elinewidth=1, mec='k', mew=0.2)
 
@@ -82,12 +85,15 @@ def make_prospector(id_msa, plt_jy=True, id_dr3=False):
     prospector_sed_df['weff_aa'] = 10000 * prospector_sed_df['weff_um']
     prospector_sed_df.to_csv(loc_prospector_sed_df, index=False)
     
-    return prospector_spec_df
+    return prospector_sed_df, prospector_spec_df
 
-def read_prospector(id_msa):
-    loc_prospector_spec_df, loc_prospector_sed_df = get_prospect_df_loc(id_msa)
-    prospector_spec_df = ascii.read(loc_prospector_spec_df).to_pandas()
-    prospector_sed_df = ascii.read(loc_prospector_sed_df).to_pandas()
+def read_prospector(id_msa, id_dr3=False):
+    loc_prospector_spec_df, loc_prospector_sed_df = get_prospect_df_loc(id_msa, id_dr3=id_dr3)
+    if os.path.exists(loc_prospector_sed_df):
+        prospector_spec_df = ascii.read(loc_prospector_spec_df).to_pandas()
+        prospector_sed_df = ascii.read(loc_prospector_sed_df).to_pandas()
+    else:
+        prospector_sed_df, prospector_spec_df = make_prospector(id_msa, id_dr3=id_dr3)
     return prospector_spec_df, prospector_sed_df
 
 

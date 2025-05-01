@@ -60,9 +60,10 @@ cat = Table.read(catalog_file)
 filter_dict = ut_cwd.filter_dictionary(mb=True, alma=False)
 filts = list(filter_dict.keys())
 filternames = list(filter_dict.values())
+breakpoint()
     
 # load in prospector catalog
-with fits.open('/Users/brianlorenz/uncover/Catalogs/v5.3.0/UNCOVER_v5.3.0_LW_SUPER_SPScatalog_spsv1.0.fits') as hdu:
+with fits.open('/Users/brianlorenz/uncover/Catalogs/UNCOVER_v5.3.0_LW_SUPER_SPScatalog_spsv1.0.fits') as hdu:
     prospect = hdu[1].data    
     
 # generate the model    

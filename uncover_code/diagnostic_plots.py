@@ -375,17 +375,17 @@ def diagnostic_measured_value_vs_truth(truth_var, plot_var, color_var='None'):
     plt.close('all')
     return
 
-# diagnostic_spec_flux_vs_phot_flux()
-# diagnostic_av_emissionfit_vs_av_prospector(color_var='redshift')
-# diagnostic_av_emissionfit_vs_av_prospector(color_var='halpha_trasmission')
-# diagnostic_av_emissionfit_vs_av_prospector(color_var='pabeta_trasmission')
-truth_vars = ['emission_fit', 'prospector']
-plot_vars = ['line_ratio_prospector_fit', 'sed_lineratio']
-color_vars = ['z_spec', 'ha_flux', 'pab_flux', 'ha_sigma', 'pab_sigma', 'texp_tot', 'ha_snr', 'pab_snr']
-for truth_var in truth_vars:
-    for plot_var in plot_vars:
-        for color_var in color_vars:
-            diagnostic_measured_value_vs_truth(truth_var=truth_var, plot_var=plot_var, color_var=color_var)
+# # diagnostic_spec_flux_vs_phot_flux()
+# # diagnostic_av_emissionfit_vs_av_prospector(color_var='redshift')
+# # diagnostic_av_emissionfit_vs_av_prospector(color_var='halpha_trasmission')
+# # diagnostic_av_emissionfit_vs_av_prospector(color_var='pabeta_trasmission')
+# truth_vars = ['emission_fit', 'prospector']
+# plot_vars = ['line_ratio_prospector_fit', 'sed_lineratio']
+# color_vars = ['z_spec', 'ha_flux', 'pab_flux', 'ha_sigma', 'pab_sigma', 'texp_tot', 'ha_snr', 'pab_snr']
+# for truth_var in truth_vars:
+#     for plot_var in plot_vars:
+#         for color_var in color_vars:
+#             diagnostic_measured_value_vs_truth(truth_var=truth_var, plot_var=plot_var, color_var=color_var)
 
 def lineflux_compare(plot_all=False, compare_to_cat=True, aper_size='None'):
     if aper_size != 'None':
@@ -724,7 +724,7 @@ def sed_values_compare(aper_add_str='', use_subsample=True):
     fig.savefig(f'/Users/brianlorenz/uncover/Figures/diagnostic_lineratio/sed_values_compare_greenflux{add_str}.pdf')
 
 
-def plot_line_assessment(id_msa_list):
+def plot_line_assessment(id_msa_list, int_spec_df=[]):
     "line (str): 'ha_only' or 'pab_only' "
     zqual_df = read_spec_cat()
     full_lineratio_data_df = ascii.read(f'/Users/brianlorenz/uncover/Data/generated_tables/lineratio_av_df.csv').to_pandas()
@@ -764,6 +764,10 @@ def plot_line_assessment(id_msa_list):
         ha_filters = ['f_'+filt for filt in ha_filters]
         pab_filters = ['f_'+filt for filt in pab_filters]
         sed_df = read_sed(id_msa)
+        save_str=''
+        if len(int_spec_df) > 0:
+            sed_df = int_spec_df
+            save_str = '_int_spec'
         redshift = zqual_df[zqual_df['id_msa']==id_msa]['z_spec'].iloc[0]
 
         fit_df = ascii.read(f'/Users/brianlorenz/uncover/Data/emission_fitting/{id_msa}_emission_fits.csv').to_pandas()
@@ -782,8 +786,8 @@ def plot_line_assessment(id_msa_list):
         ha_transmissions = [ha_red_avg_transmission, ha_avg_transmission, ha_blue_avg_transmission]
         pab_transmissions = [pab_red_avg_transmission, pab_avg_transmission, pab_blue_avg_transmission]
 
-        ha_cont_pct, ha_sed_lineflux, ha_trasm_flag, ha_boot_lines, ha_sed_fluxes, ha_wave_pct = plot_sed_around_line(ax_ha_sed, ha_filters, sed_df, spec_df, redshift, 0, ha_transmissions, id_msa, show_trasm=False, plt_purple_merged_point=True)
-        pab_cont_pct, pab_sed_lineflux, pab_trasm_flag, pab_boot_lines, pab_sed_fluxes, pab_wave_pct = plot_sed_around_line(ax_pab_sed, pab_filters, sed_df, spec_df, redshift, 1, pab_transmissions, id_msa, show_trasm=False, plt_purple_merged_point=True)
+        ha_cont_pct, ha_sed_lineflux, ha_trasm_flag, ha_boot_lines, ha_sed_fluxes, ha_wave_pct, ha_cont_flux_erg_s_cm2_aa, ha_boot_cont_fluxes = plot_sed_around_line(ax_ha_sed, ha_filters, sed_df, spec_df, redshift, 0, ha_transmissions, id_msa, show_trasm=False, plt_purple_merged_point=True)
+        pab_cont_pct, pab_sed_lineflux, pab_trasm_flag, pab_boot_lines, pab_sed_fluxes, pab_wave_pct, pab_cont_flux_erg_s_cm2_aa, pab_boot_cont_fluxes = plot_sed_around_line(ax_pab_sed, pab_filters, sed_df, spec_df, redshift, 1, pab_transmissions, id_msa, show_trasm=False, plt_purple_merged_point=True)
         
         lineratio_data_row = full_lineratio_data_df[full_lineratio_data_df['id_msa'] == id_msa]
         for ax in ax_list:
@@ -793,7 +797,7 @@ def plot_line_assessment(id_msa_list):
         ax_pab_fit.set_ylabel(f'Pa$\\beta$', fontsize=18)
         ax_pab_fit.text(0.3, -0.2, f'Emission Fit AV {round(lineratio_data_row["emission_fit_av"].iloc[0], 3)}', fontsize=14, transform=ax_pab_fit.transAxes)
         ax_pab_sed.text(0.1, -0.2,f'SED AV {round(lineratio_data_row["sed_av"].iloc[0], 3)}', fontsize=14, transform=ax_pab_sed.transAxes)
-        fig.savefig('/Users/brianlorenz/uncover/Figures/line_assessment/' + f'{id_msa}_line_assessment.pdf')
+        fig.savefig('/Users/brianlorenz/uncover/Figures/line_assessment/' + f'{id_msa}_line_assessment{save_str}.pdf')
         plt.close('all')
 
 if __name__ == "__main__":
