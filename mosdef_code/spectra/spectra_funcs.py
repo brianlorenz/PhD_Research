@@ -14,7 +14,6 @@ import scipy.integrate as integrate
 import matplotlib.pyplot as plt
 import initialize_mosdef_dirs as imd
 import cluster_data_funcs as cdf
-import mpu
 from scipy import interpolate
 
 

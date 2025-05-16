@@ -13,11 +13,11 @@ from matplotlib.lines import Line2D
 
 # Set thresholds here
 snr_dict = {
-    'Halpha_snr_thresh' : 10, 
-    'PaBeta_snr_thresh' : 10, 
-    'PaAlpha_snr_thresh' : 10, 
+    'Halpha_snr_thresh' : 1, 
+    'PaBeta_snr_thresh' : 1, 
+    'PaAlpha_snr_thresh' : 1, 
 }
-redshift_sigma_thresh = 2 # sigma or higher
+redshift_sigma_thresh = 1 # sigma or higher
 bcg_thresh = 0.04 # this value or lower
 
 
@@ -77,7 +77,6 @@ def plot_mass_vs_dust():
         # Compute snr for coloring
         snrs = np.min([df[f'{line_names[i][0]}_snr'], df[f'{line_names[i][1]}_snr']], axis=0)
         df['min_snr'] = snrs
-        breakpoint()
         for j in range(len(df)):
             rgba = cmap(norm(df['min_snr'].iloc[j]))
             # ax.errorbar(df['mstar_50'].iloc[j], df['z_50'].iloc[j], yerr=np.array([[low_zerr.iloc[j], high_zerr.iloc[j]]]).T, marker=shapes[i], mec='black', ms=6, color=rgba, ls='None', ecolor='gray')
@@ -134,6 +133,8 @@ def plot_mass_vs_dust():
     ax.set_xlim(5.5, 11.5)
     fig.savefig(f'/Users/brianlorenz/uncover/Figures/PHOT_analysis/sample_selects/sample_select{save_str}.pdf')
     scale_aspect(ax)
+
+    breakpoint()
     plt.close('all')
 
 

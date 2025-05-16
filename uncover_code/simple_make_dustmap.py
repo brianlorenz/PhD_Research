@@ -331,6 +331,7 @@ def make_dustmap_simple(id_msa, aper_size='None', axarr_final=[], ax_labels=Fals
     ha_image = make_lupton_rgb(ha_images[0].data, ha_images[1].data, ha_images[2].data, stretch=0.25)
     pab_linemap, pab_contmap, err_pab_linemap = compute_line(pab_cont_pct, pab_red_image_data, pab_green_image_data, pab_blue_image_data, redshift, 0, pab_filter_width, pab_rest_wavelength, images=True, image_noises=pab_image_noises, wave_pct=pab_wave_pct)
     pab_image = make_lupton_rgb(pab_images[0].data, pab_images[1].data, pab_images[2].data, stretch=0.25)
+
     # Bootstrap to compute SNR
     ha_linemap_boots = []
     pab_linemap_boots = []
@@ -365,16 +366,20 @@ def make_dustmap_simple(id_msa, aper_size='None', axarr_final=[], ax_labels=Fals
     snr_thresh_map = 0
     obj_skycoord = get_coords(id_msa)
     image_150w, wht_image_150w, photfnu_150w = get_cutout(obj_skycoord, 'f150w', size=image_size)
+    image_444w, wht_image_444w, photfnu_444w = get_cutout(obj_skycoord, 'f444w', size=image_size)
+
 
     ha_contmap_highsnr_idx = find_pixels_above_sky_noise(ha_contmap, segmap_idxs, snr_thresh_map=snr_thresh_map)
     ha_linemap_highsnr_idx = find_pixels_above_sky_noise(ha_linemap, segmap_idxs, snr_thresh_map=snr_thresh_map)
     f150w_highsnr_idx = find_pixels_above_sky_noise(image_150w.data, segmap_idxs, snr_thresh_map=snr_thresh_map)
+    f444w_highsnr_idx = find_pixels_above_sky_noise(image_444w.data, segmap_idxs, snr_thresh_map=snr_thresh_map)
     pab_contmap_highsnr_idx = find_pixels_above_sky_noise(pab_contmap, segmap_idxs, snr_thresh_map=snr_thresh_map)
     pab_linemap_highsnr_idx = find_pixels_above_sky_noise(pab_linemap, segmap_idxs, snr_thresh_map=snr_thresh_map)
     pab_linemap_segmap_snrcut_idx = np.logical_and(pab_snr_idxs,pab_linemap_highsnr_idx)
 
     r_value_info_haline_hacont = plot_and_correlate_highsnr_pix(id_dr3, ha_contmap, ha_contmap_highsnr_idx, 'Ha_cont', ha_linemap, ha_linemap_highsnr_idx, 'Ha_line', snr_thresh_map, bootstrap=bootstrap)
     r_value_info_haline_f150w = plot_and_correlate_highsnr_pix(id_dr3, image_150w.data, f150w_highsnr_idx, 'F150W', ha_linemap, ha_linemap_highsnr_idx, 'Ha_line', snr_thresh_map)
+    # r_value_info_haline_f444w = plot_and_correlate_highsnr_pix(id_dr3, image_444w.data, f444w_highsnr_idx, 'F444W', ha_linemap, ha_linemap_highsnr_idx, 'Ha_line', snr_thresh_map, bootstrap=bootstrap)
     r_value_info_haline_pabline = plot_and_correlate_highsnr_pix(id_dr3, pab_linemap, pab_linemap_highsnr_idx, 'PaB_line', ha_linemap, ha_linemap_highsnr_idx, 'Ha_line', snr_thresh_map)
     r_value_info_haline_pabline_snrcut = plot_and_correlate_highsnr_pix(id_dr3, pab_linemap, pab_linemap_segmap_snrcut_idx, 'PaB_line', ha_linemap, ha_linemap_highsnr_idx, 'Ha_line', snr_thresh_map)
 
@@ -382,6 +387,7 @@ def make_dustmap_simple(id_msa, aper_size='None', axarr_final=[], ax_labels=Fals
     r_value_info_pabcont_pabline_snrcut = plot_and_correlate_highsnr_pix(id_dr3, pab_linemap, pab_linemap_segmap_snrcut_idx, 'PaB_line', pab_contmap, pab_contmap_highsnr_idx, 'PaB_continuum', snr_thresh_map)
 
     r_value_info = r_value_info_haline_hacont
+    # r_value_info = r_value_info_haline_f444w
     if bootstrap > 0:
         boot_rs = r_value_info[-1]
         r_value_info = r_value_info[:-1]
@@ -608,7 +614,14 @@ def make_dustmap_simple(id_msa, aper_size='None', axarr_final=[], ax_labels=Fals
         #Image plots
         cmap_paper = 'inferno'
         ax_ha_image_paper.imshow(ha_image, origin='lower')
-        ax_150_image_paper.imshow(image_150m.data, cmap='Greys_r', origin='lower')
+        # ax_150_image_paper.imshow(image_150m.data, cmap='Greys_r', origin='lower')
+        # ax_150_image_paper.imshow(ha_contmap, cmap='Greys_r', norm=ha_contmap_norm, origin='lower')
+
+        ha_contmap_gt0 = ha_contmap[ha_contmap>0]
+        ha_contmap_norm_paper = Normalize(vmin=np.percentile(ha_contmap_gt0, 20), vmax=np.percentile(ha_contmap_gt0, 99.99))
+        # ha_contmap_norm2  = get_norm(ha_contmap, lower_pct=cont_lower_pct, upper_pct=cont_upper_pct)
+        ax_150_image_paper.imshow(ha_contmap, cmap='Greys_r', norm=ha_contmap_norm_paper, origin='lower')
+
 
         ax_ha_map_paper.imshow(ha_linemap_logscaled, cmap=cmap_paper, norm=ha_linemap_norm, origin='lower')
         ax_pab_overlay_paper.imshow(ha_linemap_logscaled, cmap=cmap_paper, norm=ha_linemap_norm, origin='lower')
@@ -639,10 +652,10 @@ def make_dustmap_simple(id_msa, aper_size='None', axarr_final=[], ax_labels=Fals
         ax_ha_image_paper.text(text_start, text_height, f'{ha_filters[2][2:].upper()}', fontsize=14, transform=ax_ha_image_paper.transAxes, color='blue', bbox=dict(facecolor='white', alpha=0.8, boxstyle='round'))
         ax_ha_image_paper.text(text_start+text_sep, text_height, f'{ha_filters[1][2:].upper()}', fontsize=14, transform=ax_ha_image_paper.transAxes, color='green', bbox=dict(facecolor='white', alpha=0.8, boxstyle='round'))
         ax_ha_image_paper.text(text_start+2*text_sep, text_height, f'{ha_filters[0][2:].upper()}', fontsize=14, transform=ax_ha_image_paper.transAxes, color='red', bbox=dict(facecolor='white', alpha=0.8, boxstyle='round'))
-        ax_150_image_paper.text(text_start+text_sep, text_height, f'F150W', fontsize=14, transform=ax_150_image_paper.transAxes, color='white', path_effects=[pe.withStroke(linewidth=3, foreground="black")])
-        ax_ha_map_paper.text(text_start+text_sep, text_height, f'H$\\alpha$ Map', fontsize=14, transform=ax_ha_map_paper.transAxes, color='white', path_effects=[pe.withStroke(linewidth=3, foreground="black")])
-        ax_pab_overlay_paper.text(text_start+text_sep-0.15, text_height, f'H$\\alpha$ Map with Pa$\\beta$', fontsize=14, transform=ax_pab_overlay_paper.transAxes, color='white', path_effects=[pe.withStroke(linewidth=3, foreground="black")])
-        
+        # ax_150_image_paper.text(text_start+text_sep, text_height, f'F150W', fontsize=14, transform=ax_150_image_paper.transAxes, color='white', path_effects=[pe.withStroke(linewidth=3, foreground="black")])
+        ax_150_image_paper.text(text_start+text_sep-0.08, text_height, f'Continuum', fontsize=14, transform=ax_150_image_paper.transAxes, color='white', path_effects=[pe.withStroke(linewidth=3, foreground="black")])
+        ax_ha_map_paper.text(text_start+text_sep-0.12, text_height, f'H$\\alpha$ Emission', fontsize=14, transform=ax_ha_map_paper.transAxes, color='white', path_effects=[pe.withStroke(linewidth=3, foreground="black")])
+        ax_pab_overlay_paper.text(text_start+text_sep-0.19, text_height, f'H$\\alpha$ Map with Pa$\\beta$', fontsize=14, transform=ax_pab_overlay_paper.transAxes, color='white', path_effects=[pe.withStroke(linewidth=3, foreground="black")])
 
         # PaB Contours
         x = np.arange(pab_linemap.shape[1])
@@ -673,7 +686,7 @@ def make_dustmap_simple(id_msa, aper_size='None', axarr_final=[], ax_labels=Fals
         cmap_ha = plt.get_cmap(cmap_paper)
         new_cmap_ha = truncate_colormap(cmap_ha, 0.35, 0.9)
         # if plt_aperture_paper == False: # Remove the contours when showing apertures
-        ax_150_image_paper.contour(X_ha, Y_ha, ha_contour_map, levels=[1,2,3,4,5], cmap=new_cmap_ha)
+        ax_150_image_paper.contour(X_ha, Y_ha, ha_contour_map, levels=[1,2,3,4,5], cmap=new_cmap_ha, alpha=0.7)
 
         for ax in axarr_final:
             scale_aspect(ax)
@@ -706,6 +719,7 @@ def make_dustmap_simple(id_msa, aper_size='None', axarr_final=[], ax_labels=Fals
         custom_labels_pab = ['Pa$\\beta$']
         ax_150_image_paper.legend(custom_lines_ha, custom_labels_ha, loc=3, fontsize=14)
         ax_pab_overlay_paper.legend(custom_lines_pab, custom_labels_pab, loc=3, fontsize=14)
+
 
         if plt_aperture_paper:
             # masked_shutter_arr = np.ma.masked_where(combined_shutter_arr < 0.1, combined_shutter_arr)
@@ -1503,12 +1517,11 @@ def make_paper_fig_dustmaps(id_msa_list, sortby = 'mass'):
 if __name__ == "__main__":
     # make_dustmap_simple(32111)
     # lineflux_df = ascii.read(f'/Users/brianlorenz/uncover/Data/generated_tables/lineflux_df_all.csv').to_pandas()
-    # breakpoint()
     # make_dustmap_simple(47875)
    
     id_msa_list = get_id_msa_list(full_sample=False)
-    make_all_dustmap(id_msa_list, full_sample=False, fluxcal=True)
-    # make_paper_fig_dustmaps(id_msa_list, sortby='av')
+    # make_all_dustmap(id_msa_list, full_sample=False, fluxcal=True)
+    make_paper_fig_dustmaps(id_msa_list, sortby='av')
     # make_paper_fig_dustmaps(id_msa_list, sortby='mass')
 
     # id_msa_list = get_id_msa_list(full_sample=True)

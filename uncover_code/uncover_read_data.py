@@ -179,7 +179,36 @@ def get_id_msa_list(full_sample=False):
         # id_msa_list = id_msa_list + id_msa_line_notfullcover_list
     return id_msa_list
 
+def flux_jy_to_erg(flux_jy, wave_aa):
+    c = 299792458 # m/s
+    flux_erg_aa = flux_jy * (1e-23*1e10*c / (wave_aa**2))
+    return flux_erg_aa
+
 make_pd_table_from_fits('/Users/brianlorenz/uncover/Catalogs/uncover-msa-full_depth-default_drz-v0.8a-lines.fits')
+
+
+def check_redshift_uncertainty():
+    spec_df = read_spec_cat()
+    sps_df = read_SPS_cat_all()
+
+    spec_df = spec_df[spec_df['flag_spec_qual']==0]
+    spec_df = spec_df[spec_df['flag_zspec_qual'] == 3]
+    spec_df = spec_df[spec_df['z_spec'] > 1.3]
+    spec_df = spec_df[spec_df['z_spec'] < 2.5]
+
+    id_msa_list = spec_df['id_msa'].to_list()
+    z_phots = []
+    for id_msa in id_msa_list:
+        sps_row = sps_df[sps_df['id_msa'] == id_msa]
+        if len(sps_row) == 0:
+            z_phots.append(-99)
+        else:
+            z_phots.append(sps_row['z_50'].iloc[0])
+    spec_df['z_50'] = z_phots
+    spec_df = spec_df[spec_df['z_50'] > 0]
+    redshift_diff = np.abs(spec_df['z_50']-spec_df['z_spec'])
+    breakpoint()
+
 
 if __name__ == "__main__":
     # read_prism_lsf()
@@ -193,12 +222,12 @@ if __name__ == "__main__":
     # breakpoint()
     # match_supercat(6325)
     # match_supercat(42041)
-    supercat = read_supercat()
+    # supercat = read_supercat()
     # spec_df = read_spec_cat()
     # aper_cat_df = read_aper_cat()
     # sps_cat = read_SPS2_cat()
     # read_raw_spec(47875, read_2d=True, id_redux=1000000304)
     # supercat_newspec = read_supercat_newids()
     # sps_df = read_SPS_cat_all()
-    breakpoint()
+    check_redshift_uncertainty()
     pass

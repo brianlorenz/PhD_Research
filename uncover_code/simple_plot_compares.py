@@ -13,7 +13,7 @@ from compute_av import get_nii_correction, get_fe_correction
 
 plot_shutter = False
 phot_categories = False
-plot_eqw = True
+plot_eqw = False
 
 def paper_plot_sed_emfit_accuracy(id_msa_list, color_var=''):
     fluxcal_str=''
@@ -38,6 +38,13 @@ def paper_plot_sed_emfit_accuracy(id_msa_list, color_var=''):
     ax_ha_sed_vs_emfit = fig.add_axes([0.07, ax_start_height, ax_width, ax_height])
     ax_pab_sed_vs_emfit = fig.add_axes([0.36, ax_start_height, ax_width, ax_height])
     ax_av_sed_vs_emfit = fig.add_axes([0.65, ax_start_height, ax_width, ax_height])
+    # Old verticl orientations
+    # cb_ax_ha = fig.add_axes([.24, ax_start_height+0.03, .015, ax_height-0.3])
+    # cb_ax_pab = fig.add_axes([.53, ax_start_height+0.03, .015, ax_height-0.3])
+    # cb_ax_av = fig.add_axes([.82, ax_start_height+0.03, .015, ax_height-0.3])
+    cb_ax_ha = fig.add_axes([.08, ax_start_height+ax_height-0.08, .1, 0.03])
+    cb_ax_pab = fig.add_axes([.37, ax_start_height+ax_height-0.08, .1, 0.03])
+    cb_ax_av = fig.add_axes([.66, ax_start_height+ax_height-0.08, .1, 0.03])
     ax_list = [ax_ha_sed_vs_emfit, ax_pab_sed_vs_emfit]
 
     # line_p1 = np.array([-100, -100])
@@ -71,8 +78,8 @@ def paper_plot_sed_emfit_accuracy(id_msa_list, color_var=''):
         ha_eqw = ha_eqw * get_nii_correction(id_msa)
         # print(f'id_msa: {id_msa}, eqw_ha {ha_eqw}, eqw_pab {pab_eqw}')
         
-        cmap = mpl.cm.inferno_r
-        cmap = truncate_colormap(cmap, 0, 0.8)
+        cmap = mpl.cm.inferno
+        cmap = truncate_colormap(cmap, 0.1, 0.95)
         
         if color_var == 'sed_av':
             norm = mpl.colors.Normalize(vmin=0, vmax=3) 
@@ -98,6 +105,11 @@ def paper_plot_sed_emfit_accuracy(id_msa_list, color_var=''):
             color_str = f'_{color_var}'
         else:
             color_str = ''
+        
+        eqw_cmap = mpl.cm.viridis
+        eqw_norm = mpl.colors.LogNorm(vmin=10, vmax=1000) 
+        eqw_ha_rgba = eqw_cmap(eqw_norm(np.abs(ha_eqw)))
+        eqw_pab_rgba = eqw_cmap(eqw_norm(np.abs(pab_eqw)))
 
         # For photometry categories
         marker='o'
@@ -140,12 +152,12 @@ def paper_plot_sed_emfit_accuracy(id_msa_list, color_var=''):
             ha_yerr = [[lineratio_data_row['err_ha_eqw_low'].iloc[0]],[lineratio_data_row['err_ha_eqw_high'].iloc[0]]]
             flux_or_ew = 'EqWidth'
         else:    
-            ha_datapoint = (fit_ha_flux, lineratio_data_row['ha_sed_flux'].iloc[0]) # rightmost variable may be wrong
+            ha_datapoint = (fit_ha_flux, data_df_row['ha_sed_flux'].iloc[0]) # rightmost variable may be wrong
             ha_xerr = [[err_fit_ha_flux_low], [err_fit_ha_flux_high]]
             ha_yerr = [[err_sed_ha_flux_low],[err_sed_ha_flux_high]]
             flux_or_ew = 'Flux'
         log_ha_datapoint = (np.log10(ha_datapoint[0]), np.log10(ha_datapoint[1]))
-        ax_ha_sed_vs_emfit.errorbar(ha_datapoint[0], ha_datapoint[1], xerr=ha_xerr, yerr=ha_yerr, marker=marker, color=rgba, ls='None', mec='black', ms=markersize, ecolor=ecolor)
+        ax_ha_sed_vs_emfit.errorbar(ha_datapoint[0], ha_datapoint[1], xerr=ha_xerr, yerr=ha_yerr, marker=marker, color=eqw_ha_rgba, ls='None', mec='black', ms=markersize, ecolor=ecolor)
         ax_ha_sed_vs_emfit.set_xlabel(f'H$\\alpha$+NII {flux_or_ew} Spectrum', fontsize=fontsize)
         ax_ha_sed_vs_emfit.set_ylabel(f'H$\\alpha$+NII {flux_or_ew} Photometry', fontsize=fontsize)
         ha_distances.append(get_distance(np.array(log_ha_datapoint)))
@@ -159,7 +171,7 @@ def paper_plot_sed_emfit_accuracy(id_msa_list, color_var=''):
             pab_xerr = [[err_fit_pab_flux_low], [err_fit_pab_flux_high]]
             pab_yerr = [[err_sed_fe_cor_pab_flux_low],[err_sed_fe_cor_pab_flux_high]]
         log_pab_datapoint = (np.log10(pab_datapoint[0]), np.log10(pab_datapoint[1]))
-        ax_pab_sed_vs_emfit.errorbar(pab_datapoint[0], pab_datapoint[1], xerr=pab_xerr, yerr=pab_yerr, marker=marker, color=rgba, ls='None', mec='black', ms=markersize, ecolor=ecolor)
+        ax_pab_sed_vs_emfit.errorbar(pab_datapoint[0], pab_datapoint[1], xerr=pab_xerr, yerr=pab_yerr, marker=marker, color=eqw_pab_rgba, ls='None', mec='black', ms=markersize, ecolor=ecolor)
         ax_pab_sed_vs_emfit.set_xlabel(f'Pa$\\beta$ {flux_or_ew} Spectrum', fontsize=fontsize)
         ax_pab_sed_vs_emfit.set_ylabel(f'Pa$\\beta$ {flux_or_ew} Photometry', fontsize=fontsize)
         pab_distances.append(get_distance(np.array(log_pab_datapoint)))
@@ -223,15 +235,23 @@ def paper_plot_sed_emfit_accuracy(id_msa_list, color_var=''):
     median_av_offset = np.median(av_distances)
     scatter_av_offset = np.std(av_distances)
 
-    start_scatter_text_x = 0.02
-    start_scatter_text_y = 0.94
+    # #upper left
+    # start_scatter_text_x = 0.02
+    # start_scatter_text_y = 0.94
+    # scatter_text_sep = 0.07
+    #lower right
+    start_scatter_text_x = 0.97
+    start_scatter_text_y = 0.10
     scatter_text_sep = 0.07
-    ax_ha_sed_vs_emfit.text(start_scatter_text_x, start_scatter_text_y, f'Offset: {median_ha_offset:0.2f}', transform=ax_ha_sed_vs_emfit.transAxes, fontsize=12)
-    ax_ha_sed_vs_emfit.text(start_scatter_text_x, start_scatter_text_y-scatter_text_sep, f'Scatter: {scatter_ha_offset:0.2f}', transform=ax_ha_sed_vs_emfit.transAxes, fontsize=12)
-    ax_pab_sed_vs_emfit.text(start_scatter_text_x, start_scatter_text_y, f'Offset: {median_pab_offset:0.2f}', transform=ax_pab_sed_vs_emfit.transAxes, fontsize=12)
-    ax_pab_sed_vs_emfit.text(start_scatter_text_x, start_scatter_text_y-scatter_text_sep, f'Scatter: {scatter_pab_offset:0.2f}', transform=ax_pab_sed_vs_emfit.transAxes, fontsize=12)
-    ax_av_sed_vs_emfit.text(start_scatter_text_x, start_scatter_text_y, f'AV Offset: {median_av_offset:0.2f}', transform=ax_av_sed_vs_emfit.transAxes, fontsize=12)
-    ax_av_sed_vs_emfit.text(start_scatter_text_x, start_scatter_text_y-scatter_text_sep, f'Scatter: {scatter_av_offset:0.2f}', transform=ax_av_sed_vs_emfit.transAxes, fontsize=12)
+    
+    ax_ha_sed_vs_emfit.text(start_scatter_text_x, start_scatter_text_y, f'Offset: {median_ha_offset:0.2f}', transform=ax_ha_sed_vs_emfit.transAxes, fontsize=12, horizontalalignment='right')
+    ax_ha_sed_vs_emfit.text(start_scatter_text_x, start_scatter_text_y-scatter_text_sep, f'Scatter: {scatter_ha_offset:0.2f}', transform=ax_ha_sed_vs_emfit.transAxes, fontsize=12, horizontalalignment='right')
+    ax_pab_sed_vs_emfit.text(start_scatter_text_x, start_scatter_text_y, f'Offset: {median_pab_offset:0.2f}', transform=ax_pab_sed_vs_emfit.transAxes, fontsize=12, horizontalalignment='right')
+    ax_pab_sed_vs_emfit.text(start_scatter_text_x, start_scatter_text_y-scatter_text_sep, f'Scatter: {scatter_pab_offset:0.2f}', transform=ax_pab_sed_vs_emfit.transAxes, fontsize=12, horizontalalignment='right')
+    ax_av_sed_vs_emfit.text(start_scatter_text_x, start_scatter_text_y, f'AV Offset: {median_av_offset:0.2f}', transform=ax_av_sed_vs_emfit.transAxes, fontsize=12, horizontalalignment='right')
+    ax_av_sed_vs_emfit.text(start_scatter_text_x, start_scatter_text_y-scatter_text_sep, f'Scatter: {scatter_av_offset:0.2f}', transform=ax_av_sed_vs_emfit.transAxes, fontsize=12, horizontalalignment='right')
+    
+
     # ax_av_sed_vs_emfit.text(inverse_av_datapoint[0], inverse_av_datapoint[1], f'{id_msa}')
     # ax_pab_sed_vs_emfit.text(pab_datapoint[0], pab_datapoint[1], f'{id_msa}')
     
@@ -268,18 +288,21 @@ def paper_plot_sed_emfit_accuracy(id_msa_list, color_var=''):
     ax_av_sed_vs_emfit.plot([-10, 100], [-10, 100], ls='--', color='red', marker='None')
     # ax_av_sed_vs_emfit.set_xlim([38, 1.5])
     # ax_av_sed_vs_emfit.set_ylim([38, 1.5])
-    ax_av_sed_vs_emfit.set_xlim([1/40, 1/1.5])
-    ax_av_sed_vs_emfit.set_ylim([1/40, 1/1.5])
-    ax2.set_ylim([38, 1.5])
+    ax_av_sed_vs_emfit.set_xlim([0.027, 0.2])
+    ax_av_sed_vs_emfit.set_ylim([0.027, 0.5])
+    # breakpoint()
+    ax2.set_ylim([1/0.027, 1/0.5])
     ax_av_sed_vs_emfit.set_xscale('log')
     ax_av_sed_vs_emfit.set_yscale('log')
     ax2.set_yscale('log')
+    x_tick_locs = [0.03, 0.055, 1/10, 1/5]
+    x_tick_labs = ['0.03', '0.055', '0.1', '0.2']
     y_tick_locs = [0.03, 0.055, 1/10, 1/5, 1/2]
     y_tick_labs = ['0.03', '0.055', '0.1', '0.2', '0.5']
     ax_av_sed_vs_emfit.set_yticks(y_tick_locs)
     ax_av_sed_vs_emfit.set_yticklabels(y_tick_labs)
-    ax_av_sed_vs_emfit.set_xticks(y_tick_locs)
-    ax_av_sed_vs_emfit.set_xticklabels(y_tick_labs)
+    ax_av_sed_vs_emfit.set_xticks(x_tick_locs)
+    ax_av_sed_vs_emfit.set_xticklabels(x_tick_labs)
     # ax_av_sed_vs_emfit.set_xlim([-1.5, 4.5])
     # ax_av_sed_vs_emfit.set_ylim([-1.5, 4.5])
     twin_y_tick_labs = ['-1', '0', '1', '2', '3', '4']
@@ -296,15 +319,30 @@ def paper_plot_sed_emfit_accuracy(id_msa_list, color_var=''):
 
     # scale_aspect(ax_av_sed_vs_emfit)
 
-    cb_ax = fig.add_axes([.93, ax_start_height, .02, ax_height])
     if color_var != 'None':
         sm =  mpl.cm.ScalarMappable(norm=norm, cmap=cmap)
         cbar_ticks = [7, 8, 9, 10, 11]
         cbar_ticklabels = [str(tick) for tick in cbar_ticks]
-        cbar = fig.colorbar(sm, orientation='vertical', cax=cb_ax, ticks=cbar_ticks)
-        cbar.ax.set_yticklabels(cbar_ticklabels)  
-        cbar.set_label(cbar_label, fontsize=fontsize, rotation=270, labelpad=18)
-        cbar.ax.tick_params(labelsize=fontsize)
+        cbar = fig.colorbar(sm, orientation='horizontal', cax=cb_ax_av, ticks=cbar_ticks)
+        cbar.ax.set_xticklabels(cbar_ticklabels) # change to yticks if vertical 
+        # cbar.set_label(cbar_label, fontsize=fontsize-2, rotation=270, labelpad=10)
+        vertical_label_pad = -48
+        cbar.set_label(cbar_label, fontsize=fontsize-2, labelpad=vertical_label_pad)
+        cbar.ax.tick_params(labelsize=fontsize-4)
+
+    if color_var != 'None':
+        eqw_sm =  mpl.cm.ScalarMappable(norm=eqw_norm, cmap=eqw_cmap)
+        eqw_cbar_ticks = [10, 100, 1000]
+        eqw_cbar_ticklabels = [str(tick) for tick in eqw_cbar_ticks]
+        eqw_cbar_ha = fig.colorbar(eqw_sm, orientation='horizontal', cax=cb_ax_ha, ticks=eqw_cbar_ticks)
+        eqw_cbar_pab = fig.colorbar(eqw_sm, orientation='horizontal', cax=cb_ax_pab, ticks=eqw_cbar_ticks)
+        eqw_cbar_ha.ax.set_xticklabels(eqw_cbar_ticklabels)  
+        eqw_cbar_ha.ax.tick_params(labelsize=fontsize-4)
+        eqw_cbar_pab.ax.set_xticklabels(eqw_cbar_ticklabels)  
+        eqw_cbar_pab.ax.tick_params(labelsize=fontsize-4)
+        eqw_cbar_ha.set_label('EW$_{\\mathrm{H}\\alpha}$', fontsize=fontsize-2, labelpad=vertical_label_pad)
+        eqw_cbar_pab.set_label('EW$_{\\mathrm{Pa}\\beta}$', fontsize=fontsize-2, labelpad=vertical_label_pad)
+
 
     if plot_eqw:
         add_str = '_eqwidth'
@@ -478,7 +516,9 @@ def r_value_vs_props(snr_map_thresh, y_var='r', pabsnrcut=0):
     # ha vs cont
     compare_values = 'hacont_haline'
     r_value_df = ascii.read(f'/Users/brianlorenz/uncover/Data/generated_tables/r_values/{compare_values}_r_values_snr{snr_map_thresh}.csv').to_pandas()
-    
+    # r_value_df = ascii.read(f'/Users/brianlorenz/uncover/Data/generated_tables/r_values/f444w_haline_r_values_snr0.csv').to_pandas()
+
+
     # compare_values = 'f150w_haline'
     if pabsnrcut == 1:
         compare_values = 'pabline_haline'
@@ -562,8 +602,8 @@ def r_value_vs_props(snr_map_thresh, y_var='r', pabsnrcut=0):
         # ax_sfr.text(sfr, y_plot, f'{id_dr3}')
 
         # Paper axes
-        cmap = mpl.cm.inferno_r
-        cmap = truncate_colormap(cmap, 0, 0.8)
+        cmap = mpl.cm.inferno
+        cmap = truncate_colormap(cmap, 0.1, 0.95)
         norm = mpl.colors.Normalize(vmin=7.5, vmax=10) 
         rgba = cmap(norm(stellar_mass))
         ax_paper.errorbar(phot_av, y_plot, xerr=np.array([[err_phot_av_low, err_phot_av_high]]).T, yerr=y_err, color=rgba, ecolor='lightgray', marker='o', ls='None', mec='black', markersize = 10)
@@ -613,7 +653,7 @@ if __name__ == "__main__":
 
     # plot_snr_compare(id_msa_list)
 
-    r_value_vs_props(0, y_var='r')
+    # r_value_vs_props(0, y_var='r')
     # r_value_vs_props(3, y_var='cc')
     # r_value_vs_props(3, y_var='sim')
     # r_value_vs_props(0, y_var='r', pabsnrcut=1)

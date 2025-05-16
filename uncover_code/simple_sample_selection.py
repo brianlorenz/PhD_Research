@@ -259,7 +259,7 @@ def line_in_range(z, target_line, filt_cols, uncover_filt_dir):
     return covered, filt_name
 
 
-def paper_figure_sample_selection(id_msa_list, color_var='None', plot_sfr_mass=False, plot_mags=False):
+def paper_figure_sample_selection(id_msa_list, color_var='None', plot_sfr_mass=False, plot_mags=False, plot_mass_mags=False):
     show_squares = True
     show_low_snr = True
     show_sample = True
@@ -312,23 +312,29 @@ def paper_figure_sample_selection(id_msa_list, color_var='None', plot_sfr_mass=F
     
     
     if show_hexes:
-        if plot_sfr_mass == False and plot_mags == False:
+        if plot_sfr_mass == False and plot_mags == False and plot_mass_mags == False:
             hexbin_norm = mpl.colors.Normalize(vmin=1, vmax=200) 
-            good_both_idx = np.logical_and(good_redshift_idx, good_mass_idx)
-            
-            ax.hexbin(all_redshifts[good_both_idx], all_masses[good_both_idx], gridsize=15, cmap=new_cmap, norm=hexbin_norm, label='Full Photometric Sample')
+            good_both_idx = np.logical_and(good_redshift_idx, good_mass_idx)    
+            ax.hexbin(all_redshifts[good_both_idx], all_masses[good_both_idx], gridsize=15, cmap=new_cmap, norm=hexbin_norm, label='Photometric Sample')
         elif plot_mags:
             hexbin_norm = mpl.colors.Normalize(vmin=1, vmax=200) 
             f444w_fluxes = supercat_df['f_f444w'] * 1e-8
             f444w_mags = -2.5 * np.log10(f444w_fluxes) + 8.9
             good_mag_idx = np.logical_and(f444w_mags>18, f444w_mags<35)
             good_both_idx = np.logical_and(good_redshift_idx, good_mag_idx)
-            ax.hexbin(all_redshifts[good_both_idx], f444w_mags[good_both_idx], gridsize=15, cmap=new_cmap, norm=hexbin_norm, label='Full Photometric Sample')
+            ax.hexbin(all_redshifts[good_both_idx], f444w_mags[good_both_idx], gridsize=15, cmap=new_cmap, norm=hexbin_norm, label='Photometric Sample')
+        elif plot_mass_mags:
+            hexbin_norm = mpl.colors.Normalize(vmin=1, vmax=200) 
+            f444w_fluxes = supercat_df['f_f444w'] * 1e-8
+            f444w_mags = -2.5 * np.log10(f444w_fluxes) + 8.9
+            good_mag_idx = np.logical_and(f444w_mags>18, f444w_mags<35)
+            good_both_idx = np.logical_and(good_mass_idx, good_mag_idx)
+            ax.hexbin(all_masses[good_both_idx], f444w_mags[good_both_idx], gridsize=15, cmap=new_cmap, norm=hexbin_norm, label='Photometric Sample')
         else:
             # hexbin_norm = mpl.colors.LogNorm(vmin=1, vmax=5000) 
             hexbin_norm = mpl.colors.Normalize(vmin=1, vmax=500) 
             good_both_idx = np.logical_and(good_sfr_idx, good_mass_idx)
-            ax.hexbin(all_masses[good_both_idx], all_log_sfr100s[good_both_idx], gridsize=15, cmap=new_cmap, norm=hexbin_norm, label='Full Photometric Sample')
+            ax.hexbin(all_masses[good_both_idx], all_log_sfr100s[good_both_idx], gridsize=15, cmap=new_cmap, norm=hexbin_norm, label='Photometric Sample')
 
     # Gray high quality points
     for id_msa in zqual_df['id_msa']:
@@ -370,14 +376,15 @@ def paper_figure_sample_selection(id_msa_list, color_var='None', plot_sfr_mass=F
                 continue
 
 
-        if plot_mags:
+        if plot_mags or plot_mass_mags:
             detected_apparent_mag_hafilt, err_detected_apparent_mag_hafilt_u, err_detected_apparent_mag_hafilt_d = get_mags_info(id_msa, detected='F444W')
-
-        if plot_sfr_mass == False and plot_mags==False:
+        if plot_sfr_mass == False and plot_mags==False and plot_mass_mags==False:
             ax.plot(redshift, stellar_mass_50, marker=marker, color='gray', ls='None', ms=gray_markersize, mec='black')
             # ax.text(redshift, stellar_mass_50, f'{id_msa}')
         elif plot_mags:
             ax.plot(redshift, detected_apparent_mag_hafilt, marker=marker, color='gray', ls='None', ms=gray_markersize, mec='black')
+        elif plot_mass_mags:
+            ax.plot(stellar_mass_50, detected_apparent_mag_hafilt, marker=marker, color='gray', ls='None', ms=gray_markersize, mec='black')
         else:
             ax.plot(stellar_mass_50, log_sfr100_50, marker=marker, color='gray', ls='None', ms=gray_markersize, mec='black')
 
@@ -414,7 +421,7 @@ def paper_figure_sample_selection(id_msa_list, color_var='None', plot_sfr_mass=F
         cmap = mpl.cm.viridis
         # cmap = truncate_colormap(cmap, 0.15, 1.0)
 
-        if plot_mags:
+        if plot_mags or plot_mass_mags:
             detected_apparent_mag_hafilt, err_detected_apparent_mag_hafilt_u, err_detected_apparent_mag_hafilt_d = get_mags_info(id_msa, detected='F444W')
             
         
@@ -465,31 +472,40 @@ def paper_figure_sample_selection(id_msa_list, color_var='None', plot_sfr_mass=F
             # print(f'id_msa: {id_msa}, sfms_offset = {offset_below_sfms}')
         
 
-        if plot_sfr_mass == False and plot_mags == False:
+        if plot_sfr_mass == False and plot_mags == False and plot_mass_mags==False:
             ax.errorbar(redshift, stellar_mass_50, yerr=[err_stellar_mass_low, err_stellar_mass_high], marker='o', color=rgba, ls='None', mec='black', ms=markersize)
             # ax.text(redshift, stellar_mass_50.iloc[0], f'{id_msa}')
         elif plot_mags:
             ax.errorbar(redshift, detected_apparent_mag_hafilt, yerr=np.array([[err_detected_apparent_mag_hafilt_d, err_detected_apparent_mag_hafilt_u]]).T, marker='o', color=rgba, ls='None', mec='black', ms=markersize)
+        elif plot_mass_mags:
+            ax.errorbar(stellar_mass_50, detected_apparent_mag_hafilt, xerr=[err_stellar_mass_low, err_stellar_mass_high], yerr=np.array([[err_detected_apparent_mag_hafilt_d, err_detected_apparent_mag_hafilt_u]]).T, marker='o', color=rgba, ls='None', mec='black', ms=markersize)
         else:
             ax.errorbar(stellar_mass_50, log_sfr100_50, xerr=[err_stellar_mass_low, err_stellar_mass_high], yerr=[err_sfr100_50_low, err_sfr100_50_high], marker='o', color=rgba, ls='None', mec='black', ms=markersize)
     
-    if plot_sfr_mass == False and plot_mags == False:
+    if plot_sfr_mass == False and plot_mags == False and plot_mass_mags==False:
         ax.set_ylabel('Prospector '+stellar_mass_label, fontsize=fontsize)
         ax.set_xlabel('Redshift', fontsize=fontsize) 
         ax.set_xlim([1.3, 2.5])
-        ax.set_ylim([5, 11])
+        ax.set_ylim([6, 11])
         scale_aspect(ax)
     elif plot_mags:
-        ax.set_ylabel('Apparent Magnitude', fontsize=fontsize)
+        ax.set_ylabel('F444W Apparent Magnitude', fontsize=fontsize)
         ax.set_xlabel('Redshift', fontsize=fontsize) 
         ax.set_xlim([1.3, 2.5])
+        ax.set_ylim([18, 35])
+        ax.invert_yaxis()
+        scale_aspect(ax)
+    elif plot_mass_mags:
+        ax.set_ylabel('F444W Apparent Magnitude', fontsize=fontsize)
+        ax.set_xlabel(stellar_mass_label, fontsize=fontsize) 
+        ax.set_xlim([6, 11])
         ax.set_ylim([18, 35])
         ax.invert_yaxis()
         scale_aspect(ax)
     else:
         ax.set_xlabel('Prospector '+ stellar_mass_label, fontsize=fontsize)
         ax.set_ylabel('Prospector '+ sfr_label, fontsize=fontsize) 
-        ax.set_xlim([5, 11])
+        ax.set_xlim([6, 11])
         ax.set_ylim([-2.5, 2])
         # ax.set_yscale('log')
     
@@ -533,10 +549,10 @@ def paper_figure_sample_selection(id_msa_list, color_var='None', plot_sfr_mass=F
     line_squares = Line2D([0], [0], color='grey', marker='s', markersize=4, ls='None', mec='black')
     line_hexes = Line2D([0], [0], color='grey', marker='h', markersize=12, ls='None')
     custom_lines = [line_sample, line_snr, line_squares, line_hexes]
-    custom_labels = ['Selected Sample', 'Pa$\\beta$ SNR < 5', 'Line not in Filter', 'Full Photometric Sample']
+    custom_labels = ['Selected Sample', 'Pa$\\beta$ SNR < 5', 'Line not in Filter', 'Photometric Sample']
     if show_hexes == False:
         custom_lines = [line for line in custom_lines if line != line_hexes]
-        custom_labels = [lab for lab in custom_labels if lab != 'Full Photometric Sample']
+        custom_labels = [lab for lab in custom_labels if lab != 'Photometric Sample']
     if show_sample == False:
         custom_lines = [line for line in custom_lines if line != line_sample]
         custom_labels = [lab for lab in custom_labels if lab != 'Selected Sample']
@@ -546,12 +562,20 @@ def paper_figure_sample_selection(id_msa_list, color_var='None', plot_sfr_mass=F
     if show_squares == False:
         custom_lines = [line for line in custom_lines if line != line_squares]
         custom_labels = [lab for lab in custom_labels if lab != 'Line not in Filter']
-    ax.legend(custom_lines, custom_labels, loc=3, fontsize=fontsize-2)
+    if plot_mass_mags:
+        legend_loc = 4
+    else:
+        legend_loc = 3
+    ax.legend(custom_lines, custom_labels, loc=legend_loc, fontsize=fontsize-2)
+
+    add_str=''
+    if plot_mass_mags:
+        add_str='mass_mag'
 
     if plot_sfr_mass == False:
         save_loc = f'/Users/brianlorenz/uncover/Figures/paper_figures/sample_selection{color_str}.pdf'
     else:
-        save_loc = f'/Users/brianlorenz/uncover/Figures/paper_figures/sample_selection_sfrmass_{color_str}.pdf'
+        save_loc = f'/Users/brianlorenz/uncover/Figures/paper_figures/sample_selection_sfrmass_{color_str}{add_str}.pdf'
 
     fig.savefig(save_loc, bbox_inches='tight')
 
@@ -597,12 +621,274 @@ def whitaker_sfms(mass):
     sfms = a + b*mass + c*mass**2
     return sfms
 
+
+def paper_figure_sample_selection_twopanel(id_msa_list):
+    show_squares = True
+    show_low_snr = True
+    show_sample = True
+    show_hexes = True
+
+
+    fig = plt.figure(figsize=(12,6))
+    height = 0.72
+    width = height/2
+    start_level = 0.12
+    ax_mass = fig.add_axes([0.10, start_level, width, height])
+    ax_mag = fig.add_axes([0.55, start_level, width, height])
+    cb_ax = fig.add_axes([0.935, start_level,0.03,height])
+
+
+    fontsize = 14
+    normal_markersize=8
+    small_markersize = 4
+    gray_markersize = 4
+    background_markersize = 2
+
+    zqual_df = read_spec_cat()
+    sps_df = read_SPS_cat()
+    sps_all_df = read_SPS_cat_all()
+    supercat_df = read_supercat()
+    lineratio_data_df = ascii.read(f'/Users/brianlorenz/uncover/Data/generated_tables/lineratio_av_df_all.csv').to_pandas()
+
+
+    line_notfullcover_df = ascii.read('/Users/brianlorenz/uncover/Data/sample_selection/line_notfullcover_df.csv').to_pandas()
+    filt_edge_df = ascii.read('/Users/brianlorenz/uncover/Data/sample_selection/filt_edge.csv').to_pandas()
+    ha_snr_flag_df = ascii.read('/Users/brianlorenz/uncover/Data/sample_selection/ha_snr_flag.csv').to_pandas()
+    pab_snr_flag_df = ascii.read('/Users/brianlorenz/uncover/Data/sample_selection/pab_snr_flag.csv').to_pandas()
+    id_msa_skipped_df = ascii.read('/Users/brianlorenz/uncover/Data/sample_selection/id_msa_skipped.csv').to_pandas()
+    id_msa_cont_overlap_line_df = ascii.read('/Users/brianlorenz/uncover/Data/sample_selection/cont_overlap_line.csv').to_pandas()
+    id_msa_not_in_filt_df = ascii.read('/Users/brianlorenz/uncover/Data/sample_selection/line_not_in_filt.csv').to_pandas()
+
+    id_redshift_issue_list = filt_edge_df['id_msa'].append(id_msa_not_in_filt_df['id_msa']).append(id_msa_cont_overlap_line_df['id_msa']).append(line_notfullcover_df['id_msa']).to_list()
+    id_pab_snr_list = pab_snr_flag_df['id_msa'].to_list()
+    id_skip_list = id_msa_skipped_df['id_msa'].to_list()
+
+    id_msa_list = id_msa_list + id_pab_snr_list
+
+    # Gray background
+    all_masses = sps_all_df['mstar_50']
+    all_sfr100s = sps_all_df['sfr100_50']
+    all_log_sfr100s = np.log10(all_sfr100s)
+    all_redshifts = sps_all_df['z_50']
+    # ax.plot(all_redshifts, all_masses, marker='o', ls='None', markersize=background_markersize, color='gray')
+    cmap = plt.get_cmap('gray_r')
+    new_cmap = truncate_colormap(cmap, 0, 0.7)
+    good_redshift_idx = np.logical_and(all_redshifts > 1.3, all_redshifts < 2.5)
+    good_mass_idx = np.logical_and(all_masses > 5, all_masses < 11)
+    good_sfr_idx = np.logical_and(all_log_sfr100s > -2.5, all_log_sfr100s < 2)
+
+    
+    
+    if show_hexes:
+        # hexbin_norm = mpl.colors.Normalize(vmin=1, vmax=200) 
+        # good_both_idx = np.logical_and(good_redshift_idx, good_mass_idx)    
+        # ax_mass.hexbin(all_redshifts[good_both_idx], all_masses[good_both_idx], gridsize=15, cmap=new_cmap, norm=hexbin_norm, label='Photometric Sample')
+    
+        hexbin_norm = mpl.colors.Normalize(vmin=1, vmax=500) 
+        good_both_idx = np.logical_and(good_sfr_idx, good_mass_idx)
+        ax_mass.hexbin(all_masses[good_both_idx], all_log_sfr100s[good_both_idx], gridsize=15, cmap=new_cmap, norm=hexbin_norm, label='Photometric Sample')
+
+        mag_lower_lim = 32
+        hexbin_norm = mpl.colors.Normalize(vmin=1, vmax=200) 
+        f444w_fluxes = supercat_df['f_f444w'] * 1e-8
+        f444w_mags = -2.5 * np.log10(f444w_fluxes) + 8.9
+        good_mag_idx = np.logical_and(f444w_mags>18, f444w_mags<mag_lower_lim)
+        good_both_idx = np.logical_and(good_redshift_idx, good_mag_idx)
+        ax_mag.hexbin(all_redshifts[good_both_idx], f444w_mags[good_both_idx], gridsize=15, cmap=new_cmap, norm=hexbin_norm, label='Photometric Sample')
+        
+    # Gray high quality points
+    for id_msa in zqual_df['id_msa']:
+        if id_msa in id_skip_list or id_msa == 42041:
+            continue
+        if id_msa in id_msa_list:
+            continue
+
+        marker = 'o'
+        zqual_row = zqual_df[zqual_df['id_msa'] == id_msa]
+
+        if zqual_row['flag_zspec_qual'].iloc[0] != 3 or zqual_row['flag_spec_qual'].iloc[0] != 0:
+            marker = 's'
+            continue
+
+        if id_msa in id_redshift_issue_list:
+            marker = 's'
+            if show_squares == False:
+                continue
+        elif id_msa in id_pab_snr_list or id_msa==32575:
+            marker = 'o'
+            if show_low_snr == False:
+                continue
+            
+        redshift = zqual_row['z_spec'].iloc[0]
+        if redshift < 1.3 or redshift > 2.4:
+            continue
+        # id_dr2 = zqual_df[zqual_df['id_msa']==id_msa]['id_DR2'].iloc[0]
+        sps_row = sps_df[sps_df['id_msa']==id_msa]
+        stellar_mass_50 = sps_row['mstar_50']
+        sfr100_50 = sps_row['sfr100_50']
+        log_sfr100_50 = np.log10(sps_row['sfr100_50'])
+        if len(sps_row) == 0:
+            print(f'No SPS for {id_msa}')
+            continue
+        
+        if show_sample == False:
+            if id_msa in id_msa_list and id_msa not in id_pab_snr_list:
+                continue
+
+
+        detected_apparent_mag_hafilt, err_detected_apparent_mag_hafilt_u, err_detected_apparent_mag_hafilt_d = get_mags_info(id_msa, detected='F444W')
+        
+        ax_mass.plot(stellar_mass_50, log_sfr100_50, marker=marker, color='gray', ls='None', ms=gray_markersize, mec='black')
+        # ax_mass.plot(redshift, stellar_mass_50, marker=marker, color='gray', ls='None', ms=gray_markersize, mec='black')
+            # ax.text(redshift, stellar_mass_50, f'{id_msa}')
+        ax_mag.plot(redshift, detected_apparent_mag_hafilt, marker=marker, color='gray', ls='None', ms=gray_markersize, mec='black')
+        
+    # Selected Sample
+    for id_msa in id_msa_list:
+        zqual_row = zqual_df[zqual_df['id_msa'] == id_msa]
+        # supercat_row = supercat_df[supercat_df['id_msa']==id_msa]
+        redshift = zqual_row['z_spec'].iloc[0]
+        # id_dr2 = zqual_df[zqual_df['id_msa']==id_msa]['id_DR2'].iloc[0]
+        sps_row = sps_df[sps_df['id_msa']==id_msa]
+
+        stellar_mass_50 = sps_row['mstar_50']
+        err_stellar_mass_low = stellar_mass_50 - sps_row['mstar_16']
+        err_stellar_mass_high = sps_row['mstar_84'] - stellar_mass_50
+
+        sfr100_50 = sps_row['sfr100_50']
+        log_sfr100_50 = np.log10(sps_row['sfr100_50'])
+        err_sfr100_50_low = log_sfr100_50 - np.log10(sps_row['sfr100_16'])
+        err_sfr100_50_high = np.log10(sps_row['sfr100_84']) - log_sfr100_50
+
+        dust2_50 = sps_row['dust2_50'].iloc[0]
+
+        # data_df_row = data_df[data_df['id_msa'] == id_msa]
+        lineratio_data_row = lineratio_data_df[lineratio_data_df['id_msa'] == id_msa]
+        fit_df = ascii.read(f'/Users/brianlorenz/uncover/Data/emission_fitting/{id_msa}_emission_fits.csv').to_pandas()
+        # ha_snr = fit_df['signal_noise_ratio'].iloc[0]
+        pab_snr = fit_df['signal_noise_ratio'].iloc[0]
+        ha_eqw = fit_df['equivalent_width_aa'].iloc[0]
+        pab_eqw = fit_df['equivalent_width_aa'].iloc[1]
+        
+        cmap = mpl.cm.viridis
+        # cmap = truncate_colormap(cmap, 0.15, 1.0)
+
+        detected_apparent_mag_hafilt, err_detected_apparent_mag_hafilt_u, err_detected_apparent_mag_hafilt_d = get_mags_info(id_msa, detected='F444W')
+            
+        
+        norm_mass = mpl.colors.LogNorm(vmin=0.1, vmax=10) 
+        rgba_mass = cmap(norm_mass(sfr100_50))
+        cbar_label_mass = 'Prospector SFR (M$_\odot$ / yr)'
+
+        norm = mpl.colors.LogNorm(vmin=10, vmax=1000) 
+        rgba_mag = cmap(norm(np.abs(ha_eqw)))
+        cbar_label_mag = 'H$\\alpha$ Equivalent Width'
+        
+        if id_msa in id_pab_snr_list:
+            markersize = small_markersize
+            if show_low_snr == False:
+                continue
+        else:
+            markersize = normal_markersize
+            if show_sample == False:
+                continue
+        
+        if id_msa in id_msa_list:
+            print(f'{id_msa}, mass {stellar_mass_50.iloc[0]}, ha_eqw {ha_eqw}, pab_eqw {pab_eqw}')
+
+            # SFMS location:
+            measured_log_sfr = np.log10(sfr100_50.iloc[0])
+            sfms_log_sfr = whitaker_sfms(stellar_mass_50.iloc[0])
+            offset_below_sfms = sfms_log_sfr - measured_log_sfr # positive means below sfms, negative means above
+            # print(f'id_msa: {id_msa}, sfms_offset = {offset_below_sfms}')
+        
+        ax_mass.errorbar(stellar_mass_50, log_sfr100_50, xerr=[err_stellar_mass_low, err_stellar_mass_high], yerr=[err_sfr100_50_low, err_sfr100_50_high], marker='o', color=rgba_mag, ls='None', mec='black', ms=markersize)
+        # ax_mass.errorbar(redshift, stellar_mass_50, yerr=[err_stellar_mass_low, err_stellar_mass_high], marker='o', color=rgba_mass, ls='None', mec='black', ms=markersize)
+            # ax.text(redshift, stellar_mass_50.iloc[0], f'{id_msa}')
+        ax_mag.errorbar(redshift, detected_apparent_mag_hafilt, yerr=np.array([[err_detected_apparent_mag_hafilt_d, err_detected_apparent_mag_hafilt_u]]).T, marker='o', color=rgba_mag, ls='None', mec='black', ms=markersize)
+        
+    # ax_mass.set_ylabel('Prospector '+stellar_mass_label, fontsize=fontsize)
+    # ax_mass.set_xlabel('Redshift', fontsize=fontsize) 
+    # ax_mass.set_xlim([1.3, 2.5])
+    # ax_mass.set_ylim([5, 11])
+    # scale_aspect(ax_mass)
+    # ax_mass.tick_params(labelsize=fontsize)
+    ax_mass.set_xlabel('Prospector '+ stellar_mass_label, fontsize=fontsize)
+    ax_mass.set_ylabel('Prospector '+ sfr_label, fontsize=fontsize) 
+    ax_mass.set_xlim([6, 11])
+    ax_mass.set_ylim([-2.5, 2])
+    scale_aspect(ax_mass)
+    ax_mass.tick_params(labelsize=fontsize)
+
+
+    ax_mag.set_ylabel('F444W Apparent Magnitude', fontsize=fontsize)
+    ax_mag.set_xlabel('Redshift', fontsize=fontsize) 
+    ax_mag.set_xlim([1.3, 2.5])
+    ax_mag.set_ylim([18, mag_lower_lim])
+    ax_mag.invert_yaxis()
+    scale_aspect(ax_mag)
+    ax_mag.tick_params(labelsize=fontsize)
+    
+
+   
+    cbar_sfr_ticks = [0.1, 1, 10]
+    cbar_sfr_ticklabels = [str(tick) for tick in cbar_sfr_ticks]
+
+    cbar_ew_ticks = [10, 100, 1000]
+    cbar_ew_ticklabels = [str(tick) for tick in cbar_ew_ticks]
+        
+    sm =  mpl.cm.ScalarMappable(norm=norm, cmap=cmap)
+    cbar = fig.colorbar(sm, orientation='vertical', cax=cb_ax, ticks=cbar_ew_ticks)
+    cbar.ax.set_yticklabels(cbar_ew_ticklabels)  
+    cbar.set_label(cbar_label_mag, fontsize=16)
+    cbar.ax.tick_params(labelsize=16)
+
+    # # SFMS
+    # if plot_sfr_mass == True:
+    #     masses = np.arange(6,11,0.1)
+    #     # predicted_log_sfrs = check_sfms(masses, 0.5)
+    #     predicted_log_sfrs = whitaker_sfms(masses)
+    #     ax.plot(masses, predicted_log_sfrs, color='red', ls='--', marker='None', label='SFMS, z=2')
+    #     smfs_offsets = [0.1020446252898145,0.18283711116867318, -0.2375098376696847, 0.7051415256536799,0.6706993379653309, -0.18537210751204647, 0.22890526287538182, -0.2798992695970548, -0.773697743192055,0.3767266122566961,0.6676142678869769,-0.3323495130454126,0.308414353592555,-0.876565275930646]   
+    #     # breakpoint()
+    # Legend
+    from matplotlib.lines import Line2D
+    from matplotlib.patches import RegularPolygon
+
+    line_sample = Line2D([0], [0], color=cmap(norm_mass(3)), marker='o', markersize=8, ls='None', mec='black')
+    line_snr = Line2D([0], [0], color=cmap(norm_mass(3)), marker='o', markersize=4, ls='None', mec='black')
+    line_squares = Line2D([0], [0], color='grey', marker='s', markersize=4, ls='None', mec='black')
+    line_hexes = Line2D([0], [0], color='grey', marker='h', markersize=12, ls='None')
+    custom_lines = [line_sample, line_snr, line_squares, line_hexes]
+    custom_labels = ['Selected Sample', 'Pa$\\beta$ SNR < 5', 'Line not in Filter', 'Photometric Sample']
+    if show_hexes == False:
+        custom_lines = [line for line in custom_lines if line != line_hexes]
+        custom_labels = [lab for lab in custom_labels if lab != 'Photometric Sample']
+    if show_sample == False:
+        custom_lines = [line for line in custom_lines if line != line_sample]
+        custom_labels = [lab for lab in custom_labels if lab != 'Selected Sample']
+    if show_low_snr == False:
+        custom_lines = [line for line in custom_lines if line != line_snr]
+        custom_labels = [lab for lab in custom_labels if lab != 'Pa$\\beta$ SNR < 5']
+    if show_squares == False:
+        custom_lines = [line for line in custom_lines if line != line_squares]
+        custom_labels = [lab for lab in custom_labels if lab != 'Line not in Filter']
+    ax_mass.legend(custom_lines, custom_labels, loc=2, fontsize=fontsize-2)
+    # ax_mass.legend(custom_lines, custom_labels, loc=3, fontsize=fontsize-2)
+
+
+    save_loc = f'/Users/brianlorenz/uncover/Figures/paper_figures/sample_selection_twopanel.pdf'
+    
+    fig.savefig(save_loc, bbox_inches='tight')
+
 if __name__ == "__main__":
     # sample_select()
     
     id_msa_list = get_id_msa_list(full_sample=False)
     # paper_figure_sample_selection(id_msa_list, color_var='sfr')
-    paper_figure_sample_selection(id_msa_list, color_var='ha_eqw', plot_mags=True)
+    paper_figure_sample_selection(id_msa_list, color_var='sfr', plot_mass_mags=True)
+    # paper_figure_sample_selection(id_msa_list, color_var='ha_eqw', plot_mags=True)
+    paper_figure_sample_selection_twopanel(id_msa_list)
 
 
     # paper_figure_sample_selection(id_msa_list, color_var='redshift', plot_sfr_mass=True)
