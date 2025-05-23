@@ -7,10 +7,9 @@ import numpy as np
 import pandas as pd
 from astropy.io import ascii
 from scipy.optimize import curve_fit
-from uncover_prospector_seds import read_prospector, get_prospect_df_loc
-from simple_sample_selection import find_good_spec
 
-def flux_calibrate_spectrum(id_msa):
+
+def flux_calibrate_spectrum(id_msa, save_fluxcal=True):
     print(f'Flux calibration for {id_msa}')
     spec_df = read_raw_spec(id_msa)
     sed_df = get_sed(id_msa)
@@ -55,34 +54,36 @@ def flux_calibrate_spectrum(id_msa):
 
     spec_df['err_rest_flux_calibrated_erg_aa'] = spec_df['err_flux_calibrated_jy'] * (1e-23*1e10*c / (spec_df['wave_aa']**2)) * (1+redshift)
 
+    if save_fluxcal == True:
+        print(f'Saving flux calibration for {id_msa}')
+        sed_df.to_csv(f'/Users/brianlorenz/uncover/Data/seds/{id_msa}_sed.csv', index=False)
+        spec_df_saveloc = f'/Users/brianlorenz/uncover/Data/fluxcal_specs/{id_msa}_fluxcal_spec.csv'
+        spec_df.to_csv(spec_df_saveloc, index=False)
 
-    print(f'Saving flux calibration for {id_msa}')
-    sed_df.to_csv(f'/Users/brianlorenz/uncover/Data/seds/{id_msa}_sed.csv', index=False)
-    spec_df_saveloc = f'/Users/brianlorenz/uncover/Data/fluxcal_specs/{id_msa}_fluxcal_spec.csv'
-    spec_df.to_csv(spec_df_saveloc, index=False)
 
+        # Plotting
+        wave_micron = sed_df['eff_wavelength']
+        fig, ax = plt.subplots(figsize=(6,6))
+        # Raw Spec
+        ax.plot(spec_df['wave'], spec_df['flux'], color='cyan', marker='None', ls='-', label='Spectrum')
+        ax.plot(wave_micron, sed_jy, color='blue', marker='o', ls='None', label='Integrated Spectrum')
+        
+        # Flux Cal spec
+        ax.plot(spec_df['wave'], spec_df['flux_calibrated_jy'], color='orange', marker='None', ls='-', label='FluxCal Spectrum')
+        ax.plot(wave_micron, sed_df['int_spec_flux_calibrated'], color='red', marker='o', ls='None', label='FluxCal Int Spectrum')
 
-    # Plotting
-    wave_micron = sed_df['eff_wavelength']
-    fig, ax = plt.subplots(figsize=(6,6))
-    # Raw Spec
-    ax.plot(spec_df['wave'], spec_df['flux'], color='cyan', marker='None', ls='-', label='Spectrum')
-    ax.plot(wave_micron, sed_jy, color='blue', marker='o', ls='None', label='Integrated Spectrum')
-    
-    # Flux Cal spec
-    ax.plot(spec_df['wave'], spec_df['flux_calibrated_jy'], color='orange', marker='None', ls='-', label='FluxCal Spectrum')
-    ax.plot(wave_micron, sed_df['int_spec_flux_calibrated'], color='red', marker='o', ls='None', label='FluxCal Int Spectrum')
+        # Raw SED
+        ax.plot(wave_micron, sed_df['flux'], color='black', marker='o', ls='None', label='SED')
 
-    # Raw SED
-    ax.plot(wave_micron, sed_df['flux'], color='black', marker='o', ls='None', label='SED')
+        fontsize = 14
+        ax.legend(fontsize=fontsize-4)
+        ax.tick_params(labelsize=fontsize)
+        ax.set_xlabel('Wavelength (um)', fontsize=fontsize)
+        ax.set_ylabel('Flux (Jy)', fontsize=fontsize)
+        fig.savefig(f'/Users/brianlorenz/uncover/Figures/simple_spec_sed_compare/spec_sed_compare_{id_msa}.pdf')
+        plt.close('all')
 
-    fontsize = 14
-    ax.legend(fontsize=fontsize-4)
-    ax.tick_params(labelsize=fontsize)
-    ax.set_xlabel('Wavelength (um)', fontsize=fontsize)
-    ax.set_ylabel('Flux (Jy)', fontsize=fontsize)
-    fig.savefig(f'/Users/brianlorenz/uncover/Figures/simple_spec_sed_compare/spec_sed_compare_{id_msa}.pdf')
-    plt.close('all')
+    return correct_flux, popt
 
 if __name__ == "__main__":
     # flux_calibrate_spectrum(14087)

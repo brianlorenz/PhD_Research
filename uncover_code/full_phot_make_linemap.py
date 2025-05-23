@@ -5,6 +5,7 @@ from astropy import units as u
 from astropy.nddata import Cutout2D
 from uncover_read_data import read_supercat, read_segmap, read_bcg_surface_brightness
 from uncover_make_sed import make_full_phot_sed
+from uncover_prospector_seds import read_prospector, make_prospector
 from full_phot_sample_selection import line_list
 from sedpy import observate
 import matplotlib.pyplot as plt
@@ -20,7 +21,7 @@ from uncover_cosmo import find_pix_per_kpc, pixel_scale
 import initialize_mosdef_dirs as imd
 import shutil
 import pandas as pd
-
+from full_phot_make_prospector_models import prospector_abs_spec_folder
 
 phot_df_loc = '/Users/brianlorenz/uncover/Data/generated_tables/phot_calcs/phot_linecoverage_ha_pab_paa.csv'
 figure_save_loc = '/Users/brianlorenz/uncover/Figures/PHOT_sample/'
@@ -167,11 +168,11 @@ def plot_sed_around_line(id_dr3, line_name, filters, redshift, bootstrap=1000):
     fig, ax = plt.subplots(figsize=(6,6))
     ax.axvline(line_wave_obs, ls='--', color='green') # observed line
     
-    def set_error_floor(flux, err_flux, floor_pct=0.05):
-        err_floor = flux*0.05
-        if err_flux < err_floor:
-            err_flux = err_floor
-        return err_flux
+    # def set_error_floor(flux, err_flux, floor_pct=0.05):
+    #     err_floor = flux*0.05
+    #     if err_flux < err_floor:
+    #         err_flux = err_floor
+    #     return err_flux
 
     # Plot the 3 SED points
     for i in range(len(filters)):
@@ -248,6 +249,101 @@ def plot_sed_around_line(id_dr3, line_name, filters, redshift, bootstrap=1000):
 
     return cont_percentile, line_flux, boot_lines, sed_fluxes, wave_pct, line_wave_rest, cont_value
 
+def plot_sed_around_line_prospector(id_dr3, line_name, filters, redshift, bootstrap=1000):
+    # Read in prospector model
+    prospector_no_neb_df = ascii.read(f'{prospector_abs_spec_folder}{id_dr3}_prospector_no_neb.csv').to_pandas()
+    prospector_spec_df, prospector_sed_df, mu = read_prospector(id_dr3, id_dr3=True)
+
+    # Scale the model with emission to the SED, then use same scale factor for the no_neb one
+    
+
+    # Integrate Prospector using sedpy to get continuum point
+    prospector_cont_flux = 0 #value here Jy
+
+    # Use typical method with prospector and comtinuum to get line flux
+    line_wave_rest = [line[1] for line in line_list if line[0]==line_name][0] # Angstrom
+    line_wave_obs = (line_wave_rest * (1+redshift))/1e4 # micron
+
+    sed_df = make_full_phot_sed(id_dr3)
+
+    fig, ax = plt.subplots(figsize=(6,6))
+    ax.axvline(line_wave_obs, ls='--', color='green') # observed line
+    
+    # Plot the 3 SED points
+    for i in range(len(filters)):
+        sed_row = sed_df[sed_df['filter'] == filters[i]]
+    
+        if i == 0:
+            red_wave = sed_row['eff_wavelength'].iloc[0]
+            red_flux = sed_row['flux'].iloc[0]
+            err_red_flux = sed_row['err_flux'].iloc[0]
+        if i == 1:
+            green_wave = sed_row['eff_wavelength'].iloc[0]
+            green_flux = sed_row['flux'].iloc[0]
+            err_green_flux = sed_row['err_flux'].iloc[0]
+        if i == 2:
+            blue_wave = sed_row['eff_wavelength'].iloc[0]
+            blue_flux = sed_row['flux'].iloc[0]
+            err_blue_flux = sed_row['err_flux'].iloc[0]
+
+        # Read and plot each filter curve
+        sedpy_name = filters[i].replace('f_', 'jwst_')
+        sedpy_filt = observate.load_filters([sedpy_name])[0]
+        ax.plot(sedpy_filt.wavelength/1e4, sedpy_filt.transmission/6e5, ls='-', marker='None', color=colors[i], lw=1)
+
+    
+    ax.errorbar(red_wave, red_flux, yerr = err_red_flux, color='red', marker='o')
+    ax.errorbar(green_wave, green_flux, yerr = err_green_flux, color='green', marker='o')
+    ax.errorbar(blue_wave, blue_flux, yerr = err_blue_flux, color='blue', marker='o')
+
+
+    # Compute the percentile to use when combining the continuum
+    connect_color = 'purple'
+    
+    # wave_pct = compute_wavelength_pct(blue_wave, green_wave, red_wave)
+    # cont_percentile = compute_cont_pct(blue_wave, green_wave, red_wave, blue_flux, red_flux)
+    sedpy_name = filters[1].replace('f_', 'jwst_')
+    sedpy_line_filt = observate.load_filters([sedpy_name])[0]
+    filter_width = sedpy_line_filt.rectangular_width
+    line_flux, observed_wave = get_lineflux_from_cont(green_flux, prospector_cont_flux, line_wave_rest, redshift, filter_width)
+
+    ##### THINK about how to monte carlo - do it with prospector errors as well? Probably
+    # boot_lines = []
+    # if bootstrap > 0:
+    #     for i in range(bootstrap):
+    #         boot_red_flux = np.random.normal(loc=red_flux, scale=err_red_flux, size=1)
+    #         boot_green_flux = np.random.normal(loc=green_flux, scale=err_green_flux, size=1)
+    #         boot_blue_flux = np.random.normal(loc=blue_flux, scale=err_blue_flux, size=1)
+    #         boot_cont_percentile = compute_cont_pct(blue_wave, green_wave, red_wave, boot_blue_flux, boot_red_flux)
+    #         boot_line, boot_cont = compute_line(boot_cont_percentile, boot_red_flux[0], boot_green_flux[0], boot_blue_flux[0], redshift, 0, filter_width, line_wave_rest)            
+    #         boot_line = boot_line 
+            
+    #         boot_lines.append(boot_line)
+    # boot_lines = np.array(boot_lines)
+
+
+    # ax.plot([red_wave, blue_wave], [red_flux, blue_flux], marker='None', ls='--', color=connect_color)
+    ax.plot(green_wave, prospector_cont_flux, marker='o', ls='None', color=connect_color)
+    ax.plot([green_wave,green_wave], [green_flux, prospector_cont_flux], marker='None', ls='-', color='green', lw=2)
+        
+       
+    # Plot cleanup
+    ax.set_xlabel('Wavelength (um)', fontsize=14)
+    ax.set_ylabel('Flux (Jy)', fontsize=14)
+    ax.tick_params(labelsize=14)
+    # ax.set_xlim(0.8*line_wave_obs, 1.2*line_wave_obs)
+    # ax.set_ylim(0, 1.2*np.max(spec_df['flux_calibrated_jy']))
+    sed_fluxes = [red_flux, green_flux, blue_flux]
+
+    imd.check_and_make_dir(figure_save_loc + f'sed_images/')
+    imd.check_and_make_dir(figure_save_loc + f'sed_images/{line_name}_sed_images_prospector_method/')
+    fig.savefig(figure_save_loc + f'sed_images/{line_name}_sed_images_prospector_method/{id_dr3}_{line_name}_sed.pdf')
+
+    return line_flux, sed_fluxes, line_wave_rest, prospector_cont_flux
+
+
+
+    return
 
 
 def make_3color(id_dr3, line_name, phot_df_row, supercat_df, plot = False, image_size=(100,100)): 
@@ -379,39 +475,44 @@ def compute_cont_pct(blue_wave, green_wave, red_wave, blue_flux, red_flux):
         cont_percentile = 1-cont_percentile
     return cont_percentile
 
+def get_lineflux_from_cont(green_flx, cont_value, line_rest_wave, redshift, filter_width):
+    line_value = green_flx - cont_value # Jy
+
+    # Put in erg/s/cm2/Hz
+    line_value = line_value * 1e-23
+    
+    # # Convert from f_nu to f_lambda
+    c = 299792458 # m/s
+    observed_wave = line_rest_wave * (1+redshift)
+    line_value = line_value * ((c*1e10) / (observed_wave)**2) # erg/s/cm2/angstrom
+
+    # # Multiply by filter width to just get F
+    # Filter width is observed frame width
+    line_value = line_value * filter_width  # erg/s/cm2
+    return line_value, observed_wave
+
+
 def compute_line(cont_pct, red_flx, green_flx, blue_flx, redshift, raw_transmission, filter_width, line_rest_wave, images=False, image_noises=[], wave_pct=50):
-        """
-        Fluxes in Jy
-        Line rest wave in angstroms
-        """
-        if images == True:
-            cont_value = np.percentile([red_flx, blue_flx], cont_pct*100, axis=0)
-        else:
-            cont_value = np.percentile([blue_flx, red_flx], cont_pct*100)
+    """
+    Fluxes in Jy
+    Line rest wave in angstroms
+    """
+    if images == True:
+        cont_value = np.percentile([red_flx, blue_flx], cont_pct*100, axis=0)
+    else:
+        cont_value = np.percentile([blue_flx, red_flx], cont_pct*100)
 
-        line_value = green_flx - cont_value # Jy
+    line_value, observed_wave = get_lineflux_from_cont(green_flx, cont_value, line_rest_wave, redshift, filter_width)
 
-        # Put in erg/s/cm2/Hz
-        line_value = line_value * 1e-23
-        
-        # # Convert from f_nu to f_lambda
-        c = 299792458 # m/s
-        observed_wave = line_rest_wave * (1+redshift)
-        line_value = line_value * ((c*1e10) / (observed_wave)**2) # erg/s/cm2/angstrom
- 
-        # # Multiply by filter width to just get F
-        # Filter width is observed frame width
-        line_value = line_value * filter_width  # erg/s/cm2
+    if images == True:
+        err_cont_value = np.sqrt((((wave_pct)**2)*(image_noises[0])**2) + (((1-wave_pct)**2)*(image_noises[2])**2))
+        err_line_value = np.sqrt(image_noises[1]**2 + err_cont_value**2)
+        err_line_value = err_line_value * 1e-23
+        err_line_value = err_line_value * ((c*1e10) / (observed_wave)**2)
+        err_line_value = err_line_value * filter_width
+        return line_value, cont_value, err_line_value
 
-        if images == True:
-            err_cont_value = np.sqrt((((wave_pct)**2)*(image_noises[0])**2) + (((1-wave_pct)**2)*(image_noises[2])**2))
-            err_line_value = np.sqrt(image_noises[1]**2 + err_cont_value**2)
-            err_line_value = err_line_value * 1e-23
-            err_line_value = err_line_value * ((c*1e10) / (observed_wave)**2)
-            err_line_value = err_line_value * filter_width
-            return line_value, cont_value, err_line_value
-
-        return line_value, cont_value
+    return line_value, cont_value
 
 def make_all_phot_linemaps(line_name):
     snr_thresh = 1

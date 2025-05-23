@@ -32,7 +32,7 @@ def get_sed(id_msa, aper_size = 'None', use_id_dr3=False):
     if aper_size != 'None':
         supercat_df = read_aper_cat(aper_size=aper_size)
 
-    if id_dr3 == True:
+    if use_id_dr3 == True:
         id_col = 'id'
     else:
         id_col = 'id_msa'

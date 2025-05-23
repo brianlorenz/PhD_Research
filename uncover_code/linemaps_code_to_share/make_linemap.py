@@ -492,10 +492,13 @@ def make_single_halpha_linemap(id_dr3):
 
 if __name__ == "__main__":
     # Give an id here, and this will make the linemap
+    # This will be good to test individual cases, and would be a good place to try setting up a way to save the linemap
     make_single_halpha_linemap(51980) # Takes about 2 seconds for a single map with 3 figures saved. Can save time by turning off some figures
    
     
-
-    make_all_linemaps(halpha_name)
+    # This will loop through the catalog and make all linemaps according to the selection criteria specified in that function
+    # You will definitely want to edit the selection criteria to match your science goals
+    # And then will need to save the linemaps and determine how to best analyze them!
+    # make_all_linemaps(halpha_name)
     
     pass

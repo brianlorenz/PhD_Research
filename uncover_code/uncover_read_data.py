@@ -105,6 +105,8 @@ def read_raw_spec(id_msa, read_2d=-1, id_redux = -1):
     spec_df['flux'] = spec_df['flux']*1e-6 # Convert uJy to Jy
     spec_df['err'] = spec_df['err']*1e-6
 
+    spec_df['rest_flux'] = spec_df['flux']*(1+redshift)
+
     
     spec_df['wave_aa'] = spec_df['wave']*10000
     spec_df['rest_wave_aa'] = spec_df['wave_aa']/(1+redshift)

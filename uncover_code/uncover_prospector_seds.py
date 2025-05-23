@@ -84,21 +84,27 @@ def make_prospector(id_msa, plt_jy=True, id_dr3=False):
     prospector_sed_df = pd.DataFrame(zip(weff, modmags), columns = ['weff_um', 'flux_jy'])
     prospector_sed_df['weff_aa'] = 10000 * prospector_sed_df['weff_um']
     prospector_sed_df.to_csv(loc_prospector_sed_df, index=False)
+
+    prospector_mu = pd.DataFrame(zip([id_msa],[mu]), columns = ['id', 'mu'])
+    prospector_mu.to_csv(f'/Users/brianlorenz/uncover/Data/prospector_spec_dr3/{id_msa}_mu.csv', index=False)
     
-    return prospector_sed_df, prospector_spec_df
+    return prospector_sed_df, prospector_spec_df, mu
 
 def read_prospector(id_msa, id_dr3=False):
     loc_prospector_spec_df, loc_prospector_sed_df = get_prospect_df_loc(id_msa, id_dr3=id_dr3)
-    if os.path.exists(loc_prospector_sed_df):
+    loc_mu = f'/Users/brianlorenz/uncover/Data/prospector_spec_dr3/{id_msa}_mu.csv'
+    if os.path.exists(loc_mu):
         prospector_spec_df = ascii.read(loc_prospector_spec_df).to_pandas()
         prospector_sed_df = ascii.read(loc_prospector_sed_df).to_pandas()
+        mu_df = ascii.read(f'/Users/brianlorenz/uncover/Data/prospector_spec_dr3/{id_msa}_mu.csv').to_pandas()
+        mu = mu_df['mu'].iloc[0]
     else:
-        prospector_sed_df, prospector_spec_df = make_prospector(id_msa, id_dr3=id_dr3)
-    return prospector_spec_df, prospector_sed_df
+        prospector_sed_df, prospector_spec_df, mu = make_prospector(id_msa, id_dr3=id_dr3)
+    return prospector_spec_df, prospector_sed_df, mu
 
 
 def plot_prospector_vs_sed(id_msa):
-    prospector_spec_df, prospector_sed_df = read_prospector(id_msa)
+    prospector_spec_df, prospector_sed_df, mu = read_prospector(id_msa)
     sed_df = get_sed(id_msa)
     # breakpoint()
     fig, ax = plt.subplots(figsize=(6,6))

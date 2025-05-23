@@ -9,7 +9,10 @@ from scipy.interpolate import interp1d
 import pandas as pd
 from uncover_sed_filters import unconver_read_filters
 from sedpy import observate
-from uncover_read_data import flux_jy_to_erg
+from uncover_read_data import flux_jy_to_erg, read_fluxcal_spec, read_supercat, read_raw_spec
+from full_phot_make_prospector_models import prospector_abs_spec_folder
+import os
+from simple_flux_calibration import flux_calibrate_spectrum
 
 
 phot_df_loc = '/Users/brianlorenz/uncover/Data/generated_tables/phot_calcs/phot_linecoverage_ha_pab_paa.csv'
@@ -18,7 +21,8 @@ colors = ['red', 'mediumseagreen']
 def plot_sed(id_dr3, phot_sample_df, ha_pab=False, pab_paa=False, overplot_bump=[], plot_rest=True, plot_median_model=False):
     sed_df = read_full_phot_sed(id_dr3)
     lineflux_df = read_merged_lineflux_cat()
-    prospector_spec_df, prospector_sed_df = read_prospector(id_dr3, id_dr3=True)
+    prospector_spec_df, prospector_sed_df, mu = read_prospector(id_dr3, id_dr3=True)
+    
 
     phot_sample_row = phot_sample_df[phot_sample_df['id'] == id_dr3]
     lineflux_row = lineflux_df[lineflux_df['id_dr3']==id_dr3]
@@ -40,8 +44,24 @@ def plot_sed(id_dr3, phot_sample_df, ha_pab=False, pab_paa=False, overplot_bump=
     prospector_spec_df['rest_flux_jy'] = prospector_spec_df['flux_jy'] * (1+redshift)
     fig, ax = plt.subplots(figsize=(6,6))
     if plot_rest:
-        ax.errorbar(sed_df['rest_wave'], sed_df['rest_flux'], yerr=sed_df['err_rest_flux'], color='black', ecolor='grey', ls='None', marker='o', zorder=5)
-        ax.plot(prospector_spec_df['rest_wave_um'], prospector_spec_df['rest_flux_jy'], color='orange', ls='-', marker='None', zorder=5)
+        ax.errorbar(sed_df['rest_wave'], sed_df['rest_flux'], yerr=sed_df['err_rest_flux'], color='black', ecolor='grey', ls='None', marker='o', zorder=5, label='SED')
+        ax.plot(prospector_spec_df['rest_wave_um'], prospector_spec_df['rest_flux_jy'], color='orange', ls='-', marker='None', zorder=5, label='SPS catalog model')
+        if os.path.exists(f'{prospector_abs_spec_folder}{id_dr3}_prospector_no_neb.csv'):
+            prospector_no_neb_df = ascii.read(f'{prospector_abs_spec_folder}{id_dr3}_prospector_no_neb.csv').to_pandas()
+            supercat_df = read_supercat()
+            id_msa = supercat_df[supercat_df['id']==id_dr3]['id_msa'].iloc[0]
+            spec_df = read_fluxcal_spec(id_msa)
+            # spec_df_raw = read_raw_spec(id_msa)
+            fluxcal_func, popt = flux_calibrate_spectrum(id_msa, save_fluxcal=False)
+            prospector_no_neb_df['rest_full_model_jy_scaled'] = fluxcal_func((1+redshift)*prospector_no_neb_df['rest_wave']/10000, prospector_no_neb_df['rest_full_model_jy'], popt)
+            spec_df['fluxcal_recalc'] = fluxcal_func((1+redshift)*spec_df['rest_wave_aa']/10000, spec_df['flux'], popt)
+            
+            # breakpoint()
+            ax.plot(prospector_no_neb_df['rest_wave']/10000, prospector_no_neb_df['rest_full_model_jy']*mu*(1+redshift), color='green', ls='-', marker='None', zorder=5, label='Full Model')
+            ax.plot(prospector_no_neb_df['rest_wave']/10000, prospector_no_neb_df['rest_absorp_model_jy']*mu*(1+redshift), color='mediumseagreen', ls='-', marker='None', zorder=5, label='Absorption')
+            # ax.plot(spec_df['rest_wave_aa']/10000, spec_df['flux'], color='black', ls='-', marker='None', zorder=5, alpha=0.8, label='Real spec without (1+z)')
+            # ax.plot(spec_df['rest_wave_aa']/10000, spec_df['flux_calibrated_jy'], color='black', ls='-', marker='None', zorder=5, alpha=0.5, label='Real spec scaled and *(1+z)')
+            ax.legend(loc=1, fontsize=10)
         wave_type = 'Rest'
     else:
         ax.errorbar(sed_df['eff_wavelength'], sed_df['flux'], yerr=sed_df['err_flux'], color='black', ecolor='grey', ls='None', marker='o', zorder=5)
@@ -123,7 +143,7 @@ def plot_sed(id_dr3, phot_sample_df, ha_pab=False, pab_paa=False, overplot_bump=
         spec_val = get_spec_val(prospector_spec_df, scale_wave=scale_wave)
         for id_dr3_bump in overplot_bump:
             # Read in the prospector model
-            prospector_spec_df_bump, prospector_sed_df_bump = read_prospector(id_dr3_bump, id_dr3=True)
+            prospector_spec_df_bump, prospector_sed_df_bump, mu = read_prospector(id_dr3_bump, id_dr3=True)
             phot_sample_row_bump = phot_sample_df[phot_sample_df['id'] == id_dr3_bump]
             redshift_bump = phot_sample_row_bump['z_50'].iloc[0]
             prospector_spec_df_bump = add_rest_cols(prospector_spec_df_bump, redshift_bump)
@@ -151,7 +171,7 @@ def plot_sed(id_dr3, phot_sample_df, ha_pab=False, pab_paa=False, overplot_bump=
         ax.set_ylim(0.95*np.min(sed_df['flux']), 1.35*np.max(sed_df['flux']))    
     ax.set_xlabel(f'{wave_type} Wavelength (um)')
     ax.set_ylabel('Flux (Jy)')
-    fig.savefig(f'/Users/brianlorenz/uncover/Figures/PHOT_sample/sed_diagnositcs/{id_dr3}_sed.pdf')
+    fig.savefig(f'/Users/brianlorenz/uncover/Figures/PHOT_sample/sed_diagnositcs_p1/{id_dr3}_sed.pdf')
     plt.close('all')
     pass
     
@@ -185,7 +205,7 @@ def get_median_model(phot_sample_df, id_dr3_list):
     interp_fluxes = []
     for id_dr3 in id_dr3_list:
         # Read in the prospector model
-        prospector_spec_df_bump, prospector_sed_df_bump = read_prospector(id_dr3, id_dr3=True)
+        prospector_spec_df_bump, prospector_sed_df_bump, mu = read_prospector(id_dr3, id_dr3=True)
         phot_sample_row_bump = phot_sample_df[phot_sample_df['id'] == id_dr3]
         redshift_bump = phot_sample_row_bump['z_50'].iloc[0]
         prospector_spec_df_bump = add_rest_cols(prospector_spec_df_bump, redshift_bump)
@@ -203,14 +223,19 @@ def get_median_model(phot_sample_df, id_dr3_list):
     median_model_df.to_csv(f'/Users/brianlorenz/uncover/Data/generated_tables/median_prospector_model_{scale_wave}um.csv', index=False)
 
 if __name__ == "__main__":
-    plot_all_seds()
+    # plot_all_seds()
     
 
     # gals_list = [17757, 17758, 30052, 32180, 32181, 36076, 37784, 40135, 46831, 47758, 48104, 49020, 49712, 49932, 50707, 51980, 54343, 59550, 64780, 13130, 22045, 23395, 29959, 30351, 32536, 33247, 33588, 33775, 35090, 40504, 40522, 43970, 46261, 46855, 47958, 54239, 54240, 54614, 54674, 55357, 55594, 57422, 60576, 60577, 60973, 64472, 64786, 67410]
     phot_sample_df = ascii.read(phot_df_loc).to_pandas()
-    plot_sed(13130, phot_sample_df=phot_sample_df, pab_paa=True, plot_median_model=True)
+    # plot_sed(13130, phot_sample_df=phot_sample_df, pab_paa=True, plot_median_model=True)
     # plot_sed(20686, phot_sample_df=phot_sample_df, pab_paa=True, overplot_bump=gals_list)
     # plot_sed(30351, phot_sample_df=phot_sample_df, pab_paa=True, overplot_bump=gals_list)
 
     # full_gals_list = [17757, 17758, 30052, 30351, 32180, 32181, 36076, 37784, 40135, 46831, 47758, 48104, 49020, 49712, 49932, 50707, 51980, 54343, 59550, 64780, 13130, 22045, 23395, 29959, 30351, 32536, 33247, 33588, 33775, 35090, 40504, 40522, 43970, 46261, 46855, 47958, 54239, 54240, 54614, 54674, 55357, 55594, 57422, 60576, 60577, 60973, 64472, 64786, 67410]
     # get_median_model(phot_sample_df, full_gals_list)
+    # plot_sed(37182, phot_sample_df=phot_sample_df, pab_paa=False, plot_median_model=False, ha_pab=True)
+
+    project_1_ids = np.array([30052, 30804, 31608, 37182, 37776, 44283, 46339, 47771, 49023, 52140, 52257, 54625, 60579, 62937])
+    for id in project_1_ids:
+        plot_sed(id, phot_sample_df=phot_sample_df, pab_paa=False, plot_median_model=False, ha_pab=True)

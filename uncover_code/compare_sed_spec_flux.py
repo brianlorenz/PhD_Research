@@ -45,7 +45,7 @@ def compare_sed_flux(id_msa, make_plot=True, aper_size='None'):
     # p5 = np.poly1d(np.polyfit(sed_df_nonan['int_spec_flux'], sed_df_nonan['flux'], 5))
     # sed_df['spec_scaled_flux'] = p5(sed_df['flux'])
     # sed_df['err_spec_scaled_flux'] = p5(sed_df['err_flux'])
-    prospector_spec_df, prospector_sed_df = read_prospector(id_msa)
+    prospector_spec_df, prospector_sed_df, mu = read_prospector(id_msa)
     prospector_spec_df['spec_scaled_flux'] = poly5(prospector_spec_df['flux_jy'], popt[0], popt[1], popt[2], popt[3], popt[4], popt[5])
     prospector_sed_df['spec_scaled_flux'] = poly5(prospector_sed_df['flux_jy'], popt[0], popt[1], popt[2], popt[3], popt[4], popt[5])
     loc_prospector_spec_df, loc_prospector_sed_df = get_prospect_df_loc(id_msa)

@@ -63,7 +63,7 @@ def read_absorp_npz(id_dr3):
     
     cont_df['rest_absorp_model_jy'] =  cont_df['rest_absorp_model_maggies'] * 3631
     cont_df['rest_absorp_model_10njy'] =  cont_df['rest_absorp_model_jy'] / 1e8
-    cont_df['rest_absorp_model_10njy'] =  cont_df['rest_absorp_model_jy'] / 1e8
+    cont_df['rest_full_model_jy'] =  cont_df['rest_full_model'] * 3631
     c = 299792458 # m/s
     cont_df['rest_absorp_model_erg_aa'] = cont_df['rest_absorp_model_jy'] * (1e-23*1e10*c / (cont_df['rest_wave']**2))
     return cont_df
