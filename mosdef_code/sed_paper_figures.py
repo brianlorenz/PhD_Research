@@ -36,7 +36,7 @@ def make_paper_plots(n_clusters, norm_method):
     # Overview figure
     # generate_sed_paper_table()
     # setup_figs(n_clusters, norm_method, bpt_color=True, paper_overview=True, prospector_spec=False)
-    # make_av_comparison()
+    make_av_comparison()
     # make_SFR_compare_fig()
     # make_prospector_overview_fig('removed_kewley_agn')
     # make_sfr_mass_uvj_bpt_4panel(snr_thresh=3)
@@ -431,6 +431,7 @@ def make_av_comparison():
     add_r(ax_avdiff_sfr, regress_res)
     ax_avdiff_sfr.plot(x_regress, regress_res.intercept + regress_res.slope*x_regress, color='black', ls='--')
     # ax_avdiff_sfr.legend(fontsize=14, loc=2)
+    breakpoint()
 
     plot_a_vs_b_paper('Prospector_AV_50', 'balmer_av_with_limit', prospector_dust2_label, balmer_av_label, 'None', axis_obj=ax_balmer_av_compare, yerr=True, plot_lims=[-0.2, 2.5, -0.2, 5], fig=fig, use_color_df=True, prospector_xerr=True, one_to_one=True, factor_of_2=False, lower_limit=180)
     # regress_res = find_best_fit('Prospector_AV_50', 'balmer_av_with_limit', exclude_limit=True)
@@ -509,7 +510,7 @@ def make_AV_panel_fig_old():
     ax_av_difference.plot(x_regress, regress_res.intercept + regress_res.slope*x_regress, color='black', label='Linear fit', ls='--')
     ax_av_difference.legend(fontsize=14, loc=2)
     print(f'Best fit to Av difference vs SFR: slope {regress_res.slope}, yint {regress_res.intercept}')
-
+    
 
     for ax in [ax_av_mass, ax_balmer_mass, ax_balmer_av_compare, ax_av_difference]:
         scale_aspect(ax)

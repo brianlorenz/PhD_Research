@@ -1,7 +1,11 @@
 import numpy as np
 from astropy.io import fits
 import sys
+# breakpoint()
 # sys.path.insert(0, '/Users/wren/Projects/prospector_catalog/')
+sys.path.insert(0, '/Users/brianlorenz/prospector_catalog-main/')
+sys.path.insert(0, '/Users/brianlorenz/fsps')
+# import numpy
 from params_prosp_fsps import params_fsps_phisfh, build_sps_fsps
 from prospect.models.sedmodel import PolySedModel
 import utils as ut_cwd

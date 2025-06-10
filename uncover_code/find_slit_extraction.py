@@ -103,7 +103,7 @@ def add_extraction_offsets():
 if __name__ == "__main__":
     # find_slit_extraction_region(35436)
 
-    # id_msa_list = get_id_msa_list(full_sample=False)
-    # find_all_extraction_regions(id_msa_list)
+    id_msa_list = get_id_msa_list(full_sample=False, referee_sample=True)
+    find_all_extraction_regions(id_msa_list)
 
-    add_extraction_offsets()
+    # add_extraction_offsets()

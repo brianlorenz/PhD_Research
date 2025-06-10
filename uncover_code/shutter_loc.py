@@ -13,7 +13,7 @@ def plot_shutter_pos(ax, id_msa, wcs, paper=False):
     slit_loc_df = read_slit_loc_cat()
     slit_loc_rows = slit_loc_df[slit_loc_df['id_msa']==id_msa]
 
-    extraction_df = ascii.read('/Users/brianlorenz/uncover/Data/generated_tables/extraction_df.csv').to_pandas()
+    extraction_df = ascii.read('/Users/brianlorenz/uncover/Data/generated_tables_referee/extraction_df.csv').to_pandas()
     extraction_row = extraction_df[extraction_df['id_msa'] == id_msa]
     center = extraction_row['center'].iloc[0]
     offset = extraction_row['offset'].iloc[0]*(9/4)

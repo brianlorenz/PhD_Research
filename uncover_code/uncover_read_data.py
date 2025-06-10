@@ -161,7 +161,7 @@ def make_pd_table_from_fits(file_loc):
         data_df = Table(data_loc).to_pandas()
         return data_df
     
-def get_id_msa_list(full_sample=False):
+def get_id_msa_list(full_sample=False, referee_sample=False):
     if full_sample:
         id_msa_df = ascii.read('/Users/brianlorenz/uncover/Data/sample_selection/total_before_cuts.csv').to_pandas()
         id_msa_list = id_msa_df['id_msa'].tolist()
@@ -171,6 +171,9 @@ def get_id_msa_list(full_sample=False):
         id_msa_filter_edge_df = ascii.read('/Users/brianlorenz/uncover/Data/sample_selection/filt_edge.csv').to_pandas()
         id_msa_filt_edge = id_msa_filter_edge_df['id_msa'].tolist()
         id_msa_list = [x for x in id_msa_list if x not in id_msa_filt_edge]
+    elif referee_sample:
+        id_msa_df = ascii.read('/Users/brianlorenz/uncover/Data/sample_selection_for_referee/main_sample.csv').to_pandas()
+        id_msa_list = id_msa_df['id_msa'].tolist()
     else:
         id_msa_df = ascii.read('/Users/brianlorenz/uncover/Data/sample_selection/main_sample.csv').to_pandas()
         id_msa_list = id_msa_df['id_msa'].tolist()

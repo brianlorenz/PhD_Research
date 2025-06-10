@@ -677,7 +677,11 @@ def paper_figure_sample_selection_twopanel(id_msa_list):
     good_mass_idx = np.logical_and(all_masses > 5, all_masses < 11)
     good_sfr_idx = np.logical_and(all_log_sfr100s > -2.5, all_log_sfr100s < 2)
 
-    
+    # Plot SFMS
+    masses = np.arange(6,11,0.1)
+    # predicted_log_sfrs = check_sfms(masses, 0.5)
+    predicted_log_sfrs = whitaker_sfms(masses)
+    ax_mass.plot(masses, predicted_log_sfrs, color='red', ls='--', marker='None', label='Whitaker+14 SFMS')
     
     if show_hexes:
         # hexbin_norm = mpl.colors.Normalize(vmin=1, vmax=200) 
@@ -859,8 +863,9 @@ def paper_figure_sample_selection_twopanel(id_msa_list):
     line_snr = Line2D([0], [0], color=cmap(norm_mass(3)), marker='o', markersize=4, ls='None', mec='black')
     line_squares = Line2D([0], [0], color='grey', marker='s', markersize=4, ls='None', mec='black')
     line_hexes = Line2D([0], [0], color='grey', marker='h', markersize=12, ls='None')
-    custom_lines = [line_sample, line_snr, line_squares, line_hexes]
-    custom_labels = ['Selected Sample', 'Pa$\\beta$ SNR < 5', 'Line not in Filter', 'Photometric Sample']
+    line_sfms = Line2D([0], [0], color='red', marker='None', ls='--')
+    custom_lines = [line_sample, line_snr, line_squares, line_hexes, line_sfms]
+    custom_labels = ['Selected Sample', 'Pa$\\beta$ SNR < 5', 'Line not in Filter', 'Photometric Sample', 'Whitaker+14 SFMS']
     if show_hexes == False:
         custom_lines = [line for line in custom_lines if line != line_hexes]
         custom_labels = [lab for lab in custom_labels if lab != 'Photometric Sample']
@@ -886,7 +891,7 @@ if __name__ == "__main__":
     
     id_msa_list = get_id_msa_list(full_sample=False)
     # paper_figure_sample_selection(id_msa_list, color_var='sfr')
-    paper_figure_sample_selection(id_msa_list, color_var='sfr', plot_mass_mags=True)
+    # paper_figure_sample_selection(id_msa_list, color_var='sfr', plot_mass_mags=True)
     # paper_figure_sample_selection(id_msa_list, color_var='ha_eqw', plot_mags=True)
     paper_figure_sample_selection_twopanel(id_msa_list)
 

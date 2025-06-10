@@ -90,7 +90,7 @@ def calc_lineflux(id_msa, fluxcal_str=''):
     int_spec_df = pd.DataFrame(zip(effective_waves_aa/10000, integrated_sed_jy), columns=['eff_wavelength', 'flux'])
     int_spec_df['filter'] = sed_df['filter']
     int_spec_df['err_flux'] = int_spec_df['flux']*0.01 # placehold for plot
-    plot_line_assessment([id_msa], int_spec_df=int_spec_df)
+    # plot_line_assessment([id_msa], int_spec_df=int_spec_df)
     int_spec_ha_flux_erg_s_cm2, _ = measure_lineflux(id_msa, int_spec_df, redshift, ha_filters, ha_line_scaled_transmission, ha_sedpy_transmission, line_list[0][1], ha_sedpy_width, ha_sedpy_wave, ha_sedpy_filts)
     int_spec_pab_flux_erg_s_cm2, _ = measure_lineflux(id_msa, int_spec_df, redshift, pab_filters, pab_line_scaled_transmission, pab_sedpy_transmission, line_list[1][1], pab_sedpy_width, pab_sedpy_wave, pab_sedpy_filts)
     fe_cor_int_spec_pab_flux_erg_s_cm2 = int_spec_pab_flux_erg_s_cm2 * get_fe_correction(id_msa)
@@ -234,6 +234,9 @@ def calc_all_lineflux(id_msa_list, full_sample=False, fluxcal=True):
     emission_offset_df['difference_in_offset_ratio_cat'] = emission_offset_df['pab_sed_div_cat'] / emission_offset_df['ha_sed_div_cat']
     emission_offset_df['difference_in_offset_ratio_emfit'] = emission_offset_df['pab_sed_div_emfit'] / emission_offset_df['ha_sed_div_emfit']
     
+    # emission_offset_df.to_csv(f'/Users/brianlorenz/uncover/Data/generated_tables/lineflux_df{fluxcal_str}_referee.csv', index=False)
+    # sys.exit()
+
     if full_sample == False:
         emission_offset_df.to_csv(f'/Users/brianlorenz/uncover/Data/generated_tables/lineflux_df{fluxcal_str}.csv', index=False)
     if full_sample == True:
@@ -478,12 +481,12 @@ if __name__ == "__main__":
     # calc_lineflux(25774)
     # calc_lineflux(39855)
     
-    id_msa_list = get_id_msa_list(full_sample=False)
+    id_msa_list = get_id_msa_list(full_sample=False, referee_sample=True)
     calc_all_lineflux(id_msa_list, full_sample=False)  
 
     # plot_sed_vs_intspec()
     # plot_spec_vs_intspec('pab_snr')
-    plot_spec_vs_intspec('line_snr', full_sample=False)
+    # plot_spec_vs_intspec('line_snr', full_sample=False)
     # plot_spec_vs_intspec('fe_or_not')
     import sys
     sys.exit()

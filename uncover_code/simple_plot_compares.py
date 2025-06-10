@@ -15,14 +15,18 @@ plot_shutter = False
 phot_categories = False
 plot_eqw = False
 
+
+# gen_tables_folder = f'/Users/brianlorenz/uncover/Data/generated_tables/'
+gen_tables_folder = f'/Users/brianlorenz/uncover/Data/generated_tables_referee/'
+
 def paper_plot_sed_emfit_accuracy(id_msa_list, color_var=''):
     fluxcal_str=''
     if plot_shutter:
         fluxcal_str='_no_fluxcal'
-        shutter_df = ascii.read(f'/Users/brianlorenz/uncover/Data/generated_tables/shutter_calcs{fluxcal_str}.csv').to_pandas()
-    full_data_df = ascii.read(f'/Users/brianlorenz/uncover/Data/generated_tables/lineflux_df{fluxcal_str}.csv').to_pandas()
+        shutter_df = ascii.read(f'{gen_tables_folder}shutter_calcs{fluxcal_str}.csv').to_pandas()
+    full_data_df = ascii.read(f'{gen_tables_folder}lineflux_df{fluxcal_str}.csv').to_pandas()
     data_df = full_data_df[full_data_df['id_msa'].isin(id_msa_list)]
-    full_lineratio_data_df = ascii.read(f'/Users/brianlorenz/uncover/Data/generated_tables/lineratio_av_df{fluxcal_str}.csv').to_pandas()
+    full_lineratio_data_df = ascii.read(f'{gen_tables_folder}lineratio_av_df{fluxcal_str}.csv').to_pandas()
     lineratio_data_df = full_lineratio_data_df[full_lineratio_data_df['id_msa'].isin(id_msa_list)]
 
     sps_df = read_SPS_cat()
@@ -644,8 +648,13 @@ def r_value_vs_props(snr_map_thresh, y_var='r', pabsnrcut=0):
 
 
 if __name__ == "__main__":
-    id_msa_list = get_id_msa_list(full_sample=False)
-    paper_plot_sed_emfit_accuracy(id_msa_list, color_var='mass')
+    id_msa_list_old = get_id_msa_list(full_sample=False, referee_sample=False)
+    # id_msa_list = get_id_msa_list(full_sample=False, referee_sample=True)
+    # id_msa_list_old.append(14573)
+    # id_msa_list_old.append(25558)
+    # id_msa_list_old.append(38163)
+    # breakpoint()
+    paper_plot_sed_emfit_accuracy(id_msa_list_old, color_var='mass')
     # plot_simpletests(id_msa_list)
     # plot_offsets(all=True)
 

@@ -203,7 +203,9 @@ def make_dustmap_simple(id_msa, aper_size='None', axarr_final=[], ax_labels=Fals
     pab_cont_pct, _, pab_trasm_flag, pab_boot_lines, pab_sed_fluxes, pab_wave_pct, pab_cont_flux_erg_cm2_s, pab_boot_cont_fluxes = plot_sed_around_line(ax_pab_sed, pab_filters, sed_df, spec_df, redshift, 1, pab_transmissions, id_msa, fluxcal_str=fluxcal_str)
 
     # Read in the linefluxes from lineflux_df, don't need to be double-computing here, and already corrected 
-    lineflux_df = ascii.read(f'/Users/brianlorenz/uncover/Data/generated_tables/lineflux_df{fluxcal_str}.csv').to_pandas()
+    # lineflux_df = ascii.read(f'/Users/brianlorenz/uncover/Data/generated_tables/lineflux_df{fluxcal_str}.csv').to_pandas()
+    lineflux_df = ascii.read(f'/Users/brianlorenz/uncover/Data/generated_tables_referee/lineflux_df{fluxcal_str}_referee.csv').to_pandas()
+
     lineflux_row = lineflux_df[lineflux_df['id_msa'] == id_msa]
     ha_sed_lineflux = lineflux_row['ha_sed_flux'].iloc[0]
     nii_cor_ha_sed_lineflux = lineflux_row['nii_cor_ha_sed_flux'].iloc[0]
@@ -259,7 +261,11 @@ def make_dustmap_simple(id_msa, aper_size='None', axarr_final=[], ax_labels=Fals
 
     # Compute lineratios
     # Need absorption corrections
-    ha_absorp_eqw_fit, pab_absorp_eqw_fit = fit_absorption_lines(id_dr3)
+    try: # only here for the couple of objects that the referee wants to know about
+        ha_absorp_eqw_fit, pab_absorp_eqw_fit = fit_absorption_lines(id_dr3)
+    except:
+        ha_absorp_eqw_fit = 8
+        pab_absorp_eqw_fit = 3
     sed_lineratio = compute_lineratio(nii_cor_ha_sed_lineflux, fe_cor_pab_sed_lineflux, ha_eqw_fit, pab_eqw_fit, ha_absorp_eqw_fit, pab_absorp_eqw_fit)
     # Monte Carlo draw for the absorption line strengths
     boot_sed_lineratios = []
@@ -1414,20 +1420,24 @@ def make_all_dustmap(id_msa_list, full_sample=False, fluxcal=True):
 
     r_value_df_pab_snrcut = pd.DataFrame(zip(id_msa_list, id_dr3s_pab_snrcut, r_values_pab_snrcut, p_values_pab_snrcut, n_pixels_pab_snrcut, snr_thresh_maps_pab_snrcut), columns=['id_msa', 'id_dr3', 'r_value', 'p_value', 'n_pixels', 'snr_thresh_map'])
 
+    # gen_tables_folder = f'/Users/brianlorenz/uncover/Data/generated_tables/'
+    gen_tables_folder = f'/Users/brianlorenz/uncover/Data/generated_tables_referee/'
+
     if full_sample:
-        dustmap_info_df.to_csv(f'/Users/brianlorenz/uncover/Data/generated_tables/lineratio_av_df_all{fluxcal_str}.csv', index=False)
-        shutter_calc_df.to_csv(f'/Users/brianlorenz/uncover/Data/generated_tables/shutter_calcs_all{fluxcal_str}.csv', index=False)
-        r_value_df.to_csv(f'/Users/brianlorenz/uncover/Data/generated_tables/r_values/hacont_haline_r_values_all{fluxcal_str}_snr{int(r_value_df.iloc[0]["snr_thresh_map"])}.csv', index=False)
-        sim_value_df.to_csv(f'/Users/brianlorenz/uncover/Data/generated_tables/r_values/hacont_haline_sim_values_all.csv', index=False)
-        r_value_df_pab.to_csv(f'/Users/brianlorenz/uncover/Data/generated_tables/r_values/pabline_pabcont_r_values_all{fluxcal_str}_snr{int(r_value_df.iloc[0]["snr_thresh_map"])}.csv', index=False)
-        r_value_df_pab_snrcut.to_csv(f'/Users/brianlorenz/uncover/Data/generated_tables/r_values/pabline_pabcont_r_values_all{fluxcal_str}_snr{int(r_value_df.iloc[0]["snr_thresh_map"])}_snrcut.csv', index=False)
+        dustmap_info_df.to_csv(f'{gen_tables_folder}lineratio_av_df_all{fluxcal_str}.csv', index=False)
+        shutter_calc_df.to_csv(f'{gen_tables_folder}shutter_calcs_all{fluxcal_str}.csv', index=False)
+        r_value_df.to_csv(f'{gen_tables_folder}r_values/hacont_haline_r_values_all{fluxcal_str}_snr{int(r_value_df.iloc[0]["snr_thresh_map"])}.csv', index=False)
+        sim_value_df.to_csv(f'{gen_tables_folder}r_values/hacont_haline_sim_values_all.csv', index=False)
+        r_value_df_pab.to_csv(f'{gen_tables_folder}r_values/pabline_pabcont_r_values_all{fluxcal_str}_snr{int(r_value_df.iloc[0]["snr_thresh_map"])}.csv', index=False)
+        r_value_df_pab_snrcut.to_csv(f'{gen_tables_folder}r_values/pabline_pabcont_r_values_all{fluxcal_str}_snr{int(r_value_df.iloc[0]["snr_thresh_map"])}_snrcut.csv', index=False)
+    
     else:
-        dustmap_info_df.to_csv(f'/Users/brianlorenz/uncover/Data/generated_tables/lineratio_av_df{fluxcal_str}.csv', index=False)
-        shutter_calc_df.to_csv(f'/Users/brianlorenz/uncover/Data/generated_tables/shutter_calcs{fluxcal_str}.csv', index=False)
-        r_value_df.to_csv(f'/Users/brianlorenz/uncover/Data/generated_tables/r_values/hacont_haline_r_values{fluxcal_str}_snr{int(r_value_df.iloc[0]["snr_thresh_map"])}.csv', index=False)
-        sim_value_df.to_csv(f'/Users/brianlorenz/uncover/Data/generated_tables/r_values/hacont_haline_sim_values.csv', index=False)
-        r_value_df_pab.to_csv(f'/Users/brianlorenz/uncover/Data/generated_tables/r_values/pabline_pabcont_r_values{fluxcal_str}_snr{int(r_value_df.iloc[0]["snr_thresh_map"])}.csv', index=False)
-        r_value_df_pab_snrcut.to_csv(f'/Users/brianlorenz/uncover/Data/generated_tables/r_values/pabline_pabcont_r_values{fluxcal_str}_snr{int(r_value_df.iloc[0]["snr_thresh_map"])}_snrcut.csv', index=False)
+        dustmap_info_df.to_csv(f'{gen_tables_folder}lineratio_av_df{fluxcal_str}.csv', index=False)
+        shutter_calc_df.to_csv(f'{gen_tables_folder}shutter_calcs{fluxcal_str}.csv', index=False)
+        r_value_df.to_csv(f'{gen_tables_folder}r_values/hacont_haline_r_values{fluxcal_str}_snr{int(r_value_df.iloc[0]["snr_thresh_map"])}.csv', index=False)
+        sim_value_df.to_csv(f'{gen_tables_folder}r_values/hacont_haline_sim_values.csv', index=False)
+        r_value_df_pab.to_csv(f'{gen_tables_folder}r_values/pabline_pabcont_r_values{fluxcal_str}_snr{int(r_value_df.iloc[0]["snr_thresh_map"])}.csv', index=False)
+        r_value_df_pab_snrcut.to_csv(f'{gen_tables_folder}r_values/pabline_pabcont_r_values{fluxcal_str}_snr{int(r_value_df.iloc[0]["snr_thresh_map"])}_snrcut.csv', index=False)
 
 def copy_selected_sample_dustmaps(id_msa_list):
     # Copies all the dustmaps from the sample subset to a different folder
@@ -1519,9 +1529,9 @@ if __name__ == "__main__":
     # lineflux_df = ascii.read(f'/Users/brianlorenz/uncover/Data/generated_tables/lineflux_df_all.csv').to_pandas()
     # make_dustmap_simple(47875)
    
-    id_msa_list = get_id_msa_list(full_sample=False)
-    # make_all_dustmap(id_msa_list, full_sample=False, fluxcal=True)
-    make_paper_fig_dustmaps(id_msa_list, sortby='av')
+    id_msa_list = get_id_msa_list(full_sample=False, referee_sample=True)
+    make_all_dustmap(id_msa_list, full_sample=False, fluxcal=True)
+    # make_paper_fig_dustmaps(id_msa_list, sortby='av')
     # make_paper_fig_dustmaps(id_msa_list, sortby='mass')
 
     # id_msa_list = get_id_msa_list(full_sample=True)

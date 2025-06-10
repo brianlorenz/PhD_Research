@@ -31,7 +31,7 @@ cmap='inferno'
 
 
 
-def make_linemap(id_dr3, line_name, phot_df, supercat_df, image_size=(100,100), snr_thresh=2, bcg_flag=0):
+def calc_lineflux_and_linemap(id_dr3, line_name, phot_df, supercat_df, image_size=(100,100), snr_thresh=2, bcg_flag=0, make_linemap=False):
     """Given a DR3 id and a line, make the linemap
     
     Parameters:
@@ -59,7 +59,10 @@ def make_linemap(id_dr3, line_name, phot_df, supercat_df, image_size=(100,100), 
 
     redshift = phot_df_row['z_50'].iloc[0]
 
-    cont_percentile, line_flux, boot_lines, sed_fluxes, wave_pct, line_rest_wavelength, cont_value = plot_sed_around_line(id_dr3, line_name, filters, redshift, bootstrap=1000)
+    # cont_percentile, line_flux, boot_lines, sed_fluxes, wave_pct, line_rest_wavelength, cont_value = plot_sed_around_line(id_dr3, line_name, filters, redshift, bootstrap=1000)
+    line_flux, sed_fluxes, line_wave_rest, cont_value, boot_lines, wave_pct, cont_percentile = plot_sed_around_line_prospector(id_dr3, line_name, filters, redshift, bootstrap=1000)
+
+   
     err_lineflux_low = np.percentile(boot_lines, 16)
     err_lineflux_high = np.percentile(boot_lines, 86)
     flux_snr = line_flux / np.std(boot_lines)
@@ -73,83 +76,84 @@ def make_linemap(id_dr3, line_name, phot_df, supercat_df, image_size=(100,100), 
         print(f'Too close to bcg')
         subdir_str = '_bcg_flag/'
 
-    # Make linemaps
-    # Need to multiply the image fluxes by 1e-8 to turn them from 10nJy to Jy
-    jy_convert_factor = 1e-8
-    # Get the data values
-    line_red_image_data = jy_convert_factor*line_images[0].data
-    line_green_image_data = jy_convert_factor*line_images[1].data
-    line_blue_image_data = jy_convert_factor*line_images[2].data
-    # Get the noise values
-    line_red_image_noise = jy_convert_factor*(1/np.sqrt(wht_line_images[0].data))
-    line_green_image_noise = jy_convert_factor*(1/np.sqrt(wht_line_images[1].data))
-    line_blue_image_noise = jy_convert_factor*(1/np.sqrt(wht_line_images[2].data))
-    line_image_noises = [line_red_image_noise, line_green_image_noise, line_blue_image_noise]
-    
-    linemap, contmap, err_linemap = compute_line(cont_percentile, line_red_image_data, line_green_image_data, line_blue_image_data, redshift, 0, line_filter_width, line_rest_wavelength, images=True, image_noises=line_image_noises, wave_pct=wave_pct)
+    # Make linemaps - NEED TO REMAKE USING PROSPECTOR VALUES IF WE WANT TO DO THAT
+    if make_linemap == True:
+        # Need to multiply the image fluxes by 1e-8 to turn them from 10nJy to Jy
+        jy_convert_factor = 1e-8
+        # Get the data values
+        line_red_image_data = jy_convert_factor*line_images[0].data
+        line_green_image_data = jy_convert_factor*line_images[1].data
+        line_blue_image_data = jy_convert_factor*line_images[2].data
+        # Get the noise values
+        line_red_image_noise = jy_convert_factor*(1/np.sqrt(wht_line_images[0].data))
+        line_green_image_noise = jy_convert_factor*(1/np.sqrt(wht_line_images[1].data))
+        line_blue_image_noise = jy_convert_factor*(1/np.sqrt(wht_line_images[2].data))
+        line_image_noises = [line_red_image_noise, line_green_image_noise, line_blue_image_noise]
+        
+        linemap, contmap, err_linemap = compute_line(cont_percentile, line_red_image_data, line_green_image_data, line_blue_image_data, redshift, 0, line_filter_width, line_rest_wavelength, images=True, image_noises=line_image_noises, wave_pct=wave_pct)
 
-    linemap_snr = linemap / err_linemap
+        linemap_snr = linemap / err_linemap
 
-    # Norm values
-    cont_lower_pct = 10
-    cont_upper_pct = 99.99
-    cont_scalea = 1e30
-    linemap_lower_pct = 10
-    linemap_upper_pct = 99.9
-    linemap_scalea = 150
-    dustmap_lower_pct = 40
-    dustmap_upper_pct = 90
-    dustmap_scalea = 100
+        # Norm values
+        cont_lower_pct = 10
+        cont_upper_pct = 99.99
+        cont_scalea = 1e30
+        linemap_lower_pct = 10
+        linemap_upper_pct = 99.9
+        linemap_scalea = 150
+        dustmap_lower_pct = 40
+        dustmap_upper_pct = 90
+        dustmap_scalea = 100
 
-    contmap_logscaled = make_log_rgb(contmap, contmap, contmap, scalea=cont_scalea)[:,:,0]
-    linemap_logscaled = make_log_rgb(linemap, linemap, linemap, scalea=linemap_scalea)[:,:,0]
+        contmap_logscaled = make_log_rgb(contmap, contmap, contmap, scalea=cont_scalea)[:,:,0]
+        linemap_logscaled = make_log_rgb(linemap, linemap, linemap, scalea=linemap_scalea)[:,:,0]
 
-    contmap_norm  = get_norm(contmap_logscaled, lower_pct=cont_lower_pct, upper_pct=cont_upper_pct)
-    linemap_norm = get_norm(linemap_logscaled, lower_pct=linemap_lower_pct, upper_pct=linemap_upper_pct)
-
-
-    fig, axarr = plt.subplots(1,3,figsize=(12,4))
-    plt.subplots_adjust(wspace=0.05, hspace=0.05)
-    ax_image = axarr[0]
-    ax_contmap = axarr[1]
-    ax_linemap = axarr[2]
-
-    plot_single_3color(ax_image, line_images, filters, showtext=False)
-    ax_contmap.imshow(contmap_logscaled, cmap=cmap, norm=contmap_norm)
-    ax_linemap.imshow(linemap_logscaled, cmap=cmap, norm=linemap_norm)
-
-    text_height = 0.92
-    text_start = 0.01
-    text_sep = 0.37
-    ax_image.text(text_start, text_height, f'{filters[2][2:].upper()}', fontsize=14, transform=ax_image.transAxes, color='blue', path_effects=[pe.withStroke(linewidth=3, foreground="white")])
-    ax_image.text(text_start+text_sep, text_height, f'{filters[1][2:].upper()}', fontsize=14, transform=ax_image.transAxes, color='green', path_effects=[pe.withStroke(linewidth=3, foreground="white")])
-    ax_image.text(text_start+2*text_sep, text_height, f'{filters[0][2:].upper()}', fontsize=14, transform=ax_image.transAxes, color='red', path_effects=[pe.withStroke(linewidth=3, foreground="white")])
-    ax_image.text(0.80, 0.04, f'{id_dr3}', fontsize=10, transform=ax_image.transAxes, color='white')
-    axis_x = 0.05
-    axis_y = 0.05
-    axis_to_data = ax_image.transAxes + ax_image.transData.inverted()
-    data_x, data_y = axis_to_data.transform((axis_x, axis_y))
-    data_x2, data_y2 = axis_to_data.transform((axis_x, axis_y+0.02))
-    ax_image.plot([data_x,data_x+(0.5/pixel_scale)], [data_y,data_y], ls='-', color='white', lw=3)
-    # ax_ha_image_paper.text(5, 9, '1kpc', color='white')
-    ax_image.text(data_x, data_y2, '0.5"', color='white')
+        contmap_norm  = get_norm(contmap_logscaled, lower_pct=cont_lower_pct, upper_pct=cont_upper_pct)
+        linemap_norm = get_norm(linemap_logscaled, lower_pct=linemap_lower_pct, upper_pct=linemap_upper_pct)
 
 
-    ax_contmap.text(text_start, text_height, f'Continuum', fontsize=14, transform=ax_contmap.transAxes, color='white', path_effects=[pe.withStroke(linewidth=3, foreground="black")])
-    ax_linemap.text(text_start, text_height, f'{line_name} map', fontsize=14, transform=ax_linemap.transAxes, color='white', path_effects=[pe.withStroke(linewidth=3, foreground="black")])
-    ax_linemap.text(1-text_start, text_height, f'z={redshift:0.2f}', fontsize=14, transform=ax_linemap.transAxes, color='white', horizontalalignment='right', path_effects=[pe.withStroke(linewidth=3, foreground="black")])
+        fig, axarr = plt.subplots(1,3,figsize=(12,4))
+        plt.subplots_adjust(wspace=0.05, hspace=0.05)
+        ax_image = axarr[0]
+        ax_contmap = axarr[1]
+        ax_linemap = axarr[2]
+
+        plot_single_3color(ax_image, line_images, filters, showtext=False)
+        ax_contmap.imshow(contmap_logscaled, cmap=cmap, norm=contmap_norm)
+        ax_linemap.imshow(linemap_logscaled, cmap=cmap, norm=linemap_norm)
+
+        text_height = 0.92
+        text_start = 0.01
+        text_sep = 0.37
+        ax_image.text(text_start, text_height, f'{filters[2][2:].upper()}', fontsize=14, transform=ax_image.transAxes, color='blue', path_effects=[pe.withStroke(linewidth=3, foreground="white")])
+        ax_image.text(text_start+text_sep, text_height, f'{filters[1][2:].upper()}', fontsize=14, transform=ax_image.transAxes, color='green', path_effects=[pe.withStroke(linewidth=3, foreground="white")])
+        ax_image.text(text_start+2*text_sep, text_height, f'{filters[0][2:].upper()}', fontsize=14, transform=ax_image.transAxes, color='red', path_effects=[pe.withStroke(linewidth=3, foreground="white")])
+        ax_image.text(0.80, 0.04, f'{id_dr3}', fontsize=10, transform=ax_image.transAxes, color='white')
+        axis_x = 0.05
+        axis_y = 0.05
+        axis_to_data = ax_image.transAxes + ax_image.transData.inverted()
+        data_x, data_y = axis_to_data.transform((axis_x, axis_y))
+        data_x2, data_y2 = axis_to_data.transform((axis_x, axis_y+0.02))
+        ax_image.plot([data_x,data_x+(0.5/pixel_scale)], [data_y,data_y], ls='-', color='white', lw=3)
+        # ax_ha_image_paper.text(5, 9, '1kpc', color='white')
+        ax_image.text(data_x, data_y2, '0.5"', color='white')
 
 
-    for ax in axarr:
-        scale_aspect(ax)
-        ax.set_xticks([]); ax.set_yticks([])
+        ax_contmap.text(text_start, text_height, f'Continuum', fontsize=14, transform=ax_contmap.transAxes, color='white', path_effects=[pe.withStroke(linewidth=3, foreground="black")])
+        ax_linemap.text(text_start, text_height, f'{line_name} map', fontsize=14, transform=ax_linemap.transAxes, color='white', path_effects=[pe.withStroke(linewidth=3, foreground="black")])
+        ax_linemap.text(1-text_start, text_height, f'z={redshift:0.2f}', fontsize=14, transform=ax_linemap.transAxes, color='white', horizontalalignment='right', path_effects=[pe.withStroke(linewidth=3, foreground="black")])
 
-    imd.check_and_make_dir(figure_save_loc)
-    imd.check_and_make_dir(figure_save_loc+'linemaps/')
-    imd.check_and_make_dir(figure_save_loc+f'linemaps/{line_name}_linemaps/')
-    imd.check_and_make_dir(figure_save_loc+f'linemaps/{line_name}_linemaps{subdir_str}/')
-    fig.savefig(figure_save_loc+f'linemaps/{line_name}_linemaps{subdir_str}/{id_dr3}_{line_name}_linemap.pdf', bbox_inches='tight')
-    plt.close('all')
+
+        for ax in axarr:
+            scale_aspect(ax)
+            ax.set_xticks([]); ax.set_yticks([])
+
+        imd.check_and_make_dir(figure_save_loc)
+        imd.check_and_make_dir(figure_save_loc+'linemaps/')
+        imd.check_and_make_dir(figure_save_loc+f'linemaps/{line_name}_linemaps/')
+        imd.check_and_make_dir(figure_save_loc+f'linemaps/{line_name}_linemaps{subdir_str}/')
+        fig.savefig(figure_save_loc+f'linemaps/{line_name}_linemaps{subdir_str}/{id_dr3}_{line_name}_linemap.pdf', bbox_inches='tight')
+        plt.close('all')
     return lineflux_info, subdir_str
 
 def get_norm(image_map, scalea=1, lower_pct=10, upper_pct=99):
@@ -320,8 +324,10 @@ def plot_sed_around_line_prospector(id_dr3, line_name, filters, redshift, bootst
             
     #         boot_lines.append(boot_line)
     # boot_lines = np.array(boot_lines)
+    boot_lines = [line_flux for i in range(bootstrap)]
 
 
+    # PLot the prospector point as well, instead of the normal purple point
     # ax.plot([red_wave, blue_wave], [red_flux, blue_flux], marker='None', ls='--', color=connect_color)
     ax.plot(green_wave, prospector_cont_flux, marker='o', ls='None', color=connect_color)
     ax.plot([green_wave,green_wave], [green_flux, prospector_cont_flux], marker='None', ls='-', color='green', lw=2)
@@ -339,11 +345,11 @@ def plot_sed_around_line_prospector(id_dr3, line_name, filters, redshift, bootst
     imd.check_and_make_dir(figure_save_loc + f'sed_images/{line_name}_sed_images_prospector_method/')
     fig.savefig(figure_save_loc + f'sed_images/{line_name}_sed_images_prospector_method/{id_dr3}_{line_name}_sed.pdf')
 
-    return line_flux, sed_fluxes, line_wave_rest, prospector_cont_flux
+    wave_pct = compute_wavelength_pct(blue_wave, green_wave, red_wave)
+    cont_percentile = compute_cont_pct(blue_wave, green_wave, red_wave, blue_flux, red_flux)
 
-
-
-    return
+    return line_flux, sed_fluxes, line_wave_rest, prospector_cont_flux, boot_lines, wave_pct, cont_percentile
+    return cont_percentile, line_flux, boot_lines, sed_fluxes, wave_pct, line_wave_rest, cont_value
 
 
 def make_3color(id_dr3, line_name, phot_df_row, supercat_df, plot = False, image_size=(100,100)): 
@@ -553,7 +559,7 @@ def make_all_phot_linemaps(line_name):
 
         print(f'Making {line_name} map for {id_dr3}')
         #pandas row contains the lineflux
-        pandas_row, subdir_str = make_linemap(id_dr3, line_name, phot_sample_df, supercat_df, snr_thresh=snr_thresh, bcg_flag=bcg_flag)
+        pandas_row, subdir_str = calc_lineflux_and_linemap(id_dr3, line_name, phot_sample_df, supercat_df, snr_thresh=snr_thresh, bcg_flag=bcg_flag)
         pandas_row.insert(0, id_dr3)
         if subdir_str == '':
             subdir_str = 'no_flag'
@@ -568,7 +574,7 @@ def make_all_phot_linemaps(line_name):
     lineflux_df.to_csv(f'/Users/brianlorenz/uncover/Data/generated_tables/phot_calcs/phot_lineflux_{line_name}.csv', index=False)
 
 if __name__ == "__main__":
-    # make_linemap(34730, 'Halpha', phot_sample_df, supercat_df, image_size=(200,200))
+    # calc_lineflux_and_linemap(34730, 'Halpha', phot_sample_df, supercat_df, image_size=(200,200))
 
     # make_all_phot_linemaps('Halpha')
     # make_all_phot_linemaps('PaBeta')
