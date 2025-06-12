@@ -1012,7 +1012,7 @@ def set_dustmap_av(dustmap, ha_linemap, ha_linemap_snr, pab_linemap, pab_linemap
     return dustmap
 
 
-def plot_sed_around_line(ax, filters, sed_df, spec_df, redshift, line_index, transmissions, id_msa, bootstrap=1000, plt_purple_merged_point=True, show_trasm=False, fluxcal_str=''):
+def plot_sed_around_line(ax, filters, sed_df, spec_df, redshift, line_index, transmissions, id_msa, bootstrap=1000, plt_purple_merged_point=True, show_trasm=False, fluxcal_str='', return_line_trasm=False):
     # Controls for various elements on the plot
     plt_verbose_text = show_trasm
     plt_sed_points = 1
@@ -1091,6 +1091,10 @@ def plot_sed_around_line(ax, filters, sed_df, spec_df, redshift, line_index, tra
     sedpy_line_filt = observate.load_filters([sedpy_name])[0]
     filter_width = sedpy_line_filt.rectangular_width
     line_flux, cont_value, cont_flux_erg_s_cm2_aa = compute_line(cont_percentile, red_flux, green_flux, blue_flux, redshift, 0, filter_width, line_wave_rest, calc_eq_width=True)
+
+    if return_line_trasm == True:
+        line_trasm = calc_trasm_at_line(line_wave_obs, sedpy_line_filt) # line in um
+        return line_trasm
 
     boot_lines = []
     boot_cont_fluxes = []
@@ -1255,6 +1259,14 @@ def make_combined_mask(snr_binary_map, segmap_idxs):
         combined_mask = np.logical_and(snr_binary_map>0, segmap_idxs)
         total_mask = np.ma.masked_where(combined_mask+1 > 1.5, combined_mask+1)
         return total_mask
+
+def calc_trasm_at_line(line_wave_obs_um, sedpy_line_filt):
+    line_wave_obs_aa = line_wave_obs_um * 10000
+    sedpy_idx = np.argmin(np.abs(line_wave_obs_aa - sedpy_line_filt.wavelength))
+    trasm_at_line = sedpy_line_filt.transmission[sedpy_idx]
+    trasm_max =  np.max(sedpy_line_filt.transmission)
+    trasm_frac_at_line = trasm_at_line / trasm_max
+    return trasm_frac_at_line
 
 def make_all_dustmap(id_msa_list, full_sample=False, fluxcal=True):
     if fluxcal:

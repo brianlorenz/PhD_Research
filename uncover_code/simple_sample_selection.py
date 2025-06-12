@@ -537,6 +537,7 @@ def paper_figure_sample_selection(id_msa_list, color_var='None', plot_sfr_mass=F
         masses = np.arange(6,11,0.1)
         # predicted_log_sfrs = check_sfms(masses, 0.5)
         predicted_log_sfrs = whitaker_sfms(masses)
+        # predicted_log_sfrs = speagle_sfms(masses, )
         ax.plot(masses, predicted_log_sfrs, color='red', ls='--', marker='None', label='SFMS, z=2')
         smfs_offsets = [0.1020446252898145,0.18283711116867318, -0.2375098376696847, 0.7051415256536799,0.6706993379653309, -0.18537210751204647, 0.22890526287538182, -0.2798992695970548, -0.773697743192055,0.3767266122566961,0.6676142678869769,-0.3323495130454126,0.308414353592555,-0.876565275930646]   
         # breakpoint()
@@ -621,6 +622,25 @@ def whitaker_sfms(mass):
     sfms = a + b*mass + c*mass**2
     return sfms
 
+def speagle_sfms(mass, redshift):
+    from astropy.cosmology import WMAP9 as cosmo
+    age_of_universe = cosmo.age(redshift).value
+
+    sfms = (0.84-0.026*age_of_universe) * mass - (6.51-0.11*age_of_universe)
+    return sfms
+
+def pop_sfms(mass, redshift): # https://academic.oup.com/mnras/article/519/1/1526/6815739#equ10
+    from astropy.cosmology import WMAP9 as cosmo
+    age_of_universe = cosmo.age(redshift).value
+
+    a0 = 0.20
+    a1 = -0.034
+    b0 = -26.134
+    b1 = 4.722
+    b2 = -0.1925
+
+    sfms = (a1*age_of_universe+b1) * mass + b2*mass**2 + (b0+a0*age_of_universe)
+    return sfms
 
 def paper_figure_sample_selection_twopanel(id_msa_list):
     show_squares = True
@@ -680,8 +700,10 @@ def paper_figure_sample_selection_twopanel(id_msa_list):
     # Plot SFMS
     masses = np.arange(6,11,0.1)
     # predicted_log_sfrs = check_sfms(masses, 0.5)
-    predicted_log_sfrs = whitaker_sfms(masses)
-    ax_mass.plot(masses, predicted_log_sfrs, color='red', ls='--', marker='None', label='Whitaker+14 SFMS')
+    # predicted_log_sfrs = whitaker_sfms(masses)
+    # predicted_log_sfrs = speagle_sfms(masses, 1.96)
+    predicted_log_sfrs = pop_sfms(masses, 1.96)
+    ax_mass.plot(masses, predicted_log_sfrs, color='red', ls='--', marker='None')
     
     if show_hexes:
         # hexbin_norm = mpl.colors.Normalize(vmin=1, vmax=200) 
@@ -752,6 +774,9 @@ def paper_figure_sample_selection_twopanel(id_msa_list):
         zqual_row = zqual_df[zqual_df['id_msa'] == id_msa]
         # supercat_row = supercat_df[supercat_df['id_msa']==id_msa]
         redshift = zqual_row['z_spec'].iloc[0]
+        id_msa_sample = get_id_msa_list(full_sample=False)
+        if id_msa in id_msa_sample:
+            print(redshift)
         # id_dr2 = zqual_df[zqual_df['id_msa']==id_msa]['id_DR2'].iloc[0]
         sps_row = sps_df[sps_df['id_msa']==id_msa]
 
@@ -798,7 +823,7 @@ def paper_figure_sample_selection_twopanel(id_msa_list):
                 continue
         
         if id_msa in id_msa_list:
-            print(f'{id_msa}, mass {stellar_mass_50.iloc[0]}, ha_eqw {ha_eqw}, pab_eqw {pab_eqw}')
+            # print(f'{id_msa}, mass {stellar_mass_50.iloc[0]}, ha_eqw {ha_eqw}, pab_eqw {pab_eqw}')
 
             # SFMS location:
             measured_log_sfr = np.log10(sfr100_50.iloc[0])
@@ -865,7 +890,7 @@ def paper_figure_sample_selection_twopanel(id_msa_list):
     line_hexes = Line2D([0], [0], color='grey', marker='h', markersize=12, ls='None')
     line_sfms = Line2D([0], [0], color='red', marker='None', ls='--')
     custom_lines = [line_sample, line_snr, line_squares, line_hexes, line_sfms]
-    custom_labels = ['Selected Sample', 'Pa$\\beta$ SNR < 5', 'Line not in Filter', 'Photometric Sample', 'Whitaker+14 SFMS']
+    custom_labels = ['Selected Sample', 'Pa$\\beta$ SNR < 5', 'Line not in Filter', 'Photometric Sample', 'Popesso+22 SFMS']
     if show_hexes == False:
         custom_lines = [line for line in custom_lines if line != line_hexes]
         custom_labels = [lab for lab in custom_labels if lab != 'Photometric Sample']
@@ -887,6 +912,21 @@ def paper_figure_sample_selection_twopanel(id_msa_list):
     fig.savefig(save_loc, bbox_inches='tight')
 
 if __name__ == "__main__":
+    # z_list = [2.2107,
+    #             1.3688,
+    #             2.3257,
+    #             1.8854,
+    #             1.4121,
+    #             2.33,
+    #             1.5602,
+    #             2.2972,
+    #             1.8584,
+    #             2.1854,
+    #             2.1857,
+    #             1.8622,
+    #             1.8659,
+    #             2.1217]
+    # breakpoint()
     # sample_select()
     
     id_msa_list = get_id_msa_list(full_sample=False)

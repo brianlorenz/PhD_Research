@@ -5,6 +5,7 @@ import sys
 # sys.path.insert(0, '/Users/wren/Projects/prospector_catalog/')
 sys.path.insert(0, '/Users/brianlorenz/prospector_catalog-main/')
 sys.path.insert(0, '/Users/brianlorenz/fsps')
+# sys.path.insert(0, '/Users/brianlorenz/opt/anaconda3/envs/prospect_uncover/lib/python3.10/site-packages/fsps')
 # import numpy
 from params_prosp_fsps import params_fsps_phisfh, build_sps_fsps
 from prospect.models.sedmodel import PolySedModel
@@ -69,11 +70,11 @@ breakpoint()
 # load in prospector catalog
 with fits.open('/Users/brianlorenz/uncover/Catalogs/UNCOVER_v5.3.0_LW_SUPER_SPScatalog_spsv1.0.fits') as hdu:
     prospect = hdu[1].data    
-    
+
 # generate the model    
-params, fit_order = params_fsps_phisfh()       
+params, fit_order = params_fsps_phisfh()   
 sps = build_sps_fsps()
-    
+
 # and chains
 chain_1 = np.load('/Volumes/DarkPhoenix/Surveys/UNCOVER/sed_catalogs/v5.3.0/chains_v5.3.0_LW_SUPER_spsv1.0-001.npz', allow_pickle=True)    
 chain_2 = np.load('/Volumes/DarkPhoenix/Surveys/UNCOVER/sed_catalogs/v5.3.0/chains_sfrr_v5.3.0_LW_SUPER_spsv1.0-002.npz', allow_pickle=True)    

@@ -724,12 +724,13 @@ def sed_values_compare(aper_add_str='', use_subsample=True):
     fig.savefig(f'/Users/brianlorenz/uncover/Figures/diagnostic_lineratio/sed_values_compare_greenflux{add_str}.pdf')
 
 
-def plot_line_assessment(id_msa_list, int_spec_df=[]):
+def plot_line_assessment(id_msa_list, int_spec_df=[], return_trasms=False):
     "line (str): 'ha_only' or 'pab_only' "
     zqual_df = read_spec_cat()
     full_lineratio_data_df = ascii.read(f'/Users/brianlorenz/uncover/Data/generated_tables/lineratio_av_df.csv').to_pandas()
 
-
+    ha_trasms = []
+    pab_trasms = []
     for id_msa in id_msa_list:
         print(f'making line assessment plot for {id_msa}')
         fig, axarr = plt.subplots(2, 2, figsize=(12,12))
@@ -786,6 +787,13 @@ def plot_line_assessment(id_msa_list, int_spec_df=[]):
         ha_transmissions = [ha_red_avg_transmission, ha_avg_transmission, ha_blue_avg_transmission]
         pab_transmissions = [pab_red_avg_transmission, pab_avg_transmission, pab_blue_avg_transmission]
 
+        if return_trasms == True:
+            ha_trasm = plot_sed_around_line(ax_ha_sed, ha_filters, sed_df, spec_df, redshift, 0, ha_transmissions, id_msa, show_trasm=False, plt_purple_merged_point=True, return_line_trasm=True)
+            pab_trasm = plot_sed_around_line(ax_pab_sed, pab_filters, sed_df, spec_df, redshift, 1, pab_transmissions, id_msa, show_trasm=False, plt_purple_merged_point=True, return_line_trasm=True)
+            ha_trasms.append(ha_trasm)
+            pab_trasms.append(pab_trasm)
+
+
         ha_cont_pct, ha_sed_lineflux, ha_trasm_flag, ha_boot_lines, ha_sed_fluxes, ha_wave_pct, ha_cont_flux_erg_s_cm2_aa, ha_boot_cont_fluxes = plot_sed_around_line(ax_ha_sed, ha_filters, sed_df, spec_df, redshift, 0, ha_transmissions, id_msa, show_trasm=False, plt_purple_merged_point=True)
         pab_cont_pct, pab_sed_lineflux, pab_trasm_flag, pab_boot_lines, pab_sed_fluxes, pab_wave_pct, pab_cont_flux_erg_s_cm2_aa, pab_boot_cont_fluxes = plot_sed_around_line(ax_pab_sed, pab_filters, sed_df, spec_df, redshift, 1, pab_transmissions, id_msa, show_trasm=False, plt_purple_merged_point=True)
         
@@ -799,6 +807,10 @@ def plot_line_assessment(id_msa_list, int_spec_df=[]):
         ax_pab_sed.text(0.1, -0.2,f'SED AV {round(lineratio_data_row["sed_av"].iloc[0], 3)}', fontsize=14, transform=ax_pab_sed.transAxes)
         fig.savefig('/Users/brianlorenz/uncover/Figures/line_assessment/' + f'{id_msa}_line_assessment{save_str}.pdf')
         plt.close('all')
+    
+    if return_trasms:
+        trasm_df = pd.DataFrame(zip(id_msa_list, ha_trasms, pab_trasms), columns=['id_msa', 'ha_trasm', 'pab_trasm'])
+        trasm_df.to_csv('/Users/brianlorenz/uncover/Data/generated_tables/line_trasms.csv', index=False)
 
 if __name__ == "__main__":
     # lineflux_compare(plot_all=True, compare_to_cat=True)
@@ -816,12 +828,15 @@ if __name__ == "__main__":
     # sed_values_compare()
     # sed_values_compare(use_subsample=False)
 
-    id_msa_list = get_id_msa_list(full_sample=False)
+    # id_msa_list = get_id_msa_list(full_sample=False)
     
-    # fit_all_emission_uncover(id_msa_list)  
-    # plot_mosaic(id_msa_list, line = 'ha_only')
-    # plot_mosaic(id_msa_list, line = 'pab_only')
-    plot_line_assessment(id_msa_list)
+    # # fit_all_emission_uncover(id_msa_list)  
+    # # plot_mosaic(id_msa_list, line = 'ha_only')
+    # # plot_mosaic(id_msa_list, line = 'pab_only')
+    # plot_line_assessment(id_msa_list)
+
+    id_msa_list = get_id_msa_list(full_sample=False, referee_sample=True)
+    plot_line_assessment(id_msa_list, return_trasms=True)
 
     # plot_line_assessment([26882])
     pass

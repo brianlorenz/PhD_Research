@@ -4,6 +4,8 @@ import sys
 # sys.path.insert(0, '/Users/wren/Projects/prospector_catalog/')
 # from params_prosp_fsps import params_fsps_phisfh, build_sps_fsps
 # from prospect.models.sedmodel import PolySedModel
+sys.path.insert(0, '/Users/brianlorenz/prospector_catalog-main/')
+sys.path.insert(0, '/Users/brianlorenz/fsps')
 import utils as ut_cwd
 from astropy.table import Table
 import sedpy
@@ -137,13 +139,13 @@ def absorp_npz_to_csv(id_dr3):
     
 
 if __name__ == "__main__":
-    # id_dr3_list = [20686, 22045]
-    # generate_prospector_models(id_dr3_list)
+    id_dr3_list = [20686, 22045]
+    generate_prospector_models(id_dr3_list)
 
-    absorp_npz_to_csv(30052)
+    # absorp_npz_to_csv(30052)
 
-    project_1_ids = np.array([30052, 30804, 31608, 37182, 37776, 44283, 46339, 47771, 49023, 52140, 52257, 54625, 60579, 62937])
-    for id in project_1_ids:
-        absorp_npz_to_csv(id)
+    # project_1_ids = np.array([30052, 30804, 31608, 37182, 37776, 44283, 46339, 47771, 49023, 52140, 52257, 54625, 60579, 62937])
+    # for id in project_1_ids:
+    #     absorp_npz_to_csv(id)
 
     
