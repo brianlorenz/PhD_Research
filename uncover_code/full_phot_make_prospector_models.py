@@ -2,10 +2,11 @@ import numpy as np
 from astropy.io import fits
 import sys
 # sys.path.insert(0, '/Users/wren/Projects/prospector_catalog/')
-# from params_prosp_fsps import params_fsps_phisfh, build_sps_fsps
-# from prospect.models.sedmodel import PolySedModel
-sys.path.insert(0, '/Users/brianlorenz/prospector_catalog-main/')
-sys.path.insert(0, '/Users/brianlorenz/fsps')
+from prospect.models.sedmodel import PolySedModel
+from prospect.models.sedmodel import PolySpecModel
+# sys.path.insert(0, '/Users/brianlorenz/prospector_catalog-main/')
+# sys.path.insert(0, '/Users/brianlorenz/fsps')
+from params_prosp_fsps import params_fsps_phisfh, build_sps_fsps
 import utils as ut_cwd
 from astropy.table import Table
 import sedpy
@@ -35,14 +36,14 @@ def generate_prospector_models(id_dr3_list):
     sps = build_sps_fsps()
 
     # and chains
-    chain_1 = np.load('/Volumes/DarkPhoenix/Surveys/UNCOVER/sed_catalogs/v5.3.0/chains_v5.3.0_LW_SUPER_spsv1.0-001.npz', allow_pickle=True)    
-    chain_2 = np.load('/Volumes/DarkPhoenix/Surveys/UNCOVER/sed_catalogs/v5.3.0/chains_sfrr_v5.3.0_LW_SUPER_spsv1.0-002.npz', allow_pickle=True)    
+    chain_1 = np.load('/Users/BrianLorenz/uncover/Catalogs/chains_v5.3.0_LW_SUPER_spsv1.0.npz', allow_pickle=True)    
+    chain_2 = np.load('/Users/BrianLorenz/uncover/Catalogs/chains_sfrr_v5.3.0_LW_SUPER_spsv1.0.npz', allow_pickle=True)    
 
     # put together the MAP theta for our galaxies
     # this is annoying because the chains are split over two objects and not actually named the same thing
     # per bingjie on slack, the MAP (or max lnL) value is the last entry in the resampled chain
     spectra = {}
-    model = PolySedModel(params)
+    model = PolySpecModel(params)
     model_theta_labels = model.theta_labels()
     def load_obs(idx=None, err_floor=0.05, **extras):
         '''
@@ -105,6 +106,7 @@ def generate_prospector_models(id_dr3_list):
         model.params['add_neb_continuum'][0] = True
         assert model.params['add_neb_emission'][0] == True
         spec, phot, mfrac = spec, phot, mfrac = model.predict(map_theta, sps=sps, obs=obs)  
+        spec, phot, mfrac = spec, phot, mfrac = model.predict(map_theta, sps=sps, obs=obs)  
         spectra[galid][:,1] = copy.deepcopy(spec) # model.predict is finnicky, gotta save now otherwise calling it again overwrites spec
 
         
@@ -126,7 +128,6 @@ def absorp_npz_to_csv(id_dr3):
     full_model = np_dict[id_dr3][:,1]
     absorp_model = np_dict[id_dr3][:,2]
     cont_df = pd.DataFrame(zip(rest_wave, full_model, absorp_model), columns=['rest_wave', 'rest_full_model', 'rest_absorp_model_maggies'])
-    breakpoint()
     # Not actually rest flux - take a look at this
     cont_df['rest_absorp_model_jy'] =  cont_df['rest_absorp_model_maggies'] * 3631
     cont_df['rest_absorp_model_10njy'] =  cont_df['rest_absorp_model_jy'] / 1e8
@@ -139,13 +140,18 @@ def absorp_npz_to_csv(id_dr3):
     
 
 if __name__ == "__main__":
-    id_dr3_list = [20686, 22045]
-    generate_prospector_models(id_dr3_list)
+    # id_dr3_list = [20686, 22045]
+    # generate_prospector_models(id_dr3_list)
 
     # absorp_npz_to_csv(30052)
 
     # project_1_ids = np.array([30052, 30804, 31608, 37182, 37776, 44283, 46339, 47771, 49023, 52140, 52257, 54625, 60579, 62937])
     # for id in project_1_ids:
     #     absorp_npz_to_csv(id)
+
+    full_gals_list = [17757, 17758, 30052, 30351, 32180, 32181, 36076, 37784, 40135, 46831, 47758, 48104, 49020, 49712, 49932, 50707, 51980, 54343, 59550, 64780, 13130, 22045, 23395, 29959, 30351, 32536, 33247, 33588, 33775, 35090, 40504, 40522, 43970, 46261, 46855, 47958, 54239, 54240, 54614, 54674, 55357, 55594, 57422, 60576, 60577, 60973, 64472, 64786, 67410]
+    generate_prospector_models(full_gals_list)
+    # project_1_id_list = [30052, 30804, 31608, 37182, 37776, 44283, 46339, 47771, 49023, 52140, 52257, 54625, 60579, 62937]
+    # generate_prospector_models(project_1_id_list)
 
     

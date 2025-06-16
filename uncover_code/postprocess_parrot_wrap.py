@@ -3,8 +3,8 @@ import numpy as np
 from astropy.cosmology import WMAP9 as cosmo
 from astropy.table import Table
 
-sys.path.insert(0, '/Users/brianlorenz/prospector_catalog-main/')
-sys.path.insert(0, '/Users/brianlorenz/fsps')
+# sys.path.insert(0, '/Users/brianlorenz/prospector_catalog-main/')
+# sys.path.insert(0, '/Users/brianlorenz/fsps')
 
 import prospect.io.read_results as reader
 from prospect.sources import FastStepBasis
@@ -19,8 +19,8 @@ parser = argparse.ArgumentParser()
 parser.add_argument('--prior', type=str, default='phisfh', help='phisfh')
 parser.add_argument('--fit', type=str, default='fid')
 parser.add_argument('--catalog', type=str, default="UNCOVER_v5.0.1_LW_SUPER_CATALOG.fits")
-parser.add_argument('--indir', type=str, default='chains', help='input folder storing chains')
-parser.add_argument('--outdir', type=str, default='chains', help='output folder storing unweighted chains and quantiles')
+parser.add_argument('--indir', type=str, default='/Users/brianlorenz/uncover/Catalogs/uncover_sps_gen1/stellar_pop_catalog_mb/chains', help='input folder storing chains')
+parser.add_argument('--outdir', type=str, default='/Users/brianlorenz/uncover/Data/sps_output/chains', help='output folder storing unweighted chains and quantiles')
 parser.add_argument('--narr', type=int, default=70, help='divide the total number into xxx cores')
 parser.add_argument('--iarr', type=int, default=0, help='run on the ith sub-array')
 parser.add_argument('--ids_file', type=str, default='None', help='None: get ids from indir; else: read in from the file')
@@ -88,10 +88,13 @@ groups = np.array_split(flist, n_split_arr)
 mod_fsps = build_model(**run_params)
 mod_for_prior = None
 sps = build_sps_fsps(**run_params)
-breakpoint()
 
-for mid in groups[i_split_arr]:
-    if mid not in flist_finished:
-        pp.run_all(objid=mid, fit=args.fit, prior=args.prior,
+pp.run_all(objid=54625, fit=args.fit, prior=args.prior,
                    mod_fsps=mod_fsps, mod_for_prior=mod_for_prior, sps=sps,
                    input_folder=args.indir, output_folder=args.outdir, catalog_file=catalog_file)
+
+# for mid in groups[i_split_arr]:
+#     if mid not in flist_finished:
+#         pp.run_all(objid=mid, fit=args.fit, prior=args.prior,
+#                    mod_fsps=mod_fsps, mod_for_prior=mod_for_prior, sps=sps,
+#                    input_folder=args.indir, output_folder=args.outdir, catalog_file=catalog_file)
