@@ -21,7 +21,9 @@ from uncover_cosmo import find_pix_per_kpc, pixel_scale
 import initialize_mosdef_dirs as imd
 import shutil
 import pandas as pd
-from full_phot_make_prospector_models import prospector_abs_spec_folder
+from full_phot_make_prospector_models import prospector_abs_spec_folder, read_abs_sed
+from uncover_sed_filters import unconver_read_filters
+from full_phot_read_data import read_line_sample_df
 
 phot_df_loc = '/Users/brianlorenz/uncover/Data/generated_tables/phot_calcs/phot_linecoverage_ha_pab_paa.csv'
 figure_save_loc = '/Users/brianlorenz/uncover/Figures/PHOT_sample/'
@@ -254,15 +256,6 @@ def plot_sed_around_line(id_dr3, line_name, filters, redshift, bootstrap=1000):
     return cont_percentile, line_flux, boot_lines, sed_fluxes, wave_pct, line_wave_rest, cont_value
 
 def plot_sed_around_line_prospector(id_dr3, line_name, filters, redshift, bootstrap=1000):
-    # Read in prospector model
-    prospector_no_neb_df = ascii.read(f'{prospector_abs_spec_folder}{id_dr3}_prospector_no_neb.csv').to_pandas()
-    prospector_spec_df, prospector_sed_df, mu = read_prospector(id_dr3, id_dr3=True)
-
-    # Scale the model with emission to the SED, then use same scale factor for the no_neb one
-    
-
-    # Integrate Prospector using sedpy to get continuum point
-    prospector_cont_flux = 0 #value here Jy
 
     # Use typical method with prospector and comtinuum to get line flux
     line_wave_rest = [line[1] for line in line_list if line[0]==line_name][0] # Angstrom
@@ -296,10 +289,43 @@ def plot_sed_around_line_prospector(id_dr3, line_name, filters, redshift, bootst
         ax.plot(sedpy_filt.wavelength/1e4, sedpy_filt.transmission/6e5, ls='-', marker='None', color=colors[i], lw=1)
 
     
-    ax.errorbar(red_wave, red_flux, yerr = err_red_flux, color='red', marker='o')
-    ax.errorbar(green_wave, green_flux, yerr = err_green_flux, color='green', marker='o')
-    ax.errorbar(blue_wave, blue_flux, yerr = err_blue_flux, color='blue', marker='o')
+    # Read in prospector model
+    prospector_no_neb_df = ascii.read(f'{prospector_abs_spec_folder}{id_dr3}_prospector_no_neb.csv').to_pandas()
+    prospector_abs_df = read_abs_sed(id_dr3)
+    filters_jwstnames = [filtname.replace('f_', 'jwst_') for filtname in filters]
+    
+    prospector_red_cont_flux = prospector_abs_df[prospector_abs_df['filter_name'] == filters_jwstnames[0]]['obs_flux_jy'].iloc[0]
+    prospector_green_cont_flux = prospector_abs_df[prospector_abs_df['filter_name'] == filters_jwstnames[1]]['obs_flux_jy'].iloc[0]
+    prospector_blue_cont_flux = prospector_abs_df[prospector_abs_df['filter_name'] == filters_jwstnames[2]]['obs_flux_jy'].iloc[0]
 
+    # Scale the prospector points to match the red/blue continuum points
+    red_scale_factor = red_flux/prospector_red_cont_flux
+    blue_scale_factor = blue_flux/prospector_blue_cont_flux
+    total_scale_factor = np.mean([red_scale_factor, blue_scale_factor])
+
+    prospector_red_cont_flux = prospector_red_cont_flux * total_scale_factor
+    prospector_green_cont_flux = prospector_green_cont_flux * total_scale_factor
+    prospector_blue_cont_flux = prospector_blue_cont_flux * total_scale_factor
+
+    # Integrate Prospector using sedpy to get continuum point
+    prospector_cont_flux = prospector_green_cont_flux # jy
+
+    ax.errorbar(red_wave, red_flux, yerr = err_red_flux, color='red', marker='o', zorder=10)
+    ax.errorbar(green_wave, green_flux, yerr = err_green_flux, color='green', marker='o', zorder=10, label='Data')
+    ax.errorbar(blue_wave, blue_flux, yerr = err_blue_flux, color='blue', marker='o', zorder=10)
+
+    ax.plot(red_wave, prospector_red_cont_flux, color='red', marker='s', ls='None', zorder=10)
+    ax.plot(green_wave, prospector_green_cont_flux, color='green', marker='s', ls='None', zorder=10, label='sedpy abs point')
+    ax.plot(blue_wave, prospector_blue_cont_flux, color='blue', marker='s', ls='None', zorder=10)
+
+    ax.step(prospector_no_neb_df['rest_wave']*(1+redshift)/10000, prospector_no_neb_df['rest_full_model_jy']/(1+redshift), color='orange', ls='-', marker='None', alpha=0.65, zorder=1, label='Emission model')
+    ax.step(prospector_no_neb_df['rest_wave']*(1+redshift)/10000, prospector_no_neb_df['rest_absorp_model_jy']/(1+redshift), color='mediumseagreen', ls='-', marker='None', alpha=0.65, zorder=1, label='Absorption model')
+    ax.step(prospector_no_neb_df['rest_wave']*(1+redshift)/10000, total_scale_factor*prospector_no_neb_df['rest_absorp_model_jy']/(1+redshift), color='magenta', ls='-', marker='None', alpha=0.65, zorder=1, label='Scaled abs model')
+    ax.set_xlim(blue_wave-0.3, red_wave+0.3)
+    ax.set_ylim(0, green_flux*1.1)
+    ax.legend()
+
+    # breakpoint()
 
     # Compute the percentile to use when combining the continuum
     connect_color = 'purple'
@@ -312,26 +338,28 @@ def plot_sed_around_line_prospector(id_dr3, line_name, filters, redshift, bootst
     line_flux, observed_wave = get_lineflux_from_cont(green_flux, prospector_cont_flux, line_wave_rest, redshift, filter_width)
 
     ##### THINK about how to monte carlo - do it with prospector errors as well? Probably
-    # boot_lines = []
-    # if bootstrap > 0:
-    #     for i in range(bootstrap):
-    #         boot_red_flux = np.random.normal(loc=red_flux, scale=err_red_flux, size=1)
-    #         boot_green_flux = np.random.normal(loc=green_flux, scale=err_green_flux, size=1)
-    #         boot_blue_flux = np.random.normal(loc=blue_flux, scale=err_blue_flux, size=1)
-    #         boot_cont_percentile = compute_cont_pct(blue_wave, green_wave, red_wave, boot_blue_flux, boot_red_flux)
-    #         boot_line, boot_cont = compute_line(boot_cont_percentile, boot_red_flux[0], boot_green_flux[0], boot_blue_flux[0], redshift, 0, filter_width, line_wave_rest)            
-    #         boot_line = boot_line 
+    # Decided to just take original errors and apply them to the prospector points
+    boot_lines = []
+    if bootstrap > 0:
+        for i in range(bootstrap):
+            boot_red_flux = np.random.normal(loc=prospector_red_cont_flux, scale=err_red_flux, size=1)
+            boot_green_flux = np.random.normal(loc=green_flux, scale=err_green_flux, size=1)
+            boot_blue_flux = np.random.normal(loc=prospector_blue_cont_flux, scale=err_blue_flux, size=1)
+            boot_cont_percentile = compute_cont_pct(blue_wave, green_wave, red_wave, prospector_blue_cont_flux, prospector_red_cont_flux)
+            boot_line, boot_cont = compute_line(boot_cont_percentile, boot_red_flux[0], boot_green_flux[0], boot_blue_flux[0], redshift, 0, filter_width, line_wave_rest)            
+            boot_line = boot_line 
             
-    #         boot_lines.append(boot_line)
-    # boot_lines = np.array(boot_lines)
-    boot_lines = [line_flux for i in range(bootstrap)]
+            boot_lines.append(boot_line)
+    boot_lines = np.array(boot_lines)
 
 
     # PLot the prospector point as well, instead of the normal purple point
     # ax.plot([red_wave, blue_wave], [red_flux, blue_flux], marker='None', ls='--', color=connect_color)
     ax.plot(green_wave, prospector_cont_flux, marker='o', ls='None', color=connect_color)
     ax.plot([green_wave,green_wave], [green_flux, prospector_cont_flux], marker='None', ls='-', color='green', lw=2)
-        
+       
+    ax.text(0.03, 0.2, f'Flux: {line_flux:.3e}', transform=ax.transAxes)   
+    
        
     # Plot cleanup
     ax.set_xlabel('Wavelength (um)', fontsize=14)
@@ -521,32 +549,22 @@ def compute_line(cont_pct, red_flx, green_flx, blue_flx, redshift, raw_transmiss
     return line_value, cont_value
 
 def make_all_phot_linemaps(line_name):
-    snr_thresh = 1
+    snr_thresh = 10
     bcg_thresh = 0.04
 
     phot_sample_df = ascii.read(phot_df_loc).to_pandas()
-    supercat_df = read_supercat()
     bcg_df = read_bcg_surface_brightness()
-    
-    
-    phot_sample_df = phot_sample_df[phot_sample_df[f'{line_name}_redshift_sigma'] > 1] # Reasonable redshift
-    phot_sample_df = phot_sample_df[phot_sample_df['use_phot'] == 1] # use_phot 1
-    phot_sample_df = phot_sample_df[phot_sample_df[f'{line_name}_all_detected'] == 1] # making sure all 3 lines are actually seen in m bands
+    supercat_df = read_supercat()
+    # RUNNING ONLY ON ONES THAT HAVE BOTH LINES FOR NOW
+    line_sample_df = read_line_sample_df('HalphaPaBeta')
+
+    paa_only_list = [26618, 28495, 29574, 30915, 37776, 39748, 41581, 45334, 51405, 54614, 54643, 56018, 61218]
 
     pandas_rows = []
-    for id_dr3 in phot_sample_df['id'].to_list():
+    # for id_dr3 in line_sample_df['id'].to_list():
+    for id_dr3 in paa_only_list:
         phot_sample_row = phot_sample_df[phot_sample_df['id'] == id_dr3]
         redshift_sigma = phot_sample_row[f'{line_name}_redshift_sigma'].iloc[0]
-        supercat_row = supercat_df[supercat_df['id']==id_dr3]
-        flags = []
-        flags.append(supercat_row['flag_nophot'].iloc[0])
-        flags.append(supercat_row['flag_lowsnr'].iloc[0])
-        flags.append(supercat_row['flag_star'].iloc[0])
-        flags.append(supercat_row['flag_artifact'].iloc[0])
-        flags.append(supercat_row['flag_nearbcg'].iloc[0])
-        if np.sum(flags) > 0:
-            print(f'Flag found for {id_dr3}')
-            continue
 
         # Check the bcg flag
         if bcg_df[bcg_df['id_dr3'] == id_dr3]['bcg_surface_brightness'].iloc[0] > bcg_thresh:
@@ -558,6 +576,11 @@ def make_all_phot_linemaps(line_name):
             bcg_flag = 0
 
         print(f'Making {line_name} map for {id_dr3}')
+        
+        # full_gals_list = [17757, 17758, 30052, 30351, 32180, 32181, 36076, 37784, 40135, 46831, 47758, 48104, 49020, 49712, 49932, 50707, 51980, 54343, 59550, 64780, 13130, 22045, 23395, 29959, 30351, 32536, 33247, 33588, 33775, 35090, 40504, 40522, 43970, 46261, 46855, 47958, 54239, 54240, 54614, 54674, 55357, 55594, 57422, 60576, 60577, 60973, 64472, 64786, 67410]
+
+        # if id_dr3 not in full_gals_list:
+        #     continue
         #pandas row contains the lineflux
         pandas_row, subdir_str = calc_lineflux_and_linemap(id_dr3, line_name, phot_sample_df, supercat_df, snr_thresh=snr_thresh, bcg_flag=bcg_flag)
         pandas_row.insert(0, id_dr3)
@@ -578,5 +601,5 @@ if __name__ == "__main__":
 
     # make_all_phot_linemaps('Halpha')
     # make_all_phot_linemaps('PaBeta')
-    # make_all_phot_linemaps('PaAlpha')
+    make_all_phot_linemaps('PaAlpha')
     pass

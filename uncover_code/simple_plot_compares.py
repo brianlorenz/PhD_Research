@@ -77,6 +77,7 @@ def paper_plot_sed_emfit_accuracy(id_msa_list, color_var=''):
         ha_snr = fit_df['signal_noise_ratio'].iloc[0]
         pab_snr = fit_df['signal_noise_ratio'].iloc[1]
         print(f'id_msa: {id_msa}, id_dr3 {id_dr3}')
+        continue
         ha_eqw = fit_df['equivalent_width_aa'].iloc[0]
         pab_eqw = fit_df['equivalent_width_aa'].iloc[1]
         ha_eqw = ha_eqw * get_nii_correction(id_msa)
@@ -229,6 +230,8 @@ def paper_plot_sed_emfit_accuracy(id_msa_list, color_var=''):
             ax_pab_sed_vs_emfit.text(pab_datapoint[0], pab_datapoint[1], f'{id_dr3}')
             ax_ha_sed_vs_emfit.text(ha_datapoint[0], ha_datapoint[1], f'{id_dr3}')
 
+    import sys
+    sys.exit('remove continue')
     ha_distances = np.abs(ha_distances)
     pab_distances = np.abs(pab_distances)
     av_distances = np.abs(av_distances)

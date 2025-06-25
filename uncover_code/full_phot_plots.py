@@ -13,11 +13,11 @@ from matplotlib.lines import Line2D
 
 # Set thresholds here
 snr_dict = {
-    'Halpha_snr_thresh' : 1, 
-    'PaBeta_snr_thresh' : 1, 
-    'PaAlpha_snr_thresh' : 1, 
+    'Halpha_snr_thresh' : 3, 
+    'PaBeta_snr_thresh' : 3, 
+    'PaAlpha_snr_thresh' : 3, 
 }
-redshift_sigma_thresh = 1 # sigma or higher
+redshift_sigma_thresh = 2 # sigma or higher
 bcg_thresh = 0.04 # this value or lower
 
 
@@ -49,7 +49,7 @@ def plot_mass_vs_dust():
     lineflux_ha_pab['err_AV_pab_ha_high'] = err_av_high
     # plot_lineflux_ha_pab_err=np.array([[lineflux_ha_pab['err_AV_pab_ha_low'], lineflux_ha_pab['err_AV_pab_ha_high']]]).T
     # boot_errs(lineflux_ha_pab['AV_pab_ha'], lineflux_ha_pab['PaBeta_flux'], lineflux_ha_pab['err_PaBeta_flux_low'], lineflux_ha_pab['err_PaBeta_flux_high'], lineflux_ha_pab['Halpha_flux'], lineflux_ha_pab['err_Halpha_flux_low'], lineflux_ha_pab['err_Halpha_flux_high'])
-   
+    
     lineflux_pab_paa['AV_paa_pab'] = compute_pab_paa_av(lineflux_pab_paa['PaAlpha_flux'] / lineflux_pab_paa['PaBeta_flux'])
     err_av_low, err_av_high = calc_errs_worst(lineflux_pab_paa['AV_paa_pab'], lineflux_pab_paa['PaAlpha_flux'], lineflux_pab_paa['err_PaAlpha_flux_low'], lineflux_pab_paa['err_PaAlpha_flux_high'], lineflux_pab_paa['PaBeta_flux'], lineflux_pab_paa['err_PaBeta_flux_low'], lineflux_pab_paa['err_PaBeta_flux_high'])
     lineflux_pab_paa['err_AV_paa_pab_low'] = err_av_low
@@ -57,53 +57,63 @@ def plot_mass_vs_dust():
     # plot_lineflux_pab_paa_err=np.array([[lineflux_pab_paa['err_AV_paa_pab_low'], lineflux_pab_paa['err_AV_paa_pab_high']]]).T
     # Bootstrap errors
     
-    # Dust figure
-    fig, ax = plt.subplots(figsize=(7,6))
+    # Dust figure - both mass and sfr
+    for fig_type in ['mass', 'sfr']:
+        fig, ax = plt.subplots(figsize=(7,6))
 
-    dfs = [lineflux_ha_pab, lineflux_pab_paa]
-    colors = ['blue', 'red']
-    shapes = ['o', 's']
-    labels = ['PaB/Ha AV', 'PaA/PaB AV']
-    av_names = ['AV_pab_ha', 'AV_paa_pab']
-    line_names = [('Halpha', 'PaBeta'), ('PaBeta', 'PaAlpha')]
-    
-    cmap = mpl.cm.inferno
-    norm = mpl.colors.LogNorm(vmin=0.5, vmax=50) 
+        dfs = [lineflux_ha_pab, lineflux_pab_paa]
+        colors = ['blue', 'red']
+        shapes = ['o', 's']
+        labels = ['PaB/Ha AV', 'PaA/PaB AV']
+        av_names = ['AV_pab_ha', 'AV_paa_pab']
+        line_names = [('Halpha', 'PaBeta'), ('PaBeta', 'PaAlpha')]
+        
+        cmap = mpl.cm.inferno
+        norm = mpl.colors.LogNorm(vmin=0.5, vmax=50) 
 
-    for i in range(len(dfs)):
-        color = colors[i]
-        df = dfs[i]
-        label = labels[i]
-        # Compute snr for coloring
-        snrs = np.min([df[f'{line_names[i][0]}_snr'], df[f'{line_names[i][1]}_snr']], axis=0)
-        df['min_snr'] = snrs
-        for j in range(len(df)):
-            rgba = cmap(norm(df['min_snr'].iloc[j]))
-            # ax.errorbar(df['mstar_50'].iloc[j], df['z_50'].iloc[j], yerr=np.array([[low_zerr.iloc[j], high_zerr.iloc[j]]]).T, marker=shapes[i], mec='black', ms=6, color=rgba, ls='None', ecolor='gray')
-            ax.plot(df['mstar_50'].iloc[j], df[av_names[i]].iloc[j], marker=shapes[i], color=rgba, markersize=6, mec='black', ls='None')
-    # for i in range(len(lineflux_ha_pab)):
-    #     plot_lineflux_ha_pab_err=np.array([[lineflux_ha_pab['err_AV_pab_ha_low'].iloc[i], lineflux_ha_pab['err_AV_pab_ha_high'].iloc[i]]]).T
-    #     ax.errorbar(lineflux_ha_pab['mstar_50'].iloc[i], lineflux_ha_pab['AV_pab_ha'].iloc[i], yerr=plot_lineflux_ha_pab_err, marker='o', color='blue', ecolor='gray', ls='None', label='PaB/Ha AV')
-    
-    # for i in range(len(lineflux_pab_paa)):
-    #     plot_lineflux_pab_paa_err=np.array([[lineflux_pab_paa['err_AV_paa_pab_low'].iloc[i], lineflux_pab_paa['err_AV_paa_pab_high'].iloc[i]]]).T
-    #     ax.errorbar(lineflux_pab_paa['mstar_50'].iloc[i], lineflux_pab_paa['AV_paa_pab'].iloc[i], yerr=plot_lineflux_pab_paa_err, marker='o', color='red', ecolor='gray', ls='None', label='PaA/PaB AV')
-    
-    line_circles = Line2D([0], [0], color='orange', marker='o', markersize=6, ls='None', mec='black')
-    line_squares = Line2D([0], [0], color='orange', marker='s', markersize=6, ls='None', mec='black')
-    custom_lines = [line_circles, line_squares]
-    custom_labels = ['Pa$\\beta$/H$\\alpha$', 'Pa$\\alpha$/Pa$\\beta$']
-    ax.legend(custom_lines, custom_labels, loc=3, bbox_to_anchor=(1.05, 1.14))
-    add_snr_cbar(fig, ax, norm, cmap)
-    ax.set_xlabel(stellar_mass_label, fontsize=14)
-    ax.set_ylabel('Inferred' + balmer_av_label, fontsize=14)
-    ax.set_ylim(-20, 15)
-    ax.set_xlim(5.5, 11.5)
-    save_str = ''
-    save_str = add_thresh_text(ax)
-    fig.savefig(f'/Users/brianlorenz/uncover/Figures/PHOT_analysis/dust_plots/mass_vs_av{save_str}.pdf')
-    # plt.show()
-    plt.close('all')
+        for i in range(len(dfs)):
+            color = colors[i]
+            df = dfs[i]
+            label = labels[i]
+            # Compute snr for coloring
+            snrs = np.min([df[f'{line_names[i][0]}_snr'], df[f'{line_names[i][1]}_snr']], axis=0)
+            df['min_snr'] = snrs
+            for j in range(len(df)):
+                rgba = cmap(norm(df['min_snr'].iloc[j]))
+                # ax.errorbar(df['mstar_50'].iloc[j], df['z_50'].iloc[j], yerr=np.array([[low_zerr.iloc[j], high_zerr.iloc[j]]]).T, marker=shapes[i], mec='black', ms=6, color=rgba, ls='None', ecolor='gray')
+                if fig_type == 'mass':
+                    ax.plot(df['mstar_50'].iloc[j], df[av_names[i]].iloc[j], marker=shapes[i], color=rgba, markersize=6, mec='black', ls='None')
+                if fig_type == 'sfr':
+                    ax.plot(np.log10(df['sfr100_50'].iloc[j]), df[av_names[i]].iloc[j], marker=shapes[i], color=rgba, markersize=6, mec='black', ls='None')
+        # for i in range(len(lineflux_ha_pab)):
+        #     plot_lineflux_ha_pab_err=np.array([[lineflux_ha_pab['err_AV_pab_ha_low'].iloc[i], lineflux_ha_pab['err_AV_pab_ha_high'].iloc[i]]]).T
+        #     ax.errorbar(lineflux_ha_pab['mstar_50'].iloc[i], lineflux_ha_pab['AV_pab_ha'].iloc[i], yerr=plot_lineflux_ha_pab_err, marker='o', color='blue', ecolor='gray', ls='None', label='PaB/Ha AV')
+        
+        # for i in range(len(lineflux_pab_paa)):
+        #     plot_lineflux_pab_paa_err=np.array([[lineflux_pab_paa['err_AV_paa_pab_low'].iloc[i], lineflux_pab_paa['err_AV_paa_pab_high'].iloc[i]]]).T
+        #     ax.errorbar(lineflux_pab_paa['mstar_50'].iloc[i], lineflux_pab_paa['AV_paa_pab'].iloc[i], yerr=plot_lineflux_pab_paa_err, marker='o', color='red', ecolor='gray', ls='None', label='PaA/PaB AV')
+        
+        line_circles = Line2D([0], [0], color='orange', marker='o', markersize=6, ls='None', mec='black')
+        line_squares = Line2D([0], [0], color='orange', marker='s', markersize=6, ls='None', mec='black')
+        custom_lines = [line_circles, line_squares]
+        custom_labels = ['Pa$\\beta$/H$\\alpha$', 'Pa$\\alpha$/Pa$\\beta$']
+        ax.legend(custom_lines, custom_labels, loc=3, bbox_to_anchor=(1.05, 1.14))
+        add_snr_cbar(fig, ax, norm, cmap)
+        if fig_type == 'mass':
+            ax.set_xlabel(stellar_mass_label, fontsize=14)
+            ax.set_xlim(5.5, 11.5)
+        if fig_type == 'sfr':
+            ax.set_xlabel('Prospector ' + sfr_label, fontsize=14)
+            ax.set_xlim(-1, 3)
+
+        ax.set_ylabel('Inferred' + balmer_av_label, fontsize=14)
+        ax.set_ylim(-20, 15)
+        
+        save_str = ''
+        save_str = add_thresh_text(ax)
+        fig.savefig(f'/Users/brianlorenz/uncover/Figures/PHOT_analysis/dust_plots/{fig_type}_vs_av{save_str}.pdf')
+        # plt.show()
+        plt.close('all')
 
     # Sample select figure to match
     fig, ax = plt.subplots(figsize=(7,6))
@@ -133,8 +143,7 @@ def plot_mass_vs_dust():
     ax.set_xlim(5.5, 11.5)
     fig.savefig(f'/Users/brianlorenz/uncover/Figures/PHOT_analysis/sample_selects/sample_select{save_str}.pdf')
     scale_aspect(ax)
-
-    breakpoint()
+    
     plt.close('all')
 
 

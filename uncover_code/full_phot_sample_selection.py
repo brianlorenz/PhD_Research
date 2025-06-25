@@ -1,8 +1,9 @@
-from uncover_read_data import read_supercat, read_SPS_cat_all
+from uncover_read_data import read_supercat, read_SPS_cat_all, read_bcg_surface_brightness
 from uncover_sed_filters import unconver_read_filters, get_filt_cols
 import pandas as pd
 import numpy as np
 import time
+from full_phot_read_data import read_phot_df, read_line_sample_df
 
 save_loc = '/Users/brianlorenz/uncover/Data/generated_tables/phot_linecoverage.csv'
 
@@ -226,8 +227,57 @@ def get_filt_cols(df, skip_wide_bands=False):
         filt_cols = [col for col in filt_cols if 'w' not in col]
     return filt_cols
 
+
+def get_sample_for_line(line_name):
+    phot_sample_df = read_phot_df()
+    supercat_df = read_supercat()
+    bcg_df = read_bcg_surface_brightness()
+    bcg_thresh = 0.04
+
+    phot_sample_df = phot_sample_df[phot_sample_df[f'{line_name}_redshift_sigma'] > 2] # Reasonable redshift
+    phot_sample_df = phot_sample_df[phot_sample_df['use_phot'] == 1] # use_phot 1
+    phot_sample_df = phot_sample_df[phot_sample_df[f'{line_name}_all_detected'] == 1] # making sure the line is actually seen in m bands
+
+    line_df_loc = f'/Users/brianlorenz/uncover/Data/generated_tables/phot_calcs/phot_sample_select/{line_name}_sample.csv'
+
+    ids = []
+    for id_dr3 in phot_sample_df['id'].to_list():
+        phot_sample_row = phot_sample_df[phot_sample_df['id'] == id_dr3]
+        redshift_sigma = phot_sample_row[f'{line_name}_redshift_sigma'].iloc[0]
+        supercat_row = supercat_df[supercat_df['id']==id_dr3]
+        flags = []
+        flags.append(supercat_row['flag_nophot'].iloc[0])
+        flags.append(supercat_row['flag_lowsnr'].iloc[0])
+        flags.append(supercat_row['flag_star'].iloc[0])
+        flags.append(supercat_row['flag_artifact'].iloc[0])
+        flags.append(supercat_row['flag_nearbcg'].iloc[0])
+        if np.sum(flags) > 0:
+            print(f'Flag found for {id_dr3}')
+            continue
+
+        # Check the bcg flag
+        # if bcg_df[bcg_df['id_dr3'] == id_dr3]['bcg_surface_brightness'].iloc[0] > bcg_thresh:
+        #     continue
+        
+        ids.append(id_dr3)
+    line_sample_df = pd.DataFrame(ids, columns=['id'])
+    line_sample_df.to_csv(line_df_loc, index=False)
+
+def save_ha_pab_sample():
+    """Joins the two sample dataframes so that you get a subsample with both emission lines
+    """
+    halpha_sample = read_line_sample_df('Halpha')
+    pabeta_sample = read_line_sample_df('PaBeta')
+    both_halpha_pabeta = pd.merge(halpha_sample, pabeta_sample, how='inner')
+    ha_pab_df_loc = f'/Users/brianlorenz/uncover/Data/generated_tables/phot_calcs/phot_sample_select/HalphaPaBeta_sample.csv'
+    both_halpha_pabeta.to_csv(ha_pab_df_loc, index=False)
+
 # Should add the check medium bands function into this code, and then ensure that there is mband data for each of the objects there
 # Merge in the use_phot and 
 
 if __name__ == "__main__":
-    full_phot_sample_select()
+    # full_phot_sample_select()
+    # get_sample_for_line('Halpha')
+    # get_sample_for_line('PaBeta')
+    save_ha_pab_sample()
+    pass

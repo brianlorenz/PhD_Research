@@ -88,9 +88,10 @@ def flux_calibrate_spectrum(id_msa, save_fluxcal=True):
 if __name__ == "__main__":
     # flux_calibrate_spectrum(14087)
 
+    paa_list = [15350, 17089, 18045, 18708, 19283, 25774, 27621, 29398, 33157, 38987, 42203, 42238, 43497, 48463, 60032]
     # id_msa_list = get_id_msa_list(full_sample=True)
-    # for id_msa in id_msa_list:
-    #     flux_calibrate_spectrum(id_msa)
+    for id_msa in paa_list:
+        flux_calibrate_spectrum(id_msa)
     
     # zqual_df = find_good_spec()
     # id_msa_list = zqual_df['id_msa'].to_list()

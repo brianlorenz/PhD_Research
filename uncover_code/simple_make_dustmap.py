@@ -947,7 +947,7 @@ def find_filters_around_line(id_msa, line_number, paalpha=False, paalpha_pabeta=
     filt_names.sort()
     if paalpha == True:
         paa_str = '_paa'
-    if paalpha_pabeta == True:
+    elif paalpha_pabeta == True:
         paa_str = '_paa_pab'
     else:
         paa_str = ''

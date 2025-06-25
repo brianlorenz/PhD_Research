@@ -43,7 +43,7 @@ def sample_select(paalpha=False, paalpha_pabeta=False):
     overlap_thresh = 0.2
 
     zqual_df = find_good_spec()
-    zqual_df_covered = select_spectra(zqual_df, line_list)
+    zqual_df_covered = select_spectra(zqual_df, line_list, paa_only=paalpha)
     line_not_covered_id_msas = []
     for id_msa in zqual_df['id_msa']:
         if len(zqual_df_covered[zqual_df_covered['id_msa'] == id_msa]) == 0:
@@ -55,6 +55,7 @@ def sample_select(paalpha=False, paalpha_pabeta=False):
     total_id_msa_list_df = pd.DataFrame(id_msa_list, columns=['id_msa'])
     total_id_msa_list_df.to_csv(save_dir + 'total_before_cuts.csv', index=False)
     lines_df = read_lineflux_cat()
+    breakpoint()
 
     # Run emission fits / sed+spec generation on this group, then:
     # Need to fix the few that are not working, think it's emissoin fit
@@ -75,6 +76,7 @@ def sample_select(paalpha=False, paalpha_pabeta=False):
     good_ha_trasms = []
     good_pab_trasms  = []
 
+    paa_covered = []
     for id_msa in id_msa_list:
         print(f"Checking sample selection for {id_msa}")
         if id_msa in [6325, 49991]: 
@@ -220,7 +222,7 @@ def find_good_spec():
     zqual_df = zqual_df[zqual_df['flag_spec_qual'] == 0]
     return zqual_df
 
-def select_spectra(zqual_df, line_list):
+def select_spectra(zqual_df, line_list, paa_only=False):
     """Checking that both target lines are covered in the photometry"""
     uncover_filt_dir, filters = unconver_read_filters()
     supercat_df = read_supercat()
@@ -228,24 +230,35 @@ def select_spectra(zqual_df, line_list):
     covered_idxs = []
     line0_filts = []
     line1_filts = []
-    # line2_filts = []
-    for i in range(len(zqual_df)):
-        redshift = zqual_df['z_spec'].iloc[i]
-        line0_cover, line0_filt_name = line_in_range(redshift, line_list[0][1], filt_cols, uncover_filt_dir)
-        line1_cover, line1_filt_name = line_in_range(redshift, line_list[1][1], filt_cols, uncover_filt_dir)
-        # line2_cover, line2_filt_name = line_in_range(redshift, line_list[2][1], filt_cols, uncover_filt_dir)
+    line2_filts = []
+    if paa_only:
+         for i in range(len(zqual_df)):
+            redshift = zqual_df['z_spec'].iloc[i]
+            line2_cover, line2_filt_name = line_in_range(redshift, line_list[1][1], filt_cols, uncover_filt_dir)
+            if line2_cover:
+                covered_idxs.append(i)
+                line0_filts.append('-99')
+                line1_filts.append('-99')
+                line2_filts.append(line2_filt_name)
+    else:
+        for i in range(len(zqual_df)):
+            redshift = zqual_df['z_spec'].iloc[i]
+            line0_cover, line0_filt_name = line_in_range(redshift, line_list[0][1], filt_cols, uncover_filt_dir)
+            line1_cover, line1_filt_name = line_in_range(redshift, line_list[1][1], filt_cols, uncover_filt_dir)
+            # line2_cover, line2_filt_name = line_in_range(redshift, line_list[2][1], filt_cols, uncover_filt_dir)
 
-        both_corered = (line0_cover and line1_cover) #or (line0_cover and line2_cover)
-        if both_corered == True:
-            covered_idxs.append(i)
-            line0_filts.append(line0_filt_name)
-            line1_filts.append(line1_filt_name)
-            # line2_filts.append(line2_filt_name)
+            both_corered = (line0_cover and line1_cover) #or (line0_cover and line2_cover)
+            if both_corered == True:
+                covered_idxs.append(i)
+                line0_filts.append(line0_filt_name)
+                line1_filts.append(line1_filt_name)
+                # line2_filts.append(line2_filt_name)
     zqual_df_covered = zqual_df.iloc[covered_idxs]
     zqual_df_covered = zqual_df_covered.reset_index()
     zqual_df_covered['line0_filt'] = line0_filts
     zqual_df_covered['line1_filt'] = line1_filts
-    # zqual_df_covered['line2_filt'] = line2_filts
+    if paa_only:
+        zqual_df_covered['line2_filt'] = line2_filts
     return zqual_df_covered
 
 def line_in_range(z, target_line, filt_cols, uncover_filt_dir):
@@ -928,14 +941,24 @@ if __name__ == "__main__":
     #             2.1217]
     # breakpoint()
     # sample_select()
+    sample_select(paalpha=True)
     
-    id_msa_list = get_id_msa_list(full_sample=False)
+    # id_msa_list = get_id_msa_list(full_sample=False)
     # paper_figure_sample_selection(id_msa_list, color_var='sfr')
     # paper_figure_sample_selection(id_msa_list, color_var='sfr', plot_mass_mags=True)
     # paper_figure_sample_selection(id_msa_list, color_var='ha_eqw', plot_mags=True)
-    paper_figure_sample_selection_twopanel(id_msa_list)
+    # paper_figure_sample_selection_twopanel(id_msa_list)
 
 
     # paper_figure_sample_selection(id_msa_list, color_var='redshift', plot_sfr_mass=True)
 
-    
+    pass
+
+
+
+# paschen alpha candidate ids:
+# [15350, 17089, 18045, 18708, 19283, 25774, 27621, 29398, 33157, 38987, 42203, 42238, 43497, 48463, 60032]
+# After visual SNR filtering:
+# [15350, 17089, 18045, 19283, 25774, 27621, 29398, 33157, 38987, 42203, 42238, 43497, 48463]
+# Here are their id_dr3s
+# [26618, 28495, 29574, 30915, 37776, 39748, 41581, 45334, 51405, 54614, 54643, 56018, 61218]

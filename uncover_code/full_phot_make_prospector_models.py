@@ -13,11 +13,22 @@ import sedpy
 import copy
 np.infty = np.inf # stupid prospector hack because my numpy is too high a version
 import pandas as pd
+from uncover_sed_filters import unconver_read_filters
+from sedpy import observate
+from astropy.io import ascii
+from simple_flux_calibration import flux_calibrate_spectrum
+from uncover_prospector_seds import read_prospector
+from full_phot_read_data import read_line_sample_df
 
-npz_loc = '/Users/brianlorenz/uncover/Data/prospector_spectra_no_emission/spectra.npz'
+
+npz_loc = '/Users/brianlorenz/uncover/Data/prospector_spectra_no_emission/'
 prospector_abs_spec_folder = '/Users/brianlorenz/uncover/Data/prospector_spectra_no_emission/specs/'
+prospector_abs_sed_folder = '/Users/brianlorenz/uncover/Data/prospector_spectra_no_emission/seds/'
 
-def generate_prospector_models(id_dr3_list):
+phot_df_loc = '/Users/brianlorenz/uncover/Data/generated_tables/phot_calcs/phot_linecoverage_ha_pab_paa.csv'
+
+
+def generate_prospector_models(id_dr3_list, save_name=''):
     # load catalogs
     catalog_file = '/Users/brianlorenz/uncover/Catalogs/UNCOVER_v5.2.0_LW_SUPER_CATALOG.fits'
     with fits.open(catalog_file) as hdu:
@@ -113,25 +124,34 @@ def generate_prospector_models(id_dr3_list):
         # get model without nebular emission
         print('getting continuum model')
         model.params['add_neb_emission'][0] = False
-        model.params['add_neb_continuum'][0] = False    
+        model.params['add_neb_continuum'][0] = False # Turn this back on    
         spec_noneb, phot_noneb, mfrac = spec, phot, mfrac = model.predict(map_theta, sps=sps, obs=obs)
         spectra[galid][:,2] = copy.deepcopy(spec_noneb)
-    np.savez(npz_loc, spectra=spectra) 
+    np.savez(npz_loc + f'{save_name}spectra.npz', spectra=spectra) 
 
+    phot_df = ascii.read(phot_df_loc).to_pandas()
     for id_dr3 in id_dr3_list:
-        absorp_npz_to_csv(id_dr3)
+        absorp_npz_to_csv(id_dr3, phot_df, save_name)
+        make_absorption_sed(id_dr3, phot_df)
 
-def absorp_npz_to_csv(id_dr3):
-    np_df = np.load(npz_loc, allow_pickle=True)
+def absorp_npz_to_csv(id_dr3, phot_df, save_name=''):
+    np_df = np.load(npz_loc + f'{save_name}spectra.npz', allow_pickle=True)
     np_dict = np_df['spectra'].item()
     rest_wave = np_dict[id_dr3][:,0]
     full_model = np_dict[id_dr3][:,1]
     absorp_model = np_dict[id_dr3][:,2]
     cont_df = pd.DataFrame(zip(rest_wave, full_model, absorp_model), columns=['rest_wave', 'rest_full_model', 'rest_absorp_model_maggies'])
-    # Not actually rest flux - take a look at this
-    cont_df['rest_absorp_model_jy'] =  cont_df['rest_absorp_model_maggies'] * 3631
+    
+
+    # Maybe set up dynamic image size scaling
+    phot_df_row = phot_df[phot_df['id'] == id_dr3]
+    redshift = phot_df_row['z_50'].iloc[0]
+    prospector_spec_df_bump, prospector_sed_df_bump, mu = read_prospector(id_dr3, id_dr3=True)
+
+    # Have to multiply by mu and (1+z) to make it rest flux
+    cont_df['rest_absorp_model_jy'] =  cont_df['rest_absorp_model_maggies'] * 3631 * mu * (1+redshift)
     cont_df['rest_absorp_model_10njy'] =  cont_df['rest_absorp_model_jy'] / 1e8
-    cont_df['rest_full_model_jy'] =  cont_df['rest_full_model'] * 3631
+    cont_df['rest_full_model_jy'] =  cont_df['rest_full_model'] * 3631 * mu * (1+redshift)
     c = 299792458 # m/s
     cont_df['rest_absorp_model_erg_aa'] = cont_df['rest_absorp_model_jy'] * (1e-23*1e10*c / (cont_df['rest_wave']**2))
     
@@ -139,19 +159,67 @@ def absorp_npz_to_csv(id_dr3):
     return        
     
 
+
+def make_absorption_sed(id_dr3, phot_df):
+    # Maybe set up dynamic image size scaling
+    phot_df_row = phot_df[phot_df['id'] == id_dr3]
+    redshift = phot_df_row['z_50'].iloc[0]
+
+    # Read in prospector model
+    prospector_no_neb_df = ascii.read(f'{prospector_abs_spec_folder}{id_dr3}_prospector_no_neb.csv').to_pandas()
+    # prospector_spec_df, prospector_sed_df, mu = read_prospector(id_dr3, id_dr3=True)
+
+    # Make sure filters are correct
+    filt_dict, filters_uncover = unconver_read_filters()
+    filter_names = [sedpy_filt.name for sedpy_filt in filters_uncover]
+
+    obs_wavelength = prospector_no_neb_df['rest_wave'].to_numpy() * (1+redshift)
+    obs_f_jy = prospector_no_neb_df['rest_absorp_model_jy'].to_numpy() / (1+redshift)
+    
+    c = 299792458 # m/s
+    obs_f_lambda = obs_f_jy * (1e-23*1e10*c / (obs_wavelength**2))
+
+    sed_abmag = observate.getSED(obs_wavelength, obs_f_lambda, filterlist=filters_uncover)
+    sed_jy = 10**(-0.4*(sed_abmag-8.9))
+    eff_waves = [filters_uncover[i].wave_effective for i in range(len(filters_uncover))]
+    prospector_abs_sed = pd.DataFrame(zip(filter_names, eff_waves, sed_jy), columns=['filter_name', 'obs_wavelength', 'obs_flux_jy'])
+    prospector_abs_sed.to_csv(prospector_abs_sed_folder+f'{id_dr3}_abs_sed.csv', index=False)
+
+def read_abs_sed(id_dr3):
+    abs_sed_df = ascii.read(prospector_abs_sed_folder+f'{id_dr3}_abs_sed.csv').to_pandas()
+    return abs_sed_df
+
 if __name__ == "__main__":
+
+    """
+    MAKE SURE TO SET ENV TO prospect_uncover
+    """
+
     # id_dr3_list = [20686, 22045]
     # generate_prospector_models(id_dr3_list)
-
-    # absorp_npz_to_csv(30052)
+    phot_df = ascii.read(phot_df_loc).to_pandas()
+    # absorp_npz_to_csv(30052, phot_df)
+    # make_absorption_sed(30052, phot_df)
+    # sys.exit()
 
     # project_1_ids = np.array([30052, 30804, 31608, 37182, 37776, 44283, 46339, 47771, 49023, 52140, 52257, 54625, 60579, 62937])
     # for id in project_1_ids:
     #     absorp_npz_to_csv(id)
 
-    full_gals_list = [17757, 17758, 30052, 30351, 32180, 32181, 36076, 37784, 40135, 46831, 47758, 48104, 49020, 49712, 49932, 50707, 51980, 54343, 59550, 64780, 13130, 22045, 23395, 29959, 30351, 32536, 33247, 33588, 33775, 35090, 40504, 40522, 43970, 46261, 46855, 47958, 54239, 54240, 54614, 54674, 55357, 55594, 57422, 60576, 60577, 60973, 64472, 64786, 67410]
-    generate_prospector_models(full_gals_list)
+    # full_gals_list = [17757, 17758, 30052, 30351, 32180, 32181, 36076, 37784, 40135, 46831, 47758, 48104, 49020, 49712, 49932, 50707, 51980, 54343, 59550, 64780, 13130, 22045, 23395, 29959, 30351, 32536, 33247, 33588, 33775, 35090, 40504, 40522, 43970, 46261, 46855, 47958, 54239, 54240, 54614, 54674, 55357, 55594, 57422, 60576, 60577, 60973, 64472, 64786, 67410]
+    # generate_prospector_models(full_gals_list, 'high_snr_')
     # project_1_id_list = [30052, 30804, 31608, 37182, 37776, 44283, 46339, 47771, 49023, 52140, 52257, 54625, 60579, 62937]
-    # generate_prospector_models(project_1_id_list)
+    # generate_prospector_models(project_1_id_list, 'project1_')
+
+    ### GENERATES FOR THE MAIN SAMPLE 
+    # ha_pab_sample = read_line_sample_df('HalphaPaBeta')
+    # ha_pab_list = ha_pab_sample['id'].to_list()
+
+    paa_only_list = [26618, 28495, 29574, 30915, 37776, 39748, 41581, 45334, 51405, 54614, 54643, 56018, 61218]
+    generate_prospector_models(paa_only_list, 'paa_only')
+
+    # for id_dr3 in ha_pab_list:
+    #     absorp_npz_to_csv(id_dr3, phot_df, 'ha_pab_both_detected')
+    #     make_absorption_sed(id_dr3, phot_df)
 
     

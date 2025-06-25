@@ -74,8 +74,8 @@ def make_3color(id_msa, line_index = 0, plot = False, image_size=(100,100)):
     
     return filters, images, wht_images, obj_segmap, photfnus, all_filts
 
-
-make_3color(6325, plot=True)
+breakpoint()
+# make_3color(6325, plot=True)
 # check_emission_lsf(47875)
 
 
