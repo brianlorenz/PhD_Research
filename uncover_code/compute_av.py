@@ -1,6 +1,6 @@
 import numpy as np
 from fit_emission_uncover_old import line_list
-from uncover_read_data import read_SPS_cat
+from uncover_read_data import read_SPS_cat, read_SPS_cat_all
 from dust_equations_prospector import dust2_to_AV
 from astropy.io import ascii
 # from uncover_read_data import read_raw_spec, read_lineflux_cat, get_id_msa_list, read_fluxcal_spec
@@ -19,6 +19,19 @@ def get_nii_correction(id_msa, sps_df = []):
     if len(sps_df) == 0:
         sps_df = read_SPS_cat()
     sps_row = sps_df[sps_df['id_msa'] == id_msa]
+    logmass = sps_row['mstar_50'].iloc[0]
+    logsfr = np.log10(sps_row['sfr100_50'].iloc[0])
+    predicted_metallicity = sanders_plane(logmass, logsfr)
+    nii6585_ha_rat = sanders_nii_ratio(predicted_metallicity) # Adjusted relation
+    # print(f'id: {id_msa}, niiha ratio: {nii6585_ha_rat}')
+    niicombined_ha_rat = nii6585_ha_rat * (4/3) # From theory
+    nii_correction_factor = 1 / (1+niicombined_ha_rat)
+    return nii_correction_factor
+
+def get_nii_correction_dr3(id_dr3, sps_df = []):
+    if len(sps_df) == 0:
+        sps_df = read_SPS_cat_all()
+    sps_row = sps_df[sps_df['id'] == id_dr3]
     logmass = sps_row['mstar_50'].iloc[0]
     logsfr = np.log10(sps_row['sfr100_50'].iloc[0])
     predicted_metallicity = sanders_plane(logmass, logsfr)

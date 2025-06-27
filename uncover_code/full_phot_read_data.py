@@ -1,8 +1,13 @@
 from astropy.io import ascii
 
 def read_merged_lineflux_cat():
-    lineflux_df = ascii.read(f'/Users/brianlorenz/uncover/Data/generated_tables/phot_calcs/phot_merged_lineflux.csv').to_pandas()
-    return lineflux_df
+    merge_lineflux_df = ascii.read(f'/Users/brianlorenz/uncover/Data/generated_tables/phot_calcs/phot_merged_lineflux.csv').to_pandas()
+    return merge_lineflux_df
+
+def read_lineflux_cat(line_name):
+    df_loc = f'/Users/brianlorenz/uncover/Data/generated_tables/phot_calcs/phot_lineflux_{line_name}.csv'
+    lineflux_df = ascii.read(df_loc).to_pandas()
+    return lineflux_df, df_loc
 
 def read_phot_df():
     phot_df_loc = '/Users/brianlorenz/uncover/Data/generated_tables/phot_calcs/phot_linecoverage_ha_pab_paa.csv'

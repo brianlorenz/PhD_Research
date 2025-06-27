@@ -64,4 +64,14 @@ def get_row_size(groupID):
     size = 2.2*np.sqrt(len(group_df)) 
     return size 
 
+def pandas_cols_to_matplotlib_errs(err_col_low, err_col_high):
+    """Given two pandas dataframe rows, make them into a 2xn numpy array for matplotlib
+    low errors are the first row
+    
+    """
+    errs_low = err_col_low.to_numpy()
+    errs_high = err_col_high.to_numpy()
+    errs_matplotlib = np.vstack([errs_low, errs_high])
+    return errs_matplotlib
+
 # cbar = fig.colorbar(mpl.cm.ScalarMappable(norm=norm, cmap=cmap), ax=ax, fraction=0.046, pad=0.04)

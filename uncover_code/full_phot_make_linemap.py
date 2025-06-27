@@ -65,8 +65,8 @@ def calc_lineflux_and_linemap(id_dr3, line_name, phot_df, supercat_df, image_siz
     line_flux, sed_fluxes, line_wave_rest, cont_value, boot_lines, wave_pct, cont_percentile = plot_sed_around_line_prospector(id_dr3, line_name, filters, redshift, bootstrap=1000)
 
    
-    err_lineflux_low = np.percentile(boot_lines, 16)
-    err_lineflux_high = np.percentile(boot_lines, 86)
+    err_lineflux_low = line_flux - np.percentile(boot_lines, 16)
+    err_lineflux_high = np.percentile(boot_lines, 86) - line_flux
     flux_snr = line_flux / np.std(boot_lines)
     lineflux_info = [line_flux, err_lineflux_low, err_lineflux_high, flux_snr, cont_value]
 
@@ -164,7 +164,7 @@ def get_norm(image_map, scalea=1, lower_pct=10, upper_pct=99):
         # norm = LogNorm(vmin=np.percentile(imagemap_gt0,lower_pct), vmax=np.percentile(imagemap_gt0,upper_pct))
         norm = Normalize(vmin=np.percentile(imagemap_gt0,lower_pct), vmax=np.percentile(imagemap_gt0,upper_pct))
         return norm
-
+""" old function without using prospector
 def plot_sed_around_line(id_dr3, line_name, filters, redshift, bootstrap=1000):
     line_wave_rest = [line[1] for line in line_list if line[0]==line_name][0] # Angstrom
     line_wave_obs = (line_wave_rest * (1+redshift))/1e4 # micron
@@ -254,6 +254,7 @@ def plot_sed_around_line(id_dr3, line_name, filters, redshift, bootstrap=1000):
     fig.savefig(figure_save_loc + f'sed_images/{line_name}_sed_images/{id_dr3}_{line_name}_sed.pdf')
 
     return cont_percentile, line_flux, boot_lines, sed_fluxes, wave_pct, line_wave_rest, cont_value
+"""
 
 def plot_sed_around_line_prospector(id_dr3, line_name, filters, redshift, bootstrap=1000):
 
@@ -303,12 +304,12 @@ def plot_sed_around_line_prospector(id_dr3, line_name, filters, redshift, bootst
     blue_scale_factor = blue_flux/prospector_blue_cont_flux
     total_scale_factor = np.mean([red_scale_factor, blue_scale_factor])
 
-    prospector_red_cont_flux = prospector_red_cont_flux * total_scale_factor
-    prospector_green_cont_flux = prospector_green_cont_flux * total_scale_factor
-    prospector_blue_cont_flux = prospector_blue_cont_flux * total_scale_factor
+    prospector_red_cont_flux_scaled = prospector_red_cont_flux * total_scale_factor
+    prospector_green_cont_flux_scaled = prospector_green_cont_flux * total_scale_factor
+    prospector_blue_cont_flux_scaled = prospector_blue_cont_flux * total_scale_factor
 
     # Integrate Prospector using sedpy to get continuum point
-    prospector_cont_flux = prospector_green_cont_flux # jy
+    prospector_cont_flux = prospector_green_cont_flux_scaled # jy
 
     ax.errorbar(red_wave, red_flux, yerr = err_red_flux, color='red', marker='o', zorder=10)
     ax.errorbar(green_wave, green_flux, yerr = err_green_flux, color='green', marker='o', zorder=10, label='Data')
@@ -342,11 +343,15 @@ def plot_sed_around_line_prospector(id_dr3, line_name, filters, redshift, bootst
     boot_lines = []
     if bootstrap > 0:
         for i in range(bootstrap):
-            boot_red_flux = np.random.normal(loc=prospector_red_cont_flux, scale=err_red_flux, size=1)
+            boot_red_flux = np.random.normal(loc=red_flux, scale=err_red_flux, size=1)
             boot_green_flux = np.random.normal(loc=green_flux, scale=err_green_flux, size=1)
-            boot_blue_flux = np.random.normal(loc=prospector_blue_cont_flux, scale=err_blue_flux, size=1)
-            boot_cont_percentile = compute_cont_pct(blue_wave, green_wave, red_wave, prospector_blue_cont_flux, prospector_red_cont_flux)
-            boot_line, boot_cont = compute_line(boot_cont_percentile, boot_red_flux[0], boot_green_flux[0], boot_blue_flux[0], redshift, 0, filter_width, line_wave_rest)            
+            boot_blue_flux = np.random.normal(loc=blue_flux, scale=err_blue_flux, size=1)
+            # Scale the prospector points to match the red/blue continuum points
+            red_scale_factor_boot = red_flux/prospector_red_cont_flux
+            blue_scale_factor_boot = blue_flux/prospector_blue_cont_flux
+            total_scale_factor_boot = np.mean([red_scale_factor_boot, blue_scale_factor_boot])
+            prospector_green_cont_flux_scaled_boot = prospector_green_cont_flux * total_scale_factor_boot
+            line_flux, observed_wave = get_lineflux_from_cont(boot_green_flux, prospector_green_cont_flux_scaled_boot, line_wave_rest, redshift, filter_width)
             boot_line = boot_line 
             
             boot_lines.append(boot_line)
@@ -558,11 +563,12 @@ def make_all_phot_linemaps(line_name):
     # RUNNING ONLY ON ONES THAT HAVE BOTH LINES FOR NOW
     line_sample_df = read_line_sample_df('HalphaPaBeta')
 
-    paa_only_list = [26618, 28495, 29574, 30915, 37776, 39748, 41581, 45334, 51405, 54614, 54643, 56018, 61218]
+    # paa_only_list = [26618, 28495, 30915, 37776, 39748, 41581, 45334, 51405, 54614, 54643, 56018, 61218]
+    # paa_pab_spec_list = [26618, 28495, 30915, 37776, 54614, 54643, 61218]
 
     pandas_rows = []
-    # for id_dr3 in line_sample_df['id'].to_list():
-    for id_dr3 in paa_only_list:
+    # for id_dr3 in paa_pab_spec_list:
+    for id_dr3 in line_sample_df['id'].to_list():
         phot_sample_row = phot_sample_df[phot_sample_df['id'] == id_dr3]
         redshift_sigma = phot_sample_row[f'{line_name}_redshift_sigma'].iloc[0]
 
@@ -599,7 +605,7 @@ def make_all_phot_linemaps(line_name):
 if __name__ == "__main__":
     # calc_lineflux_and_linemap(34730, 'Halpha', phot_sample_df, supercat_df, image_size=(200,200))
 
-    # make_all_phot_linemaps('Halpha')
-    # make_all_phot_linemaps('PaBeta')
-    make_all_phot_linemaps('PaAlpha')
+    make_all_phot_linemaps('Halpha')
+    make_all_phot_linemaps('PaBeta')
+    # make_all_phot_linemaps('PaAlpha')
     pass

@@ -941,7 +941,8 @@ if __name__ == "__main__":
     #             2.1217]
     # breakpoint()
     # sample_select()
-    sample_select(paalpha=True)
+    # sample_select(paalpha=True)
+    sample_select(paalpha_pabeta=True)
     
     # id_msa_list = get_id_msa_list(full_sample=False)
     # paper_figure_sample_selection(id_msa_list, color_var='sfr')
@@ -956,9 +957,25 @@ if __name__ == "__main__":
 
 
 
+
+
+
+""" PaAlpha analysis"""
 # paschen alpha candidate ids:
 # [15350, 17089, 18045, 18708, 19283, 25774, 27621, 29398, 33157, 38987, 42203, 42238, 43497, 48463, 60032]
 # After visual SNR filtering:
 # [15350, 17089, 18045, 19283, 25774, 27621, 29398, 33157, 38987, 42203, 42238, 43497, 48463]
 # Here are their id_dr3s
 # [26618, 28495, 29574, 30915, 37776, 39748, 41581, 45334, 51405, 54614, 54643, 56018, 61218]
+
+# Due to phot_sample_df, had to drop 3rd index:
+# msa = [15350, 17089, 19283, 25774, 27621, 29398, 33157, 38987, 42203, 42238, 43497, 48463]
+# dr3 = [26618, 28495, 30915, 37776, 39748, 41581, 45334, 51405, 54614, 54643, 56018, 61218]
+
+
+""" PaAlpha with PaBeta"""
+# both lines in SED
+# [15350, 17089, 18045, 18708, 19283, 25774, 42203, 42238, 48463, 60032]
+# dropping same idxs as above for snr and 3rd index
+# [15350, 17089, 19283, 25774, 42203, 42238, 48463]
+# [26618, 28495, 30915, 37776, 54614, 54643, 61218]

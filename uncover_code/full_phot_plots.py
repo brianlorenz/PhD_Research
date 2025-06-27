@@ -2,7 +2,7 @@ from full_phot_read_data import read_merged_lineflux_cat
 from full_phot_merge_lineflux import filter_bcg_flags
 import matplotlib.pyplot as plt
 from uncover_read_data import read_SPS_cat_all, read_bcg_surface_brightness
-from compute_av import compute_ha_pab_av, compute_pab_paa_av
+from compute_av import compute_ha_pab_av, compute_pab_paa_av, compute_paalpha_pabeta_av
 import pandas as pd
 import numpy as np
 import random
@@ -43,20 +43,24 @@ def plot_mass_vs_dust():
     lineflux_pab_paa = make_cuts_lineflux_df(lineflux_pab_paa, pab_paa_ratio=True)
     
     # Compute dust measurements
-    lineflux_ha_pab['AV_pab_ha'] = compute_ha_pab_av(lineflux_ha_pab['PaBeta_flux'] / lineflux_ha_pab['Halpha_flux'])
-    err_av_low, err_av_high = calc_errs_worst(lineflux_ha_pab['AV_pab_ha'], lineflux_ha_pab['PaBeta_flux'], lineflux_ha_pab['err_PaBeta_flux_low'], lineflux_ha_pab['err_PaBeta_flux_high'], lineflux_ha_pab['Halpha_flux'], lineflux_ha_pab['err_Halpha_flux_low'], lineflux_ha_pab['err_Halpha_flux_high'])
-    lineflux_ha_pab['err_AV_pab_ha_low'] = err_av_low
-    lineflux_ha_pab['err_AV_pab_ha_high'] = err_av_high
-    # plot_lineflux_ha_pab_err=np.array([[lineflux_ha_pab['err_AV_pab_ha_low'], lineflux_ha_pab['err_AV_pab_ha_high']]]).T
-    # boot_errs(lineflux_ha_pab['AV_pab_ha'], lineflux_ha_pab['PaBeta_flux'], lineflux_ha_pab['err_PaBeta_flux_low'], lineflux_ha_pab['err_PaBeta_flux_high'], lineflux_ha_pab['Halpha_flux'], lineflux_ha_pab['err_Halpha_flux_low'], lineflux_ha_pab['err_Halpha_flux_high'])
+    lineflux_ha_pab['AV_pab_ha'] = compute_ha_pab_av(lineflux_ha_pab['fe_cor_PaBeta_flux'] / lineflux_ha_pab['nii_cor_Halpha_flux'])
+    err_av_lows = []
+    err_av_highs = []
+    for i in range(len(lineflux_ha_pab)):
+        boot_vals, err_av_low, err_av_high = boot_errs(lineflux_ha_pab['AV_pab_ha'].iloc[i], lineflux_ha_pab['fe_cor_PaBeta_flux'].iloc[i], lineflux_ha_pab['err_fe_cor_PaBeta_flux_low'].iloc[i], lineflux_ha_pab['err_fe_cor_PaBeta_flux_high'].iloc[i], lineflux_ha_pab['nii_cor_Halpha_flux'].iloc[i], lineflux_ha_pab['err_nii_cor_Halpha_flux_low'].iloc[i], lineflux_ha_pab['err_nii_cor_Halpha_flux_high'].iloc[i], ha_pab=True)
+        err_av_lows.append(err_av_low)
+        err_av_highs.append(err_av_high)
+    lineflux_ha_pab['err_AV_pab_ha_low'] = err_av_lows
+    lineflux_ha_pab['err_AV_pab_ha_high'] = err_av_highs
+    # pab_ha_av_errs = pandas_cols_to_matplotlib_errs(lineflux_ha_pab['err_AV_pab_ha_low'], lineflux_ha_pab['err_AV_pab_ha_high'])
     
-    lineflux_pab_paa['AV_paa_pab'] = compute_pab_paa_av(lineflux_pab_paa['PaAlpha_flux'] / lineflux_pab_paa['PaBeta_flux'])
-    err_av_low, err_av_high = calc_errs_worst(lineflux_pab_paa['AV_paa_pab'], lineflux_pab_paa['PaAlpha_flux'], lineflux_pab_paa['err_PaAlpha_flux_low'], lineflux_pab_paa['err_PaAlpha_flux_high'], lineflux_pab_paa['PaBeta_flux'], lineflux_pab_paa['err_PaBeta_flux_low'], lineflux_pab_paa['err_PaBeta_flux_high'])
-    lineflux_pab_paa['err_AV_paa_pab_low'] = err_av_low
-    lineflux_pab_paa['err_AV_paa_pab_high'] = err_av_high
-    # plot_lineflux_pab_paa_err=np.array([[lineflux_pab_paa['err_AV_paa_pab_low'], lineflux_pab_paa['err_AV_paa_pab_high']]]).T
-    # Bootstrap errors
-    
+    lineflux_pab_paa['AV_paa_pab'] = compute_paalpha_pabeta_av(lineflux_pab_paa['PaAlpha_flux'] / lineflux_pab_paa['fe_cor_PaBeta_flux'])
+    # err_av_low, err_av_high = boot_errs(lineflux_pab_paa['AV_paa_pab'], lineflux_pab_paa['PaAlpha_flux'], lineflux_pab_paa['err_PaAlpha_flux_low'], lineflux_pab_paa['err_PaAlpha_flux_high'], lineflux_pab_paa['fe_cor_PaBeta_flux'], lineflux_pab_paa['err_fe_cor_PaBeta_flux_low'], lineflux_pab_paa['err_fe_cor_PaBeta_flux_high'], paa_pab=True)
+    # lineflux_pab_paa['err_AV_paa_pab_low'] = err_av_low
+    # lineflux_pab_paa['err_AV_paa_pab_high'] = err_av_high
+    pab_paa_av_errs = []
+    # pab_paa_av_errs = pandas_cols_to_matplotlib_errs(lineflux_ha_pab['err_AV_paa_pab_low'], lineflux_ha_pab['err_AV_paa_pab_high'])
+        
     # Dust figure - both mass and sfr
     for fig_type in ['mass', 'sfr']:
         fig, ax = plt.subplots(figsize=(7,6))
@@ -82,7 +86,10 @@ def plot_mass_vs_dust():
                 rgba = cmap(norm(df['min_snr'].iloc[j]))
                 # ax.errorbar(df['mstar_50'].iloc[j], df['z_50'].iloc[j], yerr=np.array([[low_zerr.iloc[j], high_zerr.iloc[j]]]).T, marker=shapes[i], mec='black', ms=6, color=rgba, ls='None', ecolor='gray')
                 if fig_type == 'mass':
-                    ax.plot(df['mstar_50'].iloc[j], df[av_names[i]].iloc[j], marker=shapes[i], color=rgba, markersize=6, mec='black', ls='None')
+                    # ax.plot(df['mstar_50'].iloc[j], df[av_names[i]].iloc[j], marker=shapes[i], color=rgba, markersize=6, mec='black', ls='None')
+                    yerr_low = df[f'err_{av_names[i]}_low'].iloc[j]
+                    yerr_high = df[f'err_{av_names[i]}_high'].iloc[j]
+                    ax.errorbar(df['mstar_50'].iloc[j], df[av_names[i]].iloc[j], yerr=np.array(yerr_low, yerr_high).T, marker=shapes[i], color=rgba, markersize=6, mec='black', ls='None')
                 if fig_type == 'sfr':
                     ax.plot(np.log10(df['sfr100_50'].iloc[j]), df[av_names[i]].iloc[j], marker=shapes[i], color=rgba, markersize=6, mec='black', ls='None')
         # for i in range(len(lineflux_ha_pab)):
@@ -168,11 +175,11 @@ def calc_errs_worst(av, line_num_flux, line_num_err_low, line_num_err_high, line
     err_av_high = av_value_high - av
     return err_av_low, err_av_high
 
-def boot_errs(av, line_num_flux, line_num_err_low, line_num_err_high, line_den_flux, line_den_err_low, line_den_err_high):
+def boot_errs(av, line_num_flux, line_num_err_low, line_num_err_high, line_den_flux, line_den_err_low, line_den_err_high, ha_pab=False, paa_pab=False, draws=1000):
     # Currently having trouble bootstrapping if any go negative, since you can't toake log of a negative number
     # Needs to handle nondetections
     boot_vals = []
-    for i in range(10):
+    for i in range(draws):
         x = random.uniform(0, 1)
         if x < 0.5:
             boot_num = line_num_flux - np.abs(np.random.normal(loc = 0, scale=line_num_err_low))
@@ -184,12 +191,22 @@ def boot_errs(av, line_num_flux, line_num_err_low, line_num_err_high, line_den_f
         if x > 0.5:
             boot_den = np.abs(np.random.normal(loc = 0, scale=line_den_err_high)) + line_den_flux
         
-        boot_val = compute_ha_pab_av(boot_num / boot_den)
+        if ha_pab:
+            boot_val = compute_ha_pab_av(boot_num / boot_den)
+        if paa_pab:
+            boot_val = compute_paalpha_pabeta_av(boot_num / boot_den)
         boot_vals.append(boot_val)
-        if i == 0:
-            df = boot_val.to_frame()
-        else:
-            df[f'{i}'] = boot_val
+        # if i == 0:
+        #     df = boot_val.to_frame()
+        # else:
+        #     df[f'{i}'] = boot_val
+    boot_vals = np.array(boot_vals)
+    boot_vals = np.nan_to_num(boot_vals, nan=-99)
+    err_low = av - np.percentile(boot_vals, 16)
+    err_high = np.percentile(boot_vals, 84) - av
+    if np.percentile(boot_vals, 16) < -98:
+        err_low = 1e20
+    return boot_vals, err_low, err_high
 
 
 def make_cuts_lineflux_df(df, ha_pab_ratio=False, pab_paa_ratio=False):
