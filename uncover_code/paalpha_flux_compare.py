@@ -72,8 +72,8 @@ def compare_paa_flux():
     
     # These make the plots
     err_paalpha_sed_method = pandas_cols_to_matplotlib_errs(paa_phot_measure_df['err_PaAlpha_flux_low'], paa_phot_measure_df['err_PaAlpha_flux_high'])
-    plot_column_vs_column(paa_lineflux_calc_df['paa_emfit_flux'], paa_phot_measure_df['PaAlpha_flux'], 'Emission fit flux', 'SED method flux', 'paalpha_vs_emfit', 'PaAlpha', yerr=err_paalpha_sed_method)
-    plot_column_vs_column(paa_lineflux_calc_df['paa_emfit_flux'], paa_phot_measure_df['PaAlpha_flux'], 'Emission fit flux', 'SED method flux', 'paalpha_vs_emfit', 'PaAlpha', ids=paa_phot_measure_df['id_dr3'], yerr=err_paalpha_sed_method)
+    # plot_column_vs_column(paa_lineflux_calc_df['paa_emfit_flux'], paa_phot_measure_df['PaAlpha_flux'], 'Emission fit flux', 'SED method flux', 'paalpha_vs_emfit', 'PaAlpha', yerr=err_paalpha_sed_method)
+    # plot_column_vs_column(paa_lineflux_calc_df['paa_emfit_flux'], paa_phot_measure_df['PaAlpha_flux'], 'Emission fit flux', 'SED method flux', 'paalpha_vs_emfit', 'PaAlpha', ids=paa_phot_measure_df['id_dr3'], yerr=err_paalpha_sed_method)
 
 
     id_pab_paa_list = [15350, 17089, 19283, 25774, 42203, 42238, 48463]
@@ -120,8 +120,8 @@ def compare_paa_flux():
 
     # plot_column_vs_column(merged_paa_pab_phot_df['paa_pab_ratio_emfit'], merged_paa_pab_phot_df['paa_pab_ratio_sed'], 'Emission fit PaA/PaB', 'SED method PaA/PaB', 'paalpha_pabeta_ratio', 'PaA/PaB', log=False)
     # plot_column_vs_column(merged_paa_pab_phot_df['paa_pab_ratio_emfit'], merged_paa_pab_phot_df['paa_pab_ratio_sed'], 'Emission fit PaA/PaB', 'SED method PaA/PaB', 'paalpha_pabeta_ratio', 'PaA/PaB', ids=pab_phot_measure_df['id_dr3'], log=False)
-    # plot_column_vs_column(merged_paa_pab_phot_df['paa_pab_av_emfit'], merged_paa_pab_phot_df['paa_pab_av_sed'], 'Emission fit PaA/PaB AV', 'SED method PaA/PaB AV', 'paalpha_pabeta_av', 'PaA/PaB AV', log=False, av=True, yerr=err_av_sed_method)
-    # plot_column_vs_column(merged_paa_pab_phot_df['paa_pab_av_emfit'], merged_paa_pab_phot_df['paa_pab_av_sed'], 'Emission fit PaA/PaB AV', 'SED method PaA/PaB AV', 'paalpha_pabeta_av', 'PaA/PaB AV', ids=pab_phot_measure_df['id_dr3'], log=False, av=True, yerr=err_av_sed_method)
+    plot_column_vs_column(merged_paa_pab_phot_df['paa_pab_av_emfit'], merged_paa_pab_phot_df['paa_pab_av_sed'], 'Emission fit PaA/PaB AV', 'SED method PaA/PaB AV', 'paalpha_pabeta_av', 'PaA/PaB AV', log=False, av=True, yerr=err_av_sed_method)
+    plot_column_vs_column(merged_paa_pab_phot_df['paa_pab_av_emfit'], merged_paa_pab_phot_df['paa_pab_av_sed'], 'Emission fit PaA/PaB AV', 'SED method PaA/PaB AV', 'paalpha_pabeta_av', 'PaA/PaB AV', ids=pab_phot_measure_df['id_dr3'], log=False, av=True, yerr=err_av_sed_method)
 
 
 

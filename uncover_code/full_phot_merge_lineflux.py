@@ -6,6 +6,7 @@ from full_phot_read_data import read_merged_lineflux_cat
 from full_phot_apply_flux_corrections import apply_fe_cor, apply_nii_cor
 
 def combine_phot_flux_cats():
+    print('Merging Catalogs')
     flux_dfs = []
     for line in line_list:
         flux_df = ascii.read(f'/Users/brianlorenz/uncover/Data/generated_tables/phot_calcs/phot_lineflux_{line[0]}.csv').to_pandas()
@@ -25,6 +26,7 @@ def combine_phot_flux_cats():
     flux_df_merge['lines_measured'] = flag_line_true
 
     flux_df_merge.to_csv(f'/Users/brianlorenz/uncover/Data/generated_tables/phot_calcs/phot_merged_lineflux.csv', index=False)
+    print('Merged and saved')
 
 def count_objects():
     lineflux_df = read_merged_lineflux_cat()   

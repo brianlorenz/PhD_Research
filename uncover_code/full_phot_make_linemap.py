@@ -62,13 +62,13 @@ def calc_lineflux_and_linemap(id_dr3, line_name, phot_df, supercat_df, image_siz
     redshift = phot_df_row['z_50'].iloc[0]
 
     # cont_percentile, line_flux, boot_lines, sed_fluxes, wave_pct, line_rest_wavelength, cont_value = plot_sed_around_line(id_dr3, line_name, filters, redshift, bootstrap=1000)
-    line_flux, sed_fluxes, line_wave_rest, cont_value, boot_lines, wave_pct, cont_percentile = plot_sed_around_line_prospector(id_dr3, line_name, filters, redshift, bootstrap=1000)
+    line_flux, sed_fluxes, line_wave_rest, cont_value, boot_lines, wave_pct, cont_percentile, offset_quality_factor = plot_sed_around_line_prospector(id_dr3, line_name, filters, redshift, bootstrap=1000)
 
    
     err_lineflux_low = line_flux - np.percentile(boot_lines, 16)
     err_lineflux_high = np.percentile(boot_lines, 86) - line_flux
     flux_snr = line_flux / np.std(boot_lines)
-    lineflux_info = [line_flux, err_lineflux_low, err_lineflux_high, flux_snr, cont_value]
+    lineflux_info = [line_flux, err_lineflux_low, err_lineflux_high, flux_snr, cont_value, offset_quality_factor]
 
     subdir_str = '' # Will save to a different folder than the main one
     if flux_snr < snr_thresh:
@@ -338,6 +338,14 @@ def plot_sed_around_line_prospector(id_dr3, line_name, filters, redshift, bootst
     filter_width = sedpy_line_filt.rectangular_width
     line_flux, observed_wave = get_lineflux_from_cont(green_flux, prospector_cont_flux, line_wave_rest, redshift, filter_width)
 
+    # Quality check - how close are the points to the continuum relative to the lineflux
+    main_filter_offset_from_cont = np.abs(green_flux - prospector_cont_flux)
+    red_offset_from_cont = np.abs(red_flux - prospector_red_cont_flux_scaled)
+    blue_offset_from_cont = np.abs(blue_flux - prospector_blue_cont_flux_scaled)
+    avg_cont_filter_offset = np.mean([red_offset_from_cont, blue_offset_from_cont])
+    offset_quality_factor = main_filter_offset_from_cont / avg_cont_filter_offset # High quality is a good continuum fit
+
+
     ##### THINK about how to monte carlo - do it with prospector errors as well? Probably
     # Decided to just take original errors and apply them to the prospector points
     boot_lines = []
@@ -351,16 +359,16 @@ def plot_sed_around_line_prospector(id_dr3, line_name, filters, redshift, bootst
             blue_scale_factor_boot = blue_flux/prospector_blue_cont_flux
             total_scale_factor_boot = np.mean([red_scale_factor_boot, blue_scale_factor_boot])
             prospector_green_cont_flux_scaled_boot = prospector_green_cont_flux * total_scale_factor_boot
-            line_flux, observed_wave = get_lineflux_from_cont(boot_green_flux, prospector_green_cont_flux_scaled_boot, line_wave_rest, redshift, filter_width)
-            boot_line = boot_line 
-            
-            boot_lines.append(boot_line)
+            boot_line_flux, observed_wave = get_lineflux_from_cont(boot_green_flux, prospector_green_cont_flux_scaled_boot, line_wave_rest, redshift, filter_width)
+            boot_lines.append(boot_line_flux)
     boot_lines = np.array(boot_lines)
 
 
     # PLot the prospector point as well, instead of the normal purple point
     # ax.plot([red_wave, blue_wave], [red_flux, blue_flux], marker='None', ls='--', color=connect_color)
-    ax.plot(green_wave, prospector_cont_flux, marker='o', ls='None', color=connect_color)
+    ax.plot(green_wave, prospector_cont_flux, marker='s', ls='None', color=connect_color)
+    ax.plot(red_wave, prospector_red_cont_flux_scaled, marker='s', ls='None', color='magenta')
+    ax.plot(blue_wave, prospector_blue_cont_flux_scaled, marker='s', ls='None', color='magenta')
     ax.plot([green_wave,green_wave], [green_flux, prospector_cont_flux], marker='None', ls='-', color='green', lw=2)
        
     ax.text(0.03, 0.2, f'Flux: {line_flux:.3e}', transform=ax.transAxes)   
@@ -381,7 +389,7 @@ def plot_sed_around_line_prospector(id_dr3, line_name, filters, redshift, bootst
     wave_pct = compute_wavelength_pct(blue_wave, green_wave, red_wave)
     cont_percentile = compute_cont_pct(blue_wave, green_wave, red_wave, blue_flux, red_flux)
 
-    return line_flux, sed_fluxes, line_wave_rest, prospector_cont_flux, boot_lines, wave_pct, cont_percentile
+    return line_flux, sed_fluxes, line_wave_rest, prospector_cont_flux, boot_lines, wave_pct, cont_percentile, offset_quality_factor
     return cont_percentile, line_flux, boot_lines, sed_fluxes, wave_pct, line_wave_rest, cont_value
 
 
@@ -561,14 +569,23 @@ def make_all_phot_linemaps(line_name):
     bcg_df = read_bcg_surface_brightness()
     supercat_df = read_supercat()
     # RUNNING ONLY ON ONES THAT HAVE BOTH LINES FOR NOW
-    line_sample_df = read_line_sample_df('HalphaPaBeta')
+    # line_sample_df = read_line_sample_df(line_name)
+    line_sample_df_ha_pab = read_line_sample_df('HalphaPaBeta')
+    line_sample_df_paa_pab = read_line_sample_df('PaAlphaPaBeta')
+    all_pab_df = pd.merge(line_sample_df_ha_pab, line_sample_df_paa_pab, how='outer')
+    if line_name == 'Halpha':
+        use_df = line_sample_df_ha_pab # Choosing to run halpha only if it's also detected with pabeta
+    elif line_name == 'PaBeta':
+        use_df = all_pab_df # running pabeta for anything with halpha or with paalpha
+    elif line_name == 'PaAlpha':
+        use_df = line_sample_df_paa_pab # Paalpha only with things htat have pabeta
 
     # paa_only_list = [26618, 28495, 30915, 37776, 39748, 41581, 45334, 51405, 54614, 54643, 56018, 61218]
     # paa_pab_spec_list = [26618, 28495, 30915, 37776, 54614, 54643, 61218]
 
     pandas_rows = []
     # for id_dr3 in paa_pab_spec_list:
-    for id_dr3 in line_sample_df['id'].to_list():
+    for id_dr3 in use_df['id'].to_list():
         phot_sample_row = phot_sample_df[phot_sample_df['id'] == id_dr3]
         redshift_sigma = phot_sample_row[f'{line_name}_redshift_sigma'].iloc[0]
 
@@ -599,7 +616,7 @@ def make_all_phot_linemaps(line_name):
         pandas_row.append(subdir_str)
         pandas_row.append(redshift_sigma)
         pandas_rows.append(pandas_row)
-    lineflux_df = pd.DataFrame(pandas_rows, columns=['id_dr3', f'{line_name}_flux', f'err_{line_name}_flux_low', f'err_{line_name}_flux_high', f'{line_name}_snr', f'{line_name}_cont_value', f'use_flag_{line_name}', f'flag_reason_{line_name}', f'{line_name}_redshift_sigma'])
+    lineflux_df = pd.DataFrame(pandas_rows, columns=['id_dr3', f'{line_name}_flux', f'err_{line_name}_flux_low', f'err_{line_name}_flux_high', f'{line_name}_snr', f'{line_name}_cont_value', f'{line_name}_quality_factor', f'use_flag_{line_name}', f'flag_reason_{line_name}', f'{line_name}_redshift_sigma'])
     lineflux_df.to_csv(f'/Users/brianlorenz/uncover/Data/generated_tables/phot_calcs/phot_lineflux_{line_name}.csv', index=False)
 
 if __name__ == "__main__":
@@ -607,5 +624,5 @@ if __name__ == "__main__":
 
     make_all_phot_linemaps('Halpha')
     make_all_phot_linemaps('PaBeta')
-    # make_all_phot_linemaps('PaAlpha')
+    make_all_phot_linemaps('PaAlpha')
     pass

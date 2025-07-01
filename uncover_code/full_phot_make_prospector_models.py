@@ -214,9 +214,11 @@ if __name__ == "__main__":
     ### GENERATES FOR THE MAIN SAMPLE 
     # ha_pab_sample = read_line_sample_df('HalphaPaBeta')
     # ha_pab_list = ha_pab_sample['id'].to_list()
+    paa_pab_sample = read_line_sample_df('PaAlphaPaBeta')
+    paa_pab_list = paa_pab_sample['id'].to_list()
 
-    paa_only_list = [26618, 28495, 29574, 30915, 37776, 39748, 41581, 45334, 51405, 54614, 54643, 56018, 61218]
-    generate_prospector_models(paa_only_list, 'paa_only')
+    # paa_only_list = [26618, 28495, 29574, 30915, 37776, 39748, 41581, 45334, 51405, 54614, 54643, 56018, 61218]
+    generate_prospector_models(paa_pab_list, 'paa_pab_sample')
 
     # for id_dr3 in ha_pab_list:
     #     absorp_npz_to_csv(id_dr3, phot_df, 'ha_pab_both_detected')

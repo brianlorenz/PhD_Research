@@ -5,6 +5,7 @@ from astropy.io import ascii
 
 
 def apply_nii_cor():
+    print('Adding NII correction')
     halpha_df, halpha_df_loc = read_lineflux_cat('Halpha')
     sps_df = read_SPS_cat_all()
     nii_cor_values = [get_nii_correction_dr3(id_dr3, sps_df=sps_df) for id_dr3 in halpha_df['id_dr3']]
@@ -15,6 +16,7 @@ def apply_nii_cor():
     halpha_df.to_csv(halpha_df_loc, index=False)
 
 def apply_fe_cor():
+    print('Adding Fe correction')
     pabeta_df, pabeta_df_loc = read_lineflux_cat('PaBeta')
     pab_correction_factor = get_fe_correction()
     pabeta_df['pab_correction_factor'] = [pab_correction_factor for i in range(len(pabeta_df))]

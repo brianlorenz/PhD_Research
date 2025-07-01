@@ -272,6 +272,15 @@ def save_ha_pab_sample():
     ha_pab_df_loc = f'/Users/brianlorenz/uncover/Data/generated_tables/phot_calcs/phot_sample_select/HalphaPaBeta_sample.csv'
     both_halpha_pabeta.to_csv(ha_pab_df_loc, index=False)
 
+def save_paa_pab_sample():
+    """Joins the two sample dataframes so that you get a subsample with both emission lines
+    """
+    paalpha_sample = read_line_sample_df('PaAlpha')
+    pabeta_sample = read_line_sample_df('PaBeta')
+    both_paalpha_pabeta = pd.merge(paalpha_sample, pabeta_sample, how='inner')
+    paa_pab_df_loc = f'/Users/brianlorenz/uncover/Data/generated_tables/phot_calcs/phot_sample_select/PaAlphaPaBeta_sample.csv'
+    both_paalpha_pabeta.to_csv(paa_pab_df_loc, index=False)
+
 # Should add the check medium bands function into this code, and then ensure that there is mband data for each of the objects there
 # Merge in the use_phot and 
 
@@ -279,5 +288,7 @@ if __name__ == "__main__":
     # full_phot_sample_select()
     # get_sample_for_line('Halpha')
     # get_sample_for_line('PaBeta')
-    save_ha_pab_sample()
+    # get_sample_for_line('PaAlpha')
+    save_paa_pab_sample()
+    # save_ha_pab_sample()
     pass
