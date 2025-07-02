@@ -3,7 +3,7 @@ from astropy.io import ascii
 from full_phot_sample_selection import line_list
 import pandas as pd
 from full_phot_read_data import read_merged_lineflux_cat
-from full_phot_apply_flux_corrections import apply_fe_cor, apply_nii_cor
+from full_phot_apply_flux_corrections import apply_fe_cor, apply_nii_cor, add_ew_column
 
 def combine_phot_flux_cats():
     print('Merging Catalogs')
@@ -69,8 +69,9 @@ def check_overlap():
 
 if __name__ == "__main__":
     
-    apply_nii_cor() # Adds correction for nii line to halpha cat
-    apply_fe_cor() # Adds correction for fe line to pabeta cat
+    apply_nii_cor() # Adds correction for nii line to halpha cat.  Also adds ew
+    apply_fe_cor() # Adds correction for fe line to pabeta cat. Also adds ew
+    add_ew_column('PaAlpha') # adds ew to dataframe
     combine_phot_flux_cats() # Merges Halpha, Pabeta, Paalpha cats
 
     # count_objects()

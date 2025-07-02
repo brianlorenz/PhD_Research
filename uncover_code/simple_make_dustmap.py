@@ -4,7 +4,7 @@ from astropy.io import fits, ascii
 from astropy import units as u
 from astropy.nddata import Cutout2D
 from astropy.convolution import Gaussian2DKernel, convolve
-from uncover_read_data import read_supercat, read_raw_spec, read_spec_cat, read_segmap, read_SPS_cat, read_aper_cat, read_fluxcal_spec, get_id_msa_list
+from uncover_read_data import read_supercat, read_raw_spec, read_spec_cat, read_segmap, read_SPS_cat, read_aper_cat, read_fluxcal_spec, get_id_msa_list, read_supercat_newids
 from uncover_make_sed import read_sed
 from uncover_sed_filters import unconver_read_filters
 from fit_emission_uncover_wave_divide import line_list
@@ -90,6 +90,7 @@ def make_dustmap_simple(id_msa, aper_size='None', axarr_final=[], ax_labels=Fals
     # Read in the images
     ha_filters, ha_images, wht_ha_images, obj_segmap, ha_photfnus, ha_all_filts = make_3color(id_msa, line_index=0, plot=False, image_size=image_size)
     pab_filters, pab_images, wht_pab_images, obj_segmap, pab_photfnus, pab_all_filts = make_3color(id_msa, line_index=1, plot=False, image_size=image_size)
+    
     ha_sedpy_name = ha_filters[1].replace('f', 'jwst_f')
     ha_sedpy_filt = observate.load_filters([ha_sedpy_name])[0]
     ha_filter_width = ha_sedpy_filt.rectangular_width
@@ -105,6 +106,7 @@ def make_dustmap_simple(id_msa, aper_size='None', axarr_final=[], ax_labels=Fals
     ha_blue_sedpy_filt = observate.load_filters([ha_blue_sedpy_name])[0]
     pab_blue_sedpy_name = pab_filters[2].replace('f', 'jwst_f')
     pab_blue_sedpy_filt = observate.load_filters([pab_blue_sedpy_name])[0]
+    breakpoint()
 
     ha_rest_wavelength = line_list[0][1]
     pab_rest_wavelength = line_list[1][1]
@@ -203,8 +205,8 @@ def make_dustmap_simple(id_msa, aper_size='None', axarr_final=[], ax_labels=Fals
     pab_cont_pct, _, pab_trasm_flag, pab_boot_lines, pab_sed_fluxes, pab_wave_pct, pab_cont_flux_erg_cm2_s, pab_boot_cont_fluxes = plot_sed_around_line(ax_pab_sed, pab_filters, sed_df, spec_df, redshift, 1, pab_transmissions, id_msa, fluxcal_str=fluxcal_str)
 
     # Read in the linefluxes from lineflux_df, don't need to be double-computing here, and already corrected 
-    # lineflux_df = ascii.read(f'/Users/brianlorenz/uncover/Data/generated_tables/lineflux_df{fluxcal_str}.csv').to_pandas()
-    lineflux_df = ascii.read(f'/Users/brianlorenz/uncover/Data/generated_tables_referee/lineflux_df{fluxcal_str}_referee.csv').to_pandas()
+    lineflux_df = ascii.read(f'/Users/brianlorenz/uncover/Data/generated_tables/lineflux_df{fluxcal_str}.csv').to_pandas()
+    # lineflux_df = ascii.read(f'/Users/brianlorenz/uncover/Data/generated_tables_referee/lineflux_df{fluxcal_str}_referee.csv').to_pandas()
 
     lineflux_row = lineflux_df[lineflux_df['id_msa'] == id_msa]
     ha_sed_lineflux = lineflux_row['ha_sed_flux'].iloc[0]
@@ -382,6 +384,7 @@ def make_dustmap_simple(id_msa, aper_size='None', axarr_final=[], ax_labels=Fals
     pab_contmap_highsnr_idx = find_pixels_above_sky_noise(pab_contmap, segmap_idxs, snr_thresh_map=snr_thresh_map)
     pab_linemap_highsnr_idx = find_pixels_above_sky_noise(pab_linemap, segmap_idxs, snr_thresh_map=snr_thresh_map)
     pab_linemap_segmap_snrcut_idx = np.logical_and(pab_snr_idxs,pab_linemap_highsnr_idx)
+
 
     r_value_info_haline_hacont = plot_and_correlate_highsnr_pix(id_dr3, ha_contmap, ha_contmap_highsnr_idx, 'Ha_cont', ha_linemap, ha_linemap_highsnr_idx, 'Ha_line', snr_thresh_map, bootstrap=bootstrap)
     r_value_info_haline_f150w = plot_and_correlate_highsnr_pix(id_dr3, image_150w.data, f150w_highsnr_idx, 'F150W', ha_linemap, ha_linemap_highsnr_idx, 'Ha_line', snr_thresh_map)
@@ -760,6 +763,7 @@ def make_3color(id_msa, line_index = 0, plot = False, image_size=(100,100), paal
     image_red, wht_image_red, photfnu_red = get_cutout(obj_skycoord, filt_red, size=image_size)
     image_green, wht_image_green, photfnu_green = get_cutout(obj_skycoord, filt_green, size=image_size)
     image_blue, wht_image_blue, photfnu_blue = get_cutout(obj_skycoord, filt_blue, size=image_size)
+    breakpoint()
     images = [image_red, image_green, image_blue]
     wht_images = [wht_image_red, wht_image_green, wht_image_blue]
     photfnus = [photfnu_red, photfnu_green, photfnu_blue]
@@ -812,6 +816,7 @@ def get_uvj_images(supercat_df, redshift, id_msa, image_size=(100,100), use_mban
 
 def get_coords(id_msa):
     supercat_df = read_supercat()
+    supercat_df_all = read_supercat_newids()
     row = supercat_df[supercat_df['id_msa']==id_msa]
     if id_msa == 42041:
         row = supercat_df[supercat_df['id'] == 54635]
@@ -869,6 +874,8 @@ def find_pixels_above_sky_noise(map, segmap_idx, snr_thresh_map=3):
     return map_highsnr_idxs
 
 def plot_and_correlate_highsnr_pix(id_dr3, map1, map_highsnr_idx1, map1_name, map2, map_highsnr_idx2, map2_name, snr_thresh_map, plot=True, bootstrap=0):
+    plot=True
+
     map_both_idxs = np.logical_or(map_highsnr_idx1, map_highsnr_idx2) # can set to OR or AND
     # map_both_idxs = np.logical_or(map_highsnr_idx1, map_highsnr_idx2)
     map1_pixels = map1[map_both_idxs]
@@ -878,6 +885,8 @@ def plot_and_correlate_highsnr_pix(id_dr3, map1, map_highsnr_idx1, map1_name, ma
         ax.plot(map2_pixels, map1_pixels, marker='o', ls='None', color='black')
         ax.set_xscale('log')
         ax.set_yscale('log')
+        plt.show()
+        breakpoint()
     if len(map1_pixels) < 2 or len(map2_pixels) < 2:
         r_value = -99
         p_value = -99
@@ -1539,7 +1548,8 @@ def make_paper_fig_dustmaps(id_msa_list, sortby = 'mass'):
 if __name__ == "__main__":
     # make_dustmap_simple(32111)
     # lineflux_df = ascii.read(f'/Users/brianlorenz/uncover/Data/generated_tables/lineflux_df_all.csv').to_pandas()
-    # make_dustmap_simple(47875)
+    # make_dustmap_simple(18471)
+    make_dustmap_simple(39855)
    
     id_msa_list = get_id_msa_list(full_sample=False, referee_sample=True)
     make_all_dustmap(id_msa_list, full_sample=False, fluxcal=True)
