@@ -1,7 +1,7 @@
 from full_phot_read_data import read_merged_lineflux_cat
 from full_phot_merge_lineflux import filter_bcg_flags
 import matplotlib.pyplot as plt
-from uncover_read_data import read_SPS_cat_all, read_bcg_surface_brightness, read_supercat
+from uncover_read_data import read_SPS_cat_all, read_bcg_surface_brightness, read_supercat, read_morphology_cat
 from compute_av import compute_ha_pab_av, compute_pab_paa_av, compute_paalpha_pabeta_av
 import pandas as pd
 import numpy as np
@@ -16,6 +16,8 @@ import shutil
 redshift_sigma_thresh = 2 # sigma or higher
 bcg_thresh = 0.04 # this value or lower
 
+show_ids = True
+
 
 def plot_mass_vs_dust(snr_dict, copy_sample=False, color_var='snr', use_ew=False):
     # Set thresholds above
@@ -25,10 +27,13 @@ def plot_mass_vs_dust(snr_dict, copy_sample=False, color_var='snr', use_ew=False
 
     sps_df = read_SPS_cat_all()
     bcg_df = read_bcg_surface_brightness() 
+    morph_df = read_morphology_cat()
 
     # Merge with sps
     lineflux_df = pd.merge(lineflux_df, sps_df, left_on='id_dr3', right_on='id', how='left')
     lineflux_df = pd.merge(lineflux_df, bcg_df, left_on='id_dr3', right_on='id_dr3', how='left')
+    lineflux_df = pd.merge(lineflux_df, morph_df, left_on='id_dr3', right_on='id', how='left')
+    """Things to check for morph catalog - f444w_r_eff_50, f444w_n_50, f444w_ellip_50"""
 
     # Halpha to PaB dust measurement
     lineflux_ha_pab = lineflux_df[lineflux_df['lines_measured']==7]
@@ -113,6 +118,9 @@ def plot_mass_vs_dust(snr_dict, copy_sample=False, color_var='snr', use_ew=False
                 if fig_type == 'mass':
                     # ax.plot(df['mstar_50'].iloc[j], df[av_names[i]].iloc[j], marker=shapes[i], color=rgba, markersize=6, mec='black', ls='None')
                     ax.errorbar(df['mstar_50'].iloc[j], df[av_names[i]].iloc[j], yerr=np.array([[err_av_low_plot, err_av_high_plot]]).T, marker=shapes[i], color=rgba, markersize=6, mec='black', ls='None')
+                    if show_ids == True:
+                        id_dr3 = df['id_dr3'].iloc[j]
+                        ax.text(df['mstar_50'].iloc[j], df[av_names[i]].iloc[j], f'{id_dr3}')
                 if fig_type == 'sfr':
                     # ax.plot(np.log10(df['sfr100_50'].iloc[j]), df[av_names[i]].iloc[j], marker=shapes[i], color=rgba, markersize=6, mec='black', ls='None')
                     ax.errorbar(np.log10(df['sfr100_50'].iloc[j]), df[av_names[i]].iloc[j], yerr=np.array([[err_av_low_plot, err_av_high_plot]]).T, marker=shapes[i], color=rgba, markersize=6, mec='black', ls='None')
@@ -218,7 +226,7 @@ def plot_mass_vs_dust(snr_dict, copy_sample=False, color_var='snr', use_ew=False
     custom_lines = [line_circles, line_squares]
     custom_labels = ['Pa$\\beta$/H$\\alpha$', 'Pa$\\alpha$/Pa$\\beta$']
     ax.legend(custom_lines, custom_labels, bbox_to_anchor=(1.05, 1.14))
-    ax.set_ylim(0, 2.5)
+    ax.set_ylim(1.0, 2.5)
     ax.set_xlim(5.5, 11.5)
     fig.savefig(f'/Users/brianlorenz/uncover/Figures/PHOT_analysis/sample_selects/{save_str}sample_select.pdf')
     scale_aspect(ax)
@@ -376,21 +384,19 @@ def plot_mass_vs_dust_all_snrs():
 if __name__ == "__main__":
 
     # snr_dict = {
-    #         'Halpha_snr_thresh' : 10, 
-    #         'PaBeta_snr_thresh' : 10, 
+    #         'Halpha_snr_thresh' : 5, 
+    #         'PaBeta_snr_thresh' : 3, 
     #         'PaAlpha_snr_thresh' : 3, 
     #     }
-    # # plot_mass_vs_dust(snr_dict, copy_sample=True, color_var='snr')
-    # plot_mass_vs_dust(snr_dict, copy_sample=True, color_var='snr')
+    # plot_mass_vs_dust(snr_dict, copy_sample=False, color_var='snr')
 
 
     ew_dict = {
-            'Halpha_ew_thresh' : 1000, 
-            'PaBeta_ew_thresh' : 200, 
+            'Halpha_ew_thresh' : 500, 
+            'PaBeta_ew_thresh' : 100, 
             'PaAlpha_ew_thresh' : 3, 
         }
-    # plot_mass_vs_dust(snr_dict, copy_sample=True, color_var='snr')
-    plot_mass_vs_dust(ew_dict, copy_sample=True, color_var='snr', use_ew=True)
+    plot_mass_vs_dust(ew_dict, copy_sample=False, color_var='snr', use_ew=True)
 
 
     # plot_mass_vs_dust_all_snrs()

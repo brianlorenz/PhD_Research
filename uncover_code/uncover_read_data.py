@@ -30,6 +30,11 @@ def read_supercat_newids():
     supercat_df = make_pd_table_from_fits(supercat_loc)
     return supercat_df
 
+def read_morphology_cat():
+    morph_cat_loc = '/Users/brianlorenz/uncover/Catalogs/Morphology/v0.0.2/UNCOVER_morphologeurs_SUPER_catalog_v0.0.2.dat'
+    morph_cat_df = ascii.read(morph_cat_loc).to_pandas()
+    return morph_cat_df
+
 def read_aper_cat(aper_size='048'):
     aper_cat_loc = f'/Users/brianlorenz/uncover/Catalogs/UNCOVER_v5.3.0_LW_D{aper_size}_CATALOG.fits'
     aper_cat_df = make_pd_table_from_fits(aper_cat_loc)
@@ -234,5 +239,6 @@ if __name__ == "__main__":
     # read_raw_spec(47875, read_2d=True, id_redux=1000000304)
     # supercat_newspec = read_supercat_newids()
     # sps_df = read_SPS_cat_all()
-    check_redshift_uncertainty()
+    read_morphology_cat()
+    # check_redshift_uncertainty()
     pass

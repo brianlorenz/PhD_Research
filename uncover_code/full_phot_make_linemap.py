@@ -62,13 +62,13 @@ def calc_lineflux_and_linemap(id_dr3, line_name, phot_df, supercat_df, image_siz
     redshift = phot_df_row['z_50'].iloc[0]
 
     # cont_percentile, line_flux, boot_lines, sed_fluxes, wave_pct, line_rest_wavelength, cont_value = plot_sed_around_line(id_dr3, line_name, filters, redshift, bootstrap=1000)
-    line_flux, sed_fluxes, line_wave_rest, cont_value, boot_lines, wave_pct, cont_percentile, offset_quality_factor = plot_sed_around_line_prospector(id_dr3, line_name, filters, redshift, bootstrap=1000)
+    line_flux, sed_fluxes, line_wave_rest, cont_value, boot_lines, wave_pct, cont_percentile, offset_quality_factor, chi2, scaled_chi2 = plot_sed_around_line_prospector(id_dr3, line_name, filters, redshift, bootstrap=1000)
 
    
     err_lineflux_low = line_flux - np.percentile(boot_lines, 16)
     err_lineflux_high = np.percentile(boot_lines, 86) - line_flux
     flux_snr = line_flux / np.std(boot_lines)
-    lineflux_info = [line_flux, err_lineflux_low, err_lineflux_high, flux_snr, cont_value, offset_quality_factor]
+    lineflux_info = [line_flux, err_lineflux_low, err_lineflux_high, flux_snr, cont_value, offset_quality_factor, chi2, scaled_chi2]
 
     subdir_str = '' # Will save to a different folder than the main one
     if flux_snr < snr_thresh:
@@ -345,6 +345,12 @@ def plot_sed_around_line_prospector(id_dr3, line_name, filters, redshift, bootst
     avg_cont_filter_offset = np.mean([red_offset_from_cont, blue_offset_from_cont])
     offset_quality_factor = main_filter_offset_from_cont / avg_cont_filter_offset # High quality is a good continuum fit
 
+    # Compute chi2 for the continuum points
+    observed_points = np.array([red_flux, blue_flux])
+    expected_points = np.array([prospector_red_cont_flux_scaled, prospector_blue_cont_flux_scaled])
+    chi2 = np.sum((observed_points - expected_points)**2 /expected_points)
+    scaled_chi2 = chi2 / prospector_cont_flux
+
 
     ##### THINK about how to monte carlo - do it with prospector errors as well? Probably
     # Decided to just take original errors and apply them to the prospector points
@@ -389,7 +395,7 @@ def plot_sed_around_line_prospector(id_dr3, line_name, filters, redshift, bootst
     wave_pct = compute_wavelength_pct(blue_wave, green_wave, red_wave)
     cont_percentile = compute_cont_pct(blue_wave, green_wave, red_wave, blue_flux, red_flux)
 
-    return line_flux, sed_fluxes, line_wave_rest, prospector_cont_flux, boot_lines, wave_pct, cont_percentile, offset_quality_factor
+    return line_flux, sed_fluxes, line_wave_rest, prospector_cont_flux, boot_lines, wave_pct, cont_percentile, offset_quality_factor, chi2, scaled_chi2
     return cont_percentile, line_flux, boot_lines, sed_fluxes, wave_pct, line_wave_rest, cont_value
 
 
@@ -616,7 +622,7 @@ def make_all_phot_linemaps(line_name):
         pandas_row.append(subdir_str)
         pandas_row.append(redshift_sigma)
         pandas_rows.append(pandas_row)
-    lineflux_df = pd.DataFrame(pandas_rows, columns=['id_dr3', f'{line_name}_flux', f'err_{line_name}_flux_low', f'err_{line_name}_flux_high', f'{line_name}_snr', f'{line_name}_cont_value', f'{line_name}_quality_factor', f'use_flag_{line_name}', f'flag_reason_{line_name}', f'{line_name}_redshift_sigma'])
+    lineflux_df = pd.DataFrame(pandas_rows, columns=['id_dr3', f'{line_name}_flux', f'err_{line_name}_flux_low', f'err_{line_name}_flux_high', f'{line_name}_snr', f'{line_name}_cont_value', f'{line_name}_quality_factor', f'{line_name}_chi2', f'{line_name}_chi2_scaled', f'use_flag_{line_name}', f'flag_reason_{line_name}', f'{line_name}_redshift_sigma'])
     lineflux_df.to_csv(f'/Users/brianlorenz/uncover/Data/generated_tables/phot_calcs/phot_lineflux_{line_name}.csv', index=False)
 
 if __name__ == "__main__":
@@ -624,5 +630,5 @@ if __name__ == "__main__":
 
     make_all_phot_linemaps('Halpha')
     make_all_phot_linemaps('PaBeta')
-    make_all_phot_linemaps('PaAlpha')
+    # make_all_phot_linemaps('PaAlpha')
     pass
