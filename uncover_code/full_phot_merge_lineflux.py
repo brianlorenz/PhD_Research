@@ -71,7 +71,7 @@ if __name__ == "__main__":
     
     apply_nii_cor() # Adds correction for nii line to halpha cat.  Also adds ew
     apply_fe_cor() # Adds correction for fe line to pabeta cat. Also adds ew
-    add_ew_column('PaAlpha') # adds ew to dataframe
+    # add_ew_column('PaAlpha') # adds ew to dataframe
     combine_phot_flux_cats() # Merges Halpha, Pabeta, Paalpha cats
 
     # count_objects()

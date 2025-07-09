@@ -1,5 +1,17 @@
 from astropy.io import ascii
 
+def read_final_sample():
+    sample_df = ascii.read(f'/Users/brianlorenz/uncover/Data/generated_tables/paper_data/final_sample.csv').to_pandas()
+    return sample_df
+
+def read_possible_sample():
+    sample_df = ascii.read(f'/Users/brianlorenz/uncover/Data/generated_tables/paper_data/possible_sample.csv').to_pandas()
+    return sample_df
+
+def read_paper_df(df_name):
+    df = ascii.read(f'/Users/brianlorenz/uncover/Data/generated_tables/paper_data/{df_name}.csv').to_pandas()
+    return df
+
 def read_merged_lineflux_cat():
     merge_lineflux_df = ascii.read(f'/Users/brianlorenz/uncover/Data/generated_tables/phot_calcs/phot_merged_lineflux.csv').to_pandas()
     return merge_lineflux_df

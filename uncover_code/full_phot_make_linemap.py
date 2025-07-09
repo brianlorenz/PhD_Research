@@ -311,6 +311,9 @@ def plot_sed_around_line_prospector(id_dr3, line_name, filters, redshift, bootst
     # Integrate Prospector using sedpy to get continuum point
     prospector_cont_flux = prospector_green_cont_flux_scaled # jy
 
+    prospector_no_neb_df[f'rest_absorp_model_jy_scaled_to_{line_name}_cont'] = total_scale_factor*prospector_no_neb_df['rest_absorp_model_jy']
+    prospector_no_neb_df.to_csv(f'{prospector_abs_spec_folder}{id_dr3}_prospector_no_neb.csv', index=False)
+
     ax.errorbar(red_wave, red_flux, yerr = err_red_flux, color='red', marker='o', zorder=10)
     ax.errorbar(green_wave, green_flux, yerr = err_green_flux, color='green', marker='o', zorder=10, label='Data')
     ax.errorbar(blue_wave, blue_flux, yerr = err_blue_flux, color='blue', marker='o', zorder=10)
@@ -322,6 +325,7 @@ def plot_sed_around_line_prospector(id_dr3, line_name, filters, redshift, bootst
     ax.step(prospector_no_neb_df['rest_wave']*(1+redshift)/10000, prospector_no_neb_df['rest_full_model_jy']/(1+redshift), color='orange', ls='-', marker='None', alpha=0.65, zorder=1, label='Emission model')
     ax.step(prospector_no_neb_df['rest_wave']*(1+redshift)/10000, prospector_no_neb_df['rest_absorp_model_jy']/(1+redshift), color='mediumseagreen', ls='-', marker='None', alpha=0.65, zorder=1, label='Absorption model')
     ax.step(prospector_no_neb_df['rest_wave']*(1+redshift)/10000, total_scale_factor*prospector_no_neb_df['rest_absorp_model_jy']/(1+redshift), color='magenta', ls='-', marker='None', alpha=0.65, zorder=1, label='Scaled abs model')
+    
     ax.set_xlim(blue_wave-0.3, red_wave+0.3)
     ax.set_ylim(0, green_flux*1.1)
     ax.legend()
@@ -626,9 +630,16 @@ def make_all_phot_linemaps(line_name):
     lineflux_df.to_csv(f'/Users/brianlorenz/uncover/Data/generated_tables/phot_calcs/phot_lineflux_{line_name}.csv', index=False)
 
 if __name__ == "__main__":
-    # calc_lineflux_and_linemap(34730, 'Halpha', phot_sample_df, supercat_df, image_size=(200,200))
+    phot_sample_df = ascii.read(phot_df_loc).to_pandas()
+    bcg_df = read_bcg_surface_brightness()
+    supercat_df = read_supercat()
+    # ids = [40778, 45059, 53709, 12887, 13428, 25707, 23181, 49532]
+    ids = [33853]
+    for id_dr3 in ids:
+        calc_lineflux_and_linemap(id_dr3, 'Halpha', phot_sample_df, supercat_df)
+        calc_lineflux_and_linemap(id_dr3, 'PaBeta', phot_sample_df, supercat_df)
 
-    make_all_phot_linemaps('Halpha')
-    make_all_phot_linemaps('PaBeta')
+    # make_all_phot_linemaps('Halpha')
+    # make_all_phot_linemaps('PaBeta')
     # make_all_phot_linemaps('PaAlpha')
     pass
