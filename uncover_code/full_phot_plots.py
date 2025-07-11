@@ -57,9 +57,7 @@ def plot_mass_vs_dust(snr_dict, copy_sample=False, color_var='snr', use_ew=False
     lineflux_ha_pab = make_cuts_lineflux_df(lineflux_ha_pab, snr_dict, ha_pab_ratio=True, ew_cut=use_ew, chi2_cut=use_chi2)
     # No changes to the dataframes after this point for sample selection
 
-    # Saveing for later access
-    lineflux_ha_pab.to_csv('/Users/brianlorenz/uncover/Data/generated_tables/paper_data/final_sample.csv', index=False)
-    full_possible_sample.to_csv('/Users/brianlorenz/uncover/Data/generated_tables/paper_data/possible_sample.csv', index=False)
+    
 
     if copy_sample:
         for i in range(len(lineflux_ha_pab)):
@@ -72,22 +70,34 @@ def plot_mass_vs_dust(snr_dict, copy_sample=False, color_var='snr', use_ew=False
             shutil.copy('/Users/brianlorenz/uncover/Figures/PHOT_sample/sed_images/PaBeta_sed_images_prospector_method' + f'/{id_dr3}_PaBeta_sed.pdf', '/Users/brianlorenz/uncover/Figures/PHOT_sample/sed_images/sample/PaBeta_snrsort'+f'/snr_{pab_snr:0.2f}_{id_dr3}_PaBeta.pdf')
 
     # Compute dust measurements
+    lineflux_ha_pab['lineratio_pab_ha'] = lineflux_ha_pab['fe_cor_PaBeta_flux'] / lineflux_ha_pab['nii_cor_Halpha_flux']
     lineflux_ha_pab['AV_pab_ha'] = compute_ha_pab_av(lineflux_ha_pab['fe_cor_PaBeta_flux'] / lineflux_ha_pab['nii_cor_Halpha_flux'])
     err_av_lows = []
     err_av_highs = []
+    err_ratio_lows = []
+    err_ratio_highs = []
     for i in range(len(lineflux_ha_pab)):
-        boot_vals, err_av_low, err_av_high = boot_errs(lineflux_ha_pab['AV_pab_ha'].iloc[i], lineflux_ha_pab['fe_cor_PaBeta_flux'].iloc[i], lineflux_ha_pab['err_fe_cor_PaBeta_flux_low'].iloc[i], lineflux_ha_pab['err_fe_cor_PaBeta_flux_high'].iloc[i], lineflux_ha_pab['nii_cor_Halpha_flux'].iloc[i], lineflux_ha_pab['err_nii_cor_Halpha_flux_low'].iloc[i], lineflux_ha_pab['err_nii_cor_Halpha_flux_high'].iloc[i], ha_pab=True)
+        boot_vals, err_av_low, err_av_high, boot_ratios, err_ratio_low, err_ratio_high = boot_errs(lineflux_ha_pab['AV_pab_ha'].iloc[i], lineflux_ha_pab['fe_cor_PaBeta_flux'].iloc[i], lineflux_ha_pab['err_fe_cor_PaBeta_flux_low'].iloc[i], lineflux_ha_pab['err_fe_cor_PaBeta_flux_high'].iloc[i], lineflux_ha_pab['nii_cor_Halpha_flux'].iloc[i], lineflux_ha_pab['err_nii_cor_Halpha_flux_low'].iloc[i], lineflux_ha_pab['err_nii_cor_Halpha_flux_high'].iloc[i], ha_pab=True)
         err_av_lows.append(err_av_low)
         err_av_highs.append(err_av_high)
+        err_ratio_lows.append(err_ratio_low)
+        err_ratio_highs.append(err_ratio_high)
     lineflux_ha_pab['err_AV_pab_ha_low'] = err_av_lows
     lineflux_ha_pab['err_AV_pab_ha_high'] = err_av_highs
+    lineflux_ha_pab['err_lineratio_pab_ha_low'] = err_ratio_lows
+    lineflux_ha_pab['err_lineratio_pab_ha_high'] = err_ratio_highs
+
+    # Saveing for later access
+    lineflux_ha_pab.to_csv('/Users/brianlorenz/uncover/Data/generated_tables/paper_data/final_sample.csv', index=False)
+    full_possible_sample.to_csv('/Users/brianlorenz/uncover/Data/generated_tables/paper_data/possible_sample.csv', index=False)
+    sys.exit()
     # pab_ha_av_errs = pandas_cols_to_matplotlib_errs(lineflux_ha_pab['err_AV_pab_ha_low'], lineflux_ha_pab['err_AV_pab_ha_high'])
     
     lineflux_pab_paa['AV_paa_pab'] = compute_paalpha_pabeta_av(lineflux_pab_paa['PaAlpha_flux'] / lineflux_pab_paa['fe_cor_PaBeta_flux'])
     err_av_lows = []
     err_av_highs = []
     for i in range(len(lineflux_pab_paa)):
-        boot_vals, err_av_low, err_av_high = boot_errs(lineflux_pab_paa['AV_paa_pab'].iloc[i], lineflux_pab_paa['PaAlpha_flux'].iloc[i], lineflux_pab_paa['err_PaAlpha_flux_low'].iloc[i], lineflux_pab_paa['err_PaAlpha_flux_high'].iloc[i], lineflux_pab_paa['fe_cor_PaBeta_flux'].iloc[i], lineflux_pab_paa['err_fe_cor_PaBeta_flux_low'].iloc[i], lineflux_pab_paa['err_fe_cor_PaBeta_flux_high'].iloc[i], paa_pab=True)
+        boot_vals, err_av_low, err_av_high, boot_ratios, err_ratio_low, err_ratio_high = boot_errs(lineflux_pab_paa['AV_paa_pab'].iloc[i], lineflux_pab_paa['PaAlpha_flux'].iloc[i], lineflux_pab_paa['err_PaAlpha_flux_low'].iloc[i], lineflux_pab_paa['err_PaAlpha_flux_high'].iloc[i], lineflux_pab_paa['fe_cor_PaBeta_flux'].iloc[i], lineflux_pab_paa['err_fe_cor_PaBeta_flux_low'].iloc[i], lineflux_pab_paa['err_fe_cor_PaBeta_flux_high'].iloc[i], paa_pab=True)
         err_av_lows.append(err_av_low)
         err_av_highs.append(err_av_high)
     lineflux_pab_paa['err_AV_paa_pab_low'] = err_av_lows
@@ -315,6 +325,7 @@ def boot_errs(av, line_num_flux, line_num_err_low, line_num_err_high, line_den_f
     # Currently having trouble bootstrapping if any go negative, since you can't toake log of a negative number
     # Needs to handle nondetections
     boot_vals = []
+    boot_ratios = []
     for i in range(draws):
         x = random.uniform(0, 1)
         if x < 0.5:
@@ -327,10 +338,12 @@ def boot_errs(av, line_num_flux, line_num_err_low, line_num_err_high, line_den_f
         if x > 0.5:
             boot_den = np.abs(np.random.normal(loc = 0, scale=line_den_err_high)) + line_den_flux
         
+        boot_ratio = boot_num / boot_den
         if ha_pab:
             boot_val = compute_ha_pab_av(boot_num / boot_den)
         if paa_pab:
             boot_val = compute_paalpha_pabeta_av(boot_num / boot_den)
+        boot_ratios.append(boot_ratio)
         boot_vals.append(boot_val)
         # if i == 0:
         #     df = boot_val.to_frame()
@@ -344,7 +357,14 @@ def boot_errs(av, line_num_flux, line_num_err_low, line_num_err_high, line_den_f
         err_low = 1e20
     if err_high < 0:
         err_high = 1e20
-    return boot_vals, err_low, err_high
+
+    boot_ratios = np.array(boot_ratios)
+    ratio = line_num_flux / line_den_flux
+    boot_ratios = np.nan_to_num(boot_ratios, nan=-99)
+    err_ratio_low = ratio - np.percentile(boot_ratios, 16)
+    err_ratio_high = np.percentile(boot_ratios, 84) - ratio
+    
+    return boot_vals, err_low, err_high, boot_ratios, err_ratio_low, err_ratio_high
 
 
 def make_cuts_lineflux_df(df, snr_dict, ha_pab_ratio=False, pab_paa_ratio=False, ew_cut=False, chi2_cut=False):

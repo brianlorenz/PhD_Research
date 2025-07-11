@@ -24,6 +24,8 @@ import pandas as pd
 from full_phot_make_prospector_models import prospector_abs_spec_folder, read_abs_sed
 from uncover_sed_filters import unconver_read_filters
 from full_phot_read_data import read_line_sample_df
+import math
+
 
 phot_df_loc = '/Users/brianlorenz/uncover/Data/generated_tables/phot_calcs/phot_linecoverage_ha_pab_paa.csv'
 figure_save_loc = '/Users/brianlorenz/uncover/Figures/PHOT_sample/'
@@ -330,7 +332,6 @@ def plot_sed_around_line_prospector(id_dr3, line_name, filters, redshift, bootst
     ax.set_ylim(0, green_flux*1.1)
     ax.legend()
 
-    # breakpoint()
 
     # Compute the percentile to use when combining the continuum
     connect_color = 'purple'
@@ -354,6 +355,12 @@ def plot_sed_around_line_prospector(id_dr3, line_name, filters, redshift, bootst
     expected_points = np.array([prospector_red_cont_flux_scaled, prospector_blue_cont_flux_scaled])
     chi2 = np.sum((observed_points - expected_points)**2 /expected_points)
     scaled_chi2 = chi2 / prospector_cont_flux
+
+    # Compute slope and slope offset for continuum prospector vs data
+    prosp_slope = calculate_slope(red_wave, prospector_red_cont_flux_scaled, blue_wave, prospector_blue_cont_flux_scaled)
+    data_slope = calculate_slope(red_wave, red_flux, blue_wave, blue_flux)
+    find_angle_from_slopes(prosp_slope, data_slope)
+    breakpoint()
 
 
     ##### THINK about how to monte carlo - do it with prospector errors as well? Probably
@@ -628,6 +635,39 @@ def make_all_phot_linemaps(line_name):
         pandas_rows.append(pandas_row)
     lineflux_df = pd.DataFrame(pandas_rows, columns=['id_dr3', f'{line_name}_flux', f'err_{line_name}_flux_low', f'err_{line_name}_flux_high', f'{line_name}_snr', f'{line_name}_cont_value', f'{line_name}_quality_factor', f'{line_name}_chi2', f'{line_name}_chi2_scaled', f'use_flag_{line_name}', f'flag_reason_{line_name}', f'{line_name}_redshift_sigma'])
     lineflux_df.to_csv(f'/Users/brianlorenz/uncover/Data/generated_tables/phot_calcs/phot_lineflux_{line_name}.csv', index=False)
+
+def calculate_slope(x1, y1, x2, y2):
+    """
+    Calculates the slope of a line given two points (x1, y1) and (x2, y2).
+
+    Args:
+        x1 (float): The x-coordinate of the first point.
+        y1 (float): The y-coordinate of the first point.
+        x2 (float): The x-coordinate of the second point.
+        y2 (float): The y-coordinate of the second point.
+
+    Returns:
+        float: The slope of the line.
+        str: "Undefined slope" if the line is vertical (x1 == x2).
+    """
+    if x2 - x1 == 0:
+        return "Undefined slope"  # Vertical line
+    else:
+        return (y2 - y1) / (x2 - x1)
+    
+
+def find_angle_from_slopes(m1, m2):
+    """
+    Calculates the acute angle between two lines given their slopes.
+    Returns the angle in degrees.
+    """
+    if 1 + m1 * m2 == 0:  # Lines are perpendicular
+        return 90
+    
+    tan_theta = abs((m1 - m2) / (1 + m1 * m2))
+    angle_radians = math.atan(tan_theta)
+    angle_degrees = math.degrees(angle_radians)
+    return angle_degrees
 
 if __name__ == "__main__":
     phot_sample_df = ascii.read(phot_df_loc).to_pandas()
