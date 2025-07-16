@@ -12,6 +12,8 @@ a_balmer_label = 'A$_\mathrm{Balmer}$'
 balmer_av_label = 'Nebular A$_V$'
 metallicity_label = '12 + log(O/H)'
 
+log_sfr_label_sedmethod = 'log$_{10}$(SFR) (M$_\odot$ / yr)'
+
 single_column_axisfont = 24
 single_column_ticksize = 24
 

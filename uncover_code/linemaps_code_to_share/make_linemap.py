@@ -76,7 +76,10 @@ def make_linemap(id_dr3, line_name, line_wave, line_coverage_df, supercat_df, im
     line_image_noises = [line_red_image_noise, line_green_image_noise, line_blue_image_noise]
     
     # Math to build the linemap and propagate the uncertanties
+    breakpoint()
     linemap, contmap, err_linemap = compute_line(cont_percentile, line_red_image_data, line_green_image_data, line_blue_image_data, redshift, line_filter_width, line_wave, images=True, image_noises=line_image_noises, wave_pct=wave_pct)
+    
+
     # Compute the signal-to-noise ratio of the linemap
     linemap_snr = linemap / err_linemap
     linemap_info = [linemap, contmap, err_linemap, linemap_snr] # Will return this at the end of the funciton
@@ -416,7 +419,7 @@ def compute_line(cont_pct, red_flx, green_flx, blue_flx, redshift, filter_width,
             err_line_value = err_line_value * ((c*1e10) / (observed_wave)**2)
             err_line_value = err_line_value * filter_width
             return line_value, cont_value, err_line_value
-
+        
         # For the line error propaagtion, I was using monte carlo simulations in a later part of the code
         return line_value, cont_value
 
@@ -493,12 +496,12 @@ def make_single_halpha_linemap(id_dr3):
 if __name__ == "__main__":
     # Give an id here, and this will make the linemap
     # This will be good to test individual cases, and would be a good place to try setting up a way to save the linemap
-    make_single_halpha_linemap(51980) # Takes about 2 seconds for a single map with 3 figures saved. Can save time by turning off some figures
+    # make_single_halpha_linemap(51980) # Takes about 2 seconds for a single map with 3 figures saved. Can save time by turning off some figures
    
     
     # This will loop through the catalog and make all linemaps according to the selection criteria specified in that function
     # You will definitely want to edit the selection criteria to match your science goals
     # And then will need to save the linemaps and determine how to best analyze them!
-    # make_all_linemaps(halpha_name)
+    make_all_linemaps(halpha_name)
     
     pass

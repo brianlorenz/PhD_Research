@@ -4,7 +4,7 @@ from uncover_read_data import read_SPS_cat, read_SPS_cat_all
 from dust_equations_prospector import dust2_to_AV
 from astropy.io import ascii
 # from uncover_read_data import read_raw_spec, read_lineflux_cat, get_id_msa_list, read_fluxcal_spec
-
+import sys
 
 avneb_str = 'A$_{\\mathrm{V,neb}}$'
 
@@ -89,10 +89,28 @@ def calzetti_law(wavelength_um):
         k_lambda = 2.659 * (-2.156 + 1.509 / wavelength_um - 0.198 / wavelength_um**2 + 0.011 / wavelength_um**3) + 4.05
     return k_lambda
 
+def reddy_aurora_law(wavelength_um): # https://arxiv.org/pdf/2506.17396, eq 11
+    # RV ranges from 5.5 to 6.8
+    # Rest wave
+    if wavelength_um < 0.35:
+        print('Only valid for 0.35<wave<1.28')
+        sys.exit()
+    if wavelength_um > 1.283:
+        print('Only valid for 0.35<wave<1.28')
+        sys.exit()
+    a0 = -14.198
+    a1 = 17.002
+    a2 = -8.086
+    a3 = 2.177
+    a4 = -0.319
+    a5 = 0.021
+    k_lambda = -a0 + a1 * (1/wavelength_um) + a2 * (1/wavelength_um**2) + a3 * (1/wavelength_um**3) + a4 * (1/wavelength_um**4) + a5 * (1/wavelength_um**5)
+    return k_lambda
+
 def compute_ha_paalpha_av(paalpha_ha_ratio):
     """ PaB / Ha is the ratio you need, should be slightly greater than 1/20"""
-    R_V_value = 4.05
     intrinsic_ratio = paa_factor / ha_factor
+    R_V_value = 4.05
     k_factor = 2.5/(calzetti_law(ha_wave) - calzetti_law(paa_wave))
     A_V_value = R_V_value*k_factor*np.log10(paalpha_ha_ratio/intrinsic_ratio)
     return A_V_value
@@ -115,11 +133,15 @@ def compute_pab_paa_av(paa_pab_ratio):
     return A_V_value
 
 
-def compute_ha_pab_av(pab_ha_ratio):
+def compute_ha_pab_av(pab_ha_ratio, law='calzetti'):
     """ PaB / Ha is the ratio you need, should be slightly greater than 1/20"""
-    R_V_value = 4.05
     intrinsic_ratio = pab_factor / ha_factor
-    k_factor = 2.5/(calzetti_law(ha_wave) - calzetti_law(pab_wave))
+    if law == 'calzetti':
+        R_V_value = 4.05
+        k_factor = 2.5/(calzetti_law(ha_wave) - calzetti_law(pab_wave))
+    if law == 'reddy':
+        R_V_value = 6.8 # or 6.8
+        k_factor = 2.5/(reddy_aurora_law(ha_wave) - reddy_aurora_law(pab_wave))
     A_V_value = R_V_value*k_factor*np.log10(pab_ha_ratio/intrinsic_ratio)
     return A_V_value
 def compute_ha_pab_av2(ha_pab_ratio): # Does the same thin but it's more intuitive this way
