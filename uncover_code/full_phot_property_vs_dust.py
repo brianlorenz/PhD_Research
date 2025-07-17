@@ -2,7 +2,7 @@ from full_phot_read_data import read_merged_lineflux_cat, read_final_sample, rea
 from full_phot_merge_lineflux import filter_bcg_flags
 import matplotlib.pyplot as plt
 from uncover_read_data import read_SPS_cat_all, read_bcg_surface_brightness, read_supercat, read_morphology_cat
-from compute_av import compute_ha_pab_av, compute_pab_paa_av, compute_paalpha_pabeta_av
+from compute_av import compute_ha_pab_av, compute_pab_paa_av, compute_paalpha_pabeta_av, compute_balmer_av, compute_ratio_from_av
 import pandas as pd
 import numpy as np
 import random
@@ -113,6 +113,20 @@ def plot_paper_dust_vs_prop(prop='mass', color_var='snr', phot_df=[], axisratio_
             x_label = stellar_mass_label
             x_lims = mass_lims
             median_bins = [[7,8], [8,9], [9,10], [10,11]]
+
+            # shapley's data
+            mosdef_data_mass = np.array([9.252764612954188, 9.73301737756714, 10.0173775671406, 10.437598736176936]) #Shapley 2022
+            mosdef_data_decs = np.array([3.337349397590363, 3.4548192771084363, 3.7801204819277103, 4.512048192771086])
+            mosdef_data_balmeravs = compute_balmer_av(mosdef_data_decs, law='calzetti')
+            mosdef_data_lineratios = compute_ratio_from_av(mosdef_data_balmeravs, law='calzetti')
+            ax.plot(mosdef_data_mass, mosdef_data_lineratios, color='black', marker='s', ms=10, mec='black', ls='dotted', zorder=1000000, label='z=2.3 MOSDEF (Shapley+ 2022)')
+            
+            runco_data_mass = np.array([9.04029773256327, 9.341541353064535	, 9.507356359477967, 9.660911296972452, 9.76852663271054, 9.882224549023732, 10.039519064690833, 10.177858006949581, 10.35957669226384, 10.679835800016289]) #Runco 2022
+            runco_data_decs = np.array([3.282805987024606, 3.6142358130258136, 2.633209874253258, 4.096971898622865, 4.597955149928179, 4.213816474455239, 4.5059129818220125, 4.514513937180409, 5.778564129951793, 5.644147137838686])
+            runco_data_balmeravs = compute_balmer_av(runco_data_decs, law='calzetti')
+            runco_data_lineratios = compute_ratio_from_av(runco_data_balmeravs, law='calzetti')
+            ax.plot(runco_data_mass, runco_data_lineratios, color='#f2f2f2', marker='d', ms=8, mec='black', ls='None', zorder=1000000, label='MOSDEF Stacks (Runco+ 2022)')
+        
         elif prop == 'sfr':
             var_name = 'log_sfr100_50'
             x_label = log_sfr_label_sedmethod
@@ -226,6 +240,11 @@ def plot_paper_dust_vs_prop(prop='mass', color_var='snr', phot_df=[], axisratio_
         ax.set_ylim(y_lims)
         save_str2 = str(axisratio_vs_prospector)
     if axisratio_vs_prospector == 0:
+        ax2 = ax.twinx()
+        ax2.tick_params(labelsize=labelsize)
+        main_ax_lims = np.array([0.02, 1])
+        ax2.set_ylim(1/main_ax_lims)
+        ax2.set_yscale('log')
         ax.set_ylim(main_ax_lims)
         ax.set_yscale('log')
         y_tick_locs = [0.025, 0.055, 1/10, 1/5, 1/2, 1]
@@ -233,11 +252,6 @@ def plot_paper_dust_vs_prop(prop='mass', color_var='snr', phot_df=[], axisratio_
         ax.set_yticks(y_tick_locs)
         ax.set_yticklabels(y_tick_labs)
         ax.minorticks_off()
-        ax2 = ax.twinx()
-        ax2.tick_params(labelsize=labelsize)
-        main_ax_lims = np.array([0.02, 1])
-        ax2.set_ylim(1/main_ax_lims)
-        ax2.set_yscale('log')
         twin_y_tick_labs = ['-2', '-1', '0', '1', '2', '3', '4', '5', '6']
         twin_y_tick_locs = [1/compute_ratio_from_av(float(rat)) for rat in twin_y_tick_labs]
         ax2.set_yticks(twin_y_tick_locs)
@@ -337,7 +351,7 @@ def add_err_cols(sample_df, var_name):
 if __name__ == '__main__':
     # plot_paper_dust_vs_prop(prop='axisratio_halpha',color_var='redshift')
     
-    # plot_paper_dust_vs_prop(prop='prospector_neb_av_50',color_var='redshift')
+    plot_paper_dust_vs_prop(prop='mass',color_var='redshift')
 
     
     # props = ['mass', 'sfr', 'axisratio_f444w', 'axisratio_f150w', 'axisratio_halpha', 'prospector_total_av_50', 'prospector_neb_av_50']
@@ -347,8 +361,8 @@ if __name__ == '__main__':
     #     for color_var in color_vars:
     #         plot_paper_dust_vs_prop(prop=prop, color_var=color_var, phot_df=phot_df)
 
-    for ar_value in [1,2,3]:
-        plot_paper_dust_vs_prop(prop='prospector_total_av_50',color_var='redshift', axisratio_vs_prospector=ar_value)
-        plot_paper_dust_vs_prop(prop='prospector_neb_av_50',color_var='redshift', axisratio_vs_prospector=ar_value)
+    # for ar_value in [1,2,3]:
+    #     plot_paper_dust_vs_prop(prop='prospector_total_av_50',color_var='redshift', axisratio_vs_prospector=ar_value)
+    #     plot_paper_dust_vs_prop(prop='prospector_neb_av_50',color_var='redshift', axisratio_vs_prospector=ar_value)
     
     
