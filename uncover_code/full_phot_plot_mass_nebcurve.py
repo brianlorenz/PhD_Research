@@ -3,6 +3,7 @@ from full_phot_merge_lineflux import filter_bcg_flags
 import matplotlib.pyplot as plt
 from uncover_read_data import read_SPS_cat_all, read_bcg_surface_brightness, read_supercat, read_morphology_cat
 from compute_av import compute_ha_pab_av, compute_pab_paa_av, compute_paalpha_pabeta_av, compute_balmer_av, compute_ratio_from_av, compute_balmer_ratio_from_av
+from read_mosdef_data import get_shapley_sample, get_mosdef_compare_sample
 import pandas as pd
 import numpy as np
 import random
@@ -14,16 +15,43 @@ import shutil
 from simple_sample_selection import truncate_colormap
 from compute_av import compute_ratio_from_av, avneb_str
 import time
+from read_mosdef_data import get_shapley_sample, get_mosdef_compare_sample
+from read_data import linemeas_df
+import random
+
+# Set the seed for reproducibility
+random.seed(5842750384) 
 
 
 
-def plot_paper_mass_match_neb_curve(color_var='snr'):
+def plot_paper_mass_match_neb_curve(color_var='snr', shapley=2):
+    shaded = 0
+    
     sample_df = read_final_sample()
     sample_df['log_sfr100_50'] = np.log10(sample_df['sfr100_50'])
     sample_df['log_sfr100_16'] = np.log10(sample_df['sfr100_16'])
     sample_df['log_sfr100_84'] = np.log10(sample_df['sfr100_84'])
 
+    var_name = 'mstar_50'            
+    x_lims = [3, 4.8]
+    # median_bins = [[9,9.5], [9.5,9.85], [9.85,10.2], [10.2,10.75]]
+    median_bins = [[9.,9.5], [9.5,9.9], [9.9,10.3], [10.3,10.8]]
+    # mosdef percentiles: 9.2-9.6, 9.6-9.9, 9.9-10.2, 10.2-
+    # sample percentiles: 9.2-9.45, 9.45-9.6, 9.6-10.0, 10.0-
+    if shaded == 1:
+        cbar_bounds = [8.5, 9, 9.5, 9.9, 10.3, 10.8]
+        cbar_ticks = [8.5, 9, 9.5, 9.9, 10.3, 10.8]
+
+    else:
+        cbar_bounds = [9, 9.5, 9.9, 10.3, 10.8]
+        cbar_ticks = [9, 9.5, 9.9, 10.3, 10.8]
+
+
     cmap = mpl.cm.inferno
+    cmap = truncate_colormap(cmap, minval=0.25, maxval=0.85)
+    norm = mpl.colors.BoundaryNorm(cbar_bounds, cmap.N)
+    mappable = mpl.cm.ScalarMappable(norm=norm, cmap=cmap)
+    cbar_label = stellar_mass_label
    
     prospector_av_lims = [-0.1, 4]
     prospector_neb_av_lims = [-0.1, 2.5]
@@ -48,8 +76,8 @@ def plot_paper_mass_match_neb_curve(color_var='snr'):
 
    
  
-    y_label = f'(Pa$\\beta$ / H$\\alpha$)'
-    x_label = f'(H$\\alpha$ / H$\\beta$)'
+    y_label = f'MegaScience (Pa$\\beta$ / H$\\alpha$)'
+    x_label = f'MOSDEF (H$\\alpha$ / H$\\beta$)'
 
     shape = 'o'
     mec = 'black'
@@ -60,21 +88,53 @@ def plot_paper_mass_match_neb_curve(color_var='snr'):
     #     cbar_label = 'Redshift'
     
     
-    var_name = 'mstar_50'            
-    x_lims = [3, 5.2]
-    median_bins = [[9,9.5], [9.5,9.85], [9.85,10.2], [10.2,10.75]]
-    median_masses, median_pab_ha_ratios, err_median_masses, err_median_pab_ha_ratios, n_gals_per_bin = get_median_points(sample_df, median_bins, var_name)
     
-    # shapley's data
-    mosdef_data_mass = np.array([9.252764612954188, 9.73301737756714, 10.0173775671406, 10.437598736176936]) #Shapley 2022
-    mosdef_data_decs = np.array([3.337349397590363, 3.4548192771084363, 3.7801204819277103, 4.512048192771086])
-    mosdef_data_decs_low = np.array([3.26601519662585, 3.306461008231343, 3.5317649560995976, 4.347472583356616])
-    mosdef_data_decs_high = np.array([3.4090408842992668, 3.6017019238471697, 4.022429020682048, 4.686355720952147])
-    mosdef_err_low = mosdef_data_decs - mosdef_data_decs_low
-    mosdef_err_high = mosdef_data_decs_high - mosdef_data_decs
+   
+    
+    median_masses, median_pab_ha_ratios, err_median_masses, err_median_pab_ha_ratios, n_gals_per_bin = get_median_points(sample_df, median_bins, var_name)
+    # Plot shaded region for lowmass bin
+    add_str4=''
+    if shaded:
+        cbar_bounds = [8.5, 9, 9.5, 9.85, 10.2, 10.75]
+        median_mass_low, median_pab_ha_ratio_low, err_median_mass_low, err_median_pab_ha_ratio_lows, n_gals_per_bin_low = get_median_points(sample_df, [[6, 9]], var_name)
+        shaded_color = cmap(norm(median_mass_low[0]))
+        ymin_shaded = median_pab_ha_ratio_low[0]-err_median_pab_ha_ratio_lows[0][0]
+        ymax_shaded = median_pab_ha_ratio_low[0]+err_median_pab_ha_ratio_lows[1][0]
+        ax.axhspan(ymin=ymin_shaded, ymax=ymax_shaded, facecolor=shaded_color, alpha=0.3)
+        ax.axhline(median_pab_ha_ratio_low[0],  ls='-', color=shaded_color, marker='None')
+        add_str4='_shaded'
 
-    mosdef_data_balmeravs = compute_balmer_av(mosdef_data_decs, law='calzetti')
-    mosdef_data_lineratios = compute_ratio_from_av(mosdef_data_balmeravs, law='calzetti')
+
+    # shapley's data
+    if shapley == 0:
+        mosdef_data_mass = np.array([9.252764612954188, 9.73301737756714, 10.0173775671406, 10.437598736176936]) #Shapley 2022
+        mosdef_data_decs = np.array([3.337349397590363, 3.4548192771084363, 3.7801204819277103, 4.512048192771086])
+        mosdef_data_decs_low = np.array([3.26601519662585, 3.306461008231343, 3.5317649560995976, 4.347472583356616])
+        mosdef_data_decs_high = np.array([3.4090408842992668, 3.6017019238471697, 4.022429020682048, 4.686355720952147])
+        mosdef_err_low = mosdef_data_decs - mosdef_data_decs_low
+        mosdef_err_high = mosdef_data_decs_high - mosdef_data_decs
+
+        mosdef_data_balmeravs = compute_balmer_av(mosdef_data_decs, law='calzetti')
+        mosdef_data_lineratios = compute_ratio_from_av(mosdef_data_balmeravs, law='calzetti')
+        save_str3 = '_shapley'
+    if shapley > 0:
+        if shapley == 1:
+            mosdef_df, linemeas_df = get_shapley_sample()
+            save_str3 = '_shapley_'
+        if shapley == 2:
+            mosdef_df, linemeas_df = get_mosdef_compare_sample()
+            save_str3 = '_mosdef_'
+        result_df = pd.concat([mosdef_df, linemeas_df], axis=1)
+        result_df['balmer_dec'] = result_df['HA6565_FLUX'] / result_df['HB4863_FLUX']
+        median_masses_mosdef, median_balmer_ratios, err_median_masses_mosdef, err_median_balmer_ratios, n_gals_per_bin_mosdef = get_median_points(result_df, median_bins, 'LMASS', y_var_name='balmer_dec')
+        mosdef_data_decs = median_balmer_ratios
+        mosdef_err_low = err_median_balmer_ratios[0]
+        mosdef_err_high = err_median_balmer_ratios[1]
+        # mosdef_err_low = mosdef_data_decs - mosdef_data_decs_low
+        # mosdef_err_high = mosdef_data_decs_high - mosdef_data_decs
+
+        # mosdef_data_balmeravs = compute_balmer_av(mosdef_data_decs, law='calzetti')
+        # mosdef_data_lineratios = compute_ratio_from_av(mosdef_data_balmeravs, law='calzetti')
 
     
     
@@ -86,10 +146,10 @@ def plot_paper_mass_match_neb_curve(color_var='snr'):
     # runco_data_lineratios = compute_ratio_from_av(runco_data_balmeravs, law='calzetti')
     # ax.plot(runco_data_mass, runco_data_lineratios, color='#f2f2f2', marker='d', ms=8, mec='black', ls='None', zorder=1000000, label='MOSDEF Stacks (Runco+ 2022)')
     for k in range(len(median_pab_ha_ratios)):
-        norm = mpl.colors.LogNorm(vmin=9, vmax=10.5) 
+        # norm = mpl.colors.LogNorm(vmin=9, vmax=10.5) 
+        
         rgba = cmap(norm(median_masses[k]))
-        cbar_ticks = [9, 10]
-        cbar_label = stellar_mass_label
+        
 
         lineratio_err_plot = np.array([[err_median_pab_ha_ratios[0][k], err_median_pab_ha_ratios[1][k]]]).T
         mosdef_err_plot = np.array([[mosdef_err_low[k], mosdef_err_high[k]]]).T
@@ -99,28 +159,31 @@ def plot_paper_mass_match_neb_curve(color_var='snr'):
   
     # Add attenuation curves to prospector plots
     av_values = np.arange(0, 6, 0.01)
-    def add_attenuation_curveby_av(av_values, curve_name, color):
+    def add_attenuation_curveby_av(av_values, curve_name, color, style):
         pab_ha_ratio = compute_ratio_from_av(av_values, law=curve_name)
         balmer_dec = compute_balmer_ratio_from_av(av_values, law=curve_name)
-        ax.plot(balmer_dec, pab_ha_ratio, color=color, ls='--', marker='None')
-        legend_line = Line2D([0], [0], color=color, marker='None', ls='--')
+        ax.plot(balmer_dec, pab_ha_ratio, color=color, ls=style, marker='None')
+        legend_line = Line2D([0], [0], color=color, marker='None', ls=style)
         return legend_line
-    legend_line_reddy = add_attenuation_curveby_av(av_values, 'reddy', 'blue')
+    legend_line_reddy = add_attenuation_curveby_av(av_values, 'reddy', 'black', '--')
     # legend_line_calzetti = add_attenuation_curveby_av(av_values, 'calzetti', 'red')
-    legend_line_cardelli = add_attenuation_curveby_av(av_values, 'cardelli', 'orange')
+    legend_line_cardelli = add_attenuation_curveby_av(av_values, 'cardelli', 'black', '-.')
+    ax.text(4.46, 0.19, 'Reddy+25', fontsize=10, rotation=42)
+    ax.text(4.4, 0.105, 'Cardelli+89', fontsize=10, rotation=16)
+
     
         
-    custom_lines = [legend_line_cardelli, legend_line_reddy]
-    custom_labels = ['Cardelli+1989', 'Reddy+2025']
-    ax.legend(custom_lines, custom_labels, loc=4)
+    # custom_lines = [legend_line_cardelli, legend_line_reddy]
+    # custom_labels = ['Cardelli+89', 'Reddy+25']
+    # ax.legend(custom_lines, custom_labels, loc=4)
 
         
     ax.set_xlabel(x_label, fontsize=14)
     ax.set_ylabel(y_label, fontsize=14)
     ax.tick_params(labelsize=14)
     
-    
-    add_cbar(fig, ax_cbar, norm, cmap, cbar_label, cbar_ticks)
+    sm =  mpl.cm.ScalarMappable(norm=norm, cmap=cmap)
+    add_cbar(fig, ax_cbar, norm, cmap, cbar_label, cbar_ticks, mappable)
     save_str=''
     
 
@@ -136,17 +199,17 @@ def plot_paper_mass_match_neb_curve(color_var='snr'):
     # ax.set_xticks(x_tick_locs)
     # ax.set_xticklabels(x_tick_labs)
     
-    main_ax_lims = np.array([0.04, 0.5])
+    main_ax_lims = np.array([0.055, 0.3])
         
     ax.set_ylim(main_ax_lims)
-    ax.set_yscale('log')
-    y_tick_locs = [0.055, 1/10, 1/5, 1/2]
-    y_tick_labs = ['0.055', '0.1', '0.2', '0.5']
+    # ax.set_yscale('log')
+    y_tick_locs = [1/10, 1/5, 0.3]
+    y_tick_labs = ['0.1', '0.2', '0.3']
     ax.set_yticks(y_tick_locs)
     ax.set_yticklabels(y_tick_labs)
     
     ax.set_xlim(x_lims)    
-    x_tick_labs = ['3', '4', '5']
+    x_tick_labs = ['3', '3.5', '4', '4.5']
     x_tick_locs = [float(rat) for rat in x_tick_labs]
     ax.set_xticks(x_tick_locs)
     ax.set_xticklabels(x_tick_labs)
@@ -154,7 +217,7 @@ def plot_paper_mass_match_neb_curve(color_var='snr'):
 
     
   
-    fig.savefig(f'/Users/brianlorenz/uncover/Figures/PHOT_paper/neb_curve/neb_curve{save_str}{save_str2}{color_var}.pdf', bbox_inches='tight')
+    fig.savefig(f'/Users/brianlorenz/uncover/Figures/PHOT_paper/neb_curve/neb_curve{save_str}{save_str2}{save_str3}{color_var}{add_str4}.pdf', bbox_inches='tight')
     plt.close('all')
 
 
@@ -195,11 +258,10 @@ def get_median_points(sample_df, median_bins, x_var_name, y_var_name='lineratio_
 
     return median_xvals, median_yvals, median_xerr_plot, median_yerr_plot, n_gals_per_bin
 
-def add_cbar(fig, ax_cbar, norm, cmap, cbar_name, cbar_ticks):
+def add_cbar(fig, ax_cbar, norm, cmap, cbar_name, cbar_ticks, sm):
     #SNR cbar
-    sm =  mpl.cm.ScalarMappable(norm=norm, cmap=cmap)
     cbar_ticklabels = [str(tick) for tick in cbar_ticks]
-    cbar = fig.colorbar(sm, cax=ax_cbar, orientation='horizontal', ticks=cbar_ticks, ticklocation='top')
+    cbar = fig.colorbar(sm, cax=ax_cbar, orientation='horizontal', ticks=cbar_ticks, ticklocation='top', spacing='proportional')
     cbar.ax.set_xticklabels(cbar_ticklabels) 
     cbar.ax.xaxis.minorticks_off()
     cbar.set_label(cbar_name, fontsize=14, labelpad=10) # -55 pad if ticks flip back to bottom
@@ -258,6 +320,6 @@ def add_err_cols(sample_df, var_name):
 
 if __name__ == '__main__':
     
-    plot_paper_mass_match_neb_curve(color_var='mass')
+    plot_paper_mass_match_neb_curve(color_var='mass', shapley=2) # Shapley = 2 for the paper fig
 
     
