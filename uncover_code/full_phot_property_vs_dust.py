@@ -13,10 +13,13 @@ from matplotlib.lines import Line2D
 import shutil
 from simple_sample_selection import truncate_colormap
 from compute_av import compute_ratio_from_av, avneb_str
+from full_phot_plot_mass_nebcurve import get_median_points
 import time
 
+random.seed(80148273) 
 
-def plot_paper_dust_vs_prop(prop='mass', color_var='snr', phot_df=[], axisratio_vs_prospector = 0):
+
+def plot_paper_dust_vs_prop(prop='mass', color_var='snr', phot_df=[], axisratio_vs_prospector = 0, ax_in='None', bin_type='dex'):
     sample_df = read_final_sample()
     sample_df['log_sfr100_50'] = np.log10(sample_df['sfr100_50'])
     sample_df['log_sfr100_16'] = np.log10(sample_df['sfr100_16'])
@@ -26,6 +29,7 @@ def plot_paper_dust_vs_prop(prop='mass', color_var='snr', phot_df=[], axisratio_
         phot_df = read_phot_df()
 
     cmap = mpl.cm.inferno
+    cmap = truncate_colormap(cmap, 0.2, 1)
 
 
    
@@ -38,9 +42,13 @@ def plot_paper_dust_vs_prop(prop='mass', color_var='snr', phot_df=[], axisratio_
 
    
     # fig, ax = plt.subplots(figsize=(7,6))
-    fig = plt.figure(figsize=(6,6))
-    ax = fig.add_axes([0.09, 0.08, 0.65, 0.65])
-    ax_cbar = fig.add_axes([0.09, 0.75, 0.65, 0.03])
+    if ax_in == 'None':
+        fig = plt.figure(figsize=(6,6))
+        ax = fig.add_axes([0.09, 0.08, 0.65, 0.65])
+        if color_var != 'None':
+            ax_cbar = fig.add_axes([0.09, 0.75, 0.65, 0.03])
+    else: 
+        ax = ax_in
 
     sps_all_df = read_SPS_cat_all()
     # Gray background
@@ -107,31 +115,33 @@ def plot_paper_dust_vs_prop(prop='mass', color_var='snr', phot_df=[], axisratio_
             rgba = cmap(norm(sample_df['z_50'].iloc[j]))
             cbar_ticks = [1.2, 1.5, 1.8, 2.1, 2.4]
             cbar_label = 'Redshift'
+        if color_var == 'None':
+            rgba = 'black'
         
         if prop == 'mass':
             var_name = 'mstar_50'            
             x_label = stellar_mass_label
             x_lims = mass_lims
-            median_bins = [[7,8], [8,9], [9,10], [10,11]]
-
-            # shapley's data
-            mosdef_data_mass = np.array([9.252764612954188, 9.73301737756714, 10.0173775671406, 10.437598736176936]) #Shapley 2022
-            mosdef_data_decs = np.array([3.337349397590363, 3.4548192771084363, 3.7801204819277103, 4.512048192771086])
-            mosdef_data_balmeravs = compute_balmer_av(mosdef_data_decs, law='calzetti')
-            mosdef_data_lineratios = compute_ratio_from_av(mosdef_data_balmeravs, law='calzetti')
-            ax.plot(mosdef_data_mass, mosdef_data_lineratios, color='black', marker='s', ms=10, mec='black', ls='dotted', zorder=1000000, label='z=2.3 MOSDEF (Shapley+ 2022)')
             
-            runco_data_mass = np.array([9.04029773256327, 9.341541353064535	, 9.507356359477967, 9.660911296972452, 9.76852663271054, 9.882224549023732, 10.039519064690833, 10.177858006949581, 10.35957669226384, 10.679835800016289]) #Runco 2022
-            runco_data_decs = np.array([3.282805987024606, 3.6142358130258136, 2.633209874253258, 4.096971898622865, 4.597955149928179, 4.213816474455239, 4.5059129818220125, 4.514513937180409, 5.778564129951793, 5.644147137838686])
-            runco_data_balmeravs = compute_balmer_av(runco_data_decs, law='calzetti')
-            runco_data_lineratios = compute_ratio_from_av(runco_data_balmeravs, law='calzetti')
-            ax.plot(runco_data_mass, runco_data_lineratios, color='#f2f2f2', marker='d', ms=8, mec='black', ls='None', zorder=1000000, label='MOSDEF Stacks (Runco+ 2022)')
+            if bin_type == 'dex':
+                median_bins = [[7,8], [8,9], [9,10], [10,11]]
+
+            if bin_type == 'galaxies':
+                mass_20, mass_40, mass_60, mass_80 = np.percentile(sample_df['mstar_50'], [20, 40, 60, 80])
+                median_bins = [[7,mass_20], [mass_20,mass_40], [mass_40,mass_60], [mass_60,mass_80], [mass_80,11]]
+
         
         elif prop == 'sfr':
             var_name = 'log_sfr100_50'
             x_label = log_sfr_label_sedmethod
             x_lims = sfr_lims
-            median_bins = [[-1,0], [0,1], [1,2]]
+
+            if bin_type == 'dex':
+                median_bins = [[-0.5,0], [0,0.5], [0.5,1], [1,1.5], [1.5,2]]
+            if bin_type == 'galaxies':
+                sfr_20, sfr_40, sfr_60, sfr_80 = np.percentile(sample_df['log_sfr100_50'], [20, 40, 60, 80])
+                median_bins = [[sfr_lims[0],sfr_20], [sfr_20,sfr_40], [sfr_40,sfr_60], [sfr_60,sfr_80], [sfr_80,sfr_lims[1]]]
+        
         if 'prospector' in prop:
             var_name = prop   
             if prop.split('_')[1] == 'total':
@@ -169,24 +179,34 @@ def plot_paper_dust_vs_prop(prop='mass', color_var='snr', phot_df=[], axisratio_
             sample_df.loc[j, 'err_halpha_axisratio_50_low'] = sample_df[f'err_{band}_axisratio_50_low'].iloc[j]
             sample_df.loc[j, 'err_halpha_axisratio_50_high'] = sample_df[f'err_{band}_axisratio_50_high'].iloc[j]
             x_label = band_in.upper() + ' b/a'
+            if band_in == 'f150w':
+                x_label = 'Axis Ratio'
             x_lims = axisratio_lims
-            median_bins = [[0,0.333], [0.333,0.666], [0.666,1]]
-        
+            if bin_type=='dex':
+                median_bins = [[0,0.4], [0.4,0.6], [0.6,1]]
+                median_bins = [[0,0.333], [0.333,0.666], [0.666,1]]
+                
+            if bin_type =='galaxies':
+                ar_no_null = sample_df[~pd.isnull(sample_df[f'{band}_axisratio_50'])][f'{band}_axisratio_50']
+                ar_20, ar_40, ar_60, ar_80 = np.percentile(ar_no_null, [20, 40, 60, 80])
+                median_bins = ([0,ar_20], [ar_20,ar_40], [ar_40,ar_60], [ar_60,ar_80], [ar_80, 1])
         
         x_plot = sample_df[var_name].iloc[j]
         x_err = np.array([[sample_df[f'err_{var_name}_low'].iloc[j], sample_df[f'err_{var_name}_high'].iloc[j]]]).T
 
         
         #  np.log10(sample_df['sfr100_50'].iloc[j])
-        ax.errorbar(x_plot, y_plot, xerr=x_err, yerr=y_err, marker=shape, mec=mec, ms=6, color=rgba, ls='None', ecolor='gray')
+        ax.errorbar(x_plot, y_plot, xerr=x_err, yerr=y_err, marker=shape, mec=mec, ms=5, color=rgba, ls='None', ecolor='gray')
     
     # Add medians if there are bins
     if len(median_bins) > 0:
         if axisratio_vs_prospector != 0:
-            median_xvals, median_yvals, median_xerr, median_yerr = get_median_points(sample_df, median_bins, var_name, y_var_name=y_var_name)
+            median_xvals, median_yvals, median_xerr, median_yerr, ngals = get_median_points(sample_df, median_bins, var_name, y_var_name=y_var_name)
         else:
-            median_xvals, median_yvals, median_xerr, median_yerr = get_median_points(sample_df, median_bins, var_name)
-        ax.errorbar(median_xvals, median_yvals, xerr=median_xerr, yerr=median_yerr, marker='s', ms=8, color='grey', ls='--', zorder=50, mec='black', ecolor='black')
+            median_xvals, median_yvals, median_xerr, median_yerr, ngals = get_median_points(sample_df, median_bins, var_name)
+        med_color = 'cornflowerblue'
+        med_color = '#ff7f00'
+        med_legend = ax.errorbar(median_xvals, median_yvals, xerr=median_xerr, yerr=median_yerr, marker='s', ms=9, color=med_color, ls='--', zorder=50, mec='black', ecolor=med_color)
         for median_tuple in median_bins:
             ax.axvline(x=median_tuple[0], ymin=0, ymax=0.09, color='gray', linestyle='--')
             ax.axvline(x=median_tuple[1], ymin=0, ymax=0.09, color='gray', linestyle='--')
@@ -209,11 +229,11 @@ def plot_paper_dust_vs_prop(prop='mass', color_var='snr', phot_df=[], axisratio_
         
     
     ax.set_xlabel(x_label, fontsize=14)
-    ax.set_ylabel(y_label, fontsize=14)
+    ax.set_ylabel(y_label, fontsize=14, labelpad=-10)
     ax.tick_params(labelsize=14)
     
-    
-    add_cbar(fig, ax_cbar, norm, cmap, cbar_label, cbar_ticks)
+    if color_var != 'None':
+        add_cbar(fig, ax_cbar, norm, cmap, cbar_label, cbar_ticks)
     save_str=''
     
     # line_sample = Line2D([0], [0], color='orange', marker='o', markersize=8, ls='None', mec='black')
@@ -252,13 +272,38 @@ def plot_paper_dust_vs_prop(prop='mass', color_var='snr', phot_df=[], axisratio_
         ax.set_yticks(y_tick_locs)
         ax.set_yticklabels(y_tick_labs)
         ax.minorticks_off()
-        twin_y_tick_labs = ['-2', '-1', '0', '1', '2', '3', '4', '5', '6']
-        twin_y_tick_locs = [1/compute_ratio_from_av(float(rat)) for rat in twin_y_tick_labs]
+        twin_y_tick_labs = ['-1', '0', '1', '2', '3', '4']
+        twin_y_tick_locs = [1/compute_ratio_from_av(float(rat), law='reddy') for rat in twin_y_tick_labs]
+        twin_y_tick_locs_calz = [1/compute_ratio_from_av(float(rat), law='calzetti') for rat in twin_y_tick_labs]
         ax2.set_yticks(twin_y_tick_locs)
         ax2.set_yticklabels(twin_y_tick_labs)
         ax2.set_ylabel(f'Inferred {avneb_str}', fontsize=fontsize, rotation=270, labelpad=20)
         ax2.minorticks_off()
-    
+
+    if prop == 'mass':
+        # # shapley's data
+        mosdef_data_mass = np.array([9.252764612954188, 9.73301737756714, 10.0173775671406, 10.437598736176936]) #Shapley 2022
+        mosdef_data_decs = np.array([3.337349397590363, 3.4548192771084363, 3.7801204819277103, 4.512048192771086])
+        mosdef_data_balmeravs = compute_balmer_av(mosdef_data_decs, law='cardelli') # Cardelli to get the MOSDEF AV
+        mosdef_data_y_plot = compute_ratio_from_av(mosdef_data_balmeravs, law='reddy')  # Reddy to pull it back into this version of the plot. Matches on y-axis
+        legend_shapley, = ax.plot(mosdef_data_mass, mosdef_data_y_plot, color='cornflowerblue', marker='d', ms=8, mec='black', ls='dotted', zorder=10, label='z=2.3 MOSDEF (Shapley+ 2022)')
+        # legend_shapley = Line2D([0], [0], color=color, marker='None', ls='--')
+        label_shapley = 'z=2.3 MOSDEF (Shapley+22)'
+
+        runco_data_mass = np.array([9.04029773256327, 9.341541353064535	, 9.507356359477967, 9.660911296972452, 9.76852663271054, 9.882224549023732, 10.039519064690833, 10.177858006949581, 10.35957669226384, 10.679835800016289]) #Runco 2022
+        runco_data_decs = np.array([3.282805987024606, 3.6142358130258136, 2.633209874253258, 4.096971898622865, 4.597955149928179, 4.213816474455239, 4.5059129818220125, 4.514513937180409, 5.778564129951793, 5.644147137838686])
+        runco_data_balmeravs = compute_balmer_av(runco_data_decs, law='cardelli')
+        runco_data_y_plot = compute_ratio_from_av(runco_data_balmeravs, law='reddy')
+        legend_runco, = ax.plot(runco_data_mass, runco_data_y_plot, color='limegreen', marker='*', ms=12, mec='black', ls='None', zorder=11, label='MOSDEF Stacks (Runco+ 2022)')
+        # legend_runco = Line2D([0], [0], color=color, marker='None', ls='--')
+        label_runco = 'MOSDEF Stacks (Runco+22)'
+
+        # legend_mega = Line2D([0], [0], color=med_color, marker='o', ls='--')
+        label_med = 'MegaScience'
+        
+        custom_lines = [med_legend, legend_shapley, legend_runco]
+        custom_labels = [label_med, label_shapley, label_runco]
+        ax.legend(custom_lines, custom_labels, loc=2, fontsize=9)
     
     prop_folder = prop
     if 'axisratio' in prop:
@@ -268,34 +313,21 @@ def plot_paper_dust_vs_prop(prop='mass', color_var='snr', phot_df=[], axisratio_
     if axisratio_vs_prospector != 0:
         prop_folder = 'axisratio_vs_prospector'
     
-    fig.savefig(f'/Users/brianlorenz/uncover/Figures/PHOT_paper/dust_vs_prop/{prop_folder}/dust_vs_{prop}_{save_str}{save_str2}{color_var}.pdf', bbox_inches='tight')
-    plt.close('all')
+    if ax_in == 'None':
+        fig.savefig(f'/Users/brianlorenz/uncover/Figures/PHOT_paper/dust_vs_prop/{prop_folder}/dust_vs_{prop}_{save_str}{save_str2}{color_var}.pdf', bbox_inches='tight')
+        plt.close('all')
 
 
-def get_median_points(sample_df, median_bins, x_var_name, y_var_name='lineratio_pab_ha'):
-    median_idxs = [np.logical_and(sample_df[x_var_name] > median_bins[k][0], sample_df[x_var_name] < median_bins[k][1]) for k in range(len(median_bins))]
-    median_xvals = [np.median(sample_df[median_idxs[k]][x_var_name]) for k in range(len(median_bins))]
-    median_yvals = [np.median(sample_df[median_idxs[k]][y_var_name]) for k in range(len(median_bins))]
-    
-    median_xerr_low = np.array([median_xvals[k]-np.percentile(sample_df[median_idxs[k]][x_var_name], 16) for k in range(len(median_bins))])
-    median_xerr_high = np.array([np.percentile(sample_df[median_idxs[k]][x_var_name], 84)-median_xvals[k] for k in range(len(median_bins))])
-    median_xerr_plot = np.vstack([median_xerr_low, median_xerr_high])
 
-    median_yerr_low = np.array([median_yvals[k]-np.percentile(sample_df[median_idxs[k]][y_var_name], 16) for k in range(len(median_bins))])
-    median_yerr_high = np.array([np.percentile(sample_df[median_idxs[k]][y_var_name], 84)-median_yvals[k] for k in range(len(median_bins))])
-    median_yerr_plot = np.vstack([median_yerr_low, median_yerr_high])
-
-    return median_xvals, median_yvals, median_xerr_plot, median_yerr_plot
-
-def add_cbar(fig, ax_cbar, norm, cmap, cbar_name, cbar_ticks):
+def add_cbar(fig, ax_cbar, norm, cmap, cbar_name, cbar_ticks, fontsize=14, ticklocation='top', labelpad=10):
     #SNR cbar
     sm =  mpl.cm.ScalarMappable(norm=norm, cmap=cmap)
     cbar_ticklabels = [str(tick) for tick in cbar_ticks]
-    cbar = fig.colorbar(sm, cax=ax_cbar, orientation='horizontal', ticks=cbar_ticks, ticklocation='top')
+    cbar = fig.colorbar(sm, cax=ax_cbar, orientation='horizontal', ticks=cbar_ticks, ticklocation=ticklocation)
     cbar.ax.set_xticklabels(cbar_ticklabels) 
     cbar.ax.xaxis.minorticks_off()
-    cbar.set_label(cbar_name, fontsize=14, labelpad=10) # -55 pad if ticks flip back to bottom
-    cbar.ax.tick_params(labelsize=14)
+    cbar.set_label(cbar_name, fontsize=fontsize, labelpad=labelpad) # -55 pad if ticks flip back to bottom
+    cbar.ax.tick_params(labelsize=fontsize)
 
 def prepare_axis_ratios(sample_df):
     bands = ['f444w', 'f150w', 'f162m', 'f182m', 'f210m', 'f250m', 'f300m', 'f335m', 'f360m', 'f410m', 'f430m', 'f460m']
@@ -348,10 +380,20 @@ def add_err_cols(sample_df, var_name):
     sample_df[f'err_{var_name}_high'] = sample_df[var_name[:-2]+'84'] - sample_df[f'{var_name}']
     return sample_df
 
+
+def two_panel(bin_type='dex'):
+    fig = plt.figure(figsize=(12, 6))
+    ax_mass = fig.add_axes([0.09, 0.08, 0.35, 0.70])
+    ax_sfr = fig.add_axes([0.61, 0.08, 0.35, 0.70])
+    plot_paper_dust_vs_prop(prop='mass',color_var='None',ax_in=ax_mass, bin_type=bin_type)
+    plot_paper_dust_vs_prop(prop='sfr',color_var='None',ax_in=ax_sfr, bin_type=bin_type)
+    fig.savefig(f'/Users/brianlorenz/uncover/Figures/PHOT_paper/dust_vs_prop/multiple/dust_vs_mass_sfr_twopanel_{bin_type}.pdf', bbox_inches='tight')
+
 if __name__ == '__main__':
-    # plot_paper_dust_vs_prop(prop='axisratio_halpha',color_var='redshift')
-    
-    plot_paper_dust_vs_prop(prop='mass',color_var='redshift')
+    # two_panel(bin_type='dex')
+    # two_panel(bin_type='galaxies')
+    # plot_paper_dust_vs_prop(prop='axisratio_f150w',color_var='None', bin_type='galaxies')
+    plot_paper_dust_vs_prop(prop='mass',color_var='None', bin_type='galaxies')
 
     
     # props = ['mass', 'sfr', 'axisratio_f444w', 'axisratio_f150w', 'axisratio_halpha', 'prospector_total_av_50', 'prospector_neb_av_50']

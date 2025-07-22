@@ -106,6 +106,7 @@ def plot_paper_sample_select_twopanel(show_hexes=True, show_point_color=False, s
         ax_mag.hexbin(all_redshifts[good_both_idx], f444w_mags[good_both_idx], gridsize=15, cmap=new_cmap, norm=hexbin_norm, label='Photometric Sample')
 
     cmap = mpl.cm.viridis
+    cmap = truncate_colormap(cmap, 0.3, 1)
     for i in range(len(dfs)): 
         df = dfs[i]
         df = pd.merge(df, supercat_df, left_on='id_dr3', right_on='id', how='left')
@@ -199,6 +200,14 @@ def plot_paper_sample_select_twopanel(show_hexes=True, show_point_color=False, s
         for median_tuple in median_bins:
             ax.axvline(x=median_tuple[0], ymin=0, ymax=1, color='magenta', linestyle='--')
             ax.axvline(x=median_tuple[1], ymin=0, ymax=1, color='magenta', linestyle='--')  
+
+    line_sample = Line2D([0], [0], color=cmap(norm(500)), marker='o', markersize=8, ls='None', mec='black')
+    line_snr = Line2D([0], [0], color=cmap(norm(3)), marker='o', markersize=4, ls='None', mec='black')
+    line_hexes = Line2D([0], [0], color='grey', marker='h', markersize=12, ls='None')
+    custom_lines = [line_sample, line_snr, line_hexes]
+    custom_labels = ['Selected Sample', 'Low SNR', 'UNCOVER']
+    legend_loc = 2
+    ax_mass.legend(custom_lines, custom_labels, loc=legend_loc, fontsize=14)
             
     fig.savefig(f'/Users/brianlorenz/uncover/Figures/PHOT_paper/sample_select/sample_select_twopanel.pdf', bbox_inches='tight')
     scale_aspect(ax)

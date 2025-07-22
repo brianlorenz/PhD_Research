@@ -41,10 +41,18 @@ def plot_paper_mass_match_neb_curve(color_var='snr', shapley=2):
     if shaded == 1:
         cbar_bounds = [8.5, 9, 9.5, 9.9, 10.3, 10.8]
         cbar_ticks = [8.5, 9, 9.5, 9.9, 10.3, 10.8]
+        cbar_ticklabels = [str(tick) for tick in cbar_ticks]
+
 
     else:
         cbar_bounds = [9, 9.5, 9.9, 10.3, 10.8]
         cbar_ticks = [9, 9.5, 9.9, 10.3, 10.8]
+        cbar_ticklabels = [str(tick) for tick in cbar_ticks]
+
+        cbar_ticks = [9.25, 9.70, 10.10, 10.55]
+        cbar_ticklabels = ['9.25', '9.70', '10.10', '10.55']
+
+    
 
 
     cmap = mpl.cm.inferno
@@ -61,7 +69,8 @@ def plot_paper_mass_match_neb_curve(color_var='snr', shapley=2):
     # fig, ax = plt.subplots(figsize=(7,6))
     fig = plt.figure(figsize=(6,6))
     ax = fig.add_axes([0.09, 0.08, 0.65, 0.65])
-    ax_cbar = fig.add_axes([0.09, 0.75, 0.65, 0.03])
+    # ax_cbar = fig.add_axes([0.09, 0.75, 0.65, 0.03]) # top cbar
+    ax_cbar = fig.add_axes([0.76, 0.08, 0.03, 0.65])
     # Compute errs
     add_err_cols(sample_df, 'mstar_50')
     err_av_low_plot = sample_df[f'err_AV_pab_ha_low']
@@ -124,6 +133,7 @@ def plot_paper_mass_match_neb_curve(color_var='snr', shapley=2):
         if shapley == 2:
             mosdef_df, linemeas_df = get_mosdef_compare_sample()
             save_str3 = '_mosdef_'
+
         result_df = pd.concat([mosdef_df, linemeas_df], axis=1)
         result_df['balmer_dec'] = result_df['HA6565_FLUX'] / result_df['HB4863_FLUX']
         median_masses_mosdef, median_balmer_ratios, err_median_masses_mosdef, err_median_balmer_ratios, n_gals_per_bin_mosdef = get_median_points(result_df, median_bins, 'LMASS', y_var_name='balmer_dec')
@@ -154,7 +164,7 @@ def plot_paper_mass_match_neb_curve(color_var='snr', shapley=2):
         lineratio_err_plot = np.array([[err_median_pab_ha_ratios[0][k], err_median_pab_ha_ratios[1][k]]]).T
         mosdef_err_plot = np.array([[mosdef_err_low[k], mosdef_err_high[k]]]).T
 
-        ax.errorbar(mosdef_data_decs[k], median_pab_ha_ratios[k], xerr=mosdef_err_plot, yerr=lineratio_err_plot, marker=shape, mec=mec, ms=6, color=rgba, ls='None', ecolor='gray')
+        ax.errorbar(mosdef_data_decs[k], median_pab_ha_ratios[k], xerr=mosdef_err_plot, yerr=lineratio_err_plot, marker=shape, mec=mec, ms=8, color=rgba, ls='None', ecolor='gray')
     
   
     # Add attenuation curves to prospector plots
@@ -183,7 +193,7 @@ def plot_paper_mass_match_neb_curve(color_var='snr', shapley=2):
     ax.tick_params(labelsize=14)
     
     sm =  mpl.cm.ScalarMappable(norm=norm, cmap=cmap)
-    add_cbar(fig, ax_cbar, norm, cmap, cbar_label, cbar_ticks, mappable)
+    add_cbar_nebcurve(fig, ax_cbar, norm, cmap, cbar_label, cbar_ticks, cbar_ticklabels, mappable)
     save_str=''
     
 
@@ -258,12 +268,11 @@ def get_median_points(sample_df, median_bins, x_var_name, y_var_name='lineratio_
 
     return median_xvals, median_yvals, median_xerr_plot, median_yerr_plot, n_gals_per_bin
 
-def add_cbar(fig, ax_cbar, norm, cmap, cbar_name, cbar_ticks, sm):
+def add_cbar_nebcurve(fig, ax_cbar, norm, cmap, cbar_name, cbar_ticks, cbar_ticklabels, sm):
     #SNR cbar
-    cbar_ticklabels = [str(tick) for tick in cbar_ticks]
-    cbar = fig.colorbar(sm, cax=ax_cbar, orientation='horizontal', ticks=cbar_ticks, ticklocation='top', spacing='proportional')
-    cbar.ax.set_xticklabels(cbar_ticklabels) 
-    cbar.ax.xaxis.minorticks_off()
+    cbar = fig.colorbar(sm, cax=ax_cbar, orientation='vertical', ticks=cbar_ticks, spacing='proportional')
+    cbar.ax.set_yticklabels(cbar_ticklabels) 
+    cbar.ax.yaxis.minorticks_off()
     cbar.set_label(cbar_name, fontsize=14, labelpad=10) # -55 pad if ticks flip back to bottom
     cbar.ax.tick_params(labelsize=14)
 
