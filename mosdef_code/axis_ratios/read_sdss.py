@@ -9,7 +9,7 @@ import matplotlib.pyplot as plt
 def read_and_filter_sdss():
     extra_cat = imd.mosdef_dir + '/Catalogs/sdss_dr8/galSpecExtra-dr8.fits'
     extra_df = read_file(extra_cat)
-    extra_df = extra_df[extra_df['LGM_TOT_P50']>=9]
+    extra_df = extra_df[extra_df['LGM_TOT_P50']>=8]
     extra_df = extra_df[extra_df['LGM_TOT_P50']<=11]
 
     lines_cat = imd.mosdef_dir + '/Catalogs/sdss_dr8/galSpecLine-dr8.fits'

@@ -34,3 +34,13 @@ def read_line_sample_df(line_name):
     line_sample_df_loc = f'/Users/brianlorenz/uncover/Data/generated_tables/phot_calcs/phot_sample_select/{line_name}_sample.csv'
     line_sample_df = ascii.read(line_sample_df_loc).to_pandas()
     return line_sample_df
+
+
+def read_canucs_compare():
+    import pandas as pd
+    highz = ascii.read('/Users/brianlorenz/uncover/Catalogs/CANUCS/highz.dat').to_pandas()
+    lowz = ascii.read('/Users/brianlorenz/uncover/Catalogs/CANUCS/lowz.dat').to_pandas()
+    full_canucs = pd.concat([highz, lowz], axis=0)
+    return full_canucs
+
+# read_canucs_compare()

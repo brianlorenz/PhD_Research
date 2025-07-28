@@ -31,7 +31,7 @@ def plot_paper_mass_match_neb_curve(color_var='snr', shapley=2):
     sample_df['log_sfr100_50'] = np.log10(sample_df['sfr100_50'])
     sample_df['log_sfr100_16'] = np.log10(sample_df['sfr100_16'])
     sample_df['log_sfr100_84'] = np.log10(sample_df['sfr100_84'])
-
+    
     var_name = 'mstar_50'            
     x_lims = [3, 4.8]
     # median_bins = [[9,9.5], [9.5,9.85], [9.85,10.2], [10.2,10.75]]
@@ -49,8 +49,8 @@ def plot_paper_mass_match_neb_curve(color_var='snr', shapley=2):
         cbar_ticks = [9, 9.5, 9.9, 10.3, 10.8]
         cbar_ticklabels = [str(tick) for tick in cbar_ticks]
 
-        cbar_ticks = [9.25, 9.70, 10.10, 10.55]
-        cbar_ticklabels = ['9.25', '9.70', '10.10', '10.55']
+        # cbar_ticks = [9.25, 9.70, 10.10, 10.55]
+        # cbar_ticklabels = ['9.25', '9.70', '10.10', '10.55']
 
     
 
@@ -99,7 +99,6 @@ def plot_paper_mass_match_neb_curve(color_var='snr', shapley=2):
     
     
    
-    
     median_masses, median_pab_ha_ratios, err_median_masses, err_median_pab_ha_ratios, n_gals_per_bin = get_median_points(sample_df, median_bins, var_name)
     # Plot shaded region for lowmass bin
     add_str4=''
@@ -178,6 +177,7 @@ def plot_paper_mass_match_neb_curve(color_var='snr', shapley=2):
     legend_line_reddy = add_attenuation_curveby_av(av_values, 'reddy', 'black', '--')
     # legend_line_calzetti = add_attenuation_curveby_av(av_values, 'calzetti', 'red')
     legend_line_cardelli = add_attenuation_curveby_av(av_values, 'cardelli', 'black', '-.')
+    legend_line_cardelli = add_attenuation_curveby_av(av_values, 'calzetti', 'black', 'dotted')
     ax.text(4.46, 0.19, 'Reddy+25', fontsize=10, rotation=42)
     ax.text(4.4, 0.105, 'Cardelli+89', fontsize=10, rotation=16)
 
@@ -231,7 +231,7 @@ def plot_paper_mass_match_neb_curve(color_var='snr', shapley=2):
     plt.close('all')
 
 
-def get_median_points(sample_df, median_bins, x_var_name, y_var_name='lineratio_pab_ha', n_boots=1000):
+def get_median_points(sample_df, median_bins, x_var_name, y_var_name='lineratio_pab_ha', n_boots=10000):
     median_idxs = [np.logical_and(sample_df[x_var_name] > median_bins[k][0], sample_df[x_var_name] < median_bins[k][1]) for k in range(len(median_bins))]
     median_xvals = [np.median(sample_df[median_idxs[k]][x_var_name]) for k in range(len(median_bins))]
     median_yvals = [np.median(sample_df[median_idxs[k]][y_var_name]) for k in range(len(median_bins))]

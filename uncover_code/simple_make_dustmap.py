@@ -1545,14 +1545,21 @@ def make_paper_fig_dustmaps(id_msa_list, sortby = 'mass'):
             make_dustmap_simple(id_msa, axarr_final=axarr_id_msa, ax_labels=ax_labels, label_str=label_str)
         fig.savefig(f'/Users/brianlorenz/uncover/Figures/paper_figures/dustmaps_{sort_name}_page{i}.pdf', bbox_inches='tight')
 
+
+def jy_to_erg_s_cm2_ang(flux_jy, observed_wavelength):
+    flux_erg_s_cm2_hz = flux_jy * 1e-23
+    c = 299792458 # m/s
+    flux_erg_s_cm2_ang = flux_erg_s_cm2_hz * ((c*1e10) / (observed_wavelength**2))
+    return flux_erg_s_cm2_ang
+
 if __name__ == "__main__":
-    # make_dustmap_simple(32111)
+    make_dustmap_simple(32111)
     # lineflux_df = ascii.read(f'/Users/brianlorenz/uncover/Data/generated_tables/lineflux_df_all.csv').to_pandas()
     # make_dustmap_simple(18471)
-    make_dustmap_simple(39855)
+    # make_dustmap_simple(39855)
    
-    id_msa_list = get_id_msa_list(full_sample=False, referee_sample=True)
-    make_all_dustmap(id_msa_list, full_sample=False, fluxcal=True)
+    # id_msa_list = get_id_msa_list(full_sample=False, referee_sample=True)
+    # make_all_dustmap(id_msa_list, full_sample=False, fluxcal=True)
     # make_paper_fig_dustmaps(id_msa_list, sortby='av')
     # make_paper_fig_dustmaps(id_msa_list, sortby='mass')
 
@@ -1560,3 +1567,5 @@ if __name__ == "__main__":
     # make_all_dustmap(id_msa_list, full_sample=True)
 
     # copy_selected_sample_dustmaps(id_msa_list)
+
+

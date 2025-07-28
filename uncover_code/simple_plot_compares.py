@@ -69,6 +69,7 @@ def paper_plot_sed_emfit_accuracy(id_msa_list, color_var=''):
         if id_msa == 14880:
             continue
         data_df_row = data_df[data_df['id_msa'] == id_msa]
+        breakpoint()
         lineratio_data_row = lineratio_data_df[lineratio_data_df['id_msa'] == id_msa]
         sps_row = sps_df[sps_df['id_msa']==id_msa]
         sps_all_row = sps_all_df[sps_all_df['id_msa']==id_msa]
@@ -524,7 +525,6 @@ def r_value_vs_props(snr_map_thresh, y_var='r', pabsnrcut=0):
     compare_values = 'hacont_haline'
     r_value_df = ascii.read(f'/Users/brianlorenz/uncover/Data/generated_tables/r_values/{compare_values}_r_values_snr{snr_map_thresh}.csv').to_pandas()
     # r_value_df = ascii.read(f'/Users/brianlorenz/uncover/Data/generated_tables/r_values/f444w_haline_r_values_snr0.csv').to_pandas()
-    breakpoint()
 
     # compare_values = 'f150w_haline'
     if pabsnrcut == 1:
@@ -651,13 +651,13 @@ def r_value_vs_props(snr_map_thresh, y_var='r', pabsnrcut=0):
 
 
 if __name__ == "__main__":
-    # id_msa_list_old = get_id_msa_list(full_sample=False, referee_sample=False)
+    id_msa_list_old = get_id_msa_list(full_sample=False, referee_sample=False)
     # id_msa_list = get_id_msa_list(full_sample=False, referee_sample=True)
     # id_msa_list_old.append(14573)
     # id_msa_list_old.append(25558)
     # id_msa_list_old.append(38163)
     # breakpoint()
-    # paper_plot_sed_emfit_accuracy(id_msa_list_old, color_var='mass')
+    paper_plot_sed_emfit_accuracy(id_msa_list_old, color_var='mass')
     # plot_simpletests(id_msa_list)
     # plot_offsets(all=True)
 
@@ -665,7 +665,7 @@ if __name__ == "__main__":
 
     # plot_snr_compare(id_msa_list)
 
-    r_value_vs_props(0, y_var='r')
+    # r_value_vs_props(0, y_var='r')
     # r_value_vs_props(3, y_var='cc')
     # r_value_vs_props(3, y_var='sim')
     # r_value_vs_props(0, y_var='r', pabsnrcut=1)

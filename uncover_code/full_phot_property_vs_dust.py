@@ -14,12 +14,15 @@ import shutil
 from simple_sample_selection import truncate_colormap
 from compute_av import compute_ratio_from_av, avneb_str
 from full_phot_plot_mass_nebcurve import get_median_points
+from full_phot_digitized_vals import *
+from full_phot_read_data import  read_canucs_compare
 import time
 
 random.seed(80148273) 
 
 
-def plot_paper_dust_vs_prop(prop='mass', color_var='snr', phot_df=[], axisratio_vs_prospector = 0, ax_in='None', bin_type='dex'):
+def plot_paper_dust_vs_prop(prop='mass', color_var='snr', phot_df=[], axisratio_vs_prospector = 0, ax_in='None', bin_type='dex', compare=0, plot_av=0, hide_twin=0):
+
     sample_df = read_final_sample()
     sample_df['log_sfr100_50'] = np.log10(sample_df['sfr100_50'])
     sample_df['log_sfr100_16'] = np.log10(sample_df['sfr100_16'])
@@ -105,6 +108,7 @@ def plot_paper_dust_vs_prop(prop='mass', color_var='snr', phot_df=[], axisratio_
 
         shape = 'o'
         mec = 'black'
+        mec = 'None'
         if color_var == 'snr':
             norm = mpl.colors.LogNorm(vmin=3, vmax=50) 
             rgba = cmap(norm(sample_df['min_snr'].iloc[j]))
@@ -116,7 +120,8 @@ def plot_paper_dust_vs_prop(prop='mass', color_var='snr', phot_df=[], axisratio_
             cbar_ticks = [1.2, 1.5, 1.8, 2.1, 2.4]
             cbar_label = 'Redshift'
         if color_var == 'None':
-            rgba = 'black'
+            rgba = '#8b8b8b'
+        ecolor = '#b3b3b3'
         
         if prop == 'mass':
             var_name = 'mstar_50'            
@@ -180,7 +185,7 @@ def plot_paper_dust_vs_prop(prop='mass', color_var='snr', phot_df=[], axisratio_
             sample_df.loc[j, 'err_halpha_axisratio_50_high'] = sample_df[f'err_{band}_axisratio_50_high'].iloc[j]
             x_label = band_in.upper() + ' b/a'
             if band_in == 'f150w':
-                x_label = 'Axis Ratio'
+                x_label = 'F150W Axis Ratio'
             x_lims = axisratio_lims
             if bin_type=='dex':
                 median_bins = [[0,0.4], [0.4,0.6], [0.6,1]]
@@ -196,20 +201,41 @@ def plot_paper_dust_vs_prop(prop='mass', color_var='snr', phot_df=[], axisratio_
 
         
         #  np.log10(sample_df['sfr100_50'].iloc[j])
-        ax.errorbar(x_plot, y_plot, xerr=x_err, yerr=y_err, marker=shape, mec=mec, ms=5, color=rgba, ls='None', ecolor='gray')
-    
+
+        if plot_av:
+            if compare == 1:
+                law='cardelli'
+            if compare == 2:
+                law='reddy'
+            
+            yerr_low = compute_ha_pab_av(y_plot, law=law) - compute_ha_pab_av(y_plot-y_err[0][0], law=law) 
+            yerr_high = compute_ha_pab_av(y_plot+y_err[1][0], law=law) - compute_ha_pab_av(y_plot, law=law) 
+            y_plot = compute_ha_pab_av(y_plot, law=law) 
+            y_err = np.array([[yerr_low, yerr_high]]).T
+
+        if compare == 0:
+            ax.errorbar(x_plot, y_plot, xerr=x_err, yerr=y_err, marker=shape, mec=mec, ms=5, color=rgba, ls='None', ecolor=ecolor)
+
     # Add medians if there are bins
+    n_boots=1000
     if len(median_bins) > 0:
         if axisratio_vs_prospector != 0:
-            median_xvals, median_yvals, median_xerr, median_yerr, ngals = get_median_points(sample_df, median_bins, var_name, y_var_name=y_var_name)
+            median_xvals, median_yvals, median_xerr, median_yerr, ngals = get_median_points(sample_df, median_bins, var_name, y_var_name=y_var_name, n_boots=n_boots)
         else:
-            median_xvals, median_yvals, median_xerr, median_yerr, ngals = get_median_points(sample_df, median_bins, var_name)
+            median_xvals, median_yvals, median_xerr, median_yerr, ngals = get_median_points(sample_df, median_bins, var_name,  n_boots=n_boots)
+        if plot_av:
+            yerrs_low = [compute_ha_pab_av(median_yvals[k] - median_yerr[0][k], law=law) for k in range(len(median_yvals))]
+            yerrs_high = [compute_ha_pab_av(median_yvals[k] + median_yerr[1][k], law=law) for k in range(len(median_yvals))]
+            median_yvals = [compute_ha_pab_av(median_yval, law=law) for median_yval in median_yvals]
+            yerrs_low = np.array([median_yvals[i] - yerrs_low[i] for i in range(len(median_yvals))])
+            yerrs_high = np.array([yerrs_high[i] - median_yvals[i] for i in range(len(median_yvals))])
+            median_yerr = np.vstack([yerrs_low, yerrs_high])
         med_color = 'cornflowerblue'
         med_color = '#ff7f00'
-        med_legend = ax.errorbar(median_xvals, median_yvals, xerr=median_xerr, yerr=median_yerr, marker='s', ms=9, color=med_color, ls='--', zorder=50, mec='black', ecolor=med_color)
-        for median_tuple in median_bins:
-            ax.axvline(x=median_tuple[0], ymin=0, ymax=0.09, color='gray', linestyle='--')
-            ax.axvline(x=median_tuple[1], ymin=0, ymax=0.09, color='gray', linestyle='--')
+        med_legend = ax.errorbar(median_xvals, median_yvals, xerr=median_xerr, yerr=median_yerr, marker='s', ms=9, color=med_color, ls='--', zorder=50, mec='black', ecolor=med_color, capsize=3)
+        # for median_tuple in median_bins:
+        #     ax.axvline(x=median_tuple[0], ymin=0, ymax=0.09, color='gray', linestyle='--')
+        #     ax.axvline(x=median_tuple[1], ymin=0, ymax=0.09, color='gray', linestyle='--')
 
     # Add attenuation curves to prospector plots
     if 'prospector' in prop and axisratio_vs_prospector==0:
@@ -259,7 +285,16 @@ def plot_paper_dust_vs_prop(prop='mass', color_var='snr', phot_df=[], axisratio_
     if axisratio_vs_prospector != 0:
         ax.set_ylim(y_lims)
         save_str2 = str(axisratio_vs_prospector)
-    if axisratio_vs_prospector == 0:
+    if hide_twin:
+        main_ax_lims = np.array([0.02, 1])
+        ax.set_ylim(main_ax_lims)
+        ax.set_yscale('log')
+        y_tick_locs = [0.025, 0.055, 1/10, 1/5, 1/2, 1]
+        y_tick_labs = ['0.025', '0.055', '0.1', '0.2', '0.5', '1']
+        ax.set_yticks(y_tick_locs)
+        ax.set_yticklabels(y_tick_labs)
+        ax.minorticks_off()
+    elif axisratio_vs_prospector == 0 and compare == 0:
         ax2 = ax.twinx()
         ax2.tick_params(labelsize=labelsize)
         main_ax_lims = np.array([0.02, 1])
@@ -279,31 +314,90 @@ def plot_paper_dust_vs_prop(prop='mass', color_var='snr', phot_df=[], axisratio_
         ax2.set_yticklabels(twin_y_tick_labs)
         ax2.set_ylabel(f'Inferred {avneb_str}', fontsize=fontsize, rotation=270, labelpad=20)
         ax2.minorticks_off()
+    if compare > 0:
+        main_ax_lims = np.array([-1.5, 4.5])
+        ax.set_ylim(main_ax_lims)
+        # ax.set_ylim(main_ax_lims)
+        # ax.set_yscale('log')
+        y_tick_locs = [-1, 0, 1, 2, 3, 4]
+        y_tick_labs = ['-1', '0', '1', '2', '3', '4']
+        ax.set_yticks(y_tick_locs)
+        ax.set_yticklabels(y_tick_labs)
+        # ax.minorticks_off()
 
-    if prop == 'mass':
-        # # shapley's data
-        mosdef_data_mass = np.array([9.252764612954188, 9.73301737756714, 10.0173775671406, 10.437598736176936]) #Shapley 2022
-        mosdef_data_decs = np.array([3.337349397590363, 3.4548192771084363, 3.7801204819277103, 4.512048192771086])
-        mosdef_data_balmeravs = compute_balmer_av(mosdef_data_decs, law='cardelli') # Cardelli to get the MOSDEF AV
-        mosdef_data_y_plot = compute_ratio_from_av(mosdef_data_balmeravs, law='reddy')  # Reddy to pull it back into this version of the plot. Matches on y-axis
-        legend_shapley, = ax.plot(mosdef_data_mass, mosdef_data_y_plot, color='cornflowerblue', marker='d', ms=8, mec='black', ls='dotted', zorder=10, label='z=2.3 MOSDEF (Shapley+ 2022)')
-        # legend_shapley = Line2D([0], [0], color=color, marker='None', ls='--')
-        label_shapley = 'z=2.3 MOSDEF (Shapley+22)'
+    if prop == 'mass' and compare>0:
+        shapley = 0
+        # compare_colors = ['cornflowerblue', 'limegreen', 'yellow', 'red']
+        # compare_colors = ['#BCDAB8', '#79AC72', '#4B7346', '#273B24']
+        compare_colors = ['#D8F0D4', '#82BD7A', '#42733C', '#273B24']
+        compare_mec = 'black'
 
-        runco_data_mass = np.array([9.04029773256327, 9.341541353064535	, 9.507356359477967, 9.660911296972452, 9.76852663271054, 9.882224549023732, 10.039519064690833, 10.177858006949581, 10.35957669226384, 10.679835800016289]) #Runco 2022
-        runco_data_decs = np.array([3.282805987024606, 3.6142358130258136, 2.633209874253258, 4.096971898622865, 4.597955149928179, 4.213816474455239, 4.5059129818220125, 4.514513937180409, 5.778564129951793, 5.644147137838686])
-        runco_data_balmeravs = compute_balmer_av(runco_data_decs, law='cardelli')
-        runco_data_y_plot = compute_ratio_from_av(runco_data_balmeravs, law='reddy')
-        legend_runco, = ax.plot(runco_data_mass, runco_data_y_plot, color='limegreen', marker='*', ms=12, mec='black', ls='None', zorder=11, label='MOSDEF Stacks (Runco+ 2022)')
-        # legend_runco = Line2D([0], [0], color=color, marker='None', ls='--')
-        label_runco = 'MOSDEF Stacks (Runco+22)'
+        # if shapley:
+        #     # # shapley's data
+        #     mosdef_data_mass = np.array([9.252764612954188, 9.73301737756714, 10.0173775671406, 10.437598736176936]) #Shapley 2022
+        #     mosdef_data_decs = np.array([3.337349397590363, 3.4548192771084363, 3.7801204819277103, 4.512048192771086])
+        #     mosdef_data_balmeravs = compute_balmer_av(mosdef_data_decs, law=law) # Cardelli to get the MOSDEF AV
+        #     mosdef_data_y_plot = compute_ratio_from_av(mosdef_data_balmeravs, law=law)  # Reddy to pull it back into this version of the plot. Matches on y-axis
+        #     if plot_av:
+        #         mosdef_data_y_plot = mosdef_data_balmeravs
+        #     legend_shapley, = ax.plot(mosdef_data_mass, mosdef_data_y_plot, color='cornflowerblue', marker='d', ms=8, mec='black', ls='dotted', zorder=10, label='z=2.3 MOSDEF (Shapley+ 2022)')
+        #     # legend_shapley = Line2D([0], [0], color=color, marker='None', ls='--')
+        #     label_shapley = 'z=2.3 MOSDEF (Shapley+22)'
+
+        
+        legend_runco = plot_comparison(ax, runco_data_mass, runco_data_decs, runco_data_low_errs, runco_data_high_errs, law=law, color=compare_colors[2], marker='*', size=10, mec=compare_mec)
+        label_runco = 'MOSDEF z~2.3'
+        # legend_matharu_high = plot_comparison(ax, matharu_highz_masses, matharu_highz_decs, matharu_highz_lows, matharu_highz_highs, law=law, color='cornflowerblue', marker='d', size=6)
+        # label_matharu_high = 'NIRISS 1.7<z<2.4'
+        # legend_matharu_low = plot_comparison(ax, matharu_lowz_masses, matharu_lowz_decs, matharu_lowz_lows, matharu_lowz_highs, law=law, color='black', marker='^', size=6)
+        # label_matharu_low = 'NIRISS 1.0<z<1.7'
+        matharu_df = read_canucs_compare()
+        # matharu_df = matharu_df[matharu_df['z']>1.7]
+        matharu_bin_pcts = [0, 33, 66, 100]
+        legend_matharu_med = plot_comparison_mybins(ax, matharu_df, 'mass', 'BD', matharu_bin_pcts, law=law, color=compare_colors[1], marker='^', size=6, mec=compare_mec)
+
+        # legend_matharu_med = plot_comparison(ax, matharu_median_mass, matharu_median_decs, matharu_median_lows, matharu_median_highs, law=law, color='cornflowerblue', marker='^', size=6)
+        # label_matharu_med = 'CANUCS 1.0<z<2.4'
+        label_matharu_med = 'CANUCS z~1.7'
+        # legend_dominguez = plot_comparison(ax, dominguez_masses, dominguez_decs, dominguez_lows, dominguez_highs, law=law, color='yellow', marker='o', size=6)
+        # label_dominguez = 'WFC3 0.75<z<1.5'
+        legend_battisti = plot_comparison(ax, battisti_masses, battisti_decs, battisti_lows, battisti_highs, law=law, color=compare_colors[0], marker='d', size=6, mec=compare_mec)
+        label_battisti = 'WISP+3D-HST z~1.3'
+
+        
+        maheson_df = pd.DataFrame(zip(maheson_all_masses, maheson_all_decs), columns=['mass', 'balmer_dec'])
+        maheson_bin_pcts = [0, 33, 66, 100]
+        legend_maheson = plot_comparison_mybins(ax, maheson_df, 'mass', 'balmer_dec', maheson_bin_pcts, law=law, color=compare_colors[3], marker='o', size=6, mec=compare_mec)
+        label_maheson = 'BlueJay z~2.6'
+
 
         # legend_mega = Line2D([0], [0], color=med_color, marker='o', ls='--')
         label_med = 'MegaScience'
+
+        # # Add SDSS galaxies
+        # from read_sdss import read_and_filter_sdss
+        # sdss_df = read_and_filter_sdss()
+        # sdss_df = sdss_df[sdss_df['balmer_dec']>2.7]
+        # sdss_df = sdss_df[sdss_df['balmer_dec']<10.0]
+        # sdss_df = sdss_df[sdss_df['log_mass']>8]
+        # sdss_df = sdss_df[sdss_df['log_mass']<11.0]
+        # sdss_df['balmer_av_cardelli'] = compute_balmer_av(sdss_df['balmer_dec'], law='cardelli')
+        # sdss_df['y_plot'] = compute_ratio_from_av(sdss_df['balmer_av_cardelli'], law='reddy')
+        # cmap_hex = plt.get_cmap('gray_r')
+        # cmap_hex = truncate_colormap(cmap_hex, 0, 0.7)
+        # ax.hexbin(sdss_df['log_mass'], sdss_df['y_plot'], gridsize=20, cmap=cmap_hex, yscale='log')
+        # # ax.plot(sdss_df['log_mass'], sdss_df['y_plot'], color='black', marker='s', alpha=0.5, markersize=4, ls='None')
+        # line_sdss = Line2D([0], [0], color='black', marker='s', alpha=0.5, markersize=4, ls='None')
+        # label_sdss ='SDSS'
         
-        custom_lines = [med_legend, legend_shapley, legend_runco]
-        custom_labels = [label_med, label_shapley, label_runco]
-        ax.legend(custom_lines, custom_labels, loc=2, fontsize=9)
+        if shapley:
+            # custom_lines = [med_legend, legend_shapley, legend_runco]#, line_sdss]
+            # custom_labels = [label_med, label_shapley, label_runco]#, label_sdss]
+            pass
+        else:
+            custom_lines = [med_legend, legend_battisti, legend_matharu_med, legend_runco, legend_maheson]
+            custom_labels = [label_med, label_battisti, label_matharu_med, label_runco, label_maheson]
+        ax.legend(custom_lines, custom_labels, loc=2, fontsize=11)
     
     prop_folder = prop
     if 'axisratio' in prop:
@@ -384,16 +478,51 @@ def add_err_cols(sample_df, var_name):
 def two_panel(bin_type='dex'):
     fig = plt.figure(figsize=(12, 6))
     ax_mass = fig.add_axes([0.09, 0.08, 0.35, 0.70])
-    ax_sfr = fig.add_axes([0.61, 0.08, 0.35, 0.70])
-    plot_paper_dust_vs_prop(prop='mass',color_var='None',ax_in=ax_mass, bin_type=bin_type)
-    plot_paper_dust_vs_prop(prop='sfr',color_var='None',ax_in=ax_sfr, bin_type=bin_type)
+    ax_sfr = fig.add_axes([0.47, 0.08, 0.35, 0.70])
+    plot_paper_dust_vs_prop(prop='mass',color_var='None',ax_in=ax_mass, bin_type=bin_type, hide_twin=1)
+    plot_paper_dust_vs_prop(prop='sfr',color_var='None',ax_in=ax_sfr, bin_type=bin_type, hide_twin=1)
+    ax_sfr.tick_params(axis='y', labelleft=False)   
+    ax_sfr.set_ylabel('')   
     fig.savefig(f'/Users/brianlorenz/uncover/Figures/PHOT_paper/dust_vs_prop/multiple/dust_vs_mass_sfr_twopanel_{bin_type}.pdf', bbox_inches='tight')
 
+def neb_curve_diff(bin_type='galaxies'):
+    fig = plt.figure(figsize=(12, 6))
+    ax_cardelli = fig.add_axes([0.09, 0.08, 0.35, 0.70])
+    ax_reddy = fig.add_axes([0.47, 0.08, 0.35, 0.70])
+    plot_paper_dust_vs_prop(prop='mass',color_var='None',ax_in=ax_cardelli, bin_type=bin_type, compare=1, plot_av=1)
+    plot_paper_dust_vs_prop(prop='mass',color_var='None',ax_in=ax_reddy, bin_type=bin_type, compare=2, plot_av=1)
+    ax_reddy.tick_params(axis='y', labelleft=False)   
+    ax_reddy.set_ylabel('')   
+    ax_reddy.get_legend().remove()
+    ax_reddy.set_title('Reddy+25', fontsize=16)
+    ax_cardelli.set_title('Cardelli+89', fontsize=16)
+    ax_cardelli.set_ylabel(f'Inferred {avneb_str}', labelpad=2)   
+    for ax in [ax_reddy, ax_cardelli]:
+        ax.set_ylim(-0.6, 3.2)
+        ax.set_xlim(8.1, 11)
+        # ax.axhline(0, color='gray', alpha=0.3)
+        # ax.axhline(1, color='gray', alpha=0.3)
+        # ax.axhline(2, color='gray', alpha=0.3)
+        # ax.axhline(3, color='gray', alpha=0.3)
+        ax.hlines([0,1,2,3], 7, 12, color='darkgray', zorder=1, lw=0.7)
+        
+    fig.savefig(f'/Users/brianlorenz/uncover/Figures/PHOT_paper/dust_vs_prop/multiple/dust_vs_mass_nebcurve.pdf', bbox_inches='tight')
+
+def plot_comparison_mybins(ax, df, massname, decname, bin_pcts, law, color, marker, size, mec='black'):
+    binlist = np.percentile(df[massname], bin_pcts)
+    bins = [[binlist[i], binlist[i+1]] for i in range(len(binlist)-1)]
+    mass, dec, _, dec_err, ngals = get_median_points(df, bins, massname, y_var_name=decname, n_boots=1000)
+    legend_line = plot_comparison(ax, np.array(mass), np.array(dec), np.array(dec)-np.array(dec_err[0]), np.array(dec)+np.array(dec_err[1]), law=law, color=color, marker=marker, size=size, mec=mec)
+    return legend_line
+
 if __name__ == '__main__':
-    # two_panel(bin_type='dex')
+    # The 4 final paper figures
+    neb_curve_diff()
     # two_panel(bin_type='galaxies')
     # plot_paper_dust_vs_prop(prop='axisratio_f150w',color_var='None', bin_type='galaxies')
-    plot_paper_dust_vs_prop(prop='mass',color_var='None', bin_type='galaxies')
+    # plot_paper_dust_vs_prop(prop='mass',color_var='None', bin_type='galaxies', compare=1)
+
+
 
     
     # props = ['mass', 'sfr', 'axisratio_f444w', 'axisratio_f150w', 'axisratio_halpha', 'prospector_total_av_50', 'prospector_neb_av_50']

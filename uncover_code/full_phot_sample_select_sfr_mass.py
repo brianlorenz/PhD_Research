@@ -83,7 +83,9 @@ def plot_paper_sample_select_sfr_mass(show_hexes=True, show_point_color=False, m
     
 
     sizes = [4, 8]
-    colors = ['black', 'redshift']
+    colors = ['#2f2f2f', 'redshift']
+    ecolors = ['#2f2f2f', 'redshift']
+    mecs = ['None', 'black']
     hist_alphas = [1, 0.7]
 
     sfr_lims = [-2, 2.5]
@@ -114,12 +116,12 @@ def plot_paper_sample_select_sfr_mass(show_hexes=True, show_point_color=False, m
     all_log_sfr100s = np.log10(all_sfr100s)
     # ax.plot(all_redshifts, all_masses, marker='o', ls='None', markersize=background_markersize, color='gray')
     cmap = plt.get_cmap('gray_r')
-    new_cmap = truncate_colormap(cmap, 0, 0.7)
+    new_cmap = truncate_colormap(cmap, 0, 0.5)
     good_mass_idx = np.logical_and(all_masses > mass_lims[0], all_masses < mass_lims[1])
     good_sfr_idx = np.logical_and(all_log_sfr100s > sfr_lims[0], all_log_sfr100s <  sfr_lims[1])
 
     if show_hexes:
-        hexbin_norm = mpl.colors.Normalize(vmin=1, vmax=200) 
+        hexbin_norm = mpl.colors.Normalize(vmin=1, vmax=300) 
         good_both_idx = np.logical_and(good_sfr_idx, good_mass_idx)  
         mass_cut_idx = all_masses>mass_cut
         good_both_idx = np.logical_and(good_both_idx, mass_cut_idx)
@@ -129,12 +131,18 @@ def plot_paper_sample_select_sfr_mass(show_hexes=True, show_point_color=False, m
         save_str2 = '_hexes'
 
     cmap = mpl.cm.viridis
+    cmap = truncate_colormap(cmap, 0.2, 1.0)
     for i in range(len(dfs)): 
         df = dfs[i]
 
         # Compute errs
-        low_sfr_err = np.log10(df['sfr100_50']) - np.log10(df['sfr100_16'])
-        high_sfr_err = np.log10(df['sfr100_84']) - np.log10(df['sfr100_50'])
+        if i == 2:
+            df['zeros'] = np.zeros(len(df['sfr100_50'])) 
+            low_sfr_err = df['zeros']
+            high_sfr_err = df['zeros']
+        else:
+            low_sfr_err = np.log10(df['sfr100_50']) - np.log10(df['sfr100_16'])
+            high_sfr_err = np.log10(df['sfr100_84']) - np.log10(df['sfr100_50'])
         
         for j in range(len(df)):
 
@@ -144,11 +152,13 @@ def plot_paper_sample_select_sfr_mass(show_hexes=True, show_point_color=False, m
 
             size = sizes[i]
             color = colors[i]
+            ecolor = ecolors[i]
             shape = 'o'
-            mec = 'black'
+            mec = mecs[i]
             if color == 'redshift':
                 norm = mpl.colors.Normalize(vmin=1.2, vmax=2.4) 
                 color = cmap(norm(df['z_50'].iloc[j]))
+                ecolor = color
             # elif color_var == 'ha_qual':
             #     norm = mpl.colors.Normalize(vmin=0, vmax=20) 
             #     rgba = cmap(norm(df['Halpha_quality_factor'].iloc[j]))
@@ -168,15 +178,15 @@ def plot_paper_sample_select_sfr_mass(show_hexes=True, show_point_color=False, m
                         mec='blue'
                     
 
-            ax.errorbar(df['mstar_50'].iloc[j], np.log10(df['sfr100_50'].iloc[j]), yerr=np.array([[low_sfr_err.iloc[j], high_sfr_err.iloc[j]]]).T, marker=shape, mec=mec, ms=size, color=color, ls='None', ecolor='gray')
+            ax.errorbar(df['mstar_50'].iloc[j], np.log10(df['sfr100_50'].iloc[j]), yerr=np.array([[low_sfr_err.iloc[j], high_sfr_err.iloc[j]]]).T, marker=shape, mec=mec, ms=size, color=color, ls='None', ecolor=ecolor)
             # ax.text(df['mstar_50'].iloc[j], df['z_50'].iloc[j], f'{id_dr3}')
         if colors[i] == 'redshift':
             norm = mpl.colors.Normalize(vmin=1.2, vmax=2.4) 
-            color = cmap(norm(1.8))
+            color = cmap(norm(2.05))
         ax_histx.hist(df['mstar_50'], bins=xbins, color=color, density=True, alpha=hist_alphas[i])
         ax_histy.hist(np.log10(df['sfr100_50']), bins=ybins, color=color,  orientation='horizontal', density=True, alpha=hist_alphas[i])  
     ax.set_xlabel(stellar_mass_label, fontsize=14)
-    ax.set_ylabel(f'Prospector log10(SFR)', fontsize=14)
+    ax.set_ylabel('Prospector log$_{10}$(SFR)', fontsize=14)
     ax.tick_params(labelsize=14)
 
     # # Plot SFMS

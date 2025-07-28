@@ -30,6 +30,7 @@ def plot_paper_sample_select_sfms_mass(show_hexes=True, show_point_color=False, 
 
     sizes = [4, 8]
     colors = ['black', 'orange']
+    mecs = ['black', 'black']
     hist_alphas = [1, 0.7]
 
     sfms_offset_lims = [-2, 2]
@@ -65,7 +66,7 @@ def plot_paper_sample_select_sfms_mass(show_hexes=True, show_point_color=False, 
     all_sfms_offsets = all_log_sfr100s - all_sfms_values # positive is above sfms
     # ax.plot(all_redshifts, all_masses, marker='o', ls='None', markersize=background_markersize, color='gray')
     cmap = plt.get_cmap('gray_r')
-    new_cmap = truncate_colormap(cmap, 0, 0.7)
+    new_cmap = truncate_colormap(cmap, 0.2, 0.7)
     good_mass_idx = np.logical_and(all_masses > mass_lims[0], all_masses < mass_lims[1])
 
     good_sfms_idx = np.logical_and(all_sfms_offsets > sfms_offset_lims[0], all_sfms_offsets <  sfms_offset_lims[1])
@@ -124,7 +125,7 @@ def plot_paper_sample_select_sfms_mass(show_hexes=True, show_point_color=False, 
             size = sizes[i]
             color = colors[i]
             shape = 'o'
-            mec = 'black'
+            mec = mecs[i]
             # if color_var == 'snr':
             #     norm = mpl.colors.LogNorm(vmin=0.5, vmax=50) 
             #     rgba = cmap(norm(df['min_snr'].iloc[j]))
@@ -190,5 +191,5 @@ def pop_sfms(mass, redshift): # https://academic.oup.com/mnras/article/519/1/152
 
 if __name__ == '__main__':
 
-    plot_paper_sample_select_sfms_mass(show_hexes=True)
+    # plot_paper_sample_select_sfms_mass(show_hexes=True)
     plot_paper_sample_select_sfms_mass(show_hexes=True, mass_cut=7)
