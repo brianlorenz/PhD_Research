@@ -28,6 +28,11 @@ def plot_paper_sample_select(show_hexes=True, show_point_color=False, shapley=0)
     bcg_cut_ids = bcg_cut_gals['id_dr3'].to_list()
     chi2_cut_ids = chi2_cut_gals['id_dr3'].to_list()
 
+    df_high_snr = possible_df[~possible_df['id_dr3'].isin(bcg_cut_ids)]
+    df_snr_bcg = df_high_snr[~df_high_snr['id_dr3'].isin(snr_cut_ids)]
+    df_snr_bcg_chi2 = df_snr_bcg[~df_snr_bcg['id_dr3'].isin(chi2_cut_ids)]
+
+
     sample_ids = sample_df['id_dr3'].to_list()
     if shapley==0:
         dfs = [possible_df, sample_df]
@@ -141,6 +146,7 @@ def plot_paper_sample_select(show_hexes=True, show_point_color=False, shapley=0)
                     color = 'blue'
                     if shape == 'x':
                         mec='blue'
+                
                     
 
             ax.errorbar(df['mstar_50'].iloc[j], df['z_50'].iloc[j], yerr=np.array([[low_zerr.iloc[j], high_zerr.iloc[j]]]).T, marker=shape, mec=mec, ms=size, color=color, ls='None', ecolor='gray')

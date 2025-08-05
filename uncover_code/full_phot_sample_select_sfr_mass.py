@@ -52,9 +52,9 @@ def plot_paper_sample_select_sfr_mass(show_hexes=True, show_point_color=False, m
             dfs = [mosdef_df, sample_df]
             save_str2 = '_mosdef'    
         mass_lims = [7.5, 11.5]  
-        median_bins = [[9,9.5], [9.5,9.85], [9.85,10.2], [10.2,10.75]]
+        median_bins = [[9.,9.5], [9.5,9.9], [9.9,10.3], [10.3,10.8]]
         
-        make_av_figure = 1
+        make_av_figure = 0
         density = True
         if make_av_figure:
             fig2, ax2 = plt.subplots(figsize=(6,6))
@@ -218,6 +218,26 @@ def plot_paper_sample_select_sfr_mass(show_hexes=True, show_point_color=False, m
             ax_histx.axvline(x=median_tuple[0], ymin=0, ymax=1, color='magenta', linestyle='--')
             ax_histx.axvline(x=median_tuple[1], ymin=0, ymax=1, color='magenta', linestyle='--')      
     
+    if shapley == 2:
+        sample_masses = []
+        mosdef_masses = []
+        sample_sfrs = []
+        mosdef_sfrs = []
+        sample_redshifts = []
+        mosdef_redshifts = []
+        for bin in median_bins:
+            sample_cut = sample_df[np.logical_and(sample_df['mstar_50']>bin[0], sample_df['mstar_50']<bin[1])]
+            mosdef_cut = mosdef_df[np.logical_and(mosdef_df['mstar_50']>bin[0], mosdef_df['mstar_50']<bin[1])]
+            sample_masses.append(np.median(sample_cut['mstar_50']))
+            mosdef_masses.append(np.median(mosdef_cut['mstar_50']))
+            sample_sfrs.append(np.median(np.log10(sample_cut['sfr100_50'])))
+            mosdef_sfrs.append(np.median(np.log10(mosdef_cut['sfr100_50'])))
+            sample_redshifts.append(np.median(sample_cut['z_50']))
+            mosdef_redshifts.append(np.median(mosdef_cut['Z_MOSFIRE']))
+        median_df = pd.DataFrame(zip(sample_masses, mosdef_masses, sample_sfrs, mosdef_sfrs, sample_redshifts, mosdef_redshifts), columns=['sample_mass', 'mosdef_mass', 'sample_log_sfr', 'mosdef_log_sfr', 'sample_redshift', 'mosdef_redshift'])
+        median_df.to_csv('/Users/brianlorenz/uncover/Data/generated_tables/mosdef_compare/median_props.csv', index=False)
+        breakpoint()
+        sys.exit()
     fig.savefig(f'/Users/brianlorenz/uncover/Figures/PHOT_paper/sample_select/sample_select_sfrmass_{save_str}{save_str2}_mass{mass_cut}.pdf')
     scale_aspect(ax)
     plt.close('all')
@@ -239,4 +259,6 @@ if __name__ == '__main__':
     # plot_paper_sample_select_sfr_mass(show_hexes=False, shapley=1)
     # plot_paper_sample_select_sfr_mass(show_hexes=False, shapley=2)
     # plot_paper_sample_select_sfr_mass(show_hexes=True)
+    plot_paper_sample_select_sfr_mass(show_hexes=True, mass_cut=7.5, shapley=2)
+
     plot_paper_sample_select_sfr_mass(show_hexes=True, mass_cut=7.5)

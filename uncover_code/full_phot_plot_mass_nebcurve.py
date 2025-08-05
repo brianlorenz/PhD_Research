@@ -226,7 +226,7 @@ def plot_paper_mass_match_neb_curve(color_var='snr', shapley=2):
     ax.minorticks_off()
 
     
-  
+    breakpoint()
     fig.savefig(f'/Users/brianlorenz/uncover/Figures/PHOT_paper/neb_curve/neb_curve{save_str}{save_str2}{save_str3}{color_var}{add_str4}.pdf', bbox_inches='tight')
     plt.close('all')
 

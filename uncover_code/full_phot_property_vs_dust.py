@@ -15,8 +15,9 @@ from simple_sample_selection import truncate_colormap
 from compute_av import compute_ratio_from_av, avneb_str
 from full_phot_plot_mass_nebcurve import get_median_points
 from full_phot_digitized_vals import *
-from full_phot_read_data import  read_canucs_compare
+from full_phot_read_data import  read_canucs_compare, read_bluejay_compare
 import time
+from scipy.stats import linregress
 
 random.seed(80148273) 
 
@@ -127,6 +128,7 @@ def plot_paper_dust_vs_prop(prop='mass', color_var='snr', phot_df=[], axisratio_
             var_name = 'mstar_50'            
             x_label = stellar_mass_label
             x_lims = mass_lims
+            x_regress = np.arange(7, 12, 0.1)
             
             if bin_type == 'dex':
                 median_bins = [[7,8], [8,9], [9,10], [10,11]]
@@ -140,6 +142,7 @@ def plot_paper_dust_vs_prop(prop='mass', color_var='snr', phot_df=[], axisratio_
             var_name = 'log_sfr100_50'
             x_label = log_sfr_label_sedmethod
             x_lims = sfr_lims
+            x_regress = np.arange(-2, 3, 0.1)
 
             if bin_type == 'dex':
                 median_bins = [[-0.5,0], [0,0.5], [0.5,1], [1,1.5], [1.5,2]]
@@ -164,6 +167,7 @@ def plot_paper_dust_vs_prop(prop='mass', color_var='snr', phot_df=[], axisratio_
                 y_plot = sample_df[var_name].iloc[j]
                 y_err = np.array([[sample_df[f'err_{var_name}_low'].iloc[j], sample_df[f'err_{var_name}_high'].iloc[j]]]).T
         if 'axisratio' in prop or axisratio_vs_prospector!=0:
+            x_regress = np.arange(0, 1.1, 0.05)
             if axisratio_vs_prospector!=0:
                 if axisratio_vs_prospector==1: band_in='f150w'
                 if axisratio_vs_prospector==2: band_in='f444w'
@@ -199,6 +203,8 @@ def plot_paper_dust_vs_prop(prop='mass', color_var='snr', phot_df=[], axisratio_
         x_plot = sample_df[var_name].iloc[j]
         x_err = np.array([[sample_df[f'err_{var_name}_low'].iloc[j], sample_df[f'err_{var_name}_high'].iloc[j]]]).T
 
+
+
         
         #  np.log10(sample_df['sfr100_50'].iloc[j])
 
@@ -214,7 +220,27 @@ def plot_paper_dust_vs_prop(prop='mass', color_var='snr', phot_df=[], axisratio_
             y_err = np.array([[yerr_low, yerr_high]]).T
 
         if compare == 0:
+
+            # sfr_20, sfr_40, sfr_60, sfr_80 = np.percentile(sample_df['log_sfr100_50'], [20, 40, 60, 80])
+            # if sample_df['log_sfr100_50'].iloc[j] > sfr_80:
+            #     rgba='magenta'
+
             ax.errorbar(x_plot, y_plot, xerr=x_err, yerr=y_err, marker=shape, mec=mec, ms=5, color=rgba, ls='None', ecolor=ecolor)
+            
+            
+            # ax.text(x_plot, y_plot, f'{id_dr3}', fontsize=6)
+
+    # Add regression line if 
+    if plot_av == 0:
+        sample_df['log_lineratio_pab_ha'] = np.log10(sample_df['lineratio_pab_ha'])
+        sample_df['err_log_lineratio_pab_ha_low'] = np.log10(sample_df['lineratio_pab_ha']) - np.log10(sample_df['lineratio_pab_ha'] - sample_df['err_lineratio_pab_ha_low']) 
+        sample_df['err_log_lineratio_pab_ha_high'] = np.log10(sample_df['lineratio_pab_ha'] + sample_df['err_lineratio_pab_ha_low']) - np.log10(sample_df['lineratio_pab_ha']) 
+        sample_df_nonan = sample_df[~pd.isnull(sample_df[var_name])]
+        regress_res, points_16, points_84 = bootstrap_fit(sample_df_nonan, var_name, 'log_lineratio_pab_ha', x_regress)
+        points_16 = [10**point for point in points_16]
+        points_84 = [10**point for point in points_84]
+        ax.plot(x_regress, 10**(regress_res.intercept + regress_res.slope*x_regress), color='#4c4c4c', ls='--')
+        ax.fill_between(x_regress, points_16, points_84, facecolor='#82BD7A', alpha=0.4)
 
     # Add medians if there are bins
     n_boots=1000
@@ -232,7 +258,7 @@ def plot_paper_dust_vs_prop(prop='mass', color_var='snr', phot_df=[], axisratio_
             median_yerr = np.vstack([yerrs_low, yerrs_high])
         med_color = 'cornflowerblue'
         med_color = '#ff7f00'
-        med_legend = ax.errorbar(median_xvals, median_yvals, xerr=median_xerr, yerr=median_yerr, marker='s', ms=9, color=med_color, ls='--', zorder=50, mec='black', ecolor=med_color, capsize=3)
+        med_legend = ax.errorbar(median_xvals, median_yvals, xerr=median_xerr, yerr=median_yerr, marker='s', ms=9, color=med_color, ls='None', zorder=50, mec='black', ecolor=med_color, capsize=3)
         # for median_tuple in median_bins:
         #     ax.axvline(x=median_tuple[0], ymin=0, ymax=0.09, color='gray', linestyle='--')
         #     ax.axvline(x=median_tuple[1], ymin=0, ymax=0.09, color='gray', linestyle='--')
@@ -289,8 +315,8 @@ def plot_paper_dust_vs_prop(prop='mass', color_var='snr', phot_df=[], axisratio_
         main_ax_lims = np.array([0.02, 1])
         ax.set_ylim(main_ax_lims)
         ax.set_yscale('log')
-        y_tick_locs = [0.025, 0.055, 1/10, 1/5, 1/2, 1]
-        y_tick_labs = ['0.025', '0.055', '0.1', '0.2', '0.5', '1']
+        y_tick_locs = [0.025, 0.056, 1/10, 1/5, 1/2, 1]
+        y_tick_labs = ['0.025', '0.056', '0.1', '0.2', '0.5', '1']
         ax.set_yticks(y_tick_locs)
         ax.set_yticklabels(y_tick_labs)
         ax.minorticks_off()
@@ -302,8 +328,8 @@ def plot_paper_dust_vs_prop(prop='mass', color_var='snr', phot_df=[], axisratio_
         ax2.set_yscale('log')
         ax.set_ylim(main_ax_lims)
         ax.set_yscale('log')
-        y_tick_locs = [0.025, 0.055, 1/10, 1/5, 1/2, 1]
-        y_tick_labs = ['0.025', '0.055', '0.1', '0.2', '0.5', '1']
+        y_tick_locs = [0.025, 0.056, 1/10, 1/5, 1/2, 1]
+        y_tick_labs = ['0.025', '0.056', '0.1', '0.2', '0.5', '1']
         ax.set_yticks(y_tick_locs)
         ax.set_yticklabels(y_tick_labs)
         ax.minorticks_off()
@@ -344,35 +370,52 @@ def plot_paper_dust_vs_prop(prop='mass', color_var='snr', phot_df=[], axisratio_
         #     # legend_shapley = Line2D([0], [0], color=color, marker='None', ls='--')
         #     label_shapley = 'z=2.3 MOSDEF (Shapley+22)'
 
-        
+        median_av = np.median(compute_ha_pab_av(sample_df['lineratio_pab_ha'], law=law))
+        max_ax = np.max(compute_ha_pab_av(sample_df['lineratio_pab_ha'], law=law))
+        print(f'Median av: {median_av}, law = {law}')
+        print(f'Max av: {max_ax}, law = {law}')
+
         legend_runco = plot_comparison(ax, runco_data_mass, runco_data_decs, runco_data_low_errs, runco_data_high_errs, law=law, color=compare_colors[2], marker='*', size=10, mec=compare_mec)
         label_runco = 'MOSDEF z~2.3'
-        # legend_matharu_high = plot_comparison(ax, matharu_highz_masses, matharu_highz_decs, matharu_highz_lows, matharu_highz_highs, law=law, color='cornflowerblue', marker='d', size=6)
-        # label_matharu_high = 'NIRISS 1.7<z<2.4'
-        # legend_matharu_low = plot_comparison(ax, matharu_lowz_masses, matharu_lowz_decs, matharu_lowz_lows, matharu_lowz_highs, law=law, color='black', marker='^', size=6)
-        # label_matharu_low = 'NIRISS 1.0<z<1.7'
-        matharu_df = read_canucs_compare()
-        # matharu_df = matharu_df[matharu_df['z']>1.7]
-        matharu_bin_pcts = [0, 33, 66, 100]
-        legend_matharu_med = plot_comparison_mybins(ax, matharu_df, 'mass', 'BD', matharu_bin_pcts, law=law, color=compare_colors[1], marker='^', size=6, mec=compare_mec)
 
-        # legend_matharu_med = plot_comparison(ax, matharu_median_mass, matharu_median_decs, matharu_median_lows, matharu_median_highs, law=law, color='cornflowerblue', marker='^', size=6)
-        # label_matharu_med = 'CANUCS 1.0<z<2.4'
+        matharu_df = read_canucs_compare()
+        matharu_bin_pcts = [0, 33, 66, 100]
+        legend_matharu_med, matharu_mass, matharu_decs = plot_comparison_mybins(ax, matharu_df, 'mass', 'BD', matharu_bin_pcts, law=law, color=compare_colors[1], marker='^', size=6, mec=compare_mec)
         label_matharu_med = 'CANUCS z~1.7'
-        # legend_dominguez = plot_comparison(ax, dominguez_masses, dominguez_decs, dominguez_lows, dominguez_highs, law=law, color='yellow', marker='o', size=6)
-        # label_dominguez = 'WFC3 0.75<z<1.5'
+
         legend_battisti = plot_comparison(ax, battisti_masses, battisti_decs, battisti_lows, battisti_highs, law=law, color=compare_colors[0], marker='d', size=6, mec=compare_mec)
         label_battisti = 'WISP+3D-HST z~1.3'
 
-        
-        maheson_df = pd.DataFrame(zip(maheson_all_masses, maheson_all_decs), columns=['mass', 'balmer_dec'])
+        # maheson_df = pd.DataFrame(zip(maheson_all_masses, maheson_all_decs), columns=['mass', 'balmer_dec'])
+        maheson_df = read_bluejay_compare()
+        maheson_df = maheson_df[maheson_df['redshift']<2.4]
+        median_z = np.median(maheson_df['redshift'])
         maheson_bin_pcts = [0, 33, 66, 100]
-        legend_maheson = plot_comparison_mybins(ax, maheson_df, 'mass', 'balmer_dec', maheson_bin_pcts, law=law, color=compare_colors[3], marker='o', size=6, mec=compare_mec)
-        label_maheson = 'BlueJay z~2.6'
+        legend_maheson, maheson_mass, maheson_decs = plot_comparison_mybins(ax, maheson_df, 'stellar_mass_50', 'BD_50', maheson_bin_pcts, law=law, color=compare_colors[3], marker='o', size=6, mec=compare_mec)
+        # legend_maheson, maheson_mass, maheson_decs = plot_comparison_mybins(ax, maheson_df, 'mass', 'balmer_dec', maheson_bin_pcts, law=law, color=compare_colors[3], marker='o', size=6, mec=compare_mec)
+        label_maheson = f'Blue Jay z~{median_z:0.2f}'
+        
+
+        all_mass = np.concatenate([runco_data_mass, battisti_masses, matharu_mass, maheson_mass])
+        all_decs = np.concatenate([runco_data_decs, battisti_decs, matharu_decs, maheson_decs])
+        all_avs = compute_balmer_av(all_decs, law=law)
+        neb_x_regress = np.arange(8, 12, 0.05)
+        regress_res, points_16, points_84 = bootstrap_fit(0, 0, 0, neb_x_regress, xvals=all_mass, yvals=all_avs)
+        # ax.plot(neb_x_regress, regress_res.intercept + regress_res.slope*neb_x_regress, color='#466343', ls='--')
+        ax.fill_between(neb_x_regress, points_16, points_84, facecolor='#82BD7A', alpha=0.3)
+        
+        # Assess offset amount
+        predicted_av_neb_from_compare = regress_res.intercept + regress_res.slope*np.array(median_xvals)
+        measured_avneb_megascience = np.array(median_yvals)
+        offsets = measured_avneb_megascience - predicted_av_neb_from_compare
+        median_offset = np.median(offsets)
+        print(f'Median offset between measured and predicted: {median_offset} mag')
+        
+        # gorup all plotted points
 
 
         # legend_mega = Line2D([0], [0], color=med_color, marker='o', ls='--')
-        label_med = 'MegaScience'
+        label_med = 'MegaScience z~1.8'
 
         # # Add SDSS galaxies
         # from read_sdss import read_and_filter_sdss
@@ -513,13 +556,58 @@ def plot_comparison_mybins(ax, df, massname, decname, bin_pcts, law, color, mark
     bins = [[binlist[i], binlist[i+1]] for i in range(len(binlist)-1)]
     mass, dec, _, dec_err, ngals = get_median_points(df, bins, massname, y_var_name=decname, n_boots=1000)
     legend_line = plot_comparison(ax, np.array(mass), np.array(dec), np.array(dec)-np.array(dec_err[0]), np.array(dec)+np.array(dec_err[1]), law=law, color=color, marker=marker, size=size, mec=mec)
-    return legend_line
+    return legend_line, mass, dec
+
+
+def bootstrap_fit(df, x_col, y_col, xpoints, exclude_limit=True, bootstrap=1000, xvals=[], yvals=[]):
+    if len(xvals) + len(yvals) == 0:
+        xvals = df[x_col].to_numpy()
+        yvals = df[y_col].to_numpy()
+    # yerr_low = df['err_' + y_col + '_low']
+    # yerr_high = df['err_' + y_col + '_high']
+    boot_slopes = []
+    boot_yints = []
+    idx_pool = np.arange(0, len(yvals), 1)
+    for boot in range(bootstrap):
+        selected_idxs = np.random.choice(idx_pool, len(yvals))
+        new_xs = xvals[selected_idxs]
+        new_ys = yvals[selected_idxs]
+        # new_ys = [draw_asymettric_error(yvals.iloc[i], yerr_low.iloc[i], yerr_high.iloc[i]) for i in range(len(yvals))]
+        regress_res = linregress(new_xs, new_ys)
+        boot_slopes.append(regress_res.slope)
+        boot_yints.append(regress_res.intercept)
+    all_points = [boot_yints[i] + boot_slopes[i]*xpoints for i in range(len(boot_slopes))]
+    def get_points(percentile):
+        percentile_points = []
+        for i in range(len(all_points[0])):
+            point_js = [all_points[j][i] for j in range(len(all_points))]
+            percentile_points.append(np.percentile(point_js, percentile))
+        return percentile_points
+    points_16 = get_points(16)
+    points_84 = get_points(84)
+    regress_res = linregress(xvals, yvals)
+  
+    return regress_res, points_16, points_84
+
+def draw_asymettric_error(center, low_err, high_err):
+    """Draws a point from two asymmetric normal distributions"""
+    x = random.uniform(0,1)
+    if x < 0.5:
+        draw = np.random.normal(loc=0, scale=low_err)
+        new_value = center - np.abs(draw)
+    else:
+        draw = np.random.normal(loc=0, scale=high_err)
+        new_value = center + np.abs(draw)
+    return new_value
 
 if __name__ == '__main__':
-    # The 4 final paper figures
+    # The 3 final paper figures
     neb_curve_diff()
     # two_panel(bin_type='galaxies')
     # plot_paper_dust_vs_prop(prop='axisratio_f150w',color_var='None', bin_type='galaxies')
+    
+    
+    
     # plot_paper_dust_vs_prop(prop='mass',color_var='None', bin_type='galaxies', compare=1)
 
 

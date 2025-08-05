@@ -81,6 +81,8 @@ def plot_paper_sample_select_sfms_mass(show_hexes=True, show_point_color=False, 
         ax_histy.hist(all_sfms_offsets[good_both_idx], bins=ybins, color='grey',  orientation='horizontal', density=True, alpha=0.6, zorder=10) 
         save_str2 = '_hexes'
 
+    complete_mass_check = 9
+    df_complete = [[],[]]
     for i in range(len(dfs)): 
         df = dfs[i]
 
@@ -89,7 +91,7 @@ def plot_paper_sample_select_sfms_mass(show_hexes=True, show_point_color=False, 
         # high_sfr_err = np.log10(df['sfr100_84']) - np.log10(df['sfr100_50'])
         df['sfms_offset_50'] = np.log10(df['sfr100_50']) - pop_sfms(df['mstar_50'], df['z_50'])
         sfms_offset_boots = []
-        for k in range(1000):
+        for k in range(100):
             x = random.uniform(0, 1)
             if x < 0.5:
                 scale = df['mstar_50'] - df['mstar_16']
@@ -136,6 +138,9 @@ def plot_paper_sample_select_sfms_mass(show_hexes=True, show_point_color=False, 
             #     norm = mpl.colors.Normalize(vmin=0, vmax=5) 
             #     rgba = cmap(norm(df['PaBeta_quality_factor'].iloc[j]))
             id_dr3 = df['id_dr3'].iloc[j]
+
+            
+
             if i == 0 and show_point_color:
                 if id_dr3 in chi2_cut_ids:
                     shape = 'x'
@@ -152,6 +157,12 @@ def plot_paper_sample_select_sfms_mass(show_hexes=True, show_point_color=False, 
             # ax.text(df['mstar_50'].iloc[j], df['z_50'].iloc[j], f'{id_dr3}')
         ax_histx.hist(df['mstar_50'], bins=xbins, color=color, density=True, alpha=hist_alphas[i])
         ax_histy.hist(np.log10(df['sfms_offset_50']), bins=ybins, color=color,  orientation='horizontal', density=True, alpha=hist_alphas[i])  
+    
+    mass_check = 9.5
+    n_possible = len(dfs[0][np.logical_and(np.logical_and(dfs[0]['mstar_50']>mass_check, dfs[0]['sfms_offset_50']< 0.5), dfs[0]['sfms_offset_50']> -0.5)])
+    n_sample = len(dfs[1][np.logical_and(np.logical_and(dfs[1]['mstar_50']>mass_check, dfs[1]['sfms_offset_50']< 0.5), dfs[1]['sfms_offset_50']> -0.5)])
+    frac_complete = n_sample/n_possible
+    breakpoint()
     ax.set_xlabel(stellar_mass_label, fontsize=14)
     ax.set_ylabel(f'Prospector offset from SFMS', fontsize=14)
     ax.tick_params(labelsize=14)

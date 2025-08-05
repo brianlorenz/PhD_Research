@@ -415,6 +415,7 @@ def make_av_comparison():
     plot_a_vs_b_paper('median_log_mass', 'AV_difference_with_limit', stellar_mass_label, av_difference_label, 'None', axis_obj=ax_avdiff_mass, yerr=True, fig=fig, use_color_df=True, lower_limit=180, plot_lims=[9, 11.5, -1, 3])
     # plot_a_vs_b_paper('computed_log_ssfr_with_limit', 'AV_difference_with_limit', ssfr_label, av_difference_label, 'None', axis_obj=ax_avdiff_mass, yerr=True, fig=fig, use_color_df=True, lower_limit=180, plot_lims=[-10, -7, -1, 3])
 
+    
     x_regress = np.arange(8, 12, 0.1)
     regress_res, points_16, points_84 = bootstrap_fit('median_log_mass', 'AV_difference_with_limit', x_regress, exclude_limit=True)
     add_r(ax_avdiff_mass, regress_res)
@@ -547,8 +548,6 @@ def bootstrap_fit(x_col, y_col, xpoints, exclude_limit=True, bootstrap=200):
         boot_slopes.append(regress_res.slope)
         boot_yints.append(regress_res.intercept)
     all_points = [boot_yints[i] + boot_slopes[i]*xpoints for i in range(len(boot_slopes))]
-    
-
     
     def get_points(percentile):
         percentile_points = []

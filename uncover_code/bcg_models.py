@@ -11,7 +11,6 @@ import pandas as pd
 def create_bcg_brightness_flag():
     bcg_df = read_bcg_surface_brightness()  #0.01 might be a reasonable flag to use? Definitely everything above 0.07 is bad
     supercat_df = read_supercat()
-    breakpoint()
     # Stopping here, no need to fully make a flag for it
 
 def find_bcg_surface_birghtness(id_DR3, segmap, bcg_model):
@@ -53,6 +52,7 @@ def read_bcg_model():
     with fits.open(image_str) as hdu:
         bcg_model = hdu[0].data
         bcg_wcs = WCS(hdu[0].header)
+
     return bcg_model, bcg_wcs
 
 
@@ -62,4 +62,4 @@ if __name__ == "__main__":
     # create_bcg_brightness_flag()
 
     bcg_df = read_bcg_surface_brightness() 
-    breakpoint()
+    # breakpoint()

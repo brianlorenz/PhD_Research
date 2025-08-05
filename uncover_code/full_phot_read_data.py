@@ -1,4 +1,5 @@
 from astropy.io import ascii
+from uncover_read_data import make_pd_table_from_fits
 
 def read_final_sample():
     sample_df = ascii.read(f'/Users/brianlorenz/uncover/Data/generated_tables/paper_data/final_sample.csv').to_pandas()
@@ -43,4 +44,9 @@ def read_canucs_compare():
     full_canucs = pd.concat([highz, lowz], axis=0)
     return full_canucs
 
-# read_canucs_compare()
+def read_bluejay_compare():
+    import pandas as pd
+    bluejay_df = make_pd_table_from_fits('/Users/brianlorenz/uncover/Catalogs/BlueJay/Lorenz_BD_catalogue_BlueJay.fits')
+    return bluejay_df
+
+read_bluejay_compare()
