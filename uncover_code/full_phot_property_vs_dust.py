@@ -388,12 +388,13 @@ def plot_paper_dust_vs_prop(prop='mass', color_var='snr', phot_df=[], axisratio_
 
         # maheson_df = pd.DataFrame(zip(maheson_all_masses, maheson_all_decs), columns=['mass', 'balmer_dec'])
         maheson_df = read_bluejay_compare()
-        maheson_df = maheson_df[maheson_df['redshift']<2.4]
-        median_z = np.median(maheson_df['redshift'])
+        # maheson_df = maheson_df[maheson_df['redshift']<2.4]
+        # median_z = np.median(maheson_df['redshift'])
         maheson_bin_pcts = [0, 33, 66, 100]
         legend_maheson, maheson_mass, maheson_decs = plot_comparison_mybins(ax, maheson_df, 'stellar_mass_50', 'BD_50', maheson_bin_pcts, law=law, color=compare_colors[3], marker='o', size=6, mec=compare_mec)
         # legend_maheson, maheson_mass, maheson_decs = plot_comparison_mybins(ax, maheson_df, 'mass', 'balmer_dec', maheson_bin_pcts, law=law, color=compare_colors[3], marker='o', size=6, mec=compare_mec)
-        label_maheson = f'Blue Jay z~{median_z:0.2f}'
+        # label_maheson = f'Blue Jay z~{median_z:0.2f}'
+        label_maheson = f'Blue Jay z~2.6'
         
 
         all_mass = np.concatenate([runco_data_mass, battisti_masses, matharu_mass, maheson_mass])

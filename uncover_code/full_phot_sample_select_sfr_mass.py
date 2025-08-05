@@ -136,7 +136,7 @@ def plot_paper_sample_select_sfr_mass(show_hexes=True, show_point_color=False, m
         df = dfs[i]
 
         # Compute errs
-        if i == 2:
+        if i == 0:
             df['zeros'] = np.zeros(len(df['sfr100_50'])) 
             low_sfr_err = df['zeros']
             high_sfr_err = df['zeros']
@@ -176,7 +176,6 @@ def plot_paper_sample_select_sfr_mass(show_hexes=True, show_point_color=False, m
                     color = 'blue'
                     if shape == 'x':
                         mec='blue'
-                    
 
             ax.errorbar(df['mstar_50'].iloc[j], np.log10(df['sfr100_50'].iloc[j]), yerr=np.array([[low_sfr_err.iloc[j], high_sfr_err.iloc[j]]]).T, marker=shape, mec=mec, ms=size, color=color, ls='None', ecolor=ecolor)
             # ax.text(df['mstar_50'].iloc[j], df['z_50'].iloc[j], f'{id_dr3}')
@@ -259,6 +258,6 @@ if __name__ == '__main__':
     # plot_paper_sample_select_sfr_mass(show_hexes=False, shapley=1)
     # plot_paper_sample_select_sfr_mass(show_hexes=False, shapley=2)
     # plot_paper_sample_select_sfr_mass(show_hexes=True)
-    plot_paper_sample_select_sfr_mass(show_hexes=True, mass_cut=7.5, shapley=2)
+    # plot_paper_sample_select_sfr_mass(show_hexes=True, mass_cut=7.5, shapley=2)
 
     plot_paper_sample_select_sfr_mass(show_hexes=True, mass_cut=7.5)
