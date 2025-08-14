@@ -1,4 +1,4 @@
-from full_phot_read_data import read_merged_lineflux_cat, read_final_sample, read_possible_sample, read_paper_df, read_phot_df
+from full_phot_read_data import read_merged_lineflux_cat, read_final_sample, read_possible_sample, read_paper_df, read_phot_df, read_ha_sample
 from full_phot_merge_lineflux import filter_bcg_flags
 import matplotlib.pyplot as plt
 from uncover_read_data import read_SPS_cat_all, read_bcg_surface_brightness, read_supercat, read_morphology_cat
@@ -18,14 +18,21 @@ import time
 from read_mosdef_data import get_shapley_sample, get_mosdef_compare_sample
 from read_data import linemeas_df
 import random
+from lifelines import KaplanMeierFitter
+from lifelines.utils import median_survival_times
+
 
 # Set the seed for reproducibility
 random.seed(5842750384) 
 
 
 
-def plot_paper_mass_match_neb_curve(color_var='snr', shapley=2):
+def plot_paper_mass_match_neb_curve(color_var='snr', shapley=2, monte_carlo=False):
     shaded = 0
+    n_boots = 1000
+    if monte_carlo:
+        n_boots = 1
+        n_monte = 1000
     
     sample_df = read_final_sample()
     sample_df['log_sfr100_50'] = np.log10(sample_df['sfr100_50'])
@@ -98,8 +105,39 @@ def plot_paper_mass_match_neb_curve(color_var='snr', shapley=2):
     
     
     
-   
-    median_masses, median_pab_ha_ratios, err_median_masses, err_median_pab_ha_ratios, n_gals_per_bin = get_median_points(sample_df, median_bins, var_name)
+    breakpoint()
+    median_masses, median_pab_ha_ratios, err_median_masses, err_median_pab_ha_ratios, n_gals_per_bin = get_median_points(sample_df, median_bins, var_name, n_boots=n_boots, kap_meier_median=2, monte_carlo_km=2)
+    # Monte carlo sim for errors
+    if monte_carlo:
+        median_pab_ha_ratios_montes = []
+        for i in range(n_monte):
+            montepab1 = time.time()
+            sample_df_monte = sample_df.copy(deep=True)
+            for j in range(len(sample_df)):
+                x = random.uniform(0, 1)
+                if x < 0.5:
+                    scale = sample_df_monte['mstar_50'].iloc[j] - sample_df_monte['mstar_16'].iloc[j]
+                    sample_df_monte.loc[j, 'mstar_50'] = sample_df_monte['mstar_50'].iloc[j] - np.abs(np.random.normal(loc = 0, scale=scale))
+                if x > 0.5:
+                    scale = sample_df_monte['mstar_84'].iloc[j] - sample_df_monte['mstar_50'].iloc[j]
+                    sample_df_monte.loc[j, 'mstar_50'] = sample_df_monte['mstar_50'].iloc[j] + np.abs(np.random.normal(loc = 0, scale=scale))
+                x = random.uniform(0, 1)
+                if x < 0.5:
+                    scale = sample_df_monte['err_lineratio_pab_ha_low'].iloc[j]
+                    sample_df_monte.loc[j, 'lineratio_pab_ha'] = sample_df_monte['lineratio_pab_ha'].iloc[j] - np.abs(np.random.normal(loc = 0, scale=scale))
+                if x > 0.5:
+                    scale = sample_df_monte['err_lineratio_pab_ha_high'].iloc[j]
+                    sample_df_monte.loc[j, 'lineratio_pab_ha']  = sample_df_monte['lineratio_pab_ha'].iloc[j] + np.abs(np.random.normal(loc = 0, scale=scale))
+    
+            median_masses_monte, median_pab_ha_ratios_monte, _, _, n_gals_per_bin_monte = get_median_points(sample_df_monte, median_bins, var_name, n_boots=n_boots)
+            median_pab_ha_ratios_montes.append(median_pab_ha_ratios_monte)
+            montepab2 = time.time()
+            if i == 2:
+                print(f'PaB loop in {montepab2-montepab1}')
+        monte_pab_ha_16, monte_pab_ha_50, monte_pab_ha_84 = np.percentile(median_pab_ha_ratios_montes, [16, 50, 84], axis=0)
+        monte_err_pab_ha_low = monte_pab_ha_50 - monte_pab_ha_16
+        monte_err_pab_ha_high = monte_pab_ha_84 - monte_pab_ha_50
+        err_median_pab_ha_ratios = np.vstack([monte_err_pab_ha_low, monte_err_pab_ha_high])
     # Plot shaded region for lowmass bin
     add_str4=''
     if shaded:
@@ -139,6 +177,35 @@ def plot_paper_mass_match_neb_curve(color_var='snr', shapley=2):
         mosdef_data_decs = median_balmer_ratios
         mosdef_err_low = err_median_balmer_ratios[0]
         mosdef_err_high = err_median_balmer_ratios[1]
+        if monte_carlo:
+            median_balmer_dec_montes = []
+            for i in range(n_monte):
+                montebalmer1 = time.time()
+                result_df_monte = result_df.copy(deep=True)
+                result_df_monte = result_df_monte.reset_index()
+                for j in range(len(result_df)):
+                    x = random.uniform(0, 1)
+                    if x < 0.5:
+                        scale = result_df_monte['LMASS'].iloc[j] - result_df_monte['L68_LMASS'].iloc[j]
+                        # result_df_monte.loc[j, 'LMASS'] = result_df_monte['LMASS'].iloc[j] - np.abs(np.random.normal(loc = 0, scale=scale))
+                        result_df_monte.loc[j, 'LMASS'] = float(np.float32(result_df_monte['LMASS'].iloc[j] - np.abs(np.random.normal(loc=0, scale=scale))))
+
+                    if x > 0.5:
+                        scale = result_df_monte['U68_LMASS'].iloc[j] - result_df_monte['LMASS'].iloc[j]
+                        # result_df_monte.loc[j, 'LMASS'] = result_df_monte['LMASS'].iloc[j] + np.abs(np.random.normal(loc = 0, scale=scale))
+                        result_df_monte.loc[j, 'LMASS'] = float(np.float32(result_df_monte['LMASS'].iloc[j] + np.abs(np.random.normal(loc=0, scale=scale))))
+
+                result_df_monte['HA6565_FLUX']  = np.random.normal(loc = result_df_monte['HA6565_FLUX'], scale=result_df_monte['HA6565_FLUX_ERR'])
+                result_df_monte['HB4863_FLUX']  = np.random.normal(loc = result_df_monte['HB4863_FLUX'], scale=result_df_monte['HB4863_FLUX_ERR'])
+                result_df_monte['balmer_dec'] = result_df_monte['HA6565_FLUX'] / result_df_monte['HB4863_FLUX']
+                median_masses_mosdef_monte, median_balmer_dec_monte, _, _, n_gals_per_bin_mosdef_monte = get_median_points(result_df_monte, median_bins, 'LMASS', y_var_name='balmer_dec', n_boots=n_boots)
+                median_balmer_dec_montes.append(median_balmer_dec_monte)
+                    
+                
+            monte_balmer_dec_16, monte_balmer_dec_50, monte_balmer_dec_84 = np.percentile(median_balmer_dec_montes, [16, 50, 84], axis=0)
+            mosdef_err_low = monte_balmer_dec_50 - monte_balmer_dec_16
+            mosdef_err_high = monte_balmer_dec_84 - monte_balmer_dec_50
+
         # mosdef_err_low = mosdef_data_decs - mosdef_data_decs_low
         # mosdef_err_high = mosdef_data_decs_high - mosdef_data_decs
 
@@ -177,7 +244,7 @@ def plot_paper_mass_match_neb_curve(color_var='snr', shapley=2):
     legend_line_reddy = add_attenuation_curveby_av(av_values, 'reddy', 'black', '--')
     # legend_line_calzetti = add_attenuation_curveby_av(av_values, 'calzetti', 'red')
     legend_line_cardelli = add_attenuation_curveby_av(av_values, 'cardelli', 'black', '-.')
-    legend_line_cardelli = add_attenuation_curveby_av(av_values, 'calzetti', 'black', 'dotted')
+    # legend_line_cardelli = add_attenuation_curveby_av(av_values, 'calzetti', 'black', 'dotted')
     ax.text(4.46, 0.19, 'Reddy+25', fontsize=10, rotation=42)
     ax.text(4.4, 0.105, 'Cardelli+89', fontsize=10, rotation=16)
 
@@ -226,12 +293,15 @@ def plot_paper_mass_match_neb_curve(color_var='snr', shapley=2):
     ax.minorticks_off()
 
     
-    breakpoint()
     fig.savefig(f'/Users/brianlorenz/uncover/Figures/PHOT_paper/neb_curve/neb_curve{save_str}{save_str2}{save_str3}{color_var}{add_str4}.pdf', bbox_inches='tight')
     plt.close('all')
 
 
-def get_median_points(sample_df, median_bins, x_var_name, y_var_name='lineratio_pab_ha', n_boots=10000):
+def get_median_points(sample_df, median_bins, x_var_name, y_var_name='lineratio_pab_ha', n_boots=1000, kap_meier_median=0, monte_carlo_km=0):
+    """ Set monte_carlo_km to 2 for bootstrapping"""
+    # if kap_meier_median == True:
+    #     n_boots = 1000
+    
     median_idxs = [np.logical_and(sample_df[x_var_name] > median_bins[k][0], sample_df[x_var_name] < median_bins[k][1]) for k in range(len(median_bins))]
     median_xvals = [np.median(sample_df[median_idxs[k]][x_var_name]) for k in range(len(median_bins))]
     median_yvals = [np.median(sample_df[median_idxs[k]][y_var_name]) for k in range(len(median_bins))]
@@ -262,9 +332,136 @@ def get_median_points(sample_df, median_bins, x_var_name, y_var_name='lineratio_
         median_xerr_high[k] = np.percentile(mass_boots, 84) - median_xvals[k]
         median_yerr_low[k] = median_yvals[k] - np.percentile(line_boots, 16)
         median_yerr_high[k] = np.percentile(line_boots, 84) - median_yvals[k]
+        # if k == 4:
+        #     fig2, ax2 = plt.subplots(figsize=(6,6))
+        #     ax2.hist(line_boots, bins=np.arange(0.08, 0.22, 0.01))
+        #     plt.show()
     median_xerr_plot = np.vstack([median_xerr_low, median_xerr_high])
     median_yerr_plot = np.vstack([median_yerr_low, median_yerr_high])
     n_gals_per_bin = [len(sample_df[median_idxs[k]]) for k in range(len(median_bins))]
+
+    if kap_meier_median > 0:
+        ha_det_sample_df = read_ha_sample()
+        # ha_det_sample_df[f'lineratio_pab_ha_{kap_meier_median}sig_upper'] = 0
+        p16s = []
+        medians = []
+        p84s = []
+        km_16s = []
+        km_50s = []
+        km_84s = []
+        fig, axarr = plt.subplots(2, 3, figsize=(18, 12))
+        axarr_simple = [axarr[0, 0], axarr[0, 1], axarr[0, 2], axarr[1, 0], axarr[1, 1]]
+        axarr[1, 2].set_axis_off()
+        for i in range(len(median_bins)):
+            ax = axarr_simple[i]
+            median_bin = median_bins[i]
+            median_idxs = np.logical_and(ha_det_sample_df[x_var_name] > median_bin[0], ha_det_sample_df[x_var_name] < median_bin[1])
+            subsample_df = ha_det_sample_df[median_idxs]
+            subsample_df = subsample_df.reset_index()
+            mask = subsample_df['PaBeta_snr'] <= 5
+            subsample_df.loc[mask, 'pab_ratios'] = subsample_df.loc[mask, f'lineratio_pab_ha_{kap_meier_median}sig_upper']
+            subsample_df.loc[~mask, 'pab_ratios'] = subsample_df.loc[~mask, 'lineratio_pab_ha']
+            pab_ratios = -1*subsample_df['pab_ratios']
+            limits = (subsample_df['PaBeta_snr']>5).to_numpy()*1
+            lower_bounds = pab_ratios.copy(deep=True)
+            upper_bounds = -1*(1/18)*np.ones(len(pab_ratios)) # theoretical limit
+            upper_bounds = pd.Series(upper_bounds)
+            upper_bounds.loc[~mask] = np.array(lower_bounds[~mask])
+            # Where upper_bounds < lower_bounds, we need to set the upper bound to lower bound+ 2sigma
+            upper_bounds.loc[upper_bounds<lower_bounds] = -np.array(subsample_df[upper_bounds<lower_bounds]['lineratio_pab_ha'])
+            
+            # For the data that were actually observed, we want the upper bound to be the same as the lower bound
+            # breakpoint()
+            km_data = {
+                'T': pab_ratios,
+                'E': limits, # 0 for censored, 1 for event
+                'U_Bound': upper_bounds
+            }
+            km_df = pd.DataFrame(km_data)
+            kmf = KaplanMeierFitter(alpha=0.32)
+            kmf.fit(durations=km_df['T'], event_observed=km_df['E']) 
+            # kmf.fit_interval_censoring(lower_bound=lower_bounds,  upper_bound=upper_bounds+0.00001) 
+            
+            median = kmf.median_survival_time_ 
+            p16 = median_survival_times(kmf.confidence_interval_)['KM_estimate_lower_0.68'].iloc[0]
+            p84 = median_survival_times(kmf.confidence_interval_)['KM_estimate_upper_0.68'].iloc[0]
+
+            medians.append(-median)
+            p84s.append(-p16)
+            kmf.plot_survival_function(ax=ax)
+            
+            ax.set_ylabel('Upper Limit Fraction', fontsize=14)
+            ax.set_xlabel('(-PaB/Ha)', fontsize=14)
+            ax.set_xlim(-0.5, 0)
+            ax.set_ylim(0, 1)
+            ax.set_title(f'{median_bin[0]:0.2f} < log(M) < {median_bin[1]:0.2f}, {kap_meier_median}sig upper limit')
+            ax.tick_params(labelsize=14)
+            ax.get_legend().remove()
+            ax.axhline(0.5, ls='--', color='red')
+
+            if monte_carlo_km > 0:
+                km_monte_medians = []
+                for km in range(100):
+                    print(f'km monte carlo {km}')
+                    subsample_df = ha_det_sample_df[median_idxs].copy(deep=True)
+                    subsample_df = subsample_df.reset_index()
+                    if monte_carlo_km == 1:
+                        # vary the points by their errors
+                        for j in range(len(subsample_df)):
+                            x = random.uniform(0, 1)
+                            if x < 0.5:
+                                scale = subsample_df['err_lineratio_pab_ha_low'].iloc[j]
+                                subsample_df.loc[j, 'lineratio_pab_ha'] = subsample_df['lineratio_pab_ha'].iloc[j] - np.abs(np.random.normal(loc = 0, scale=scale))
+                            if x > 0.5:
+                                scale = subsample_df['err_lineratio_pab_ha_high'].iloc[j]
+                                subsample_df.loc[j, 'lineratio_pab_ha'] = subsample_df['lineratio_pab_ha'].iloc[j] + np.abs(np.random.normal(loc = 0, scale=scale))
+                            x = random.uniform(0, 1)
+                            if x < 0.5:
+                                scale = subsample_df['err_Halpha_flux_low'].iloc[j]
+                                subsample_df.loc[j, 'Halpha_flux'] = subsample_df['Halpha_flux'].iloc[j] - np.abs(np.random.normal(loc = 0, scale=scale))
+                            if x > 0.5:
+                                scale = subsample_df['err_Halpha_flux_high'].iloc[j]
+                                subsample_df.loc[j, 'Halpha_flux'] = subsample_df['Halpha_flux'].iloc[j] + np.abs(np.random.normal(loc = 0, scale=scale))
+                        subsample_df[f'lineratio_pab_ha_{kap_meier_median}sig_upper'] = subsample_df[f'PaBeta_flux_{kap_meier_median}sig_upper'] / subsample_df['Halpha_flux'] 
+                    if monte_carlo_km == 2:  
+                        subsample_df = subsample_df.sample(n=len(subsample_df), replace=True)
+                    mask = subsample_df['PaBeta_snr'] <= 5
+                    subsample_df.loc[mask, 'pab_ratios'] = subsample_df.loc[mask, f'lineratio_pab_ha_{kap_meier_median}sig_upper']
+                    subsample_df.loc[~mask, 'pab_ratios'] = subsample_df.loc[~mask, 'lineratio_pab_ha']
+                    pab_ratios = -1*subsample_df['pab_ratios']
+                    limits = (subsample_df['PaBeta_snr']>5).to_numpy()*1
+                    km_data = {
+                        'T': pab_ratios,
+                        'E': limits  # 0 for censored, 1 for event
+                    }
+                    km_df = pd.DataFrame(km_data)
+                    kmf = KaplanMeierFitter()
+                    kmf.fit(durations=km_df['T'], event_observed=km_df['E'])  
+                    median = kmf.median_survival_time_ 
+                    km_monte_medians.append(-median)
+                km_monte_medians = np.array(km_monte_medians)
+                km_16, km_50, km_84 = np.percentile(km_monte_medians, [16, 50, 84])
+                km_16s.append(km_16)
+                km_50s.append(km_50)
+                km_84s.append(km_84)
+                # if i == 4:
+                #     fig2, ax2 = plt.subplots(figsize=(6,6))
+                #     ax2.hist(line_boots, bins=np.arange(0.08, 0.22, 0.01))
+                #     plt.show()
+        plt.tight_layout()    
+        fig.savefig(f'/Users/brianlorenz/uncover/Figures/PHOT_paper/dust_vs_prop/multiple/km_values_{kap_meier_median}sig.pdf', bbox_inches='tight')
+        median_yvals = np.array(medians)
+        if monte_carlo_km > 0:
+            median_err_lows = median_yvals - np.array(km_16s)
+            median_err_highs = np.array(km_84s) - median_yvals
+            median_yerr_plot = np.vstack([median_err_lows, median_err_highs])
+        
+        else:
+
+            median_err_lows = median_yvals - np.array(p16s)
+            median_err_highs = np.array(p84s) - median_yvals
+            median_yerr_plot = np.vstack([median_err_lows, median_err_highs])
+            median_yerr_plot = np.nan_to_num(median_yerr_plot, posinf=99, neginf=-99)
 
     return median_xvals, median_yvals, median_xerr_plot, median_yerr_plot, n_gals_per_bin
 
@@ -327,8 +524,7 @@ def add_err_cols(sample_df, var_name):
     sample_df[f'err_{var_name}_high'] = sample_df[var_name[:-2]+'84'] - sample_df[f'{var_name}']
     return sample_df
 
-if __name__ == '__main__':
-    
-    plot_paper_mass_match_neb_curve(color_var='mass', shapley=2) # Shapley = 2 for the paper fig
-
+if __name__ == '__main__': 
+    plot_paper_mass_match_neb_curve(color_var='mass', shapley=2, monte_carlo=False) # Shapley = 2 for the paper fig
+    # Need to verify that this is working correctly, and need to apply KM medians to the MOSDEF to make everything match I think
     

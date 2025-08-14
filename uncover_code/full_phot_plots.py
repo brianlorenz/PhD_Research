@@ -87,7 +87,8 @@ def plot_mass_vs_dust(snr_dict, copy_sample=False, color_var='snr', use_ew=False
     lineflux_ha_pab['err_lineratio_pab_ha_low'] = err_ratio_lows
     lineflux_ha_pab['err_lineratio_pab_ha_high'] = err_ratio_highs
 
-    # Saveing for later access
+    # lineflux_ha_pab.to_csv('/Users/brianlorenz/uncover/Data/generated_tables/paper_data/ha_snr_sample.csv', index=False)
+    # Saving for later access
     lineflux_ha_pab.to_csv('/Users/brianlorenz/uncover/Data/generated_tables/paper_data/final_sample.csv', index=False)
     full_possible_sample.to_csv('/Users/brianlorenz/uncover/Data/generated_tables/paper_data/possible_sample.csv', index=False)
     sys.exit()

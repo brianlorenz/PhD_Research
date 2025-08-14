@@ -5,6 +5,18 @@ def read_final_sample():
     sample_df = ascii.read(f'/Users/brianlorenz/uncover/Data/generated_tables/paper_data/final_sample.csv').to_pandas()
     return sample_df
 
+
+def read_ha_sample():
+    sample_df = ascii.read(f'/Users/brianlorenz/uncover/Data/generated_tables/paper_data/ha_snr_sample.csv').to_pandas()
+    sample_df['PaBeta_flux_3sig_upper'] = sample_df['PaBeta_flux'] + 3 * sample_df['err_PaBeta_flux_high']
+    sample_df['lineratio_pab_ha_3sig_upper'] = sample_df['PaBeta_flux_3sig_upper'] / sample_df['Halpha_flux'] 
+    sample_df['PaBeta_flux_2sig_upper'] = sample_df['PaBeta_flux'] + 2 * sample_df['err_PaBeta_flux_high']
+    sample_df['lineratio_pab_ha_2sig_upper'] = sample_df['PaBeta_flux_2sig_upper'] / sample_df['Halpha_flux'] 
+    sample_df['PaBeta_flux_1sig_upper'] = sample_df['PaBeta_flux'] + sample_df['err_PaBeta_flux_high']
+    sample_df['lineratio_pab_ha_1sig_upper'] = sample_df['PaBeta_flux_1sig_upper'] / sample_df['Halpha_flux'] 
+    
+    return sample_df
+
 def read_possible_sample():
     sample_df = ascii.read(f'/Users/brianlorenz/uncover/Data/generated_tables/paper_data/possible_sample.csv').to_pandas()
     return sample_df

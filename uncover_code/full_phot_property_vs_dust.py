@@ -1,4 +1,4 @@
-from full_phot_read_data import read_merged_lineflux_cat, read_final_sample, read_possible_sample, read_paper_df, read_phot_df
+from full_phot_read_data import read_merged_lineflux_cat, read_final_sample, read_ha_sample, read_possible_sample, read_paper_df, read_phot_df
 from full_phot_merge_lineflux import filter_bcg_flags
 import matplotlib.pyplot as plt
 from uncover_read_data import read_SPS_cat_all, read_bcg_surface_brightness, read_supercat, read_morphology_cat
@@ -18,13 +18,30 @@ from full_phot_digitized_vals import *
 from full_phot_read_data import  read_canucs_compare, read_bluejay_compare
 import time
 from scipy.stats import linregress
+from lifelines import KaplanMeierFitter
+
 
 random.seed(80148273) 
 
 
-def plot_paper_dust_vs_prop(prop='mass', color_var='snr', phot_df=[], axisratio_vs_prospector = 0, ax_in='None', bin_type='dex', compare=0, plot_av=0, hide_twin=0):
-
-    sample_df = read_final_sample()
+def plot_paper_dust_vs_prop(prop='mass', color_var='snr', phot_df=[], axisratio_vs_prospector = 0, ax_in='None', bin_type='dex', compare=0, plot_av=0, hide_twin=0, sample='full', kap_meier_median=0, monte_carlo_km=0):
+    if sample == 'full':
+        sample_df = read_final_sample()
+        final_sample = sample_df
+        median_color = '#4c4c4c'
+        median_shade_color = '#82BD7A'
+        median_alpha = 1
+        # med_color = 'cornflowerblue'
+        med_color = '#ff7f00'
+        add_regress = 0
+    if sample == 'limit':
+        sample_df = read_ha_sample()
+        final_sample = read_final_sample()
+        median_color = '#4c4c4c'
+        median_shade_color = 'red'
+        median_alpha = 1
+        med_color = '#ff7f00'
+        add_regress = 0
     sample_df['log_sfr100_50'] = np.log10(sample_df['sfr100_50'])
     sample_df['log_sfr100_16'] = np.log10(sample_df['sfr100_16'])
     sample_df['log_sfr100_84'] = np.log10(sample_df['sfr100_84'])
@@ -97,6 +114,7 @@ def plot_paper_dust_vs_prop(prop='mass', color_var='snr', phot_df=[], axisratio_
     sample_df['min_snr'] = snrs
     
     for j in range(len(sample_df)):
+        print(f'Plotting point {j}')
         id_dr3 = sample_df['id_dr3'].iloc[j]
 
         av_err_plot = np.array([[err_av_low_plot.iloc[j], err_av_high_plot.iloc[j]]]).T
@@ -134,9 +152,8 @@ def plot_paper_dust_vs_prop(prop='mass', color_var='snr', phot_df=[], axisratio_
                 median_bins = [[7,8], [8,9], [9,10], [10,11]]
 
             if bin_type == 'galaxies':
-                mass_20, mass_40, mass_60, mass_80 = np.percentile(sample_df['mstar_50'], [20, 40, 60, 80])
+                mass_20, mass_40, mass_60, mass_80 = np.percentile(final_sample['mstar_50'], [20, 40, 60, 80])
                 median_bins = [[7,mass_20], [mass_20,mass_40], [mass_40,mass_60], [mass_60,mass_80], [mass_80,11]]
-
         
         elif prop == 'sfr':
             var_name = 'log_sfr100_50'
@@ -224,14 +241,20 @@ def plot_paper_dust_vs_prop(prop='mass', color_var='snr', phot_df=[], axisratio_
             # sfr_20, sfr_40, sfr_60, sfr_80 = np.percentile(sample_df['log_sfr100_50'], [20, 40, 60, 80])
             # if sample_df['log_sfr100_50'].iloc[j] > sfr_80:
             #     rgba='magenta'
-
-            ax.errorbar(x_plot, y_plot, xerr=x_err, yerr=y_err, marker=shape, mec=mec, ms=5, color=rgba, ls='None', ecolor=ecolor)
+            alpha = 1
+            if sample_df['PaBeta_snr'].iloc[j] < 5: 
+                shape = 'v'
+                rgba = 'magenta'
+                alpha = 0.5
+                y_plot = sample_df[f'lineratio_pab_ha_{kap_meier_median}sig_upper'].iloc[j]
+            ax.errorbar(x_plot, y_plot, xerr=x_err, yerr=y_err, marker=shape, mec=mec, ms=5, color=rgba, ls='None', ecolor=ecolor, alpha=alpha)
             
             
             # ax.text(x_plot, y_plot, f'{id_dr3}', fontsize=6)
 
     # Add regression line if 
-    if plot_av == 0:
+    if plot_av == 0 and add_regress == 1:
+        print(f'Fitting regression...')
         sample_df['log_lineratio_pab_ha'] = np.log10(sample_df['lineratio_pab_ha'])
         sample_df['err_log_lineratio_pab_ha_low'] = np.log10(sample_df['lineratio_pab_ha']) - np.log10(sample_df['lineratio_pab_ha'] - sample_df['err_lineratio_pab_ha_low']) 
         sample_df['err_log_lineratio_pab_ha_high'] = np.log10(sample_df['lineratio_pab_ha'] + sample_df['err_lineratio_pab_ha_low']) - np.log10(sample_df['lineratio_pab_ha']) 
@@ -239,16 +262,27 @@ def plot_paper_dust_vs_prop(prop='mass', color_var='snr', phot_df=[], axisratio_
         regress_res, points_16, points_84 = bootstrap_fit(sample_df_nonan, var_name, 'log_lineratio_pab_ha', x_regress)
         points_16 = [10**point for point in points_16]
         points_84 = [10**point for point in points_84]
-        ax.plot(x_regress, 10**(regress_res.intercept + regress_res.slope*x_regress), color='#4c4c4c', ls='--')
-        ax.fill_between(x_regress, points_16, points_84, facecolor='#82BD7A', alpha=0.4)
+        ax.plot(x_regress, 10**(regress_res.intercept + regress_res.slope*x_regress), color=median_color, ls='--')
+        ax.fill_between(x_regress, points_16, points_84, facecolor=median_shade_color, alpha=0.4)
+
+        # def av_mass_relation(log_M, scatter = 0.35):
+        #     A_V = 1.55 * log_M - 14.10 
+        #     # A_V_scattered = np.random.normal(loc=A_V, scale=scatter)
+        #     A_V_scattered = A_V
+        #     return A_V_scattered
+        # masses = np.arange(9, 11, 0.1)
+        # avs = av_mass_relation(masses)
+        # ratios = compute_ratio_from_av(avs, law='reddy')
+        # ax.plot(masses, ratios, ls='-', color='red', zorder=100, lw=3)
 
     # Add medians if there are bins
-    n_boots=1000
+    n_boots=100
     if len(median_bins) > 0:
+        print(f'Finding medians...')
         if axisratio_vs_prospector != 0:
             median_xvals, median_yvals, median_xerr, median_yerr, ngals = get_median_points(sample_df, median_bins, var_name, y_var_name=y_var_name, n_boots=n_boots)
         else:
-            median_xvals, median_yvals, median_xerr, median_yerr, ngals = get_median_points(sample_df, median_bins, var_name,  n_boots=n_boots)
+            median_xvals, median_yvals, median_xerr, median_yerr, ngals = get_median_points(sample_df, median_bins, var_name,  n_boots=n_boots, kap_meier_median=kap_meier_median, monte_carlo_km=monte_carlo_km)
         if plot_av:
             yerrs_low = [compute_ha_pab_av(median_yvals[k] - median_yerr[0][k], law=law) for k in range(len(median_yvals))]
             yerrs_high = [compute_ha_pab_av(median_yvals[k] + median_yerr[1][k], law=law) for k in range(len(median_yvals))]
@@ -256,9 +290,7 @@ def plot_paper_dust_vs_prop(prop='mass', color_var='snr', phot_df=[], axisratio_
             yerrs_low = np.array([median_yvals[i] - yerrs_low[i] for i in range(len(median_yvals))])
             yerrs_high = np.array([yerrs_high[i] - median_yvals[i] for i in range(len(median_yvals))])
             median_yerr = np.vstack([yerrs_low, yerrs_high])
-        med_color = 'cornflowerblue'
-        med_color = '#ff7f00'
-        med_legend = ax.errorbar(median_xvals, median_yvals, xerr=median_xerr, yerr=median_yerr, marker='s', ms=9, color=med_color, ls='None', zorder=50, mec='black', ecolor=med_color, capsize=3)
+        med_legend = ax.errorbar(median_xvals, median_yvals, xerr=median_xerr, yerr=median_yerr, marker='s', ms=9, color=med_color, ls='None', zorder=50, mec='black', ecolor=med_color, capsize=3, alpha=median_alpha)
         # for median_tuple in median_bins:
         #     ax.axvline(x=median_tuple[0], ymin=0, ymax=0.09, color='gray', linestyle='--')
         #     ax.axvline(x=median_tuple[1], ymin=0, ymax=0.09, color='gray', linestyle='--')
@@ -352,6 +384,7 @@ def plot_paper_dust_vs_prop(prop='mass', color_var='snr', phot_df=[], axisratio_
         # ax.minorticks_off()
 
     if prop == 'mass' and compare>0:
+        print(f'Adding comparison samples...')
         shapley = 0
         # compare_colors = ['cornflowerblue', 'limegreen', 'yellow', 'red']
         # compare_colors = ['#BCDAB8', '#79AC72', '#4B7346', '#273B24']
@@ -377,14 +410,17 @@ def plot_paper_dust_vs_prop(prop='mass', color_var='snr', phot_df=[], axisratio_
 
         legend_runco = plot_comparison(ax, runco_data_mass, runco_data_decs, runco_data_low_errs, runco_data_high_errs, law=law, color=compare_colors[2], marker='*', size=10, mec=compare_mec)
         label_runco = 'MOSDEF z~2.3'
+        # label_runco = 'MOSDEF H$\\alpha$/H$\\beta$'
 
         matharu_df = read_canucs_compare()
         matharu_bin_pcts = [0, 33, 66, 100]
         legend_matharu_med, matharu_mass, matharu_decs = plot_comparison_mybins(ax, matharu_df, 'mass', 'BD', matharu_bin_pcts, law=law, color=compare_colors[1], marker='^', size=6, mec=compare_mec)
         label_matharu_med = 'CANUCS z~1.7'
+        # label_matharu_med = 'CANUCS H$\\alpha$/H$\\beta$'
 
         legend_battisti = plot_comparison(ax, battisti_masses, battisti_decs, battisti_lows, battisti_highs, law=law, color=compare_colors[0], marker='d', size=6, mec=compare_mec)
         label_battisti = 'WISP+3D-HST z~1.3'
+        # label_battisti = 'WISP+3D-HST H$\\alpha$/H$\\beta$'
 
         # maheson_df = pd.DataFrame(zip(maheson_all_masses, maheson_all_decs), columns=['mass', 'balmer_dec'])
         maheson_df = read_bluejay_compare()
@@ -395,6 +431,7 @@ def plot_paper_dust_vs_prop(prop='mass', color_var='snr', phot_df=[], axisratio_
         # legend_maheson, maheson_mass, maheson_decs = plot_comparison_mybins(ax, maheson_df, 'mass', 'balmer_dec', maheson_bin_pcts, law=law, color=compare_colors[3], marker='o', size=6, mec=compare_mec)
         # label_maheson = f'Blue Jay z~{median_z:0.2f}'
         label_maheson = f'Blue Jay z~2.6'
+        # label_maheson = 'Blue Jay H$\\alpha$/H$\\beta$'
         
 
         all_mass = np.concatenate([runco_data_mass, battisti_masses, matharu_mass, maheson_mass])
@@ -410,6 +447,7 @@ def plot_paper_dust_vs_prop(prop='mass', color_var='snr', phot_df=[], axisratio_
         measured_avneb_megascience = np.array(median_yvals)
         offsets = measured_avneb_megascience - predicted_av_neb_from_compare
         median_offset = np.median(offsets)
+        breakpoint()
         print(f'Median offset between measured and predicted: {median_offset} mag')
         
         # gorup all plotted points
@@ -417,6 +455,7 @@ def plot_paper_dust_vs_prop(prop='mass', color_var='snr', phot_df=[], axisratio_
 
         # legend_mega = Line2D([0], [0], color=med_color, marker='o', ls='--')
         label_med = 'MegaScience z~1.8'
+        # label_med = 'MegaScience Pa$\\beta$/H$\\alpha$'
 
         # # Add SDSS galaxies
         # from read_sdss import read_and_filter_sdss
@@ -519,15 +558,24 @@ def add_err_cols(sample_df, var_name):
     return sample_df
 
 
-def two_panel(bin_type='dex'):
+def two_panel(bin_type='dex', kap_meier_median=0, monte_carlo_km=0):
     fig = plt.figure(figsize=(12, 6))
     ax_mass = fig.add_axes([0.09, 0.08, 0.35, 0.70])
     ax_sfr = fig.add_axes([0.47, 0.08, 0.35, 0.70])
-    plot_paper_dust_vs_prop(prop='mass',color_var='None',ax_in=ax_mass, bin_type=bin_type, hide_twin=1)
+    if kap_meier_median == 0:
+        plot_paper_dust_vs_prop(prop='mass',color_var='None',ax_in=ax_mass, bin_type=bin_type, hide_twin=1, sample='full')
+        km_str = ''
+    if kap_meier_median > 0:
+        plot_paper_dust_vs_prop(prop='mass',color_var='None',ax_in=ax_mass, bin_type=bin_type, hide_twin=1, sample='limit', kap_meier_median=kap_meier_median, monte_carlo_km = monte_carlo_km)
+        km_str = f'_{kap_meier_median}sigKM'
+    if monte_carlo_km == 1:
+        km_str = f'_{kap_meier_median}sigKM_montecarlo'
+    if monte_carlo_km == 2:
+        km_str = f'_{kap_meier_median}sigKM_bootstrap'
     plot_paper_dust_vs_prop(prop='sfr',color_var='None',ax_in=ax_sfr, bin_type=bin_type, hide_twin=1)
     ax_sfr.tick_params(axis='y', labelleft=False)   
     ax_sfr.set_ylabel('')   
-    fig.savefig(f'/Users/brianlorenz/uncover/Figures/PHOT_paper/dust_vs_prop/multiple/dust_vs_mass_sfr_twopanel_{bin_type}.pdf', bbox_inches='tight')
+    fig.savefig(f'/Users/brianlorenz/uncover/Figures/PHOT_paper/dust_vs_prop/multiple/dust_vs_mass_sfr_twopanel_{bin_type}{km_str}.pdf', bbox_inches='tight')
 
 def neb_curve_diff(bin_type='galaxies'):
     fig = plt.figure(figsize=(12, 6))
@@ -542,7 +590,7 @@ def neb_curve_diff(bin_type='galaxies'):
     ax_cardelli.set_title('Cardelli+89', fontsize=16)
     ax_cardelli.set_ylabel(f'Inferred {avneb_str}', labelpad=2)   
     for ax in [ax_reddy, ax_cardelli]:
-        ax.set_ylim(-0.6, 3.2)
+        ax.set_ylim(-0.6, 4.0)
         ax.set_xlim(8.1, 11)
         # ax.axhline(0, color='gray', alpha=0.3)
         # ax.axhline(1, color='gray', alpha=0.3)
@@ -550,7 +598,7 @@ def neb_curve_diff(bin_type='galaxies'):
         # ax.axhline(3, color='gray', alpha=0.3)
         ax.hlines([0,1,2,3], 7, 12, color='darkgray', zorder=1, lw=0.7)
         
-    fig.savefig(f'/Users/brianlorenz/uncover/Figures/PHOT_paper/dust_vs_prop/multiple/dust_vs_mass_nebcurve.pdf', bbox_inches='tight')
+    fig.savefig(f'/Users/brianlorenz/uncover/Figures/PHOT_paper/dust_vs_prop/neb_curve_compare/dust_vs_mass_nebcurve.pdf', bbox_inches='tight')
 
 def plot_comparison_mybins(ax, df, massname, decname, bin_pcts, law, color, marker, size, mec='black'):
     binlist = np.percentile(df[massname], bin_pcts)
@@ -603,8 +651,10 @@ def draw_asymettric_error(center, low_err, high_err):
 
 if __name__ == '__main__':
     # The 3 final paper figures
-    neb_curve_diff()
+    # neb_curve_diff()
     # two_panel(bin_type='galaxies')
+    two_panel(bin_type='galaxies', kap_meier_median=2, monte_carlo_km=0)
+
     # plot_paper_dust_vs_prop(prop='axisratio_f150w',color_var='None', bin_type='galaxies')
     
     
