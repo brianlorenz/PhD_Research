@@ -105,7 +105,6 @@ def plot_paper_mass_match_neb_curve(color_var='snr', shapley=2, monte_carlo=Fals
     
     
     
-    breakpoint()
     median_masses, median_pab_ha_ratios, err_median_masses, err_median_pab_ha_ratios, n_gals_per_bin = get_median_points(sample_df, median_bins, var_name, n_boots=n_boots, kap_meier_median=2, monte_carlo_km=2)
     # Monte carlo sim for errors
     if monte_carlo:
@@ -182,7 +181,7 @@ def plot_paper_mass_match_neb_curve(color_var='snr', shapley=2, monte_carlo=Fals
             for i in range(n_monte):
                 montebalmer1 = time.time()
                 result_df_monte = result_df.copy(deep=True)
-                result_df_monte = result_df_monte.reset_index()
+                result_df_monte = result_df_monte.reset_index(drop=True)
                 for j in range(len(result_df)):
                     x = random.uniform(0, 1)
                     if x < 0.5:
@@ -297,7 +296,7 @@ def plot_paper_mass_match_neb_curve(color_var='snr', shapley=2, monte_carlo=Fals
     plt.close('all')
 
 
-def get_median_points(sample_df, median_bins, x_var_name, y_var_name='lineratio_pab_ha', n_boots=1000, kap_meier_median=0, monte_carlo_km=0):
+def get_median_points(sample_df, median_bins, x_var_name, y_var_name='lineratio_pab_ha', n_boots=1000, kap_meier_median=0, monte_carlo_km=0, bound_type=1):
     """ Set monte_carlo_km to 2 for bootstrapping"""
     # if kap_meier_median == True:
     #     n_boots = 1000
@@ -357,38 +356,28 @@ def get_median_points(sample_df, median_bins, x_var_name, y_var_name='lineratio_
             median_bin = median_bins[i]
             median_idxs = np.logical_and(ha_det_sample_df[x_var_name] > median_bin[0], ha_det_sample_df[x_var_name] < median_bin[1])
             subsample_df = ha_det_sample_df[median_idxs]
-            subsample_df = subsample_df.reset_index()
+            subsample_df = subsample_df.reset_index(drop=True)
             mask = subsample_df['PaBeta_snr'] <= 5
             subsample_df.loc[mask, 'pab_ratios'] = subsample_df.loc[mask, f'lineratio_pab_ha_{kap_meier_median}sig_upper']
             subsample_df.loc[~mask, 'pab_ratios'] = subsample_df.loc[~mask, 'lineratio_pab_ha']
             pab_ratios = -1*subsample_df['pab_ratios']
             limits = (subsample_df['PaBeta_snr']>5).to_numpy()*1
-            lower_bounds = pab_ratios.copy(deep=True)
-            upper_bounds = -1*(1/18)*np.ones(len(pab_ratios)) # theoretical limit
-            upper_bounds = pd.Series(upper_bounds)
-            upper_bounds.loc[~mask] = np.array(lower_bounds[~mask])
-            # Where upper_bounds < lower_bounds, we need to set the upper bound to lower bound+ 2sigma
-            upper_bounds.loc[upper_bounds<lower_bounds] = -np.array(subsample_df[upper_bounds<lower_bounds]['lineratio_pab_ha'])
-            
-            # For the data that were actually observed, we want the upper bound to be the same as the lower bound
-            # breakpoint()
-            km_data = {
-                'T': pab_ratios,
-                'E': limits, # 0 for censored, 1 for event
-                'U_Bound': upper_bounds
-            }
-            km_df = pd.DataFrame(km_data)
-            kmf = KaplanMeierFitter(alpha=0.32)
-            kmf.fit(durations=km_df['T'], event_observed=km_df['E']) 
-            # kmf.fit_interval_censoring(lower_bound=lower_bounds,  upper_bound=upper_bounds+0.00001) 
-            
-            median = kmf.median_survival_time_ 
-            p16 = median_survival_times(kmf.confidence_interval_)['KM_estimate_lower_0.68'].iloc[0]
-            p84 = median_survival_times(kmf.confidence_interval_)['KM_estimate_upper_0.68'].iloc[0]
-
+            if bound_type != -1:
+                if i == 2:
+                    breakpoint()
+                kmf, median = generate_bounds_and_fit(pab_ratios, mask, subsample_df, limits, bound_type=bound_type)
+                kmf.plot(ax=ax)
+            else:
+                kmf, median = km_fit(pab_ratios, limits)
+                breakpoint()
+                p16 = median_survival_times(kmf.confidence_interval_)['KM_estimate_lower_0.68'].iloc[0]
+                p84 = median_survival_times(kmf.confidence_interval_)['KM_estimate_upper_0.68'].iloc[0]
+                p84s.append(-p16)
+                p16s.append(-p84)
+                kmf.plot_survival_function(ax=ax)
             medians.append(-median)
-            p84s.append(-p16)
-            kmf.plot_survival_function(ax=ax)
+            
+            
             
             ax.set_ylabel('Upper Limit Fraction', fontsize=14)
             ax.set_xlabel('(-PaB/Ha)', fontsize=14)
@@ -404,7 +393,7 @@ def get_median_points(sample_df, median_bins, x_var_name, y_var_name='lineratio_
                 for km in range(100):
                     print(f'km monte carlo {km}')
                     subsample_df = ha_det_sample_df[median_idxs].copy(deep=True)
-                    subsample_df = subsample_df.reset_index()
+                    subsample_df = subsample_df.reset_index(drop=True)
                     if monte_carlo_km == 1:
                         # vary the points by their errors
                         for j in range(len(subsample_df)):
@@ -425,19 +414,16 @@ def get_median_points(sample_df, median_bins, x_var_name, y_var_name='lineratio_
                         subsample_df[f'lineratio_pab_ha_{kap_meier_median}sig_upper'] = subsample_df[f'PaBeta_flux_{kap_meier_median}sig_upper'] / subsample_df['Halpha_flux'] 
                     if monte_carlo_km == 2:  
                         subsample_df = subsample_df.sample(n=len(subsample_df), replace=True)
+                        subsample_df = subsample_df.reset_index(drop=True)
                     mask = subsample_df['PaBeta_snr'] <= 5
                     subsample_df.loc[mask, 'pab_ratios'] = subsample_df.loc[mask, f'lineratio_pab_ha_{kap_meier_median}sig_upper']
                     subsample_df.loc[~mask, 'pab_ratios'] = subsample_df.loc[~mask, 'lineratio_pab_ha']
                     pab_ratios = -1*subsample_df['pab_ratios']
                     limits = (subsample_df['PaBeta_snr']>5).to_numpy()*1
-                    km_data = {
-                        'T': pab_ratios,
-                        'E': limits  # 0 for censored, 1 for event
-                    }
-                    km_df = pd.DataFrame(km_data)
-                    kmf = KaplanMeierFitter()
-                    kmf.fit(durations=km_df['T'], event_observed=km_df['E'])  
-                    median = kmf.median_survival_time_ 
+                    if bound_type != -1:
+                        kmf, median = generate_bounds_and_fit(pab_ratios, mask, subsample_df, limits, bound_type=bound_type)
+                    else:
+                        kmf, median = km_fit(pab_ratios, limits)
                     km_monte_medians.append(-median)
                 km_monte_medians = np.array(km_monte_medians)
                 km_16, km_50, km_84 = np.percentile(km_monte_medians, [16, 50, 84])
@@ -449,13 +435,12 @@ def get_median_points(sample_df, median_bins, x_var_name, y_var_name='lineratio_
                 #     ax2.hist(line_boots, bins=np.arange(0.08, 0.22, 0.01))
                 #     plt.show()
         plt.tight_layout()    
-        fig.savefig(f'/Users/brianlorenz/uncover/Figures/PHOT_paper/dust_vs_prop/multiple/km_values_{kap_meier_median}sig.pdf', bbox_inches='tight')
+        fig.savefig(f'/Users/brianlorenz/uncover/Figures/PHOT_paper/dust_vs_prop/multiple/km_values_{kap_meier_median}sig_{bound_type}.pdf', bbox_inches='tight')
         median_yvals = np.array(medians)
         if monte_carlo_km > 0:
             median_err_lows = median_yvals - np.array(km_16s)
             median_err_highs = np.array(km_84s) - median_yvals
             median_yerr_plot = np.vstack([median_err_lows, median_err_highs])
-        
         else:
 
             median_err_lows = median_yvals - np.array(p16s)
@@ -518,6 +503,54 @@ def prepare_prospector_dust(sample_df):
     set_neg_errs_to_99(sample_df, 'err_prospector_total_av_50_high')
     set_neg_errs_to_99(sample_df, 'err_prospector_neb_av_50_low')
     set_neg_errs_to_99(sample_df, 'err_prospector_neb_av_50_high')
+
+def km_fit(pab_ratios, limits):
+    km_data = {
+        'T': pab_ratios,
+        'E': limits  # 0 for censored, 1 for event
+    }
+    km_df = pd.DataFrame(km_data)
+    kmf = KaplanMeierFitter(alpha=0.32)
+    kmf.fit(durations=km_df['T'], event_observed=km_df['E'])  
+    median = kmf.median_survival_time_ 
+    return kmf, median
+
+def generate_bounds_and_fit(pab_ratios, mask, subsample_df, limits, bound_type=1):
+    pab_ratios = pab_ratios.reset_index(drop=True)
+    mask = mask.reset_index(drop=True)
+    lower_bounds = pab_ratios.copy(deep=True)
+    if bound_type == 0: # no limits
+        upper_bounds = np.full(len(lower_bounds), np.inf)
+        upper_bounds = pd.Series(upper_bounds)
+    if bound_type == 1:# theoretical limit
+        upper_bounds = -1*(1/18)*np.ones(len(pab_ratios))
+        upper_bounds = pd.Series(upper_bounds)
+    if bound_type == 2:# theoretical limit + 1sig
+        upper_bounds = -1*(1/18)*np.ones(len(pab_ratios)) 
+        upper_bounds = pd.Series(upper_bounds)
+        onesig_errs = subsample_df[f'lineratio_pab_ha_1sig_upper'] - subsample_df[f'lineratio_pab_ha']
+        upper_bounds = upper_bounds + onesig_errs
+    if bound_type == 3:# 0.035
+        upper_bounds = -1*(0.035)*np.ones(len(pab_ratios)) 
+        upper_bounds = pd.Series(upper_bounds)
+    upper_bounds.loc[~mask] = np.array(lower_bounds[~mask])
+    # Where upper_bounds < lower_bounds, we need to set the upper bound to lower bound+ 2sigma
+    upper_bounds.loc[upper_bounds<lower_bounds] = -np.array(subsample_df[upper_bounds<lower_bounds]['lineratio_pab_ha'])
+    km_data = {
+        'T': pab_ratios,
+        'E': limits, # 0 for censored, 1 for event
+        'U_Bound': upper_bounds
+    }
+    km_df = pd.DataFrame(km_data)
+    kmf = KaplanMeierFitter(alpha=0.32)
+    kmf.fit_interval_censoring(lower_bound=lower_bounds,  upper_bound=upper_bounds, event_observed=limits) 
+    
+    survival_function_d = kmf.survival_function_['NPMLE_estimate_lower']
+    survival_function_u = kmf.survival_function_['NPMLE_estimate_upper']
+    median_d = survival_function_d.index[np.argmin(np.abs(survival_function_d-0.5))]
+    median_u = survival_function_u.index[np.argmin(np.abs(survival_function_u-0.5))]
+    median = np.median([median_d, median_u])
+    return kmf, median
 
 def add_err_cols(sample_df, var_name):
     sample_df[f'err_{var_name}_low'] = sample_df[f'{var_name}'] - sample_df[var_name[:-2]+'16']

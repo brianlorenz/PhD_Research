@@ -24,7 +24,7 @@ from lifelines import KaplanMeierFitter
 random.seed(80148273) 
 
 
-def plot_paper_dust_vs_prop(prop='mass', color_var='snr', phot_df=[], axisratio_vs_prospector = 0, ax_in='None', bin_type='dex', compare=0, plot_av=0, hide_twin=0, sample='full', kap_meier_median=0, monte_carlo_km=0):
+def plot_paper_dust_vs_prop(prop='mass', color_var='snr', phot_df=[], axisratio_vs_prospector = 0, ax_in='None', bin_type='dex', compare=0, plot_av=0, hide_twin=0, sample='full', kap_meier_median=0, monte_carlo_km=0, bound_type=1):
     if sample == 'full':
         sample_df = read_final_sample()
         final_sample = sample_df
@@ -282,7 +282,7 @@ def plot_paper_dust_vs_prop(prop='mass', color_var='snr', phot_df=[], axisratio_
         if axisratio_vs_prospector != 0:
             median_xvals, median_yvals, median_xerr, median_yerr, ngals = get_median_points(sample_df, median_bins, var_name, y_var_name=y_var_name, n_boots=n_boots)
         else:
-            median_xvals, median_yvals, median_xerr, median_yerr, ngals = get_median_points(sample_df, median_bins, var_name,  n_boots=n_boots, kap_meier_median=kap_meier_median, monte_carlo_km=monte_carlo_km)
+            median_xvals, median_yvals, median_xerr, median_yerr, ngals = get_median_points(sample_df, median_bins, var_name,  n_boots=n_boots, kap_meier_median=kap_meier_median, monte_carlo_km=monte_carlo_km,bound_type=bound_type)
         if plot_av:
             yerrs_low = [compute_ha_pab_av(median_yvals[k] - median_yerr[0][k], law=law) for k in range(len(median_yvals))]
             yerrs_high = [compute_ha_pab_av(median_yvals[k] + median_yerr[1][k], law=law) for k in range(len(median_yvals))]
@@ -558,7 +558,7 @@ def add_err_cols(sample_df, var_name):
     return sample_df
 
 
-def two_panel(bin_type='dex', kap_meier_median=0, monte_carlo_km=0):
+def two_panel(bin_type='dex', kap_meier_median=0, monte_carlo_km=0, bound_type=1):
     fig = plt.figure(figsize=(12, 6))
     ax_mass = fig.add_axes([0.09, 0.08, 0.35, 0.70])
     ax_sfr = fig.add_axes([0.47, 0.08, 0.35, 0.70])
@@ -566,7 +566,7 @@ def two_panel(bin_type='dex', kap_meier_median=0, monte_carlo_km=0):
         plot_paper_dust_vs_prop(prop='mass',color_var='None',ax_in=ax_mass, bin_type=bin_type, hide_twin=1, sample='full')
         km_str = ''
     if kap_meier_median > 0:
-        plot_paper_dust_vs_prop(prop='mass',color_var='None',ax_in=ax_mass, bin_type=bin_type, hide_twin=1, sample='limit', kap_meier_median=kap_meier_median, monte_carlo_km = monte_carlo_km)
+        plot_paper_dust_vs_prop(prop='mass',color_var='None',ax_in=ax_mass, bin_type=bin_type, hide_twin=1, sample='limit', kap_meier_median=kap_meier_median, monte_carlo_km = monte_carlo_km, bound_type=bound_type)
         km_str = f'_{kap_meier_median}sigKM'
     if monte_carlo_km == 1:
         km_str = f'_{kap_meier_median}sigKM_montecarlo'
@@ -575,7 +575,17 @@ def two_panel(bin_type='dex', kap_meier_median=0, monte_carlo_km=0):
     plot_paper_dust_vs_prop(prop='sfr',color_var='None',ax_in=ax_sfr, bin_type=bin_type, hide_twin=1)
     ax_sfr.tick_params(axis='y', labelleft=False)   
     ax_sfr.set_ylabel('')   
-    fig.savefig(f'/Users/brianlorenz/uncover/Figures/PHOT_paper/dust_vs_prop/multiple/dust_vs_mass_sfr_twopanel_{bin_type}{km_str}.pdf', bbox_inches='tight')
+    bound_str = ''
+    if bound_type == 0:
+        bound_str = '_nolim'
+    if bound_type == 1:
+        bound_str = '_theory'
+    if bound_type == 2:
+        bound_str = '_theory+err'
+    if bound_type == 3:
+        bound_str = '_0.035'
+        ax_mass.axhline(0.035, ls='--', color='red')
+    fig.savefig(f'/Users/brianlorenz/uncover/Figures/PHOT_paper/dust_vs_prop/multiple/dust_vs_mass_sfr_twopanel_{bin_type}{km_str}{bound_str}.pdf', bbox_inches='tight')
 
 def neb_curve_diff(bin_type='galaxies'):
     fig = plt.figure(figsize=(12, 6))
@@ -653,7 +663,24 @@ if __name__ == '__main__':
     # The 3 final paper figures
     # neb_curve_diff()
     # two_panel(bin_type='galaxies')
-    two_panel(bin_type='galaxies', kap_meier_median=2, monte_carlo_km=0)
+    two_panel(bin_type='galaxies', kap_meier_median=2, monte_carlo_km=2, bound_type=-1)
+    """
+    kap_meier_median: 
+        0: don't use it (standard bootstrap)
+        1: 1sigma lower limits (not recommended)
+        2: 2sigma lower limits
+        3: 3sigma lower limits (not recommended)
+    monte_carlo_km: 
+        0: confidence interval
+        1: monte carlo
+        2: bootstrap
+    bound_type: 
+        -1: Standard km fit
+        0: unbounded (inf)
+        1: theory limit
+        2: theory + 1sig uncertanties for all
+        3: 0.03
+    """
 
     # plot_paper_dust_vs_prop(prop='axisratio_f150w',color_var='None', bin_type='galaxies')
     
