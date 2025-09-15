@@ -6,6 +6,7 @@ from compute_av import compute_ha_pab_av, compute_pab_paa_av, compute_paalpha_pa
 import pandas as pd
 import numpy as np
 import random
+import os
 import sys
 from plot_vals import *
 import matplotlib as mpl
@@ -139,7 +140,7 @@ def plot_paper_dust_vs_prop(prop='mass', color_var='snr', phot_df=[], axisratio_
             cbar_ticks = [1.2, 1.5, 1.8, 2.1, 2.4]
             cbar_label = 'Redshift'
         if color_var == 'None':
-            rgba = '#8b8b8b'
+            rgba = '#6b6b6b'
         ecolor = '#b3b3b3'
         
         if prop == 'mass':
@@ -164,7 +165,8 @@ def plot_paper_dust_vs_prop(prop='mass', color_var='snr', phot_df=[], axisratio_
             if bin_type == 'dex':
                 median_bins = [[-0.5,0], [0,0.5], [0.5,1], [1,1.5], [1.5,2]]
             if bin_type == 'galaxies':
-                sfr_20, sfr_40, sfr_60, sfr_80 = np.percentile(sample_df['log_sfr100_50'], [20, 40, 60, 80])
+                final_sample['log_sfr100_50'] = np.log10(final_sample['sfr100_50'])
+                sfr_20, sfr_40, sfr_60, sfr_80 = np.percentile(final_sample['log_sfr100_50'], [20, 40, 60, 80])
                 median_bins = [[sfr_lims[0],sfr_20], [sfr_20,sfr_40], [sfr_40,sfr_60], [sfr_60,sfr_80], [sfr_80,sfr_lims[1]]]
         
         if 'prospector' in prop:
@@ -242,12 +244,16 @@ def plot_paper_dust_vs_prop(prop='mass', color_var='snr', phot_df=[], axisratio_
             # if sample_df['log_sfr100_50'].iloc[j] > sfr_80:
             #     rgba='magenta'
             alpha = 1
+            zorder = 6
             if sample_df['PaBeta_snr'].iloc[j] < 5: 
                 shape = 'v'
-                rgba = 'magenta'
+                rgba = '#8c8c8c'
                 alpha = 0.5
                 y_plot = sample_df[f'lineratio_pab_ha_{kap_meier_median}sig_upper'].iloc[j]
-            ax.errorbar(x_plot, y_plot, xerr=x_err, yerr=y_err, marker=shape, mec=mec, ms=5, color=rgba, ls='None', ecolor=ecolor, alpha=alpha)
+                x_err = np.array([[0, 0]]).T
+                y_err = np.array([[0, 0]]).T
+                zorder = 5
+            ax.errorbar(x_plot, y_plot, xerr=x_err, yerr=y_err, marker=shape, mec=mec, ms=5, color=rgba, ls='None', ecolor=ecolor, alpha=alpha, zorder=zorder)
             
             
             # ax.text(x_plot, y_plot, f'{id_dr3}', fontsize=6)
@@ -275,14 +281,30 @@ def plot_paper_dust_vs_prop(prop='mass', color_var='snr', phot_df=[], axisratio_
         # ratios = compute_ratio_from_av(avs, law='reddy')
         # ax.plot(masses, ratios, ls='-', color='red', zorder=100, lw=3)
 
+    caseb_limit = ''
+    if bound_type == 1:
+        caseb_limit = '_caseb'
+
     # Add medians if there are bins
-    n_boots=100
+    n_boots=1000
     if len(median_bins) > 0:
         print(f'Finding medians...')
         if axisratio_vs_prospector != 0:
             median_xvals, median_yvals, median_xerr, median_yerr, ngals = get_median_points(sample_df, median_bins, var_name, y_var_name=y_var_name, n_boots=n_boots)
         else:
-            median_xvals, median_yvals, median_xerr, median_yerr, ngals = get_median_points(sample_df, median_bins, var_name,  n_boots=n_boots, kap_meier_median=kap_meier_median, monte_carlo_km=monte_carlo_km,bound_type=bound_type)
+            if prop == 'mass':
+                save_path = f'/Users/brianlorenz/uncover/Data/generated_tables/mass_bins{caseb_limit}.npz'
+                if os.path.exists(save_path):
+                    data = np.load(save_path)
+                    median_xvals = data['array_one']
+                    median_yvals = data['array_two']
+                    median_xerr = data['array_three']
+                    median_yerr = data['array_four']
+                else:
+                    median_xvals, median_yvals, median_xerr, median_yerr, ngals = get_median_points(sample_df, median_bins, var_name,  n_boots=n_boots, kap_meier_median=kap_meier_median, monte_carlo_km=monte_carlo_km,bound_type=bound_type)
+                    np.savez(save_path, array_one=median_xvals, array_two=median_yvals, array_three=median_xerr, array_four=median_yerr)
+            else:
+                median_xvals, median_yvals, median_xerr, median_yerr, ngals = get_median_points(sample_df, median_bins, var_name,  n_boots=n_boots, kap_meier_median=kap_meier_median, monte_carlo_km=monte_carlo_km,bound_type=bound_type)
         if plot_av:
             yerrs_low = [compute_ha_pab_av(median_yvals[k] - median_yerr[0][k], law=law) for k in range(len(median_yvals))]
             yerrs_high = [compute_ha_pab_av(median_yvals[k] + median_yerr[1][k], law=law) for k in range(len(median_yvals))]
@@ -447,7 +469,6 @@ def plot_paper_dust_vs_prop(prop='mass', color_var='snr', phot_df=[], axisratio_
         measured_avneb_megascience = np.array(median_yvals)
         offsets = measured_avneb_megascience - predicted_av_neb_from_compare
         median_offset = np.median(offsets)
-        breakpoint()
         print(f'Median offset between measured and predicted: {median_offset} mag')
         
         # gorup all plotted points
@@ -567,12 +588,13 @@ def two_panel(bin_type='dex', kap_meier_median=0, monte_carlo_km=0, bound_type=1
         km_str = ''
     if kap_meier_median > 0:
         plot_paper_dust_vs_prop(prop='mass',color_var='None',ax_in=ax_mass, bin_type=bin_type, hide_twin=1, sample='limit', kap_meier_median=kap_meier_median, monte_carlo_km = monte_carlo_km, bound_type=bound_type)
+        plot_paper_dust_vs_prop(prop='sfr',color_var='None',ax_in=ax_sfr, bin_type=bin_type, hide_twin=1, sample='limit', kap_meier_median=kap_meier_median, monte_carlo_km = monte_carlo_km, bound_type=bound_type)
         km_str = f'_{kap_meier_median}sigKM'
     if monte_carlo_km == 1:
         km_str = f'_{kap_meier_median}sigKM_montecarlo'
     if monte_carlo_km == 2:
         km_str = f'_{kap_meier_median}sigKM_bootstrap'
-    plot_paper_dust_vs_prop(prop='sfr',color_var='None',ax_in=ax_sfr, bin_type=bin_type, hide_twin=1)
+    # plot_paper_dust_vs_prop(prop='sfr',color_var='None',ax_in=ax_sfr, bin_type=bin_type, hide_twin=1)
     ax_sfr.tick_params(axis='y', labelleft=False)   
     ax_sfr.set_ylabel('')   
     bound_str = ''
@@ -587,12 +609,12 @@ def two_panel(bin_type='dex', kap_meier_median=0, monte_carlo_km=0, bound_type=1
         ax_mass.axhline(0.035, ls='--', color='red')
     fig.savefig(f'/Users/brianlorenz/uncover/Figures/PHOT_paper/dust_vs_prop/multiple/dust_vs_mass_sfr_twopanel_{bin_type}{km_str}{bound_str}.pdf', bbox_inches='tight')
 
-def neb_curve_diff(bin_type='galaxies'):
+def neb_curve_diff(bin_type='galaxies', kap_meier_median=2, monte_carlo_km=2, bound_type=1):
     fig = plt.figure(figsize=(12, 6))
     ax_cardelli = fig.add_axes([0.09, 0.08, 0.35, 0.70])
     ax_reddy = fig.add_axes([0.47, 0.08, 0.35, 0.70])
-    plot_paper_dust_vs_prop(prop='mass',color_var='None',ax_in=ax_cardelli, bin_type=bin_type, compare=1, plot_av=1)
-    plot_paper_dust_vs_prop(prop='mass',color_var='None',ax_in=ax_reddy, bin_type=bin_type, compare=2, plot_av=1)
+    plot_paper_dust_vs_prop(prop='mass',color_var='None',ax_in=ax_cardelli, bin_type=bin_type, compare=1, plot_av=1, sample='limit', kap_meier_median=kap_meier_median, monte_carlo_km=monte_carlo_km, bound_type=bound_type)
+    plot_paper_dust_vs_prop(prop='mass',color_var='None',ax_in=ax_reddy, bin_type=bin_type, compare=kap_meier_median, plot_av=1, sample='limit', kap_meier_median=kap_meier_median, monte_carlo_km=monte_carlo_km, bound_type=bound_type)
     ax_reddy.tick_params(axis='y', labelleft=False)   
     ax_reddy.set_ylabel('')   
     ax_reddy.get_legend().remove()
@@ -661,9 +683,9 @@ def draw_asymettric_error(center, low_err, high_err):
 
 if __name__ == '__main__':
     # The 3 final paper figures
-    # neb_curve_diff()
+    neb_curve_diff(kap_meier_median=2, monte_carlo_km=2, bound_type=0)
     # two_panel(bin_type='galaxies')
-    two_panel(bin_type='galaxies', kap_meier_median=2, monte_carlo_km=2, bound_type=-1)
+    two_panel(bin_type='galaxies', kap_meier_median=2, monte_carlo_km=2, bound_type=0)
     """
     kap_meier_median: 
         0: don't use it (standard bootstrap)

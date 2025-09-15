@@ -12,6 +12,7 @@ from plot_vals import *
 import matplotlib as mpl
 from matplotlib.lines import Line2D
 import shutil
+import os
 from simple_sample_selection import truncate_colormap
 from compute_av import compute_ratio_from_av, avneb_str
 import time
@@ -27,7 +28,7 @@ random.seed(5842750384)
 
 
 
-def plot_paper_mass_match_neb_curve(color_var='snr', shapley=2, monte_carlo=False):
+def plot_paper_mass_match_neb_curve(color_var='snr', shapley=2, monte_carlo=False, bound_type=1):
     shaded = 0
     n_boots = 1000
     if monte_carlo:
@@ -103,9 +104,16 @@ def plot_paper_mass_match_neb_curve(color_var='snr', shapley=2, monte_carlo=Fals
     #     cbar_ticks = [1.2, 1.5, 1.8, 2.1, 2.4]
     #     cbar_label = 'Redshift'
     
+    save_path = '/Users/brianlorenz/uncover/Data/generated_tables/multiple_arrays.npz'
+    if os.path.exists(save_path):
+        data = np.load(save_path)
+        median_masses = data['array_one']
+        median_pab_ha_ratios = data['array_two']
+        err_median_pab_ha_ratios = data['array_three']
+    else:
+        median_masses, median_pab_ha_ratios, err_median_masses, err_median_pab_ha_ratios, n_gals_per_bin = get_median_points(sample_df, median_bins, var_name, n_boots=n_boots, kap_meier_median=2, monte_carlo_km=2, bound_type=bound_type)
+        np.savez('/Users/brianlorenz/uncover/Data/generated_tables/multiple_arrays.npz', array_one=np.array(median_masses), array_two=median_pab_ha_ratios, array_three=err_median_pab_ha_ratios)
     
-    
-    median_masses, median_pab_ha_ratios, err_median_masses, err_median_pab_ha_ratios, n_gals_per_bin = get_median_points(sample_df, median_bins, var_name, n_boots=n_boots, kap_meier_median=2, monte_carlo_km=2)
     # Monte carlo sim for errors
     if monte_carlo:
         median_pab_ha_ratios_montes = []
@@ -341,6 +349,7 @@ def get_median_points(sample_df, median_bins, x_var_name, y_var_name='lineratio_
 
     if kap_meier_median > 0:
         ha_det_sample_df = read_ha_sample()
+        ha_det_sample_df['log_sfr100_50'] = np.log10(ha_det_sample_df['sfr100_50'])
         # ha_det_sample_df[f'lineratio_pab_ha_{kap_meier_median}sig_upper'] = 0
         p16s = []
         medians = []
@@ -363,13 +372,10 @@ def get_median_points(sample_df, median_bins, x_var_name, y_var_name='lineratio_
             pab_ratios = -1*subsample_df['pab_ratios']
             limits = (subsample_df['PaBeta_snr']>5).to_numpy()*1
             if bound_type != -1:
-                if i == 2:
-                    breakpoint()
                 kmf, median = generate_bounds_and_fit(pab_ratios, mask, subsample_df, limits, bound_type=bound_type)
                 kmf.plot(ax=ax)
             else:
                 kmf, median = km_fit(pab_ratios, limits)
-                breakpoint()
                 p16 = median_survival_times(kmf.confidence_interval_)['KM_estimate_lower_0.68'].iloc[0]
                 p84 = median_survival_times(kmf.confidence_interval_)['KM_estimate_upper_0.68'].iloc[0]
                 p84s.append(-p16)
@@ -558,6 +564,6 @@ def add_err_cols(sample_df, var_name):
     return sample_df
 
 if __name__ == '__main__': 
-    plot_paper_mass_match_neb_curve(color_var='mass', shapley=2, monte_carlo=False) # Shapley = 2 for the paper fig
+    plot_paper_mass_match_neb_curve(color_var='mass', shapley=2, monte_carlo=False, bound_type=0) # Shapley = 2 for the paper fig
     # Need to verify that this is working correctly, and need to apply KM medians to the MOSDEF to make everything match I think
     
