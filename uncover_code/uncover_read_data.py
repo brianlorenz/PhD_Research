@@ -97,7 +97,6 @@ def read_raw_spec(id_msa, read_2d=-1, id_redux = -1):
     """
     spec_cat = read_spec_cat()
     redshift = spec_cat[spec_cat['id_msa']==id_msa]['z_spec'].iloc[0]
-    # raw_spec_loc = f'/Users/brianlorenz/uncover/Catalogs/spectra_old/uncover-v2_prism-clear_2561_{id_msa}.spec.fits'
     raw_spec_loc = f'/Users/brianlorenz/uncover/Catalogs/DR4_spectra/uncover_DR4_prism-clear_2561_{id_msa}.spec.fits'
     if id_redux > -1:
         print(f'reading with id_redux = {id_redux}')
@@ -122,9 +121,6 @@ def read_raw_spec(id_msa, read_2d=-1, id_redux = -1):
     spec_df['rest_flux_erg_aa'] = spec_df['flux_erg_aa'] * (1+redshift)
     spec_df['err_rest_flux_erg_aa'] = spec_df['err'] * (1e-23*1e10*c / (spec_df['wave_aa']**2)) * (1+redshift)
 
-
-    # if os.path.exists('/Users/brianlorenz/uncover/Figures/spec_sed_compare/compare_ratio.csv'):
-    #     spec_df = correct_spec_to_sed(id_msa, spec_df)
     return spec_df
 
 def read_fluxcal_spec(id_msa):

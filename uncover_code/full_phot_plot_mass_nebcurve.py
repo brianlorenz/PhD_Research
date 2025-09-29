@@ -312,7 +312,7 @@ def get_median_points(sample_df, median_bins, x_var_name, y_var_name='lineratio_
     median_idxs = [np.logical_and(sample_df[x_var_name] > median_bins[k][0], sample_df[x_var_name] < median_bins[k][1]) for k in range(len(median_bins))]
     median_xvals = [np.median(sample_df[median_idxs[k]][x_var_name]) for k in range(len(median_bins))]
     median_yvals = [np.median(sample_df[median_idxs[k]][y_var_name]) for k in range(len(median_bins))]
-    
+
     # median_xerr_low = np.array([median_xvals[k]-np.percentile(sample_df[median_idxs[k]][x_var_name], 16) for k in range(len(median_bins))])
     # median_xerr_high = np.array([np.percentile(sample_df[median_idxs[k]][x_var_name], 84)-median_xvals[k] for k in range(len(median_bins))])
     # median_xerr_plot = np.vstack([median_xerr_low, median_xerr_high])
@@ -348,7 +348,7 @@ def get_median_points(sample_df, median_bins, x_var_name, y_var_name='lineratio_
     n_gals_per_bin = [len(sample_df[median_idxs[k]]) for k in range(len(median_bins))]
 
     if kap_meier_median > 0:
-        ha_det_sample_df = read_ha_sample()
+        ha_det_sample_df = read_ha_sample(axisratios=True)
         ha_det_sample_df['log_sfr100_50'] = np.log10(ha_det_sample_df['sfr100_50'])
         # ha_det_sample_df[f'lineratio_pab_ha_{kap_meier_median}sig_upper'] = 0
         p16s = []

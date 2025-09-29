@@ -1,4 +1,4 @@
-from full_phot_read_data import read_merged_lineflux_cat, read_final_sample, read_possible_sample, read_paper_df
+from full_phot_read_data import read_merged_lineflux_cat, read_final_sample, read_possible_sample, read_paper_df, read_ha_sample
 from full_phot_merge_lineflux import filter_bcg_flags
 import matplotlib.pyplot as plt
 from uncover_read_data import read_SPS_cat_all, read_bcg_surface_brightness, read_supercat, read_morphology_cat
@@ -14,10 +14,14 @@ import shutil
 from simple_sample_selection import truncate_colormap
 from read_mosdef_data import get_shapley_sample, get_mosdef_compare_sample
 from full_phot_property_vs_dust import add_cbar
+from matplotlib.legend_handler import HandlerTuple
+import matplotlib.patches as mpatches
+
 
 def plot_paper_sample_select_sfr_mass(show_hexes=True, show_point_color=False, mass_cut=0, shapley=0):
     sample_df = read_final_sample()
     possible_df = read_possible_sample()
+    ha_sample = read_ha_sample()
     shapley_df, linemeas_df_shapley = get_shapley_sample()
     mosdef_df, linemeas_df = get_mosdef_compare_sample()
 
@@ -29,9 +33,10 @@ def plot_paper_sample_select_sfr_mass(show_hexes=True, show_point_color=False, m
     chi2_cut_ids = chi2_cut_gals['id_dr3'].to_list()
 
     sample_ids = sample_df['id_dr3'].to_list()
+    ha_sample_only = ha_sample[~ha_sample['id_dr3'].isin(sample_df['id_dr3'])]
 
     if shapley==0:
-        dfs = [possible_df, sample_df]
+        dfs = [possible_df, sample_df, ha_sample_only]
         save_str2 = ''
         mass_lims = [np.max([5.5, mass_cut]), 11.5]
     if shapley>0:
@@ -81,12 +86,19 @@ def plot_paper_sample_select_sfr_mass(show_hexes=True, show_point_color=False, m
         
 
     
+    # format is [everything, selected, ha_only]
+    sizes = [4, 8, 4]
+    colors = ['#2f2f2f', 'redshift', 'redshift']
+    ecolors = ['#2f2f2f', 'redshift', 'redshift']
+    mecs = ['None', 'black', 'black']
+    zorders = [11, 30, 20]
+    shapes = ['o', 'o', 's']
+    labels = ['_', 'H$\\alpha$+Pa$\\beta$', 'H$\\alpha$ only']
 
-    sizes = [4, 8]
-    colors = ['#2f2f2f', 'redshift']
-    ecolors = ['#2f2f2f', 'redshift']
-    mecs = ['None', 'black']
-    hist_alphas = [1, 0.7]
+    hist_zorders = [11, 20, 33]
+    hist_alphas = [1, 0.7, 1]
+    hist_colors = ['#2f2f2f', 'redshift', 'black']
+    histtypes = ['bar', 'bar', 'step']
 
     sfr_lims = [-2, 2.5]
 
@@ -125,14 +137,16 @@ def plot_paper_sample_select_sfr_mass(show_hexes=True, show_point_color=False, m
         good_both_idx = np.logical_and(good_sfr_idx, good_mass_idx)  
         mass_cut_idx = all_masses>mass_cut
         good_both_idx = np.logical_and(good_both_idx, mass_cut_idx)
-        ax.hexbin(all_masses[good_both_idx], all_log_sfr100s[good_both_idx], gridsize=15, cmap=new_cmap, norm=hexbin_norm, label='Photometric Sample')
+        ax.hexbin(all_masses[good_both_idx], all_log_sfr100s[good_both_idx], gridsize=15, cmap=new_cmap, norm=hexbin_norm, label='UNCOVER')
         ax_histx.hist(all_masses[good_both_idx], bins=xbins, color='grey', density=True, alpha=0.6, zorder=10)
-        ax_histy.hist(all_log_sfr100s[good_both_idx], bins=ybins, color='grey',  orientation='horizontal', density=True, alpha=0.6, zorder=10) 
+        ax_histy.hist(all_log_sfr100s[good_both_idx], bins=ybins, color='grey',  orientation='horizontal', density=True, alpha=0.6, zorder=10)
         save_str2 = '_hexes'
 
     cmap = mpl.cm.viridis
     cmap = truncate_colormap(cmap, 0.2, 1.0)
     for i in range(len(dfs)): 
+        if i == 0:
+            continue
         df = dfs[i]
 
         # Compute errs
@@ -153,7 +167,7 @@ def plot_paper_sample_select_sfr_mass(show_hexes=True, show_point_color=False, m
             size = sizes[i]
             color = colors[i]
             ecolor = ecolors[i]
-            shape = 'o'
+            shape = shapes[i]
             mec = mecs[i]
             if color == 'redshift':
                 norm = mpl.colors.Normalize(vmin=1.2, vmax=2.4) 
@@ -176,17 +190,33 @@ def plot_paper_sample_select_sfr_mass(show_hexes=True, show_point_color=False, m
                     color = 'blue'
                     if shape == 'x':
                         mec='blue'
-
-            ax.errorbar(df['mstar_50'].iloc[j], np.log10(df['sfr100_50'].iloc[j]), yerr=np.array([[low_sfr_err.iloc[j], high_sfr_err.iloc[j]]]).T, marker=shape, mec=mec, ms=size, color=color, ls='None', ecolor=ecolor)
+            
+            ax.errorbar(df['mstar_50'].iloc[j], np.log10(df['sfr100_50'].iloc[j]), yerr=np.array([[low_sfr_err.iloc[j], high_sfr_err.iloc[j]]]).T, marker=shape, mec=mec, ms=size, color=color, ls='None', ecolor=ecolor, zorder=zorders[i], label=labels[i])
             # ax.text(df['mstar_50'].iloc[j], df['z_50'].iloc[j], f'{id_dr3}')
-        if colors[i] == 'redshift':
+        if 'redshift' in hist_colors[i]:
+            value = 2.05
+            if 'redshift_2' in hist_colors[i]:
+                value = 1.3
             norm = mpl.colors.Normalize(vmin=1.2, vmax=2.4) 
-            color = cmap(norm(2.05))
-        ax_histx.hist(df['mstar_50'], bins=xbins, color=color, density=True, alpha=hist_alphas[i])
-        ax_histy.hist(np.log10(df['sfr100_50']), bins=ybins, color=color,  orientation='horizontal', density=True, alpha=hist_alphas[i])  
+            color = cmap(norm(value))
+        else: 
+            color = hist_colors[i]
+        ax_histx.hist(df['mstar_50'], bins=xbins, color=color, density=True, alpha=hist_alphas[i], histtype=histtypes[i], linewidth=2, zorder=hist_zorders[i])
+        ax_histy.hist(np.log10(df['sfr100_50']), bins=ybins, color=color,  orientation='horizontal', density=True, alpha=hist_alphas[i], histtype=histtypes[i], linewidth=2, zorder=hist_zorders[i])
     ax.set_xlabel(stellar_mass_label, fontsize=14)
     ax.set_ylabel('Prospector log$_{10}$(SFR)', fontsize=14)
     ax.tick_params(labelsize=14)
+    
+    line_sample = Line2D([0], [0], color=cmap(norm(2.05)), marker='o', markersize=8, ls='None', mec='black')
+    line_colorhist = mpatches.Patch(color=cmap(norm(2.05)))
+    line_snr = Line2D([0], [0], color=cmap(norm(2.05)), marker='s', markersize=4, ls='None', mec='black')
+    line_blackhist = Line2D([0], [0], color='black', marker='None', ls='-', linewidth=2)  
+    line_hexes = Line2D([0], [0], color='grey', marker='h', markersize=12, ls='None')
+    # line_hexhist = mpatches.Patch(color='grey')
+    custom_lines = [(line_sample, line_colorhist), (line_snr, line_blackhist), line_hexes]
+
+    custom_labels = ['H$\\alpha$ + Pa$\\beta$', 'H$\\alpha$ only', 'UNCOVER']
+    ax.legend(custom_lines, custom_labels, loc=4, handler_map={tuple: HandlerTuple(ndivide=None)})
 
     # # Plot SFMS
     # masses = np.arange(6,11,0.1)

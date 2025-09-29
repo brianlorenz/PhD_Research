@@ -94,6 +94,7 @@ def plot_paper_dust_vs_prop(prop='mass', color_var='snr', phot_df=[], axisratio_
 
     # turn ellipticity into axis ratio and comupte errs
     prepare_axis_ratios(sample_df)
+    prepare_axis_ratios(final_sample)
 
 
     # Compute errs
@@ -155,7 +156,7 @@ def plot_paper_dust_vs_prop(prop='mass', color_var='snr', phot_df=[], axisratio_
             if bin_type == 'galaxies':
                 mass_20, mass_40, mass_60, mass_80 = np.percentile(final_sample['mstar_50'], [20, 40, 60, 80])
                 median_bins = [[7,mass_20], [mass_20,mass_40], [mass_40,mass_60], [mass_60,mass_80], [mass_80,11]]
-        
+                median_bins = [[7, 11]]
         elif prop == 'sfr':
             var_name = 'log_sfr100_50'
             x_label = log_sfr_label_sedmethod
@@ -215,10 +216,10 @@ def plot_paper_dust_vs_prop(prop='mass', color_var='snr', phot_df=[], axisratio_
                 median_bins = [[0,0.333], [0.333,0.666], [0.666,1]]
                 
             if bin_type =='galaxies':
-                ar_no_null = sample_df[~pd.isnull(sample_df[f'{band}_axisratio_50'])][f'{band}_axisratio_50']
+                ar_no_null = final_sample[~pd.isnull(final_sample[f'{band}_axisratio_50'])][f'{band}_axisratio_50']
                 ar_20, ar_40, ar_60, ar_80 = np.percentile(ar_no_null, [20, 40, 60, 80])
                 median_bins = ([0,ar_20], [ar_20,ar_40], [ar_40,ar_60], [ar_60,ar_80], [ar_80, 1])
-        
+            breakpoint()
         x_plot = sample_df[var_name].iloc[j]
         x_err = np.array([[sample_df[f'err_{var_name}_low'].iloc[j], sample_df[f'err_{var_name}_high'].iloc[j]]]).T
 
@@ -304,6 +305,8 @@ def plot_paper_dust_vs_prop(prop='mass', color_var='snr', phot_df=[], axisratio_
                     median_xvals, median_yvals, median_xerr, median_yerr, ngals = get_median_points(sample_df, median_bins, var_name,  n_boots=n_boots, kap_meier_median=kap_meier_median, monte_carlo_km=monte_carlo_km,bound_type=bound_type)
                     np.savez(save_path, array_one=median_xvals, array_two=median_yvals, array_three=median_xerr, array_four=median_yerr)
             else:
+                if prop == 'axisratio_f150w':
+                    sample_df.to_csv('/Users/brianlorenz/uncover/Data/generated_tables/paper_data/ha_snr_sample_axisratios.csv', index=False)
                 median_xvals, median_yvals, median_xerr, median_yerr, ngals = get_median_points(sample_df, median_bins, var_name,  n_boots=n_boots, kap_meier_median=kap_meier_median, monte_carlo_km=monte_carlo_km,bound_type=bound_type)
         if plot_av:
             yerrs_low = [compute_ha_pab_av(median_yvals[k] - median_yerr[0][k], law=law) for k in range(len(median_yvals))]
@@ -333,7 +336,7 @@ def plot_paper_dust_vs_prop(prop='mass', color_var='snr', phot_df=[], axisratio_
         ax.legend(custom_lines, custom_labels, loc=4)
 
         
-    
+    breakpoint()
     ax.set_xlabel(x_label, fontsize=14)
     ax.set_ylabel(y_label, fontsize=14, labelpad=-10)
     ax.tick_params(labelsize=14)
@@ -683,9 +686,9 @@ def draw_asymettric_error(center, low_err, high_err):
 
 if __name__ == '__main__':
     # The 3 final paper figures
-    neb_curve_diff(kap_meier_median=2, monte_carlo_km=2, bound_type=0)
-    # two_panel(bin_type='galaxies')
-    two_panel(bin_type='galaxies', kap_meier_median=2, monte_carlo_km=2, bound_type=0)
+    # neb_curve_diff(kap_meier_median=2, monte_carlo_km=2, bound_type=0)
+    # two_panel(bin_type='galaxies', kap_meier_median=2, monte_carlo_km=2, bound_type=1)
+    plot_paper_dust_vs_prop(prop='axisratio_f150w',color_var='None', bin_type='galaxies', sample='limit', kap_meier_median=2, monte_carlo_km=2, bound_type=1)
     """
     kap_meier_median: 
         0: don't use it (standard bootstrap)
@@ -703,8 +706,7 @@ if __name__ == '__main__':
         2: theory + 1sig uncertanties for all
         3: 0.03
     """
-
-    # plot_paper_dust_vs_prop(prop='axisratio_f150w',color_var='None', bin_type='galaxies')
+    
     
     
     
