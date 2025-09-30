@@ -549,7 +549,7 @@ def generate_bounds_and_fit(pab_ratios, mask, subsample_df, limits, bound_type=1
     }
     km_df = pd.DataFrame(km_data)
     kmf = KaplanMeierFitter(alpha=0.32)
-    kmf.fit_interval_censoring(lower_bound=lower_bounds,  upper_bound=upper_bounds, event_observed=limits) 
+    kmf.fit_interval_censoring(lower_bound=np.array(lower_bounds),  upper_bound=np.array(upper_bounds), event_observed=limits) 
     
     survival_function_d = kmf.survival_function_['NPMLE_estimate_lower']
     survival_function_u = kmf.survival_function_['NPMLE_estimate_upper']

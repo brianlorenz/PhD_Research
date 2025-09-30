@@ -1,10 +1,15 @@
 import numpy as np
-from fit_emission_uncover_old import line_list
 from uncover_read_data import read_SPS_cat, read_SPS_cat_all
 from dust_equations_prospector import dust2_to_AV
 from astropy.io import ascii
 # from uncover_read_data import read_raw_spec, read_lineflux_cat, get_id_msa_list, read_fluxcal_spec
 import sys
+
+
+line_list = [
+    ('Halpha', 6564.6),
+    ('PaBeta', 12821.7)
+]
 
 avneb_str = 'A$_{\\mathrm{V,neb}}$'
 

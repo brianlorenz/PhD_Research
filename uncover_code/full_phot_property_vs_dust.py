@@ -25,7 +25,7 @@ from lifelines import KaplanMeierFitter
 random.seed(80148273) 
 
 
-def plot_paper_dust_vs_prop(prop='mass', color_var='snr', phot_df=[], axisratio_vs_prospector = 0, ax_in='None', bin_type='dex', compare=0, plot_av=0, hide_twin=0, sample='full', kap_meier_median=0, monte_carlo_km=0, bound_type=1):
+def plot_paper_dust_vs_prop(prop='mass', color_var='snr', phot_df=[], axisratio_vs_prospector = 0, ax_in='None', bin_type='dex', compare=0, plot_av=0, hide_twin=0, sample='full', kap_meier_median=0, monte_carlo_km=0, bound_type=1, legend='None'):
     if sample == 'full':
         sample_df = read_final_sample()
         final_sample = sample_df
@@ -219,7 +219,6 @@ def plot_paper_dust_vs_prop(prop='mass', color_var='snr', phot_df=[], axisratio_
                 ar_no_null = final_sample[~pd.isnull(final_sample[f'{band}_axisratio_50'])][f'{band}_axisratio_50']
                 ar_20, ar_40, ar_60, ar_80 = np.percentile(ar_no_null, [20, 40, 60, 80])
                 median_bins = ([0,ar_20], [ar_20,ar_40], [ar_40,ar_60], [ar_60,ar_80], [ar_80, 1])
-            breakpoint()
         x_plot = sample_df[var_name].iloc[j]
         x_err = np.array([[sample_df[f'err_{var_name}_low'].iloc[j], sample_df[f'err_{var_name}_high'].iloc[j]]]).T
 
@@ -336,7 +335,6 @@ def plot_paper_dust_vs_prop(prop='mass', color_var='snr', phot_df=[], axisratio_
         ax.legend(custom_lines, custom_labels, loc=4)
 
         
-    breakpoint()
     ax.set_xlabel(x_label, fontsize=14)
     ax.set_ylabel(y_label, fontsize=14, labelpad=-10)
     ax.tick_params(labelsize=14)
@@ -345,13 +343,14 @@ def plot_paper_dust_vs_prop(prop='mass', color_var='snr', phot_df=[], axisratio_
         add_cbar(fig, ax_cbar, norm, cmap, cbar_label, cbar_ticks)
     save_str=''
     
-    # line_sample = Line2D([0], [0], color='orange', marker='o', markersize=8, ls='None', mec='black')
-    # line_bcg = Line2D([0], [0], color='blue', marker='o', markersize=4, ls='None', mec='black')
-    # line_snr = Line2D([0], [0], color='red', marker='o', markersize=4, ls='None', mec='black')
-    # line_chi2 = Line2D([0], [0], color='red', marker='x', markersize=4, ls='None', mec='red')
-    # custom_lines = [line_sample, line_bcg, line_snr, line_chi2]
-    # custom_labels = ['Sample', 'Close to bcg', 'Low snr', 'Bad cont slope']
-    # ax.legend(custom_lines, custom_labels, bbox_to_anchor=(1.05, 1.14))
+    if legend != 'None':
+        line_sample = Line2D([0], [0], color='#6b6b6b', marker='o', markersize=5, ls='None', mec='black')
+        line_limit = Line2D([0], [0], color='#8c8c8c', marker='v', markersize=5, ls='None', mec='black', alpha=0.5)
+        line_median = Line2D([0], [0], color='#ff7f00', marker='s', markersize=9, ls='None', mec='black')
+        line_caseB =  Line2D([0], [0], color='r', marker='None', ls='--', alpha=0.75)
+        custom_lines = [line_sample, line_limit, line_median, line_caseB]
+        custom_labels = ['H$\\alpha$ + Pa$\\beta$', 'H$\\alpha$ only', 'Median', 'Case B limit']
+        ax.legend(custom_lines, custom_labels, loc=legend)
     # save_str = '_color'
 
     # Duplicating y axis for AV 
@@ -365,6 +364,16 @@ def plot_paper_dust_vs_prop(prop='mass', color_var='snr', phot_df=[], axisratio_
     # x_tick_labs = ['0.03', '0.055', '0.1', '0.2']
     # ax.set_xticks(x_tick_locs)
     # ax.set_xticklabels(x_tick_labs)
+
+    def add_yticks():
+        # y_tick_locs = [0.025, 0.056, 1/10, 1/5, 1/2, 1]
+        # y_tick_labs = ['0.025', '0.056', '0.1', '0.2', '0.5', '1']
+        y_tick_locs = [0.02, 0.05, 1/10, 1/5, 1/2, 1]
+        y_tick_labs = ['0.02', '0.05', '0.1', '0.2', '0.5', '1']
+        ax.axhline(y=0.056, color='r', linestyle='--', alpha=0.75)
+        ax.set_yticks(y_tick_locs)
+        ax.set_yticklabels(y_tick_labs)
+
     if axisratio_vs_prospector != 0:
         ax.set_ylim(y_lims)
         save_str2 = str(axisratio_vs_prospector)
@@ -372,10 +381,7 @@ def plot_paper_dust_vs_prop(prop='mass', color_var='snr', phot_df=[], axisratio_
         main_ax_lims = np.array([0.02, 1])
         ax.set_ylim(main_ax_lims)
         ax.set_yscale('log')
-        y_tick_locs = [0.025, 0.056, 1/10, 1/5, 1/2, 1]
-        y_tick_labs = ['0.025', '0.056', '0.1', '0.2', '0.5', '1']
-        ax.set_yticks(y_tick_locs)
-        ax.set_yticklabels(y_tick_labs)
+        add_yticks()
         ax.minorticks_off()
     elif axisratio_vs_prospector == 0 and compare == 0:
         ax2 = ax.twinx()
@@ -385,10 +391,7 @@ def plot_paper_dust_vs_prop(prop='mass', color_var='snr', phot_df=[], axisratio_
         ax2.set_yscale('log')
         ax.set_ylim(main_ax_lims)
         ax.set_yscale('log')
-        y_tick_locs = [0.025, 0.056, 1/10, 1/5, 1/2, 1]
-        y_tick_labs = ['0.025', '0.056', '0.1', '0.2', '0.5', '1']
-        ax.set_yticks(y_tick_locs)
-        ax.set_yticklabels(y_tick_labs)
+        add_yticks()
         ax.minorticks_off()
         twin_y_tick_labs = ['-1', '0', '1', '2', '3', '4']
         twin_y_tick_locs = [1/compute_ratio_from_av(float(rat), law='reddy') for rat in twin_y_tick_labs]
@@ -591,7 +594,7 @@ def two_panel(bin_type='dex', kap_meier_median=0, monte_carlo_km=0, bound_type=1
         km_str = ''
     if kap_meier_median > 0:
         plot_paper_dust_vs_prop(prop='mass',color_var='None',ax_in=ax_mass, bin_type=bin_type, hide_twin=1, sample='limit', kap_meier_median=kap_meier_median, monte_carlo_km = monte_carlo_km, bound_type=bound_type)
-        plot_paper_dust_vs_prop(prop='sfr',color_var='None',ax_in=ax_sfr, bin_type=bin_type, hide_twin=1, sample='limit', kap_meier_median=kap_meier_median, monte_carlo_km = monte_carlo_km, bound_type=bound_type)
+        plot_paper_dust_vs_prop(prop='sfr',color_var='None',ax_in=ax_sfr, bin_type=bin_type, hide_twin=1, sample='limit', kap_meier_median=kap_meier_median, monte_carlo_km = monte_carlo_km, bound_type=bound_type, legend='lower right')
         km_str = f'_{kap_meier_median}sigKM'
     if monte_carlo_km == 1:
         km_str = f'_{kap_meier_median}sigKM_montecarlo'
@@ -687,8 +690,8 @@ def draw_asymettric_error(center, low_err, high_err):
 if __name__ == '__main__':
     # The 3 final paper figures
     # neb_curve_diff(kap_meier_median=2, monte_carlo_km=2, bound_type=0)
-    # two_panel(bin_type='galaxies', kap_meier_median=2, monte_carlo_km=2, bound_type=1)
-    plot_paper_dust_vs_prop(prop='axisratio_f150w',color_var='None', bin_type='galaxies', sample='limit', kap_meier_median=2, monte_carlo_km=2, bound_type=1)
+    two_panel(bin_type='galaxies', kap_meier_median=2, monte_carlo_km=2, bound_type=1)
+    plot_paper_dust_vs_prop(prop='axisratio_f150w',color_var='None', bin_type='galaxies', sample='limit', kap_meier_median=2, monte_carlo_km=2, bound_type=1, legend='upper left')
     """
     kap_meier_median: 
         0: don't use it (standard bootstrap)

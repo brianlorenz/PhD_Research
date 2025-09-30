@@ -94,9 +94,14 @@ def calc_lineflux_and_linemap(id_dr3, line_name, phot_df, supercat_df, image_siz
         line_blue_image_noise = jy_convert_factor*(1/np.sqrt(wht_line_images[2].data))
         line_image_noises = [line_red_image_noise, line_green_image_noise, line_blue_image_noise]
         
+        if line_name == 'Halpha':
+            line_rest_wavelength = 6565
+
         linemap, contmap, err_linemap = compute_line(cont_percentile, line_red_image_data, line_green_image_data, line_blue_image_data, redshift, 0, line_filter_width, line_rest_wavelength, images=True, image_noises=line_image_noises, wave_pct=wave_pct)
 
         linemap_snr = linemap / err_linemap
+        fig2, ax2 = plt.subplots(figsize=(6,6))
+        ax2.imshow(linemap_snr, vmin=0, vmax=10)
 
         # Norm values
         cont_lower_pct = 10
@@ -360,7 +365,6 @@ def plot_sed_around_line_prospector(id_dr3, line_name, filters, redshift, bootst
     prosp_slope = calculate_slope(red_wave, prospector_red_cont_flux_scaled, blue_wave, prospector_blue_cont_flux_scaled)
     data_slope = calculate_slope(red_wave, red_flux, blue_wave, blue_flux)
     find_angle_from_slopes(prosp_slope, data_slope)
-    breakpoint()
 
 
     ##### THINK about how to monte carlo - do it with prospector errors as well? Probably
@@ -569,6 +573,7 @@ def compute_line(cont_pct, red_flx, green_flx, blue_flx, redshift, raw_transmiss
     line_value, observed_wave = get_lineflux_from_cont(green_flx, cont_value, line_rest_wave, redshift, filter_width)
 
     if images == True:
+        c = 299792458 # m/s
         err_cont_value = np.sqrt((((wave_pct)**2)*(image_noises[0])**2) + (((1-wave_pct)**2)*(image_noises[2])**2))
         err_line_value = np.sqrt(image_noises[1]**2 + err_cont_value**2)
         err_line_value = err_line_value * 1e-23
@@ -674,9 +679,10 @@ if __name__ == "__main__":
     bcg_df = read_bcg_surface_brightness()
     supercat_df = read_supercat()
     # ids = [40778, 45059, 53709, 12887, 13428, 25707, 23181, 49532]
-    ids = [33853]
+    # ids = [33853]
+    ids = [30052]
     for id_dr3 in ids:
-        calc_lineflux_and_linemap(id_dr3, 'Halpha', phot_sample_df, supercat_df)
+        calc_lineflux_and_linemap(id_dr3, 'Halpha', phot_sample_df, supercat_df, make_linemap=True)
         calc_lineflux_and_linemap(id_dr3, 'PaBeta', phot_sample_df, supercat_df)
 
     # make_all_phot_linemaps('Halpha')
