@@ -102,6 +102,7 @@ def calc_lineflux_and_linemap(id_dr3, line_name, phot_df, supercat_df, image_siz
         linemap_snr = linemap / err_linemap
         fig2, ax2 = plt.subplots(figsize=(6,6))
         ax2.imshow(linemap_snr, vmin=0, vmax=10)
+        breakpoint()
 
         # Norm values
         cont_lower_pct = 10

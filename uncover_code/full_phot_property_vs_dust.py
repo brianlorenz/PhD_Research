@@ -347,7 +347,7 @@ def plot_paper_dust_vs_prop(prop='mass', color_var='snr', phot_df=[], axisratio_
         line_sample = Line2D([0], [0], color='#6b6b6b', marker='o', markersize=5, ls='None', mec='black')
         line_limit = Line2D([0], [0], color='#8c8c8c', marker='v', markersize=5, ls='None', mec='black', alpha=0.5)
         line_median = Line2D([0], [0], color='#ff7f00', marker='s', markersize=9, ls='None', mec='black')
-        line_caseB =  Line2D([0], [0], color='r', marker='None', ls='--', alpha=0.75)
+        line_caseB =  Line2D([0], [0], color='cornflowerblue', marker='None', ls='--', alpha=0.75)
         custom_lines = [line_sample, line_limit, line_median, line_caseB]
         custom_labels = ['H$\\alpha$ + Pa$\\beta$', 'H$\\alpha$ only', 'Median', 'Case B limit']
         ax.legend(custom_lines, custom_labels, loc=legend)
@@ -370,7 +370,7 @@ def plot_paper_dust_vs_prop(prop='mass', color_var='snr', phot_df=[], axisratio_
         # y_tick_labs = ['0.025', '0.056', '0.1', '0.2', '0.5', '1']
         y_tick_locs = [0.02, 0.05, 1/10, 1/5, 1/2, 1]
         y_tick_labs = ['0.02', '0.05', '0.1', '0.2', '0.5', '1']
-        ax.axhline(y=0.056, color='r', linestyle='--', alpha=0.75)
+        ax.axhline(y=1/18, color='cornflowerblue', linestyle='--', alpha=1)
         ax.set_yticks(y_tick_locs)
         ax.set_yticklabels(y_tick_labs)
 
