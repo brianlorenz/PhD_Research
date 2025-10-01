@@ -1,11 +1,14 @@
 from astropy.io import fits
 from astropy.table import Table
 from astropy.wcs import WCS
+import numpy as np
 from glob import glob
 import sys
 
 # Location to save
-pixel_sed_save_loc = '/Users/brianlorenz/uncover/Clustering/pixel_seds/'
+clustering_folder = '/Users/brianlorenz/uncover/Clustering/'
+pixel_sed_save_loc = f'{clustering_folder}pixel_seds/'
+image_save_dir = f'{clustering_folder}image_overviews/'
 
 # Define paths to files here
 SUPER_CATALOG_loc = '/Users/brianlorenz/uncover/Catalogs/UNCOVER_v5.2.0_LW_SUPER_CATALOG.fits'
@@ -23,7 +26,17 @@ def find_image_path(filt):
     return image_str, wht_image_str
 
 
-
+def read_saved_pixels(id_dr3):
+    pixel_data = np.load(pixel_sed_save_loc + f'{id_dr3}_pixels.npz')
+    # CONTAINS:
+    # pixel_seds = pixel_data['pixel_seds'] # shape of (n_images, pixel_ids)
+    # masked_indicies = pixel_data['masked_indicies'] # shape of (2, pixel_ids)
+    # image_cutouts = pixel_data['image_cutouts'] # shape of (n_images, cutout_y_size, cutout_x_size)
+    # noise_cutouts = pixel_data['noise_cutouts'] # shape of (n_images, cutout_y_size, cutout_x_size)
+    # boolean_segmap = pixel_data['boolean_segmap'] # shape of (cutout_y_size, cutout_x_size)
+    # obj_segmap = pixel_data['obj_segmap'] # shape of (cutout_y_size, cutout_x_size)
+    # filter_names = pixel_data['filter_names'] # shape of (n_images,)
+    return pixel_data
 
 
 def read_supercat():

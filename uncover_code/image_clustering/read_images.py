@@ -7,9 +7,11 @@ from astropy.wcs import WCS
 from data_paths import read_supercat, read_segmap, find_image_path, pixel_sed_save_loc
 import numpy as np 
 import time
+import matplotlib.pyplot as plt
 
 
-def prepare_images(id_dr3_list):
+
+def prepare_images(id_dr3_list, snr_thresh=3):
     # Read in necessary catalogs
     print ('Reading catalogs and images...')
     supercat_df = read_supercat()
@@ -31,12 +33,17 @@ def prepare_images(id_dr3_list):
     for id_dr3 in id_dr3_list:
         print(f'Making cutouts for id_dr3 = {id_dr3}...')
         # Read in the image
-        cutout_list, wht_cutout_list, boolean_segmap = images_and_segmap(id_dr3, supercat_df, image_dict, filter_list)
+        cutout_list, noise_cutout_list, boolean_segmap, obj_segmap_sizematch = images_and_segmap(id_dr3, supercat_df, image_dict, filter_list)
         cutout_arr = np.array(cutout_list) # shape is (n_images, cutout_y_size, cutout_x_size)
-        wht_cutout_arr = np.array(wht_cutout_list)
+        noise_cutout_arr = np.array(noise_cutout_list)
+
+        bad_image_idxs = flag_blank_images(cutout_arr)
 
         # Mask the image to only get galaxy pixels - currently using segmap
-        masked_indicies = np.where(boolean_segmap)
+        median_snr = np.median(cutout_arr/noise_cutout_arr, axis=0)
+        snr_masked = median_snr > snr_thresh # SNR thresh defined above
+        mask = np.logical_and(snr_masked, boolean_segmap)
+        masked_indicies = np.where(mask)
 
         pixel_seds = cutout_arr[:, masked_indicies[0], masked_indicies[1]] # shape is (n_images, n_pixels) where n_pixels are the number of pixels in the segmap
 
@@ -44,8 +51,7 @@ def prepare_images(id_dr3_list):
         #       pixel_seds[:, pixel_id]
         # To access a pixel's coordinates back on the image, it is
         #       [masked_indicies[0][pixel_id], masked_indicies[1][pixel_id]]
-        np.savez(pixel_sed_save_loc + f'{id_dr3}_pixels.npz', pixel_seds=pixel_seds, masked_indicies=masked_indicies, image_cutouts=cutout_arr, wht_image_cutouts=wht_cutout_arr, boolean_segmap=boolean_segmap, filter_names=np.array(filter_list)) 
-        breakpoint()
+        np.savez(pixel_sed_save_loc + f'{id_dr3}_pixels.npz', pixel_seds=pixel_seds, mask=mask, masked_indicies=masked_indicies, image_cutouts=cutout_arr, noise_cutouts=noise_cutout_arr, boolean_segmap=boolean_segmap, obj_segmap=obj_segmap_sizematch.data, filter_names=np.array(filter_list), snr_thresh=snr_thresh, bad_image_idxs=bad_image_idxs) 
 
 def images_and_segmap(id_dr3, supercat_df, image_dict, filter_list, plot=False): 
     """Read in the segmap and images in each fiilter
@@ -61,18 +67,19 @@ def images_and_segmap(id_dr3, supercat_df, image_dict, filter_list, plot=False):
     boolean_segmap_sizematch = obj_segmap_sizematch.data==id_dr3
 
     cutout_list = []
-    wht_cutout_list = []
+    noise_cutout_list = []
     for filt in filter_list:
         image_cutout, wht_image_cutout = get_cutout(image_dict, obj_skycoord, filt, size=cutout_size)
+        noise_image = 1/np.sqrt(wht_image_cutout.data)
         cutout_list.append(image_cutout.data)
-        wht_cutout_list.append(wht_image_cutout.data)
+        noise_cutout_list.append(noise_image)
 
     # if plot == True:
     #     fig, ax = plt.subplots(figsize = (6,6))
     #     fig.savefig(figure_save_loc + f'three_colors/{id_dr3}_{line_name}_3color.pdf')
         # plt.close('all')
 
-    return cutout_list, wht_cutout_list, boolean_segmap_sizematch
+    return cutout_list, noise_cutout_list, boolean_segmap_sizematch, obj_segmap_sizematch
 
 
 def load_image(filt):
@@ -146,5 +153,12 @@ def get_filt_cols(df, skip_wide_bands=False):
     return filt_cols
 
 
+def flag_blank_images(image_cutouts):
+    blank_image_idxs = []
+    for i in range(len(image_cutouts)):
+        if np.sum(image_cutouts[i]) == 0:
+            blank_image_idxs.append(i)
+    return blank_image_idxs
+
 if __name__ == '__main__':
-    prepare_images([44283, 30804])
+    prepare_images([46339, 44283, 30804], snr_thresh=2)
