@@ -19,8 +19,6 @@ def cluster_pixels(id_dr3_list):
         # Now need to cluster on the pixel_seds
 
 
-    breakpoint()
-
 
 if __name__ == '__main__':
     cluster_pixels([46339, 44283, 30804])
