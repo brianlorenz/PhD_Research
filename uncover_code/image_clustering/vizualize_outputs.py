@@ -1,4 +1,4 @@
-from data_paths import pixel_sed_save_loc, read_saved_pixels, image_save_dir
+from data_paths import pixel_sed_save_loc, read_saved_pixels, image_save_dir, get_cluster_save_path, check_and_make_dir
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.patheffects as pe
@@ -6,7 +6,51 @@ from matplotlib.colors import ListedColormap, LinearSegmentedColormap
 import time
 
 
-def plot_cutout_summary(id_dr3_list):
+def plot_cluster_summary(id_dr3_list, cluster_method):
+    image_filter = 'f444w'
+    for id_dr3 in id_dr3_list:
+        pixel_data = read_saved_pixels(id_dr3)
+        cluster_savepath = get_cluster_save_path(cluster_method, id_dr3=id_dr3)
+        clustered_data = np.load(cluster_savepath)
+        image_cutouts = pixel_data['image_cutouts'] 
+        filter_names = pixel_data['filter_names']
+        mask = pixel_data['mask']
+
+        clustered_image = clustered_data['clustered_image']
+
+        fig, axarr = plt.subplots(1, 3, figsize=(18, 6))
+        ax_image = axarr[0]
+        ax_overlay = axarr[1]
+        ax_clustered = axarr[2]
+
+        for ax in axarr:
+            ax.axis('off')
+
+        # Setup for plotting
+        image_filter_idx = np.argmax(filter_names==image_filter)
+        unique_values, counts = np.unique(clustered_image, return_counts=True)
+        cmap_cluster, cmap_cluster_black = generate_cluster_cmap(len(unique_values)-1)
+        masked_clustered = np.ma.masked_where(clustered_image == 0, clustered_image)
+        
+
+
+        # plotting
+        ax_image.imshow(image_cutouts[image_filter_idx], cmap='gray', origin='lower')
+        ax_clustered.imshow(clustered_image, cmap=cmap_cluster_black, origin='lower')
+        ax_overlay.imshow(image_cutouts[image_filter_idx], cmap='gray', origin='lower')
+        ax_overlay.imshow(masked_clustered, cmap=cmap_cluster, origin='lower', alpha=0.5)
+
+        add_textbox(ax_image, image_filter.upper(), color='white')
+
+        check_and_make_dir(image_save_dir+f'clustered/{cluster_method}/')
+        fig.savefig(image_save_dir+f'clustered/{cluster_method}/{id_dr3}_clustered.pdf', bbox_inches='tight')
+
+        
+        
+        
+
+
+def plot_cutout_overview(id_dr3_list):
     for id_dr3 in id_dr3_list:
         pixel_data = read_saved_pixels(id_dr3)
         image_cutouts = pixel_data['image_cutouts'] # shape of (n_images, cutout_y_size, cutout_x_size)
@@ -65,7 +109,7 @@ def plot_cutout_summary(id_dr3_list):
         
 
         plt.tight_layout()
-        fig.savefig(image_save_dir+f'{id_dr3}_overview.pdf')
+        fig.savefig(image_save_dir+f'overviews/{id_dr3}_overview.pdf')
     pass
 
 
@@ -91,14 +135,19 @@ def create_cmap_segmap(id_dr3, unique_segmap_ids):
     cmap = ListedColormap(color_list)
     return cmap
 
-    
+def generate_cluster_cmap(n_colors):
+    cmap = plt.get_cmap('rainbow', n_colors)
+    new_colors = np.vstack(([0, 0, 0, 1], cmap(np.arange(n_colors)))) 
+    cmap_with_black = ListedColormap(new_colors)
+    return cmap, cmap_with_black
+
 
 def add_textbox(ax, text, color='white'):
-    text_height = 0.92
-    text_start = 0.03
-    text_sep = 0.35
+    text_height = 0.905
+    text_start = 0.035
     ax.text(text_start, text_height, text, fontsize=24, transform=ax.transAxes, color='black', bbox=dict(facecolor=color, alpha=0.8, boxstyle='round'))
 
 
 if __name__ == '__main__':
-    plot_cutout_summary([46339, 44283, 30804])
+    plot_cluster_summary([46339, 44283, 30804], cluster_method='kmeans')
+    # plot_cutout_overview([46339, 44283, 30804])

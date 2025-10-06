@@ -1,14 +1,16 @@
+import numpy as np
+import os
+import sys
 from astropy.io import fits
 from astropy.table import Table
 from astropy.wcs import WCS
-import numpy as np
 from glob import glob
-import sys
 
 # Location to save
 clustering_folder = '/Users/brianlorenz/uncover/Clustering/'
 pixel_sed_save_loc = f'{clustering_folder}pixel_seds/'
-image_save_dir = f'{clustering_folder}image_overviews/'
+image_save_dir = f'{clustering_folder}images/'
+
 
 # Define paths to files here
 SUPER_CATALOG_loc = '/Users/brianlorenz/uncover/Catalogs/UNCOVER_v5.2.0_LW_SUPER_CATALOG.fits'
@@ -56,3 +58,13 @@ def make_pd_table_from_fits(file_loc):
         data_df = Table(data_loc).to_pandas()
         return data_df
     
+
+def get_cluster_save_path(cluster_method, id_dr3=-1):
+    save_path = pixel_sed_save_loc + f'{cluster_method}/'
+    if id_dr3 >= 0:
+         save_path = pixel_sed_save_loc + f'{cluster_method}/{id_dr3}_clustered.npz'
+    return save_path
+
+def check_and_make_dir(file_path):
+    if not os.path.exists(file_path):
+        os.mkdir(file_path)
