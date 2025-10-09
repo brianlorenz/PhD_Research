@@ -4,10 +4,11 @@ from astropy.coordinates import SkyCoord
 from astropy.nddata import Cutout2D
 from astropy.io import fits
 from astropy.wcs import WCS
-from data_paths import read_supercat, read_segmap, find_image_path, pixel_sed_save_loc
+from data_paths import read_supercat, read_segmap, find_image_path, pixel_sed_save_loc, sed_save_loc
 import numpy as np 
 import time
 import matplotlib.pyplot as plt
+import pandas as pd
 
 
 
@@ -37,7 +38,6 @@ def prepare_images(id_dr3_list, snr_thresh=3):
         cutout_arr = np.array(cutout_list) # shape is (n_images, cutout_y_size, cutout_x_size)
         noise_cutout_arr = np.array(noise_cutout_list)
 
-        bad_image_idxs = flag_blank_images(cutout_arr)
 
         # Mask the image to only get galaxy pixels - currently using segmap
         median_snr = np.median(cutout_arr/noise_cutout_arr, axis=0)
@@ -46,11 +46,19 @@ def prepare_images(id_dr3_list, snr_thresh=3):
         masked_indicies = np.where(mask)
 
         pixel_seds = cutout_arr[:, masked_indicies[0], masked_indicies[1]] # shape is (n_images, n_pixels) where n_pixels are the number of pixels in the segmap
-
         # To access a particular pixel's SED, it is: 
         #       pixel_seds[:, pixel_id]
         # To access a pixel's coordinates back on the image, it is
         #       [masked_indicies[0][pixel_id], masked_indicies[1][pixel_id]]
+
+        # Get the average SED from the super catalog
+        supercat_row = supercat_df[supercat_df['id'] == id_dr3].iloc[0]
+        sed_fluxes = [supercat_row[f'f_{filt_name}'] for filt_name in filter_list]
+        err_sed_fluxes = [supercat_row[f'e_{filt_name}'] for filt_name in filter_list]
+        np.savez(sed_save_loc + f'{id_dr3}_sed.npz', sed=sed_fluxes, err_sed=err_sed_fluxes) 
+
+        bad_image_idxs = flag_blank_images(cutout_arr, sed_fluxes)
+
         np.savez(pixel_sed_save_loc + f'{id_dr3}_pixels.npz', pixel_seds=pixel_seds, mask=mask, masked_indicies=masked_indicies, image_cutouts=cutout_arr, noise_cutouts=noise_cutout_arr, boolean_segmap=boolean_segmap, obj_segmap=obj_segmap_sizematch.data, filter_names=np.array(filter_list), snr_thresh=snr_thresh, bad_image_idxs=bad_image_idxs) 
 
 def images_and_segmap(id_dr3, supercat_df, image_dict, filter_list, plot=False): 
@@ -153,10 +161,10 @@ def get_filt_cols(df, skip_wide_bands=False):
     return filt_cols
 
 
-def flag_blank_images(image_cutouts):
+def flag_blank_images(image_cutouts, sed):
     blank_image_idxs = []
     for i in range(len(image_cutouts)):
-        if np.sum(image_cutouts[i]) == 0:
+        if np.sum(image_cutouts[i]) == 0 or pd.isnull(sed[i]):
             blank_image_idxs.append(i)
     return blank_image_idxs
 

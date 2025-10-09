@@ -6,11 +6,11 @@ from matplotlib.colors import ListedColormap, LinearSegmentedColormap
 import time
 
 
-def plot_cluster_summary(id_dr3_list, cluster_method):
+def plot_cluster_summary(id_dr3_list, cluster_method, norm_method=''):
     image_filter = 'f444w'
     for id_dr3 in id_dr3_list:
         pixel_data = read_saved_pixels(id_dr3)
-        cluster_savepath = get_cluster_save_path(cluster_method, id_dr3=id_dr3)
+        cluster_savepath = get_cluster_save_path(cluster_method, norm_method=norm_method, id_dr3=id_dr3)
         clustered_data = np.load(cluster_savepath)
         image_cutouts = pixel_data['image_cutouts'] 
         filter_names = pixel_data['filter_names']
@@ -42,8 +42,8 @@ def plot_cluster_summary(id_dr3_list, cluster_method):
 
         add_textbox(ax_image, image_filter.upper(), color='white')
 
-        check_and_make_dir(image_save_dir+f'clustered/{cluster_method}/')
-        fig.savefig(image_save_dir+f'clustered/{cluster_method}/{id_dr3}_clustered.pdf', bbox_inches='tight')
+        check_and_make_dir(image_save_dir+f'clustered/{cluster_method}{norm_method}/')
+        fig.savefig(image_save_dir+f'clustered/{cluster_method}{norm_method}/{id_dr3}_clustered.pdf', bbox_inches='tight')
 
         
         

@@ -9,6 +9,7 @@ from glob import glob
 # Location to save
 clustering_folder = '/Users/brianlorenz/uncover/Clustering/'
 pixel_sed_save_loc = f'{clustering_folder}pixel_seds/'
+sed_save_loc = f'{clustering_folder}seds/'
 image_save_dir = f'{clustering_folder}images/'
 
 
@@ -40,6 +41,13 @@ def read_saved_pixels(id_dr3):
     # filter_names = pixel_data['filter_names'] # shape of (n_images,)
     return pixel_data
 
+def read_sed(id_dr3):
+    sed_data = np.load(sed_save_loc + f'{id_dr3}_sed.npz')
+    # CONTAINS:
+    # sed = pixel_data['sed']
+    # err_sed = pixel_data['err_sed'] 
+    return sed_data
+
 
 def read_supercat():
     supercat_df = make_pd_table_from_fits(SUPER_CATALOG_loc)
@@ -59,10 +67,10 @@ def make_pd_table_from_fits(file_loc):
         return data_df
     
 
-def get_cluster_save_path(cluster_method, id_dr3=-1):
-    save_path = pixel_sed_save_loc + f'{cluster_method}/'
+def get_cluster_save_path(cluster_method, norm_method='', id_dr3=-1):
+    save_path = pixel_sed_save_loc + f'{cluster_method}{norm_method}/'
     if id_dr3 >= 0:
-         save_path = pixel_sed_save_loc + f'{cluster_method}/{id_dr3}_clustered.npz'
+        save_path = pixel_sed_save_loc + f'{cluster_method}{norm_method}/{id_dr3}_clustered.npz'
     return save_path
 
 def check_and_make_dir(file_path):
