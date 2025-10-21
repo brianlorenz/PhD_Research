@@ -33,6 +33,9 @@ if __name__ == '__main__':
     # main([46339, 44283, 30804], snr_thresh=3, cluster_method='gaussian_mixture', norm_method='_L2')
     # main([46339, 44283, 30804], snr_thresh=3, cluster_method='gaussian_mixture', norm_method='_sed')
     # main([46339, 44283, 30804], snr_thresh=3, cluster_method='gaussian_mixture', norm_method='')
-    main([46339, 44283, 30804], snr_thresh=3, cluster_method='dbscan', norm_method='_L2')
+    # main([46339, 44283, 30804], snr_thresh=3, cluster_method='dbscan', norm_method='_L2')
+    # main([46339, 44283, 30804], snr_thresh=3, cluster_method='agglomerative', norm_method='_L2')
+    # main([46339, 44283, 30804], snr_thresh=3, cluster_method='spectral', norm_method='_L2')
 
-    overview_single_galaxy(46339)
+
+    overview_single_galaxy(30804)

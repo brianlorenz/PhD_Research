@@ -6,6 +6,8 @@ from cluster_algorithms.k_means import kmeans
 from cluster_algorithms.similarity_spectral_clustering import spectral_cluster_cross_cor
 from cluster_algorithms.gaussian_mixture import gaussian_mixture_model
 from cluster_algorithms.dbscan import dbscan_clustering
+from cluster_algorithms.agglomerative import agglomerative_cluster
+from cluster_algorithms.spectral import spectral_cluster
 
 def define_cluster_methods():
     cluster_dict = {
@@ -13,7 +15,9 @@ def define_cluster_methods():
         'kmeans': kmeans,
         'spectral_cross_cor': spectral_cluster_cross_cor,
         'gaussian_mixture': gaussian_mixture_model,
-        'dbscan': dbscan_clustering
+        'dbscan': dbscan_clustering, 
+        'agglomerative': agglomerative_cluster,
+        'spectral': agglomerative_cluster,
     }
     return cluster_dict
 

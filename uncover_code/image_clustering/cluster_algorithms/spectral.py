@@ -1,11 +1,12 @@
-from sklearn.cluster import DBSCAN
+
+from sklearn.cluster import SpectralClustering
 import numpy as np
 from cluster_algorithms.normalize import L2_norm, cross_cor_norm
 from sklearn.neighbors import NearestNeighbors
 from matplotlib import pyplot as plt
 
 
-def dbscan_clustering(pixel_seds, sed, *args, norm_method=''):
+def spectral_cluster(pixel_seds, sed, *args, norm_method=''):
     X = pixel_seds.T
 
     # Normalize by L2 norm
@@ -25,9 +26,10 @@ def dbscan_clustering(pixel_seds, sed, *args, norm_method=''):
     plt.plot(distances)
     plt.show()
 
-    clustering = DBSCAN(eps=0.05, min_samples=min_samples).fit(X)
+    sc = SpectralClustering(n_clusters=4, affinity='nearest_neighbors', random_state=0)
+    clustering_labels = sc.fit_predict(X)
 
-    cluster_values = clustering.labels_ + 1
+    cluster_values = clustering_labels + 1
 
     
     return cluster_values
