@@ -4,11 +4,14 @@ from astropy.coordinates import SkyCoord
 from astropy.nddata import Cutout2D
 from astropy.io import fits
 from astropy.wcs import WCS
-from data_paths import read_supercat, read_segmap, find_image_path, pixel_sed_save_loc, sed_save_loc
+from data_paths import read_supercat, read_segmap, find_image_path, pixel_sed_save_loc, sed_save_loc, uncover_filters_info
 import numpy as np 
 import time
 import matplotlib.pyplot as plt
 import pandas as pd
+from sedpy import observate
+import pickle
+
 
 
 
@@ -17,6 +20,7 @@ def prepare_images(id_dr3_list, snr_thresh=3):
     print ('Reading catalogs and images...')
     supercat_df = read_supercat()
     filter_list = get_filt_cols(supercat_df)
+    breakpoint()
 
     # Read in image files
     image_dict = {}
@@ -160,6 +164,47 @@ def get_filt_cols(df, skip_wide_bands=False):
         filt_cols = [col for col in filt_cols if 'w' not in col]
     return filt_cols
 
+def unconver_read_filters():
+    """Pulls the filters from supercat, then returns a dict with lots of useful filter info
+    """
+    supercat_df = read_supercat() # This is the fits file that has all of the medium band flux info
+    filt_cols = get_filt_cols(supercat_df) # Grabs a list of the filter names from the columns of supercat
+    
+    sedpy_filts = [] 
+    uncover_filt_dict = {}
+
+    for filt in filt_cols: # Loops through each filter to read the info, then store it in the list and dict above
+        filt = 'f_'+filt
+        filtname = filt
+        filt = filt.replace('f_', 'jwst_') 
+        
+        # Most names are jwst_f000m. But a few of the bands are from other telescopes
+        try: 
+            sedpy_filt = observate.load_filters([filt])
+        except:
+            try:
+                filt = filt.replace('jwst_', 'wfc3_ir_')
+                sedpy_filt = observate.load_filters([filt])
+            except:
+                filt = filt.replace('wfc3_ir_', 'acs_wfc_')
+                sedpy_filt = observate.load_filters([filt])
+
+        uncover_filt_dict[filtname+'_blue'] = sedpy_filt[0].blue_edge 
+        uncover_filt_dict[filtname+'_red'] = sedpy_filt[0].red_edge
+        uncover_filt_dict[filtname+'_wave_eff'] = sedpy_filt[0].wave_effective # This is the wavelength of the filter
+        uncover_filt_dict[filtname+'_width_eff'] = sedpy_filt[0].effective_width
+        uncover_filt_dict[filtname+'_width_rect'] = sedpy_filt[0].rectangular_width
+
+        sedpy_filts.append(sedpy_filt[0])
+
+    with open(uncover_filters_info, "wb") as f:
+        pickle.dump(uncover_filt_dict, f)
+    
+
+    return uncover_filt_dict, sedpy_filts # Returns the dictionary and list with all the info saved
+
+
+
 
 def flag_blank_images(image_cutouts, sed):
     blank_image_idxs = []
@@ -169,4 +214,9 @@ def flag_blank_images(image_cutouts, sed):
     return blank_image_idxs
 
 if __name__ == '__main__':
+    t0 = time.time()
+    unconver_read_filters()
+    t1 = time.time()
+    print(t1-t0)
+    breakpoint()
     prepare_images([46339, 44283, 30804], snr_thresh=2)

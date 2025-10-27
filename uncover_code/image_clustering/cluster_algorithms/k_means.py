@@ -1,22 +1,17 @@
 from sklearn.cluster import KMeans
 from sklearn.metrics import silhouette_samples, silhouette_score
 from cluster_algorithms.cross_cor_eqns import get_cross_cor
-from cluster_algorithms.normalize import cross_cor_norm, L2_norm
+from cluster_algorithms.similarity_matrix import distance_matrix
 from sklearn.decomposition import PCA
 from sklearn.preprocessing import StandardScaler
+from cluster_algorithms.normalize import normalize_X
 import time
 import numpy as np
 
 def kmeans(pixel_seds, sed, *args, norm_method=''):
     X = pixel_seds.T
 
-    # Normalize by L2 norm
-    if norm_method=='_L2':
-        X = L2_norm(X)
-
-    if norm_method=='_sed':
-        # Subtract a median sed from each pixel, normalized to the level of that pixel
-        X = cross_cor_norm(X, sed)
+    X = normalize_X(X, norm_method=norm_method, sed=sed)
 
     if norm_method=='_pca': # Probably don't use since we lose information
         l2_norms = np.sqrt(np.sum(X**2, axis=1))

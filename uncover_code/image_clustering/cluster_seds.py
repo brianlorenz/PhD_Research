@@ -1,4 +1,4 @@
-from data_paths import pixel_sed_save_loc, read_saved_pixels, read_sed, check_and_make_dir, get_cluster_save_path
+from data_paths import pixel_sed_save_loc, read_saved_pixels, read_sed, check_and_make_dir, get_cluster_save_path, read_uncover_filters, get_wavelength
 import numpy as np
 import matplotlib.pyplot as plt
 import time
@@ -22,8 +22,8 @@ def define_cluster_methods():
     return cluster_dict
 
 
-def cluster_pixels(id_dr3_list, cluster_method='test', norm_method=''):
-    save_path = get_cluster_save_path(cluster_method, norm_method=norm_method)
+def cluster_pixels(id_dr3_list, cluster_method='test', norm_method='', distances=''):
+    save_path = get_cluster_save_path(cluster_method, norm_method=norm_method, distances=distances)
     check_and_make_dir(save_path)
     for id_dr3 in id_dr3_list:
         save_location = save_path + f'{id_dr3}_clustered.npz'
@@ -35,22 +35,30 @@ def cluster_pixels(id_dr3_list, cluster_method='test', norm_method=''):
         image_cutouts = pixel_data['image_cutouts'] # shape of (n_images, cutout_y_size, cutout_x_size)
         bad_image_idxs = pixel_data['bad_image_idxs']
         masked_indicies = pixel_data['masked_indicies']
+        filter_names = pixel_data['filter_names']
         sed_data = read_sed(id_dr3)
         sed = sed_data['sed']
         err_sed = sed_data['err_sed']
-
+        
+        
 
         # Remove the images flagged as bad if there are any
         if len(bad_image_idxs) > 0:
-            pixel_seds = np.delete(pixel_seds, bad_image_idxs, axis=0)
-            image_cutouts = np.delete(image_cutouts, bad_image_idxs, axis=0)
-            sed = np.delete(sed, bad_image_idxs, axis=0)
-            err_sed = np.delete(err_sed, bad_image_idxs, axis=0)
+            def delete_bad_values(arr):
+                arr = np.delete(arr, bad_image_idxs, axis=0)
+                return arr
+            pixel_seds = delete_bad_values(pixel_seds)
+            image_cutouts = delete_bad_values(image_cutouts)
+            sed = delete_bad_values(sed)
+            err_sed = delete_bad_values(err_sed)
+            filter_names = delete_bad_values(filter_names)
         
+        filt_dict = read_uncover_filters()
+        waves = [get_wavelength(filt_dict, 'f_'+name) for name in filter_names] 
 
         # Now need to cluster on the pixel_seds
         cluster_dict = define_cluster_methods()
-        cluster_values = cluster_dict[cluster_method](pixel_seds, sed, err_sed, norm_method=norm_method)
+        cluster_values = cluster_dict[cluster_method](pixel_seds, sed, waves, norm_method=norm_method, distances=distances)
 
         # Reconstruct the image but with clusteres given their categorical varaibles
         clustered_image = setup_cluster_image(cluster_values, masked_indicies, image_cutouts[0].shape)
@@ -77,4 +85,4 @@ def setup_cluster_image(cluster_values, masked_indicies, image_shape):
 
 
 if __name__ == '__main__':
-    cluster_pixels([46339, 44283, 30804], cluster_method='spectral_cross_cor', norm_method='')
+    cluster_pixels([46339, 44283, 30804], cluster_method='spectral_cross_cor', norm_method='', distances='')

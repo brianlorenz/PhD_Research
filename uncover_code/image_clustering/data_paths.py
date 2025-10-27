@@ -5,6 +5,8 @@ from astropy.io import fits
 from astropy.table import Table
 from astropy.wcs import WCS
 from glob import glob
+import pickle
+
 
 # Location to save
 clustering_folder = '/Users/brianlorenz/uncover/Clustering/'
@@ -17,6 +19,10 @@ image_save_dir = f'{clustering_folder}images/'
 SUPER_CATALOG_loc = '/Users/brianlorenz/uncover/Catalogs/UNCOVER_v5.2.0_LW_SUPER_CATALOG.fits'
 segmap_loc = '/Users/brianlorenz/uncover/Catalogs/UNCOVER_v5.2.0_SEGMAP.fits'
 image_folder = '/Users/brianlorenz/uncover/Catalogs/psf_matched/'
+
+# Generated files by this code
+uncover_filters_info = clustering_folder+'uncover_filters.pkl'
+
 def find_image_path(filt):
     image_path = glob(image_folder + 'uncover_v7.*'+'*_abell2744clu_*'+filt+'*sci_f444w-matched.fits')
     wht_image_path = glob(image_folder + 'uncover_v7.*'+'*_abell2744clu_*'+filt+'*wht_f444w-matched.fits')
@@ -66,13 +72,22 @@ def make_pd_table_from_fits(file_loc):
         data_df = Table(data_loc).to_pandas()
         return data_df
     
-
-def get_cluster_save_path(cluster_method, norm_method='', id_dr3=-1):
-    save_path = pixel_sed_save_loc + f'{cluster_method}{norm_method}/'
+def get_cluster_save_path(cluster_method, norm_method='', distances='', id_dr3=-1):
+    save_path = pixel_sed_save_loc + f'{cluster_method}{norm_method}{distances}/'
     if id_dr3 >= 0:
-        save_path = pixel_sed_save_loc + f'{cluster_method}{norm_method}/{id_dr3}_clustered.npz'
+        save_path = pixel_sed_save_loc + f'{cluster_method}{norm_method}{distances}/{id_dr3}_clustered.npz'
     return save_path
+
+def read_uncover_filters():
+    with open(uncover_filters_info, "rb") as f:
+        filt_dict = pickle.load(f)
+    return filt_dict
+
+def get_wavelength(filt_dict, filt_name):
+    wave = filt_dict[filt_name+'_wave_eff']
+    return wave
 
 def check_and_make_dir(file_path):
     if not os.path.exists(file_path):
         os.mkdir(file_path)
+
