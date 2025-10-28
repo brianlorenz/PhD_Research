@@ -62,13 +62,13 @@ def find_sim_matrix(X):
     t1 = time.time()
     print(f'Computed similarity matrix in {t1-t0} seconds')
 
-    eigenvals, eignvectors = np.linalg.eig(sim_matrix)
-    x_axis = np.arange(1, len(eigenvals)+1, 1)
-    dx = 1
-    derivative = np.gradient(eigenvals, dx)
-    plt.plot(x_axis, eigenvals, ls='-', marker='o', color='black')
+    # eigenvals, eignvectors = np.linalg.eig(sim_matrix)
+    # x_axis = np.arange(1, len(eigenvals)+1, 1)
+    # dx = 1
+    # derivative = np.gradient(eigenvals, dx)
+    # plt.plot(x_axis, eigenvals, ls='-', marker='o', color='black')
     # plt.plot(x_axis, derivative, ls='-', marker='o', color='orange')
-    plt.xlim(0, 15)
+    # plt.xlim(0, 15)
     # plt.show()
 
     return sim_matrix

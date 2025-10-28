@@ -196,6 +196,7 @@ def unconver_read_filters():
         uncover_filt_dict[filtname+'_width_rect'] = sedpy_filt[0].rectangular_width
 
         sedpy_filts.append(sedpy_filt[0])
+    return uncover_filt_dict, sedpy_filts
 
     with open(uncover_filters_info, "wb") as f:
         pickle.dump(uncover_filt_dict, f)
