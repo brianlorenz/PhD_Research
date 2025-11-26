@@ -1,10 +1,10 @@
 import numpy as np
-from compute_av import compute_balmer_av, compute_ratio_from_av
+from compute_av import compute_balmer_av, compute_ratio_from_av, compute_balmer_ahalpha
 
 def plot_comparison(ax, mass_data, dec_data, dec_err_low, dec_err_high, law, color, marker,size, mec='black'):
-    balmer_avs = compute_balmer_av(dec_data, law=law)
-    avs_low = compute_balmer_av(dec_err_low, law=law)
-    avs_high = compute_balmer_av(dec_err_high, law=law)
+    balmer_avs = compute_balmer_ahalpha(dec_data, law=law)
+    avs_low = compute_balmer_ahalpha(dec_err_low, law=law)
+    avs_high = compute_balmer_ahalpha(dec_err_high, law=law)
     err_avs_low = balmer_avs - avs_low
     err_avs_high = avs_high - balmer_avs
     err_plot = np.vstack([err_avs_low, err_avs_high])

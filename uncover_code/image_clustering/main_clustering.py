@@ -5,14 +5,15 @@ from data_paths import image_save_dir, check_and_make_dir
 import os
 import shutil
 import faulthandler; faulthandler.enable()
+from make_composite_sed import get_composite_sed
 
 
 def main(id_dr3_list, snr_thresh=3, cluster_method='test', norm_method='', distances=''):
     # prepare_images(id_dr3_list, snr_thresh=snr_thresh)
     # plot_cutout_overview(id_dr3_list)
-    cluster_pixels(id_dr3_list, cluster_method=cluster_method, norm_method=norm_method, distances=distances)
-    plot_cluster_summary(id_dr3_list, cluster_method=cluster_method, norm_method=norm_method, distances=distances)
-
+    # cluster_pixels(id_dr3_list, cluster_method=cluster_method, norm_method=norm_method, distances=distances)
+    # plot_cluster_summary(id_dr3_list, cluster_method=cluster_method, norm_method=norm_method, distances=distances)
+    get_composite_sed(id_dr3_list, cluster_method=cluster_method, norm_method=norm_method, distances=distances)
 
 
 def overview_single_galaxy(id_dr3):
@@ -27,7 +28,7 @@ def overview_single_galaxy(id_dr3):
 
 
 if __name__ == '__main__':
-    # main([46339, 44283, 30804], snr_thresh=3, cluster_method='kmeans', norm_method='')
+    main([46339, 44283, 30804], snr_thresh=3, cluster_method='kmeans', norm_method='')
     # main([46339, 44283, 30804], snr_thresh=3, cluster_method='kmeans', norm_method='_L2')
     # main([46339, 44283, 30804], snr_thresh=3, cluster_method='kmeans', norm_method='_sed')
     # main([46339, 44283, 30804], snr_thresh=3, cluster_method='kmeans', norm_method='_pca')
@@ -37,9 +38,9 @@ if __name__ == '__main__':
     # main([46339, 44283, 30804], snr_thresh=3, cluster_method='dbscan', norm_method='_L2')
     # main([46339, 44283, 30804], snr_thresh=3, cluster_method='dbscan', norm_method='_L2', distances='_weightednorm')
     # main([46339, 44283, 30804], snr_thresh=3, cluster_method='dbscan', norm_method='_L2', distances='_crosscor')
-    main([46339, 44283, 30804], snr_thresh=3, cluster_method='agglomerative', norm_method='_L2', distances='_crosscor')
+    # main([46339, 44283, 30804], snr_thresh=3, cluster_method='agglomerative', norm_method='_L2', distances='_crosscor')
     # main([46339, 44283, 30804], snr_thresh=3, cluster_method='agglomerative', norm_method='_L2')
     # main([46339, 44283, 30804], snr_thresh=3, cluster_method='spectral', norm_method='_L2')
 
 
-    # overview_single_galaxy(46339)
+    # overview_single_galaxy(30804)

@@ -20,7 +20,6 @@ def prepare_images(id_dr3_list, snr_thresh=3):
     print ('Reading catalogs and images...')
     supercat_df = read_supercat()
     filter_list = get_filt_cols(supercat_df)
-    breakpoint()
 
     # Read in image files
     image_dict = {}

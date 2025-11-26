@@ -22,15 +22,21 @@ def plot_paper_sample_select(show_hexes=True, show_point_color=False, shapley=0)
     
 
     snr_cut_gals = read_paper_df('snr_cut_only')
+    pabeta_cut_gals = read_paper_df('snr_cut_pabeta')
+    halpha_cut_gals = read_paper_df('snr_cut_halpha')
     bcg_cut_gals = read_paper_df('bcg_cut_only')
     chi2_cut_gals = read_paper_df('chi2_cut_only')
+    halpha_cut_ids = halpha_cut_gals['id_dr3'].to_list()
+    pabeta_cut_ids = pabeta_cut_gals['id_dr3'].to_list()
     snr_cut_ids = snr_cut_gals['id_dr3'].to_list()
     bcg_cut_ids = bcg_cut_gals['id_dr3'].to_list()
     chi2_cut_ids = chi2_cut_gals['id_dr3'].to_list()
 
     df_high_snr = possible_df[~possible_df['id_dr3'].isin(bcg_cut_ids)]
+    # df_snr_bcg = abc[~abc['id_dr3'].isin(chi2_cut_ids)]
     df_snr_bcg = df_high_snr[~df_high_snr['id_dr3'].isin(snr_cut_ids)]
     df_snr_bcg_chi2 = df_snr_bcg[~df_snr_bcg['id_dr3'].isin(chi2_cut_ids)]
+
 
 
     sample_ids = sample_df['id_dr3'].to_list()
@@ -148,7 +154,6 @@ def plot_paper_sample_select(show_hexes=True, show_point_color=False, shapley=0)
                         mec='blue'
                 
                     
-
             ax.errorbar(df['mstar_50'].iloc[j], df['z_50'].iloc[j], yerr=np.array([[low_zerr.iloc[j], high_zerr.iloc[j]]]).T, marker=shape, mec=mec, ms=size, color=color, ls='None', ecolor='gray')
             # ax.text(df['mstar_50'].iloc[j], df['z_50'].iloc[j], f'{id_dr3}')
         ax_histx.hist(df['mstar_50'], bins=xbins, color=color, density=True, alpha=hist_alphas[i])
@@ -185,9 +190,9 @@ def plot_paper_sample_select(show_hexes=True, show_point_color=False, shapley=0)
 
 
 if __name__ == '__main__':
-    # plot_paper_sample_select()
+    plot_paper_sample_select()
     # plot_paper_sample_select(show_point_color=True)
     # plot_paper_sample_select(show_hexes=True)
-    plot_paper_sample_select(show_hexes=False, shapley=1)
-    plot_paper_sample_select(show_hexes=False, shapley=2)
+    # plot_paper_sample_select(show_hexes=False, shapley=1)
+    # plot_paper_sample_select(show_hexes=False, shapley=2)
     pass

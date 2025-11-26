@@ -49,4 +49,4 @@ def get_mosdef_compare_sample():
     linemeas_df2 = linemeas_df2[merged_idxs]
     return sample_df, linemeas_df2
 
-# sample_df = get_mosdef_compare_sample()
+sample_df = get_mosdef_compare_sample()

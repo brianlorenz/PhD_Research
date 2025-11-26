@@ -55,7 +55,6 @@ def sample_select(paalpha=False, paalpha_pabeta=False):
     total_id_msa_list_df = pd.DataFrame(id_msa_list, columns=['id_msa'])
     total_id_msa_list_df.to_csv(save_dir + 'total_before_cuts.csv', index=False)
     lines_df = read_lineflux_cat()
-    breakpoint()
 
     # Run emission fits / sed+spec generation on this group, then:
     # Need to fix the few that are not working, think it's emissoin fit

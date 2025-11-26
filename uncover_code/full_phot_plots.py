@@ -414,6 +414,8 @@ def make_cuts_lineflux_df(df, snr_dict, ha_pab_ratio=False, pab_paa_ratio=False,
     df = df[df[f'bcg_surface_brightness']<bcg_thresh]
     bcg_cut_only = original_df[original_df[f'bcg_surface_brightness']>=bcg_thresh]
 
+    snr_cut_only_halpha.to_csv('/Users/brianlorenz/uncover/Data/generated_tables/paper_data/snr_cut_halpha.csv', index=False)
+    snr_cut_only_pabeta.to_csv('/Users/brianlorenz/uncover/Data/generated_tables/paper_data/snr_cut_pabeta.csv', index=False)
     snr_cut_only.to_csv('/Users/brianlorenz/uncover/Data/generated_tables/paper_data/snr_cut_only.csv', index=False)
     chi2_cut_only.to_csv('/Users/brianlorenz/uncover/Data/generated_tables/paper_data/chi2_cut_only.csv', index=False)
     redshift_cut_only.to_csv('/Users/brianlorenz/uncover/Data/generated_tables/paper_data/redshift_cut_only.csv', index=False)

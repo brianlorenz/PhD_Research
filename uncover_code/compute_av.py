@@ -11,7 +11,8 @@ line_list = [
     ('PaBeta', 12821.7)
 ]
 
-avneb_str = 'A$_{\\mathrm{V,neb}}$'
+# avneb_str = 'A$_{\\mathrm{V,neb}}$'
+avneb_str = 'A$_{\\mathrm{H\\alpha,neb}}$'
 
 reddy_R_V_value = 6.957
 cardelli_R_V_value = 3.1
@@ -143,7 +144,17 @@ def compute_pab_paa_av(paa_pab_ratio):
     return A_V_value
 
 
-def compute_ha_pab_av(pab_ha_ratio, law='calzetti'):
+def get_k(wavelegnth_um, law):
+    if law == 'reddy':
+        k_factor = reddy_aurora_law(wavelegnth_um)
+    if law == 'calzetti':
+        k_factor = calzetti_law(wavelegnth_um)
+    if law == 'cardelli':
+        k_factor = cardelli_k(wavelegnth_um)
+    return k_factor
+
+
+def compute_ha_pab_av(pab_ha_ratio, law='calzetti'): # Note that R_V = k_V = calzetti_law(0.55) # Reddy curve is not normalized
     """ PaB / Ha is the ratio you need, should be slightly greater than 1/20"""
     intrinsic_ratio = pab_factor / ha_factor
     if law == 'calzetti':
@@ -157,13 +168,22 @@ def compute_ha_pab_av(pab_ha_ratio, law='calzetti'):
         k_factor = 2.5/(cardelli_k(ha_wave) - cardelli_k(pab_wave))
     A_V_value = R_V_value*k_factor*np.log10(pab_ha_ratio/intrinsic_ratio)
     return A_V_value
-def compute_ha_pab_av2(ha_pab_ratio): # Does the same thin but it's more intuitive this way
+
+def compute_ha_pab_ahalpha(pab_ha_ratio, law='calzetti'): # Note that R_V = k_V = calzetti_law(0.55) # Reddy curve is not normalized
     """ PaB / Ha is the ratio you need, should be slightly greater than 1/20"""
-    R_V_value = 4.05
-    intrinsic_ratio = ha_factor / pab_factor
-    k_factor = 2.5/(calzetti_law(pab_wave) - calzetti_law(ha_wave))
-    A_V_value = R_V_value*k_factor*np.log10(ha_pab_ratio/intrinsic_ratio)
-    return A_V_value
+    intrinsic_ratio = pab_factor / ha_factor
+    if law == 'calzetti':
+        k_ha_value = calzetti_law(ha_wave)
+        k_factor = 2.5/(calzetti_law(ha_wave) - calzetti_law(pab_wave))
+    if law == 'reddy':
+        k_ha_value = reddy_R_V_value + reddy_aurora_law(ha_wave)
+        k_factor = 2.5/(reddy_aurora_law(ha_wave) - reddy_aurora_law(pab_wave))
+    if law == 'cardelli':
+        k_ha_value = cardelli_k(ha_wave)
+        k_factor = 2.5/(cardelli_k(ha_wave) - cardelli_k(pab_wave))
+    A_ha_value = k_ha_value*k_factor*np.log10(pab_ha_ratio/intrinsic_ratio)
+    return A_ha_value
+
 
 def compute_ratio_from_av(A_V_value, law='calzetti', R_V_value=-99):
     """ PaB / Ha is the ratio you need, should be slightly greater than 1/20"""
@@ -179,6 +199,22 @@ def compute_ratio_from_av(A_V_value, law='calzetti', R_V_value=-99):
         R_V_value = cardelli_R_V_value
         k_factor = 2.5/(cardelli_k(ha_wave) - cardelli_k(pab_wave))
     pab_ha_ratio = 10**(A_V_value / (R_V_value*k_factor)) * intrinsic_ratio
+    return pab_ha_ratio
+
+def compute_ratio_from_ahalpha(A_ha_value, law='calzetti', k_ha_value=-99):
+    """ PaB / Ha is the ratio you need, should be slightly greater than 1/20"""
+    intrinsic_ratio = pab_factor / ha_factor
+    if law == 'calzetti':
+        k_ha_value = calzetti_law(ha_wave)
+        k_factor = 2.5/(calzetti_law(ha_wave) - calzetti_law(pab_wave))
+    if law == 'reddy':
+        if k_ha_value == -99:
+            k_ha_value = reddy_R_V_value + reddy_aurora_law(ha_wave)
+        k_factor = 2.5/(reddy_aurora_law(ha_wave) - reddy_aurora_law(pab_wave))
+    if law == 'cardelli':
+        k_ha_value = cardelli_k(ha_wave)
+        k_factor = 2.5/(cardelli_k(ha_wave) - cardelli_k(pab_wave))
+    pab_ha_ratio = 10**(A_ha_value / (k_ha_value*k_factor)) * intrinsic_ratio
     return pab_ha_ratio
 
 def compute_ha_pab_av_from_dustmap(dustmap_ratio):
@@ -203,6 +239,20 @@ def compute_balmer_av(balmer_dec, law='calzetti'):
     A_V_value = R_V_value*k_factor*np.log10(balmer_dec/intrinsic_ratio)
     return A_V_value
 
+def compute_balmer_ahalpha(balmer_dec, law='calzetti'):
+    intrinsic_ratio = ha_factor / hb_factor
+    if law == 'calzetti':
+        k_ha_value = calzetti_law(ha_wave)
+        k_factor = 2.5/(calzetti_law(hb_wave) - calzetti_law(ha_wave))
+    if law == 'reddy':
+        k_ha_value = reddy_R_V_value + reddy_aurora_law(ha_wave)
+        k_factor = 2.5/(reddy_aurora_law(hb_wave) - reddy_aurora_law(ha_wave))
+    if law == 'cardelli':
+        k_ha_value = cardelli_k(ha_wave)
+        k_factor = 2.5/(cardelli_k(hb_wave) - cardelli_k(ha_wave))
+    A_ha_value = k_ha_value*k_factor*np.log10(balmer_dec/intrinsic_ratio)
+    return A_ha_value
+
 def compute_balmer_ratio_from_av(av_value, law='calzetti', R_V_value = -99):
     intrinsic_ratio = ha_factor / hb_factor
     if law == 'calzetti':
@@ -216,6 +266,20 @@ def compute_balmer_ratio_from_av(av_value, law='calzetti', R_V_value = -99):
         R_V_value = cardelli_R_V_value
         k_factor = 2.5/(cardelli_k(hb_wave) - cardelli_k(ha_wave))
     balmer_dec = intrinsic_ratio * 10**(av_value / (R_V_value*k_factor)) 
+    return balmer_dec
+
+def compute_balmer_ratio_from_ahalpha(ahalpha_value, law='calzetti'):
+    intrinsic_ratio = ha_factor / hb_factor
+    if law == 'calzetti':
+        k_ha_value = calzetti_law(ha_wave)
+        k_factor = 2.5/(calzetti_law(hb_wave) - calzetti_law(ha_wave))
+    if law == 'reddy':
+        k_ha_value = reddy_R_V_value + reddy_aurora_law(ha_wave)
+        k_factor = 2.5/(reddy_aurora_law(hb_wave) - reddy_aurora_law(ha_wave))
+    if law == 'cardelli':
+        k_ha_value = cardelli_k(ha_wave)
+        k_factor = 2.5/(cardelli_k(hb_wave) - cardelli_k(ha_wave))
+    balmer_dec = intrinsic_ratio * 10**(ahalpha_value / (k_ha_value*k_factor)) 
     return balmer_dec
 
 def read_catalog_av(id_msa, zqual_df):
@@ -273,6 +337,40 @@ def cardelli_k(wavelength_um):
         b_x = 1.41338*y + 2.28305*y**2 + 1.07233*y**3 - 5.38434*y**4 - 0.62251*y**5 + 5.30260*y**6 - 2.09002*y**7
     k_cardelli = 3.1*a_x+b_x
     return k_cardelli
+
+def plot_dust_laws():
+    import matplotlib.pyplot as plt
+    from matplotlib.lines import Line2D
+
+    wavelengths = np.arange(3505, 12795, 5)
+    wavelength_um = wavelengths / 10000
+    
+    fig, ax = plt.subplots(figsize=(7,4))
+
+    def add_attenuation_curve(waves, curve_name, color, style):
+        k_values = []
+        for wave in waves:
+            k_val = get_k(wave, law=curve_name)
+            k_values.append(k_val)
+            if wave == 0.55:
+                norm_factor = k_val
+        ax.plot(waves*10000, k_values - norm_factor, color=color, ls=style, marker='None')
+        legend_line = Line2D([0], [0], color=color, marker='None', ls=style)
+        return legend_line
+
+    add_attenuation_curve(wavelength_um, curve_name='reddy', color='red', style='-')
+    add_attenuation_curve(wavelength_um, curve_name='calzetti', color='blue', style='--')
+    add_attenuation_curve(wavelength_um, curve_name='cardelli', color='mediumseagreen', style='-.')
+
+    ax.set_xlabel('Wavelength ($\\AA$)')
+    ax.set_ylabel('k\'($\\lambda$)')
+    ax.tick_params(labelsize=12)
+
+    fig.savefig('/Users/brianlorenz/uncover/Figures/PHOT_paper/dust_laws.pdf', bbox_inches='tight')
+
+if __name__ == '__main__':
+    compute_ha_pab_ahalpha(1/10)
+    plot_dust_laws()
 # id_msa_list = get_id_msa_list(full_sample=False)
 # rats = []
 # for id_msa in id_msa_list:

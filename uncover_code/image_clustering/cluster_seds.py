@@ -8,6 +8,7 @@ from cluster_algorithms.gaussian_mixture import gaussian_mixture_model
 from cluster_algorithms.dbscan import dbscan_clustering
 from cluster_algorithms.agglomerative import agglomerative_cluster
 from cluster_algorithms.spectral import spectral_cluster
+from helpers import delete_bad_values
 
 def define_cluster_methods():
     cluster_dict = {
@@ -39,19 +40,14 @@ def cluster_pixels(id_dr3_list, cluster_method='test', norm_method='', distances
         sed_data = read_sed(id_dr3)
         sed = sed_data['sed']
         err_sed = sed_data['err_sed']
-        
-        
+    
 
         # Remove the images flagged as bad if there are any
-        if len(bad_image_idxs) > 0:
-            def delete_bad_values(arr):
-                arr = np.delete(arr, bad_image_idxs, axis=0)
-                return arr
-            pixel_seds = delete_bad_values(pixel_seds)
-            image_cutouts = delete_bad_values(image_cutouts)
-            sed = delete_bad_values(sed)
-            err_sed = delete_bad_values(err_sed)
-            filter_names = delete_bad_values(filter_names)
+        pixel_seds = delete_bad_values(pixel_seds, bad_image_idxs)
+        image_cutouts = delete_bad_values(image_cutouts, bad_image_idxs)
+        sed = delete_bad_values(sed, bad_image_idxs)
+        err_sed = delete_bad_values(err_sed, bad_image_idxs)
+        filter_names = delete_bad_values(filter_names, bad_image_idxs)
         
         filt_dict = read_uncover_filters()
         waves = [get_wavelength(filt_dict, 'f_'+name) for name in filter_names] 
@@ -64,8 +60,7 @@ def cluster_pixels(id_dr3_list, cluster_method='test', norm_method='', distances
         clustered_image = setup_cluster_image(cluster_values, masked_indicies, image_cutouts[0].shape)
 
         # Save the output
-        np.savez(save_location, cluster_values=cluster_values, clustered_image=clustered_image)
-        
+        np.savez(save_location, cluster_values=cluster_values, clustered_image=clustered_image)        
 
 
 def cluster_method_test(pixel_seds, *args):

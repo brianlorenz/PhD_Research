@@ -204,7 +204,7 @@ def plot_paper_sample_select_sfr_mass(show_hexes=True, show_point_color=False, m
         ax_histx.hist(df['mstar_50'], bins=xbins, color=color, density=True, alpha=hist_alphas[i], histtype=histtypes[i], linewidth=2, zorder=hist_zorders[i])
         ax_histy.hist(np.log10(df['sfr100_50']), bins=ybins, color=color,  orientation='horizontal', density=True, alpha=hist_alphas[i], histtype=histtypes[i], linewidth=2, zorder=hist_zorders[i])
     ax.set_xlabel(stellar_mass_label, fontsize=14)
-    ax.set_ylabel('Prospector log$_{10}$(SFR)', fontsize=14)
+    ax.set_ylabel('Prospector log$_{10}$(SFR)  (M$_\odot$ / yr)', fontsize=14)
     ax.tick_params(labelsize=14)
     
     line_sample = Line2D([0], [0], color=cmap(norm(2.05)), marker='o', markersize=8, ls='None', mec='black')

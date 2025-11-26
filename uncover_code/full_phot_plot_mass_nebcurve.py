@@ -2,7 +2,7 @@ from full_phot_read_data import read_merged_lineflux_cat, read_final_sample, rea
 from full_phot_merge_lineflux import filter_bcg_flags
 import matplotlib.pyplot as plt
 from uncover_read_data import read_SPS_cat_all, read_bcg_surface_brightness, read_supercat, read_morphology_cat
-from compute_av import compute_ha_pab_av, compute_pab_paa_av, compute_paalpha_pabeta_av, compute_balmer_av, compute_ratio_from_av, compute_balmer_ratio_from_av
+from compute_av import compute_ha_pab_av, compute_pab_paa_av, compute_paalpha_pabeta_av, compute_balmer_av, compute_ratio_from_av, compute_balmer_ratio_from_av, compute_ratio_from_ahalpha, compute_balmer_ratio_from_ahalpha, compute_balmer_ahalpha
 from read_mosdef_data import get_shapley_sample, get_mosdef_compare_sample
 import pandas as pd
 import numpy as np
@@ -24,7 +24,7 @@ from lifelines.utils import median_survival_times
 
 
 # Set the seed for reproducibility
-random.seed(5842750384) 
+# random.seed(5842750384) 
 
 
 
@@ -36,6 +36,7 @@ def plot_paper_mass_match_neb_curve(color_var='snr', shapley=2, monte_carlo=Fals
         n_monte = 1000
     
     sample_df = read_final_sample()
+    # sample_df = read_ha_sample()
     sample_df['log_sfr100_50'] = np.log10(sample_df['sfr100_50'])
     sample_df['log_sfr100_16'] = np.log10(sample_df['sfr100_16'])
     sample_df['log_sfr100_84'] = np.log10(sample_df['sfr100_84'])
@@ -44,6 +45,7 @@ def plot_paper_mass_match_neb_curve(color_var='snr', shapley=2, monte_carlo=Fals
     x_lims = [3, 4.8]
     # median_bins = [[9,9.5], [9.5,9.85], [9.85,10.2], [10.2,10.75]]
     median_bins = [[9.,9.5], [9.5,9.9], [9.9,10.3], [10.3,10.8]]
+    # median_bins = [[8.813722943485171, 9.170611864635665], [9.170611864635665, 9.492242867386953], [9.492242867386953, 9.911443933174425], [9.911443933174425, 11]]
     # mosdef percentiles: 9.2-9.6, 9.6-9.9, 9.9-10.2, 10.2-
     # sample percentiles: 9.2-9.45, 9.45-9.6, 9.6-10.0, 10.0-
     if shaded == 1:
@@ -110,10 +112,13 @@ def plot_paper_mass_match_neb_curve(color_var='snr', shapley=2, monte_carlo=Fals
         median_masses = data['array_one']
         median_pab_ha_ratios = data['array_two']
         err_median_pab_ha_ratios = data['array_three']
+        err_median_pab_ha_ratios[1][1]=0.0208284
     else:
         median_masses, median_pab_ha_ratios, err_median_masses, err_median_pab_ha_ratios, n_gals_per_bin = get_median_points(sample_df, median_bins, var_name, n_boots=n_boots, kap_meier_median=2, monte_carlo_km=2, bound_type=bound_type)
         np.savez('/Users/brianlorenz/uncover/Data/generated_tables/multiple_arrays.npz', array_one=np.array(median_masses), array_two=median_pab_ha_ratios, array_three=err_median_pab_ha_ratios)
-    
+    # median_masses, median_pab_ha_ratios, err_median_masses, err_median_pab_ha_ratios, n_gals_per_bin = get_median_points(sample_df, median_bins, var_name, n_boots=n_boots, kap_meier_median=2, monte_carlo_km=2, bound_type=bound_type)
+
+
     # Monte carlo sim for errors
     if monte_carlo:
         median_pab_ha_ratios_montes = []
@@ -167,8 +172,8 @@ def plot_paper_mass_match_neb_curve(color_var='snr', shapley=2, monte_carlo=Fals
         mosdef_err_low = mosdef_data_decs - mosdef_data_decs_low
         mosdef_err_high = mosdef_data_decs_high - mosdef_data_decs
 
-        mosdef_data_balmeravs = compute_balmer_av(mosdef_data_decs, law='calzetti')
-        mosdef_data_lineratios = compute_ratio_from_av(mosdef_data_balmeravs, law='calzetti')
+        mosdef_data_balmeravs = compute_balmer_ahalpha(mosdef_data_decs, law='calzetti')
+        mosdef_data_lineratios = compute_ratio_from_ahalpha(mosdef_data_balmeravs, law='calzetti')
         save_str3 = '_shapley'
     if shapley > 0:
         if shapley == 1:
@@ -178,12 +183,20 @@ def plot_paper_mass_match_neb_curve(color_var='snr', shapley=2, monte_carlo=Fals
             mosdef_df, linemeas_df = get_mosdef_compare_sample()
             save_str3 = '_mosdef_'
 
+
         result_df = pd.concat([mosdef_df, linemeas_df], axis=1)
         result_df['balmer_dec'] = result_df['HA6565_FLUX'] / result_df['HB4863_FLUX']
         median_masses_mosdef, median_balmer_ratios, err_median_masses_mosdef, err_median_balmer_ratios, n_gals_per_bin_mosdef = get_median_points(result_df, median_bins, 'LMASS', y_var_name='balmer_dec')
         mosdef_data_decs = median_balmer_ratios
         mosdef_err_low = err_median_balmer_ratios[0]
         mosdef_err_high = err_median_balmer_ratios[1]
+
+
+        used_sample = sample_df[np.logical_and(sample_df['mstar_50'] > median_bins[0][0], sample_df['mstar_50'] < median_bins[-1][1])]
+        mosdef_sample = result_df[np.logical_and(result_df['LMASS'] > median_bins[0][0], result_df['LMASS'] < median_bins[-1][1])]
+        mosdef_sample.to_csv('/Users/brianlorenz/uncover/Data/generated_tables/mosdef_compare_sample.csv', index=False)
+
+
         if monte_carlo:
             median_balmer_dec_montes = []
             for i in range(n_monte):
@@ -243,17 +256,19 @@ def plot_paper_mass_match_neb_curve(color_var='snr', shapley=2, monte_carlo=Fals
     # Add attenuation curves to prospector plots
     av_values = np.arange(0, 6, 0.01)
     def add_attenuation_curveby_av(av_values, curve_name, color, style):
-        pab_ha_ratio = compute_ratio_from_av(av_values, law=curve_name)
-        balmer_dec = compute_balmer_ratio_from_av(av_values, law=curve_name)
+        pab_ha_ratio = compute_ratio_from_ahalpha(av_values, law=curve_name)
+        balmer_dec = compute_balmer_ratio_from_ahalpha(av_values, law=curve_name)
         ax.plot(balmer_dec, pab_ha_ratio, color=color, ls=style, marker='None')
         legend_line = Line2D([0], [0], color=color, marker='None', ls=style)
         return legend_line
     legend_line_reddy = add_attenuation_curveby_av(av_values, 'reddy', 'black', '--')
-    # legend_line_calzetti = add_attenuation_curveby_av(av_values, 'calzetti', 'red')
+    legend_line_calzetti = add_attenuation_curveby_av(av_values, 'calzetti', 'black', 'dotted')
     legend_line_cardelli = add_attenuation_curveby_av(av_values, 'cardelli', 'black', '-.')
+
     # legend_line_cardelli = add_attenuation_curveby_av(av_values, 'calzetti', 'black', 'dotted')
     ax.text(4.46, 0.19, 'Reddy+25', fontsize=10, rotation=42)
     ax.text(4.4, 0.105, 'Cardelli+89', fontsize=10, rotation=16)
+    ax.text(4.38, 0.12, 'Calzetti+00', fontsize=10, rotation=17)
 
     
         
@@ -350,6 +365,7 @@ def get_median_points(sample_df, median_bins, x_var_name, y_var_name='lineratio_
     if kap_meier_median > 0:
         ha_det_sample_df = read_ha_sample(axisratios=True)
         ha_det_sample_df['log_sfr100_50'] = np.log10(ha_det_sample_df['sfr100_50'])
+        ha_det_sample_df['log_ssfr100_50'] = np.log10(ha_det_sample_df['sfr100_50']/10**ha_det_sample_df['mstar_50'])
         # ha_det_sample_df[f'lineratio_pab_ha_{kap_meier_median}sig_upper'] = 0
         p16s = []
         medians = []
@@ -357,8 +373,10 @@ def get_median_points(sample_df, median_bins, x_var_name, y_var_name='lineratio_
         km_16s = []
         km_50s = []
         km_84s = []
-        fig, axarr = plt.subplots(2, 3, figsize=(18, 12))
-        axarr_simple = [axarr[0, 0], axarr[0, 1], axarr[0, 2], axarr[1, 0], axarr[1, 1]]
+        # fig, axarr = plt.subplots(2, 3, figsize=(18, 12))
+        # axarr_simple = [axarr[0, 0], axarr[0, 1], axarr[0, 2], axarr[1, 0], axarr[1, 1]]
+        fig, axarr = plt.subplots(2, 5, figsize=(30, 12))
+        axarr_simple = [axarr[0, 0], axarr[0, 1], axarr[0, 2], axarr[0, 3], axarr[0, 4], axarr[1, 0], axarr[1, 1], axarr[1, 2], axarr[1, 3], axarr[1, 4]]
         axarr[1, 2].set_axis_off()
         for i in range(len(median_bins)):
             ax = axarr_simple[i]
@@ -460,7 +478,7 @@ def add_cbar_nebcurve(fig, ax_cbar, norm, cmap, cbar_name, cbar_ticks, cbar_tick
     #SNR cbar
     cbar = fig.colorbar(sm, cax=ax_cbar, orientation='vertical', ticks=cbar_ticks, spacing='proportional')
     cbar.ax.set_yticklabels(cbar_ticklabels) 
-    cbar.ax.yaxis.minorticks_off()
+    # cbar.ax.yaxis.minorticks_off()
     cbar.set_label(cbar_name, fontsize=14, labelpad=10) # -55 pad if ticks flip back to bottom
     cbar.ax.tick_params(labelsize=14)
 
@@ -525,6 +543,7 @@ def generate_bounds_and_fit(pab_ratios, mask, subsample_df, limits, bound_type=1
     pab_ratios = pab_ratios.reset_index(drop=True)
     mask = mask.reset_index(drop=True)
     lower_bounds = pab_ratios.copy(deep=True)
+    
     if bound_type == 0: # no limits
         upper_bounds = np.full(len(lower_bounds), np.inf)
         upper_bounds = pd.Series(upper_bounds)
@@ -547,10 +566,11 @@ def generate_bounds_and_fit(pab_ratios, mask, subsample_df, limits, bound_type=1
         'E': limits, # 0 for censored, 1 for event
         'U_Bound': upper_bounds
     }
+
     km_df = pd.DataFrame(km_data)
     kmf = KaplanMeierFitter(alpha=0.32)
-    kmf.fit_interval_censoring(lower_bound=np.array(lower_bounds),  upper_bound=np.array(upper_bounds), event_observed=limits) 
-    
+    kmf.fit_interval_censoring(lower_bound=np.array(lower_bounds, dtype=float),  upper_bound=np.array(upper_bounds, dtype=float), event_observed=np.array(limits, dtype=int)) 
+
     survival_function_d = kmf.survival_function_['NPMLE_estimate_lower']
     survival_function_u = kmf.survival_function_['NPMLE_estimate_upper']
     median_d = survival_function_d.index[np.argmin(np.abs(survival_function_d-0.5))]
@@ -564,6 +584,5 @@ def add_err_cols(sample_df, var_name):
     return sample_df
 
 if __name__ == '__main__': 
-    plot_paper_mass_match_neb_curve(color_var='mass', shapley=2, monte_carlo=False, bound_type=0) # Shapley = 2 for the paper fig
-    # Need to verify that this is working correctly, and need to apply KM medians to the MOSDEF to make everything match I think
+    plot_paper_mass_match_neb_curve(color_var='mass', shapley=2, monte_carlo=False, bound_type=1) # Shapley = 2 for the paper fig
     
